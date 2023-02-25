@@ -1,0 +1,17 @@
+{
+  "name": "rust-development",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "serayuzgur.crates"
+      ]
+    }
+  },
+  // NOTE: trunk serve will not fall back to polling and pushing notifications didn't work from Windows, but is fine from WSL2.
+  "postCreateCommand": "trunk serve"
+}

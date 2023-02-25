@@ -1,0 +1,25 @@
+[package]
+name = "ttm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.9.1" }
+console_error_panic_hook = { version = "0.1.7" }
+wasm-bindgen = { version = "0.2.84" }
+web-sys = { version = "0.3.61", features = [
+  'Document',
+  'Element',
+  'HtmlElement',
+  'Node',
+  'Window',
+  'console',
+] }
+
+# Enable a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
