@@ -15,6 +15,8 @@ web-sys = { version = "0.3.61", features = [
   'Window',
   'console',
 ] }
+uuid = { version = "1.3.0" }
+rand = { version = "0.8.5" }
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
