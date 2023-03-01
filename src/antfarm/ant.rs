@@ -1,15 +1,15 @@
-use super::point;
-use uuid::Uuid;
-
 use bevy::prelude::*;
+
+// TODO: Add support for behavior timer.
+// TODO: Add support for dynamic names.
 
 #[derive(Bundle)]
 pub struct AntSpriteBundle {
     sprite_bundle: SpriteBundle,
     // TODO: is it a code smell that these are pub?
-    pub facing: Facing,
-    pub angle: Angle,
-    pub behavior: Behavior,
+    pub facing: AntFacing,
+    pub angle: AntAngle,
+    pub behavior: AntBehavior,
 }
 
 #[derive(Bundle)]
@@ -50,19 +50,19 @@ const ANT_SCALE: f32 = 1.2;
 impl AntSpriteBundle {
     pub fn new(
         color: Color,
-        facing: Facing,
-        angle: Angle,
-        behavior: Behavior,
+        facing: AntFacing,
+        angle: AntAngle,
+        behavior: AntBehavior,
         asset_server: &Res<AssetServer>,
     ) -> Self {
         let angle_degrees = match angle {
-            Angle::Zero => 0,
-            Angle::Ninety => 90,
-            Angle::OneHundredEighty => 180,
-            Angle::TwoHundredSeventy => 270,
+            AntAngle::Zero => 0,
+            AntAngle::Ninety => 90,
+            AntAngle::OneHundredEighty => 180,
+            AntAngle::TwoHundredSeventy => 270,
         };
         // TODO: is this a bad architectural decision? technically I am thinking about mirroring improperly by inverting angle when x is flipped?
-        let x_flip = if facing == Facing::Left { -1.0 } else { 1.0 };
+        let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
 
         let angle_radians = angle_degrees as f32 * std::f32::consts::PI / 180.0 * x_flip;
         let rotation = Quat::from_rotation_z(angle_radians);
@@ -92,71 +92,23 @@ impl AntSpriteBundle {
     }
 }
 
-// TODO: It feels weird to express this as a component, but maybe I just need time.
 #[derive(Component, PartialEq)]
-pub enum Behavior {
+pub enum AntBehavior {
     Wandering,
     Carrying,
 }
 
-// TODO: It feels weird to express this as a component, but maybe I just need time.
 #[derive(Component, PartialEq)]
-pub enum Facing {
+pub enum AntFacing {
     Left,
     Right,
 }
 
-// TODO: It feels weird to express this as a component, but maybe I just need time.
-// TODO: it's awkward that these aren't numbers
+// TODO: it's awkward that these aren't numbers and maybe would be better to use radians instead of degrees?
 #[derive(Component, PartialEq)]
-pub enum Angle {
+pub enum AntAngle {
     Zero,
     Ninety,
     OneHundredEighty,
     TwoHundredSeventy,
 }
-
-// pub struct Ant {
-//     id: Uuid,
-//     location: point::Point,
-//     behavior: Behavior,
-//     facing: Facing,
-//     angle: Angle,
-//     timer: i32,
-//     name: String,
-//     active: bool,
-// }
-
-// impl Ant {
-//     pub fn new(
-//         x: i32,
-//         y: i32,
-//         behavior: Behavior,
-//         facing: Facing,
-//         angle: Angle,
-//         name: String,
-//     ) -> Self {
-//         Self {
-//             id: Uuid::new_v4(),
-//             location: point::Point { x, y },
-//             behavior,
-//             facing,
-//             angle,
-//             // timer: getTimer(behavior),
-//             timer: 6,
-//             name,
-//             active: true,
-//         }
-//     }
-// }
-
-// const BehaviorTimingFactors = {
-//   wandering: 4,
-//   carrying: 5,
-// }
-
-// export const getTimer = (behavior: Behavior) => BehaviorTimingFactors[behavior] + Math.floor((Math.random() * 3)) - 1;
-
-// fn getTimer(behavior: Behavior) {
-//     6
-// }

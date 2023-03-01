@@ -16,7 +16,7 @@ use bevy::{prelude::*, sprite::Anchor, time::FixedTimestep};
 const WORLD_WIDTH: i32 = 144;
 const WORLD_HEIGHT: i32 = 81;
 
-// TODO: Should this be -1?
+// TODO: Double-check for off-by-one here
 const SURFACE_LEVEL: i32 =
     (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings::SETTINGS.initial_dirt_percent)) as i32;
 
@@ -31,7 +31,8 @@ struct WorldContainer;
 struct UiFont(Handle<Font>);
 
 // Defines the amount of time that should elapse between each physics step.
-const TIME_STEP: f32 = 1.0 / 60.0;
+// NOTE: should probably run in 1/60 but slowing down for dev
+const TIME_STEP: f32 = 10.0 / 60.0;
 
 pub fn main(app: &mut App) {
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -49,7 +50,7 @@ pub fn main(app: &mut App) {
         SystemSet::new()
             .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
             .with_system(window_resize_system)
-            .with_system(ant_gravity_system),
+            .with_system(sand_gravity_system),
     );
 }
 
@@ -65,13 +66,48 @@ fn window_resize_system(
     transform.scale = scale;
 }
 
-// TODO: prefer singular gravity system, just porting old code for now
-fn ant_gravity_system(mut query: Query<(&ant::Ant, &mut Transform)>) {
-    // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
-    // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
-    // for (ant, mut transform) in query.iter_mut() {
-    //     transform.translation = transform.translation + Vec3::new(0.0, -1.0, 0.0);
-    // }
+// TODO: Add support for loosening neighboring sand.
+// TODO: Add support for crushing deep sand.
+// TODO: Add support for sand falling left/right randomly.
+fn sand_gravity_system(
+    mut sand_query: Query<
+        (&mut sand::Active, &mut Transform),
+        (With<sand::Sand>, Without<air::Air>),
+    >,
+    mut air_query: Query<&mut Transform, (With<air::Air>, Without<sand::Sand>)>,
+) {
+    web_sys::console::log_1(&"Sand Gravity System Runs!".into());
+
+    for (mut active, mut sand_transform) in sand_query.iter_mut() {
+        // Skip inactive elements.
+        // TODO: Is this really better than removing a component entirely?
+        if !(&active).0 {
+            continue;
+        }
+
+        // Get the position beneath the sand and determine if it is air.
+        let below_sand_translation = sand_transform.translation + Vec3::NEG_Y;
+
+        // TODO: This seems wildly inefficient compared to my previous architecture. I'm searching all air elements just to check one, specific spot in the world.
+        let air_below_sand = air_query
+            .iter_mut()
+            .find(|air_transform| air_transform.translation == below_sand_translation);
+
+        // If there is air below and sand above then swap the two
+        if let Some(mut air_below_sand) = air_below_sand {
+            air_below_sand.translation.y += 1.0;
+            sand_transform.translation.y -= 1.0;
+
+            web_sys::console::log_3(
+                &"Mutated!".into(),
+                &sand_transform.translation.y.to_string().into(),
+                &air_below_sand.translation.y.to_string().into(),
+            );
+        } else {
+            // Done falling, no longer active.
+            active.0 = false;
+        }
+    }
 }
 
 // World dimensions are integer values (144/81) but <canvas/> has variable, floating point dimensions.
@@ -80,12 +116,12 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
     let world_scale =
         (window.width() / WORLD_WIDTH as f32).max(window.height() / WORLD_HEIGHT as f32);
 
-    web_sys::console::log_4(
-        &"Window Size / World Scale".into(),
-        &window.width().to_string().into(),
-        &window.height().to_string().into(),
-        &world_scale.to_string().into(),
-    );
+    // web_sys::console::log_4(
+    //     &"Window Size / World Scale".into(),
+    //     &window.width().to_string().into(),
+    //     &window.height().to_string().into(),
+    //     &world_scale.to_string().into(),
+    // );
 
     (
         // translation:
@@ -153,8 +189,25 @@ fn setup_background(parent: &mut ChildBuilder) {
 
 // Spawn interactive elements - air/dirt. Air isn't visible, background is revealed in its place.
 fn setup_elements(parent: &mut ChildBuilder) {
+    // Test Sand
+    let sand_bundles = (0..1).flat_map(|row_index| {
+        (0..WORLD_WIDTH).map(move |column_index| {
+            // NOTE: row_index goes negative because 0,0 is top-left corner
+            SandBundle::new(
+                Vec3::new(column_index as f32, -row_index as f32, 1.0),
+                Some(Vec2::ONE),
+                true,
+            )
+        })
+    });
+
+    for sand_bundle in sand_bundles {
+        parent.spawn(sand_bundle);
+    }
+
     // Air & Dirt
-    let air_bundles = (0..SURFACE_LEVEL + 1).flat_map(|row_index| {
+    // NOTE: starting at 1 to skip sand
+    let air_bundles = (1..SURFACE_LEVEL + 1).flat_map(|row_index| {
         (0..WORLD_WIDTH).map(move |column_index| {
             // NOTE: row_index goes negative because 0,0 is top-left corner
             AirBundle::new(Vec3::new(column_index as f32, -row_index as f32, 1.0))
@@ -210,9 +263,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(5.0, -5.0, 100.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Left,
-                ant::Angle::Zero,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Left,
+                ant::AntAngle::Zero,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant1".to_string(), &asset_server),
@@ -221,9 +274,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(10.0, -5.0, 1.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Left,
-                ant::Angle::Ninety,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Left,
+                ant::AntAngle::Ninety,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant2".to_string(), &asset_server),
@@ -232,9 +285,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(15.0, -5.0, 1.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Left,
-                ant::Angle::OneHundredEighty,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Left,
+                ant::AntAngle::OneHundredEighty,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant3".to_string(), &asset_server),
@@ -243,9 +296,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(20.0, -5.0, 1.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Left,
-                ant::Angle::TwoHundredSeventy,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Left,
+                ant::AntAngle::TwoHundredSeventy,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant4".to_string(), &asset_server),
@@ -254,9 +307,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(25.0, -5.0, 1.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Right,
-                ant::Angle::Zero,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Right,
+                ant::AntAngle::Zero,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant5".to_string(), &asset_server),
@@ -265,9 +318,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(30.0, -5.0, 1.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Right,
-                ant::Angle::Ninety,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Right,
+                ant::AntAngle::Ninety,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant6".to_string(), &asset_server),
@@ -276,9 +329,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(35.0, -5.0, 1.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Right,
-                ant::Angle::OneHundredEighty,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Right,
+                ant::AntAngle::OneHundredEighty,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant7".to_string(), &asset_server),
@@ -287,9 +340,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             Vec3::new(40.0, -5.0, 1.0),
             AntSpriteBundle::new(
                 settings::SETTINGS.ant_color,
-                ant::Facing::Right,
-                ant::Angle::TwoHundredSeventy,
-                ant::Behavior::Carrying,
+                ant::AntFacing::Right,
+                ant::AntAngle::TwoHundredSeventy,
+                ant::AntBehavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant8".to_string(), &asset_server),
@@ -297,7 +350,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
     ];
 
     for ant_bundle in test_ant_bundles {
-        let is_carrying = ant_bundle.1.behavior == ant::Behavior::Carrying;
+        let is_carrying = ant_bundle.1.behavior == ant::AntBehavior::Carrying;
 
         parent
             // Wrap label and ant with common parent to associate their movement, but not their rotation.
@@ -318,6 +371,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                         parent.spawn(SandBundle::new(
                             Vec3::new(0.5, 0.33, 0.0),
                             Option::Some(Vec2::new(0.5, 0.5)),
+                            false,
                         ));
                     }
                 });

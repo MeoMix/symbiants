@@ -1,11 +1,11 @@
 use bevy::{prelude::*, sprite::Anchor};
 
 #[derive(Component)]
-struct Air;
+pub struct Air;
 
 #[derive(Bundle)]
 pub struct AirBundle {
-    sprite_bundle: SpriteBundle,
+    pub sprite_bundle: SpriteBundle,
     air: Air,
 }
 
