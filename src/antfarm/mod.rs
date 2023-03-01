@@ -95,7 +95,7 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
         // translation:
         Vec3::new(window.width() / -2.0, window.height() / 2.0, 0.0),
         // scale:
-        Vec3::new(world_scale, world_scale, 0.0),
+        Vec3::new(world_scale, world_scale, 1.0),
     )
 }
 
@@ -337,7 +337,6 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                         ));
                     }
                 });
-                // TODO: This label disappears sometimes and doesn't seem to be related to zindex?
                 parent.spawn(ant_bundle.2);
             });
     }
