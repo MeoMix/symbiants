@@ -19,12 +19,9 @@ const WORLD_HEIGHT: i32 = 81;
 const SURFACE_LEVEL: i32 =
     (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings::SETTINGS.initial_dirt_percent)) as i32;
 
-#[derive(Component)]
-pub struct Element(ElementType);
-
 // TODO: it kinda sucks having to declare this all the time?
-#[derive(PartialEq)]
-pub enum ElementType {
+#[derive(Component, PartialEq)]
+pub enum Element {
     Air,
     Dirt,
     Sand,

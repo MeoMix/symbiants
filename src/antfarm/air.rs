@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use super::{Element, ElementType};
+use super::Element;
 
 #[derive(Component)]
 pub struct Air;
@@ -30,7 +30,7 @@ impl AirBundle {
                 },
                 ..default()
             },
-            element: Element(ElementType::Air),
+            element: Element::Air,
             air: Air,
         }
     }

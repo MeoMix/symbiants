@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use super::{Element, ElementType};
+use super::Element;
 
 #[derive(Component)]
 struct Dirt;
@@ -28,7 +28,7 @@ impl DirtBundle {
                 ..default()
             },
             dirt: Dirt,
-            element: Element(ElementType::Dirt),
+            element: Element::Dirt,
         }
     }
 }
