@@ -1,6 +1,5 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-// TODO: Should this be more like Element { type: Air }?
 #[derive(Component)]
 struct Air;
 
@@ -14,12 +13,15 @@ impl AirBundle {
     pub fn new(position: Vec3) -> Self {
         AirBundle {
             sprite_bundle: SpriteBundle {
+                // Air is transparent so reveal background
+                visibility: Visibility::INVISIBLE,
                 transform: Transform {
                     translation: position,
                     ..default()
                 },
                 sprite: Sprite {
-                    color: Color::hex("87ceeb").unwrap(),
+                    // Fully transparent color - could in theory set to something if air was made visible.
+                    color: Color::rgba(0.0, 0.0, 0.0, 0.0),
                     anchor: Anchor::TopLeft,
                     ..default()
                 },

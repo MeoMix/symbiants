@@ -4,7 +4,6 @@ use wasm_bindgen::prelude::*;
 
 mod antfarm;
 mod breakout;
-mod hello_world;
 
 #[wasm_bindgen(
     inline_js = "export function snippetTest() { console.log('Hello from JS FFI 1!'); }"
@@ -19,7 +18,6 @@ fn main() {
 
     let mut app = App::new();
 
-    // hello_world::main(&mut app);
     // breakout::main(&mut app);
 
     antfarm::main(&mut app);

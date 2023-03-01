@@ -17,12 +17,15 @@ pub struct AntLabelBundle {
     text_bundle: Text2dBundle,
 }
 
+#[derive(Component)]
+pub struct Ant;
+
 impl AntLabelBundle {
     pub fn new(label: String, asset_server: &Res<AssetServer>) -> Self {
         Self {
             text_bundle: Text2dBundle {
                 transform: Transform {
-                    translation: Vec3::new(-ANT_WIDTH / 4.0, -1.5, 100.0),
+                    translation: Vec3::new(-ANT_SCALE / 4.0, -1.5, 100.0),
                     scale: Vec3::new(0.05, 0.05, 0.0),
                     ..default()
                 },
@@ -41,13 +44,8 @@ impl AntLabelBundle {
     }
 }
 
-// TODO: dynamically infer width/height of image rather than hardcoding.
-// https://stackoverflow.com/questions/70657798/get-width-and-height-from-an-image-in-bevy
-const ANT_IMAGE_WIDTH: f32 = 184.0;
-const ANT_IMAGE_HEIGHT: f32 = 154.0;
 // 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
-const ANT_WIDTH: f32 = 1.2;
-const ANT_HEIGHT: f32 = 1.2;
+const ANT_SCALE: f32 = 1.2;
 
 impl AntSpriteBundle {
     pub fn new(
@@ -57,18 +55,34 @@ impl AntSpriteBundle {
         behavior: Behavior,
         asset_server: &Res<AssetServer>,
     ) -> Self {
+        let angle_degrees = match angle {
+            Angle::Zero => 0,
+            Angle::Ninety => 90,
+            Angle::OneHundredEighty => 180,
+            Angle::TwoHundredSeventy => 270,
+        };
+        // TODO: is this a bad architectural decision? technically I am thinking about mirroring improperly by inverting angle when x is flipped?
+        let x_flip = if facing == Facing::Left { -1.0 } else { 1.0 };
+
+        let angle_radians = angle_degrees as f32 * std::f32::consts::PI / 180.0 * x_flip;
+        let rotation = Quat::from_rotation_z(angle_radians);
+
         Self {
             sprite_bundle: SpriteBundle {
                 texture: asset_server.load("images/ant.png"),
+
                 transform: Transform {
-                    scale: Vec3::new(
-                        ANT_WIDTH / ANT_IMAGE_WIDTH,
-                        ANT_HEIGHT / ANT_IMAGE_HEIGHT,
-                        0.0,
-                    ),
+                    rotation,
+                    scale: Vec3::new(x_flip, 1.0, 1.0),
+                    translation: Vec3::new(0.5, -0.5, 100.0),
                     ..default()
                 },
-                sprite: Sprite { color, ..default() },
+
+                sprite: Sprite {
+                    color,
+                    custom_size: Some(Vec2::new(ANT_SCALE, ANT_SCALE)),
+                    ..default()
+                },
                 ..default()
             },
             facing,
@@ -102,39 +116,39 @@ pub enum Angle {
     TwoHundredSeventy,
 }
 
-pub struct Ant {
-    id: Uuid,
-    location: point::Point,
-    behavior: Behavior,
-    facing: Facing,
-    angle: Angle,
-    timer: i32,
-    name: String,
-    active: bool,
-}
+// pub struct Ant {
+//     id: Uuid,
+//     location: point::Point,
+//     behavior: Behavior,
+//     facing: Facing,
+//     angle: Angle,
+//     timer: i32,
+//     name: String,
+//     active: bool,
+// }
 
-impl Ant {
-    pub fn new(
-        x: i32,
-        y: i32,
-        behavior: Behavior,
-        facing: Facing,
-        angle: Angle,
-        name: String,
-    ) -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            location: point::Point { x, y },
-            behavior,
-            facing,
-            angle,
-            // timer: getTimer(behavior),
-            timer: 6,
-            name,
-            active: true,
-        }
-    }
-}
+// impl Ant {
+//     pub fn new(
+//         x: i32,
+//         y: i32,
+//         behavior: Behavior,
+//         facing: Facing,
+//         angle: Angle,
+//         name: String,
+//     ) -> Self {
+//         Self {
+//             id: Uuid::new_v4(),
+//             location: point::Point { x, y },
+//             behavior,
+//             facing,
+//             angle,
+//             // timer: getTimer(behavior),
+//             timer: 6,
+//             name,
+//             active: true,
+//         }
+//     }
+// }
 
 // const BehaviorTimingFactors = {
 //   wandering: 4,

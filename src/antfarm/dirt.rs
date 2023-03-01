@@ -1,6 +1,5 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-// TODO: Should this be more like Element { type: Dirt }?
 #[derive(Component)]
 struct Dirt;
 
@@ -19,7 +18,7 @@ impl DirtBundle {
                     ..default()
                 },
                 sprite: Sprite {
-                    color: Color::hex("836539").unwrap(),
+                    color: Color::rgb(0.514, 0.396, 0.224),
                     anchor: Anchor::TopLeft,
                     ..default()
                 },

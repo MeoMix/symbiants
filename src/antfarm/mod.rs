@@ -4,16 +4,14 @@ mod dirt;
 mod point;
 mod sand;
 mod settings;
-mod world;
-use rand::Rng;
 
-use crate::antfarm::air::AirBundle;
-use crate::antfarm::ant::AntLabelBundle;
-use crate::antfarm::ant::AntSpriteBundle;
-use crate::antfarm::dirt::DirtBundle;
-use crate::antfarm::sand::SandBundle;
-use bevy::prelude::*;
-use bevy::time::FixedTimestep;
+use crate::antfarm::{
+    air::AirBundle,
+    ant::{AntLabelBundle, AntSpriteBundle},
+    dirt::DirtBundle,
+    sand::SandBundle,
+};
+use bevy::{prelude::*, sprite::Anchor, time::FixedTimestep};
 
 const WORLD_WIDTH: i32 = 144;
 const WORLD_HEIGHT: i32 = 81;
@@ -32,11 +30,8 @@ struct WorldContainer;
 #[derive(Resource)]
 struct UiFont(Handle<Font>);
 
-// TODO: Should this apply to window resize?
 // Defines the amount of time that should elapse between each physics step.
 const TIME_STEP: f32 = 1.0 / 60.0;
-
-// TODO: probably want a resource for settings
 
 pub fn main(app: &mut App) {
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -53,29 +48,30 @@ pub fn main(app: &mut App) {
     app.add_system_set(
         SystemSet::new()
             .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
-            .with_system(window_resize_system),
+            .with_system(window_resize_system)
+            .with_system(ant_gravity_system),
     );
-
-    // app.add_system(my_cursor_system);
 }
 
 fn window_resize_system(
     windows: Res<Windows>,
-    mut query: Query<(&WorldContainer, &mut Transform)>,
+    mut query: Query<&mut Transform, With<WorldContainer>>,
 ) {
-    let window = windows.get_primary().unwrap();
-    web_sys::console::log_3(
-        &"Window Size".into(),
-        &window.width().to_string().into(),
-        &window.height().to_string().into(),
-    );
+    let mut transform = query.single_mut();
 
-    let world_container_transform = get_world_container_transform(window);
+    let (translation, scale) = get_world_container_transform(windows.get_primary().unwrap());
 
-    for (_, mut transform) in query.iter_mut() {
-        transform.translation = world_container_transform.0;
-        transform.scale = world_container_transform.1
-    }
+    transform.translation = translation;
+    transform.scale = scale;
+}
+
+// TODO: prefer singular gravity system, just porting old code for now
+fn ant_gravity_system(mut query: Query<(&ant::Ant, &mut Transform)>) {
+    // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
+    // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
+    // for (ant, mut transform) in query.iter_mut() {
+    //     transform.translation = transform.translation + Vec3::new(0.0, -1.0, 0.0);
+    // }
 }
 
 // World dimensions are integer values (144/81) but <canvas/> has variable, floating point dimensions.
@@ -99,21 +95,8 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
     )
 }
 
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    asset_server: Res<AssetServer>,
-    windows: Res<Windows>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, windows: Res<Windows>) {
     web_sys::console::log_2(&"Surface Level".into(), &SURFACE_LEVEL.to_string().into());
-
-    // commands.insert_resource(world::World::new(
-    //     WORLD_WIDTH,
-    //     WORLD_HEIGHT,
-    //     settings::SETTINGS.initial_dirt_percent,
-    //     settings::SETTINGS.initial_ant_count,
-    // ));
 
     let world_container_transform = get_world_container_transform(&windows.get_primary().unwrap());
 
@@ -132,19 +115,49 @@ fn setup(
     commands
         .spawn((world_container_bundle, WorldContainer))
         .with_children(|parent| {
+            setup_background(parent);
             setup_elements(parent);
             setup_ants(parent, &asset_server);
         });
 }
 
-// Spawn elements - air, dirt, tunnel, sand that are initially present in the simulation.
-// TODO: need to support tunnels and sand, but original code didn't explicitly have air/tunnel elements, just colored the background
+// Spawn non-interactive background (sky blue / tunnel brown)
+fn setup_background(parent: &mut ChildBuilder) {
+    parent.spawn(SpriteBundle {
+        sprite: Sprite {
+            color: Color::rgb(0.529, 0.808, 0.922),
+            custom_size: Some(Vec2::new(WORLD_WIDTH as f32, SURFACE_LEVEL as f32 + 1.0)),
+            anchor: Anchor::TopLeft,
+            ..default()
+        },
+        ..default()
+    });
+
+    parent.spawn(SpriteBundle {
+        transform: Transform {
+            translation: Vec3::new(0.0, -(SURFACE_LEVEL as f32 + 1.0), 0.0),
+            ..default()
+        },
+        sprite: Sprite {
+            color: Color::rgb(0.373, 0.290, 0.165),
+            custom_size: Some(Vec2::new(
+                WORLD_WIDTH as f32,
+                WORLD_HEIGHT as f32 - (SURFACE_LEVEL as f32 + 1.0),
+            )),
+            anchor: Anchor::TopLeft,
+            ..default()
+        },
+        ..default()
+    });
+}
+
+// Spawn interactive elements - air/dirt. Air isn't visible, background is revealed in its place.
 fn setup_elements(parent: &mut ChildBuilder) {
     // Air & Dirt
     let air_bundles = (0..SURFACE_LEVEL + 1).flat_map(|row_index| {
         (0..WORLD_WIDTH).map(move |column_index| {
             // NOTE: row_index goes negative because 0,0 is top-left corner
-            AirBundle::new(Vec3::new(column_index as f32, -row_index as f32, 0.0))
+            AirBundle::new(Vec3::new(column_index as f32, -row_index as f32, 1.0))
         })
     });
 
@@ -155,7 +168,7 @@ fn setup_elements(parent: &mut ChildBuilder) {
     let dirt_bundles = ((SURFACE_LEVEL + 1)..WORLD_HEIGHT).flat_map(|row_index| {
         (0..WORLD_WIDTH).map(move |column_index| {
             // NOTE: row_index goes negative because 0,0 is top-left corner
-            DirtBundle::new(Vec3::new(column_index as f32, -row_index as f32, 0.0))
+            DirtBundle::new(Vec3::new(column_index as f32, -row_index as f32, 1.0))
         })
     });
 
@@ -210,7 +223,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 settings::SETTINGS.ant_color,
                 ant::Facing::Left,
                 ant::Angle::Ninety,
-                ant::Behavior::Wandering,
+                ant::Behavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant2".to_string(), &asset_server),
@@ -221,7 +234,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 settings::SETTINGS.ant_color,
                 ant::Facing::Left,
                 ant::Angle::OneHundredEighty,
-                ant::Behavior::Wandering,
+                ant::Behavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant3".to_string(), &asset_server),
@@ -232,7 +245,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 settings::SETTINGS.ant_color,
                 ant::Facing::Left,
                 ant::Angle::TwoHundredSeventy,
-                ant::Behavior::Wandering,
+                ant::Behavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant4".to_string(), &asset_server),
@@ -243,7 +256,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 settings::SETTINGS.ant_color,
                 ant::Facing::Right,
                 ant::Angle::Zero,
-                ant::Behavior::Wandering,
+                ant::Behavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant5".to_string(), &asset_server),
@@ -254,7 +267,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 settings::SETTINGS.ant_color,
                 ant::Facing::Right,
                 ant::Angle::Ninety,
-                ant::Behavior::Wandering,
+                ant::Behavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant6".to_string(), &asset_server),
@@ -265,7 +278,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 settings::SETTINGS.ant_color,
                 ant::Facing::Right,
                 ant::Angle::OneHundredEighty,
-                ant::Behavior::Wandering,
+                ant::Behavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant7".to_string(), &asset_server),
@@ -276,7 +289,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 settings::SETTINGS.ant_color,
                 ant::Facing::Right,
                 ant::Angle::TwoHundredSeventy,
-                ant::Behavior::Wandering,
+                ant::Behavior::Carrying,
                 &asset_server,
             ),
             AntLabelBundle::new("ant8".to_string(), &asset_server),
@@ -284,52 +297,23 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
     ];
 
     for ant_bundle in test_ant_bundles {
-        let ant_label_container_bundle = SpatialBundle {
-            transform: Transform {
-                translation: ant_bundle.0,
-                ..default()
-            },
-            ..default()
-        };
-
-        let angle_degrees = match ant_bundle.1.angle {
-            ant::Angle::Zero => 0,
-            ant::Angle::Ninety => 90,
-            ant::Angle::OneHundredEighty => 180,
-            ant::Angle::TwoHundredSeventy => 270,
-        };
-        // TODO: is this a bad architectural decision? technically I am thinking about mirroring improperly by inverting angle when x is flipped?
-        let x_flip = if ant_bundle.1.facing == ant::Facing::Left {
-            -1.0
-        } else {
-            1.0
-        };
-
-        let angle_radians = angle_degrees as f32 * std::f32::consts::PI / 180.0 * x_flip;
-        let rotation = Quat::from_rotation_z(angle_radians);
-
-        // TODO: Maybe I am thinking of this wrong? Instead of giving both sand and ant to a contrived ant container
-        // perhaps I should be giving sand to the ant container?
-        let ant_container_bundle = SpatialBundle {
-            transform: Transform {
-                rotation,
-                scale: Vec3::new(x_flip, 1.0, 1.0),
-                translation: Vec3::new(0.5, -0.5, 100.0),
-                ..default()
-            },
-            ..default()
-        };
-
         let is_carrying = ant_bundle.1.behavior == ant::Behavior::Carrying;
 
         parent
-            // Wrap label and ant with common parent to associate their movement.
-            .spawn(ant_label_container_bundle)
+            // Wrap label and ant with common parent to associate their movement, but not their rotation.
+            .spawn((
+                SpatialBundle {
+                    transform: Transform {
+                        translation: ant_bundle.0,
+                        ..default()
+                    },
+                    ..default()
+                },
+                ant::Ant,
+            ))
             .with_children(|parent| {
-                // Wrap ant sprite and optional sand with common parent to associate their rotation and scale.
-                parent.spawn(ant_container_bundle).with_children(|parent| {
-                    parent.spawn(ant_bundle.1);
-
+                // Make sand a child of ant so they share rotation.
+                parent.spawn(ant_bundle.1).with_children(|parent| {
                     if is_carrying {
                         parent.spawn(SandBundle::new(
                             Vec3::new(0.5, 0.33, 0.0),
@@ -341,53 +325,3 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
             });
     }
 }
-
-// fn my_cursor_system(
-//     // need to get window dimensions
-//     windows: Res<Windows>,
-//     // query to get camera transform
-//     camera_q: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-// ) {
-//     // get the camera info and transform
-//     // assuming there is exactly one main camera entity, so query::single() is OK
-//     let (camera, camera_transform) = camera_q.single();
-
-//     // get the window that the camera is displaying to (or the primary window)
-//     let window = if let RenderTarget::Window(id) = camera.target {
-//         windows.get(id).unwrap()
-//     } else {
-//         windows.get_primary().unwrap()
-//     };
-
-//     // check if the cursor is inside the window and get its position
-//     // then, ask bevy to convert into world coordinates, and truncate to discard Z
-//     if let Some(world_position) = window
-//         .cursor_position()
-//         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-//         .map(|ray| ray.origin.truncate())
-//     {
-//         web_sys::console::log_3(
-//             &"Viewport coords: {}/{}".into(),
-//             &window
-//                 .cursor_position()
-//                 .ok_or("no item")
-//                 .unwrap()
-//                 .x
-//                 .to_string()
-//                 .into(),
-//             &window
-//                 .cursor_position()
-//                 .ok_or("no item")
-//                 .unwrap()
-//                 .y
-//                 .to_string()
-//                 .into(),
-//         );
-
-//         web_sys::console::log_3(
-//             &"World coords: {}/{}".into(),
-//             &world_position.x.to_string().into(),
-//             &world_position.y.to_string().into(),
-//         );
-//     }
-// }

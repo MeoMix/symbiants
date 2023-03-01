@@ -1,6 +1,5 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-// TODO: Should this be more like Element { type: Sand }?
 #[derive(Component)]
 struct Sand;
 
@@ -19,7 +18,7 @@ impl SandBundle {
                     ..default()
                 },
                 sprite: Sprite {
-                    color: Color::hex("C2B280").unwrap(),
+                    color: Color::rgb(0.761, 0.698, 0.502),
                     anchor: Anchor::TopLeft,
                     custom_size: size,
                     ..default()
