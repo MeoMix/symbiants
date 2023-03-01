@@ -1,7 +1,6 @@
 mod air;
 mod ant;
 mod dirt;
-mod point;
 mod sand;
 mod settings;
 
@@ -19,6 +18,20 @@ const WORLD_HEIGHT: i32 = 81;
 // TODO: Double-check for off-by-one here
 const SURFACE_LEVEL: i32 =
     (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings::SETTINGS.initial_dirt_percent)) as i32;
+
+#[derive(Component)]
+pub struct Element(ElementType);
+
+// TODO: it kinda sucks having to declare this all the time?
+#[derive(PartialEq)]
+pub enum ElementType {
+    Air,
+    Dirt,
+    Sand,
+}
+
+#[derive(Component)]
+pub struct Active(pub bool);
 
 // Used to help identify our main camera
 #[derive(Component)]
@@ -70,10 +83,8 @@ fn window_resize_system(
 // TODO: Add support for crushing deep sand.
 // TODO: Add support for sand falling left/right randomly.
 fn sand_gravity_system(
-    mut sand_query: Query<
-        (&mut sand::Active, &mut Transform),
-        (With<sand::Sand>, Without<air::Air>),
-    >,
+    // TODO: These queries are hacky. Shouldn't be filtering on Air/Sand, should be relying on ElementType
+    mut sand_query: Query<(&mut Active, &mut Transform), (With<sand::Sand>, Without<air::Air>)>,
     mut air_query: Query<&mut Transform, (With<air::Air>, Without<sand::Sand>)>,
 ) {
     web_sys::console::log_1(&"Sand Gravity System Runs!".into());

@@ -1,11 +1,14 @@
 use bevy::{prelude::*, sprite::Anchor};
 
+use super::{Element, ElementType};
+
 #[derive(Component)]
 struct Dirt;
 
 #[derive(Bundle)]
 pub struct DirtBundle {
     sprite_bundle: SpriteBundle,
+    element: Element,
     dirt: Dirt,
 }
 
@@ -25,6 +28,7 @@ impl DirtBundle {
                 ..default()
             },
             dirt: Dirt,
+            element: Element(ElementType::Dirt),
         }
     }
 }

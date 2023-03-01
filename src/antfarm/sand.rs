@@ -1,16 +1,16 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-#[derive(Component)]
-pub struct Sand;
+use super::{Active, Element, ElementType};
 
 #[derive(Component)]
-pub struct Active(pub bool);
+pub struct Sand;
 
 #[derive(Bundle)]
 pub struct SandBundle {
     sprite_bundle: SpriteBundle,
-    sand: Sand,
+    element: Element,
     is_active: Active,
+    sand: Sand,
 }
 
 impl SandBundle {
@@ -30,6 +30,7 @@ impl SandBundle {
                 ..default()
             },
             is_active: Active(is_active),
+            element: Element(ElementType::Sand),
             sand: Sand,
         }
     }

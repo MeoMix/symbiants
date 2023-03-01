@@ -1,11 +1,14 @@
 use bevy::{prelude::*, sprite::Anchor};
 
+use super::{Element, ElementType};
+
 #[derive(Component)]
 pub struct Air;
 
 #[derive(Bundle)]
 pub struct AirBundle {
     pub sprite_bundle: SpriteBundle,
+    element: Element,
     air: Air,
 }
 
@@ -27,6 +30,7 @@ impl AirBundle {
                 },
                 ..default()
             },
+            element: Element(ElementType::Air),
             air: Air,
         }
     }
