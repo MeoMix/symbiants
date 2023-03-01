@@ -1,31 +1,32 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-// TODO: Should this be more like Element { type: Dirt }?
+// TODO: Should this be more like Element { type: Sand }?
 #[derive(Component)]
-struct Dirt;
+struct Sand;
 
 #[derive(Bundle)]
-pub struct DirtBundle {
+pub struct SandBundle {
     sprite_bundle: SpriteBundle,
-    dirt: Dirt,
+    sand: Sand,
 }
 
-impl DirtBundle {
-    pub fn new(position: Vec3) -> Self {
-        DirtBundle {
+impl SandBundle {
+    pub fn new(position: Vec3, size: Option<Vec2>) -> Self {
+        SandBundle {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
                     translation: position,
                     ..default()
                 },
                 sprite: Sprite {
-                    color: Color::hex("836539").unwrap(),
+                    color: Color::hex("C2B280").unwrap(),
                     anchor: Anchor::TopLeft,
+                    custom_size: size,
                     ..default()
                 },
                 ..default()
             },
-            dirt: Dirt,
+            sand: Sand,
         }
     }
 }

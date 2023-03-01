@@ -1,13 +1,13 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-// TODO: Should this be more like Element { type: Dirt }?
+// TODO: Should this be more like Element { type: Tunnel }?
 #[derive(Component)]
-struct Dirt;
+struct Tunnel;
 
 #[derive(Bundle)]
-pub struct DirtBundle {
+pub struct TunnelBundle {
     sprite_bundle: SpriteBundle,
-    dirt: Dirt,
+    dirt: Tunnel,
 }
 
 impl DirtBundle {
@@ -19,13 +19,13 @@ impl DirtBundle {
                     ..default()
                 },
                 sprite: Sprite {
-                    color: Color::hex("836539").unwrap(),
+                    color: Color::hex("5f4a2a").unwrap(),
                     anchor: Anchor::TopLeft,
                     ..default()
                 },
                 ..default()
             },
-            dirt: Dirt,
+            tunnel: Tunnel,
         }
     }
 }

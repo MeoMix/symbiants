@@ -1,3 +1,5 @@
+use bevy::prelude::*;
+
 pub struct Probabilities {
     pub random_dig: f32,         // dig down while wandering
     pub random_drop: f32,        // drop while wandering
@@ -11,7 +13,7 @@ pub struct Settings {
     pub compact_sand_depth: i32,
     pub initial_dirt_percent: f32,
     pub initial_ant_count: i32,
-    pub ant_color: &'static str,
+    pub ant_color: Color,
     pub probabilities: Probabilities,
 }
 
@@ -20,7 +22,7 @@ pub const SETTINGS: Settings = Settings {
     // TODO: maybe change this to 75 and use i32
     initial_dirt_percent: 3.0 / 4.0,
     initial_ant_count: 20,
-    ant_color: "#9537DB", // purple!
+    ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
     probabilities: Probabilities {
         random_dig: 0.003,
         random_drop: 0.003,

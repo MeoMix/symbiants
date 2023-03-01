@@ -19,15 +19,6 @@ fn main() {
 
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        window: WindowDescriptor {
-            height: 200.0,
-            width: 400.0,
-            ..default()
-        },
-        ..default()
-    }));
-
     // hello_world::main(&mut app);
     // breakout::main(&mut app);
 

@@ -1,8 +1,13 @@
 use bevy::{prelude::*, sprite::Anchor};
 
+// TODO: Should this be more like Element { type: Air }?
+#[derive(Component)]
+struct Air;
+
 #[derive(Bundle)]
 pub struct AirBundle {
     sprite_bundle: SpriteBundle,
+    air: Air,
 }
 
 impl AirBundle {
@@ -20,6 +25,7 @@ impl AirBundle {
                 },
                 ..default()
             },
+            air: Air,
         }
     }
 }

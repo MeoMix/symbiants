@@ -1,23 +1,27 @@
 // TODO: is using super like this bad practice?
 use super::ant;
 use super::point;
+use bevy::prelude::Resource;
 use rand::Rng;
 use uuid::Uuid;
 
 // TODO: I get the impression this is the wrong way to do this given ECS
-struct ElementData {
-    id: Uuid,
-    location: point::Point,
-    element: Element,
-    active: bool,
+pub struct ElementData {
+    pub id: Uuid,
+    pub location: point::Point,
+    pub element: Element,
+    pub active: bool,
 }
 
-enum Element {
+pub enum Element {
     Air,
     Dirt,
     Sand,
 }
 
+// TODO: I am not confident this is the right way to represent world state, but following example here: https://github.com/bevyengine/bevy/blob/latest/examples/ecs/ecs_guide.rs
+// I feel like this is incorrect because I have nesting going on (ants etc)
+#[derive(Resource, Default)]
 pub struct World {
     width: i32,
     height: i32,
