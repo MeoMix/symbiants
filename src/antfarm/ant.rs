@@ -55,16 +55,10 @@ impl AntSpriteBundle {
         behavior: AntBehavior,
         asset_server: &Res<AssetServer>,
     ) -> Self {
-        let angle_degrees = match angle {
-            AntAngle::Zero => 0,
-            AntAngle::Ninety => 90,
-            AntAngle::OneHundredEighty => 180,
-            AntAngle::TwoHundredSeventy => 270,
-        };
         // TODO: is this a bad architectural decision? technically I am thinking about mirroring improperly by inverting angle when x is flipped?
         let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
 
-        let angle_radians = angle_degrees as f32 * std::f32::consts::PI / 180.0 * x_flip;
+        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0 * x_flip;
         let rotation = Quat::from_rotation_z(angle_radians);
 
         Self {
@@ -104,11 +98,10 @@ pub enum AntFacing {
     Right,
 }
 
-// TODO: it's awkward that these aren't numbers and maybe would be better to use radians instead of degrees?
-#[derive(Component, PartialEq)]
+#[derive(Component, PartialEq, Copy, Clone)]
 pub enum AntAngle {
-    Zero,
-    Ninety,
-    OneHundredEighty,
-    TwoHundredSeventy,
+    Zero = 0,
+    Ninety = 90,
+    OneHundredEighty = 180,
+    TwoHundredSeventy = 270,
 }

@@ -8,6 +8,7 @@ pub struct Probabilities {
     pub above_surface_drop: f32, // chance to randomly drop sand when at-or-above surface level
 }
 
+#[derive(Resource)]
 pub struct Settings {
     // sand turns to dirt when stacked this high
     pub compact_sand_depth: i32,
@@ -17,17 +18,22 @@ pub struct Settings {
     pub probabilities: Probabilities,
 }
 
-pub const SETTINGS: Settings = Settings {
-    compact_sand_depth: 15,
-    // TODO: maybe change this to 75 and use i32
-    initial_dirt_percent: 3.0 / 4.0,
-    initial_ant_count: 20,
-    ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
-    probabilities: Probabilities {
-        random_dig: 0.003,
-        random_drop: 0.003,
-        random_turn: 0.005,
-        below_surface_dig: 0.10,
-        above_surface_drop: 0.10,
-    },
-};
+pub struct SettingsPlugin;
+
+impl Plugin for SettingsPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(Settings {
+            compact_sand_depth: 15,
+            initial_dirt_percent: 3.0 / 4.0,
+            initial_ant_count: 20,
+            ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
+            probabilities: Probabilities {
+                random_dig: 0.003,
+                random_drop: 0.003,
+                random_turn: 0.005,
+                below_surface_dig: 0.10,
+                above_surface_drop: 0.10,
+            },
+        });
+    }
+}

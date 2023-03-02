@@ -12,12 +12,10 @@ use crate::antfarm::{
 };
 use bevy::{prelude::*, sprite::Anchor, time::FixedTimestep};
 
+use self::settings::{Settings, SettingsPlugin};
+
 const WORLD_WIDTH: i32 = 144;
 const WORLD_HEIGHT: i32 = 81;
-
-// TODO: Double-check for off-by-one here
-const SURFACE_LEVEL: i32 =
-    (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings::SETTINGS.initial_dirt_percent)) as i32;
 
 // TODO: it kinda sucks having to declare this all the time?
 #[derive(Component, PartialEq)]
@@ -30,38 +28,39 @@ pub enum Element {
 #[derive(Component)]
 pub struct Active(pub bool);
 
-// Used to help identify our main camera
 #[derive(Component)]
 struct MainCamera;
 
 #[derive(Component)]
 struct WorldContainer;
 
-#[derive(Resource)]
-struct UiFont(Handle<Font>);
-
 // Defines the amount of time that should elapse between each physics step.
 // NOTE: should probably run in 1/60 but slowing down for dev
 const TIME_STEP: f32 = 10.0 / 60.0;
 
-pub fn main(app: &mut App) {
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        window: WindowDescriptor {
-            fit_canvas_to_parent: true,
-            canvas: Option::Some("#canvas".to_string()),
+pub struct AntfarmPlugin;
+
+impl Plugin for AntfarmPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+            window: WindowDescriptor {
+                fit_canvas_to_parent: true,
+                ..default()
+            },
             ..default()
-        },
-        ..default()
-    }));
+        }));
 
-    app.add_startup_system(setup);
+        app.add_plugin(SettingsPlugin);
 
-    app.add_system_set(
-        SystemSet::new()
-            .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
-            .with_system(window_resize_system)
-            .with_system(sand_gravity_system),
-    );
+        app.add_startup_system(setup);
+
+        app.add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
+                .with_system(window_resize_system)
+                .with_system(sand_gravity_system),
+        );
+    }
 }
 
 fn window_resize_system(
@@ -134,16 +133,20 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
     )
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, windows: Res<Windows>) {
-    let world_container_transform = get_world_container_transform(&windows.get_primary().unwrap());
-
-    // Camera
+fn setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    windows: Res<Windows>,
+    settings: Res<Settings>,
+) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 
+    // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
+    let (translation, scale) = get_world_container_transform(&windows.get_primary().unwrap());
     let world_container_bundle = SpatialBundle {
         transform: Transform {
-            translation: world_container_transform.0,
-            scale: world_container_transform.1,
+            translation,
+            scale,
             ..default()
         },
         ..default()
@@ -152,18 +155,21 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, windows: Res<Wi
     commands
         .spawn((world_container_bundle, WorldContainer))
         .with_children(|parent| {
-            setup_background(parent);
-            setup_elements(parent);
-            setup_ants(parent, &asset_server);
+            setup_background(parent, &settings);
+            setup_elements(parent, &settings);
+            setup_ants(parent, &asset_server, &settings);
         });
 }
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-fn setup_background(parent: &mut ChildBuilder) {
+fn setup_background(parent: &mut ChildBuilder, settings: &Res<Settings>) {
     parent.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.529, 0.808, 0.922),
-            custom_size: Some(Vec2::new(WORLD_WIDTH as f32, SURFACE_LEVEL as f32 + 1.0)),
+            custom_size: Some(Vec2::new(
+                WORLD_WIDTH as f32,
+                get_surface_level(settings) as f32 + 1.0,
+            )),
             anchor: Anchor::TopLeft,
             ..default()
         },
@@ -172,14 +178,14 @@ fn setup_background(parent: &mut ChildBuilder) {
 
     parent.spawn(SpriteBundle {
         transform: Transform {
-            translation: Vec3::new(0.0, -(SURFACE_LEVEL as f32 + 1.0), 0.0),
+            translation: Vec3::new(0.0, -(get_surface_level(settings) as f32 + 1.0), 0.0),
             ..default()
         },
         sprite: Sprite {
             color: Color::rgb(0.373, 0.290, 0.165),
             custom_size: Some(Vec2::new(
                 WORLD_WIDTH as f32,
-                WORLD_HEIGHT as f32 - (SURFACE_LEVEL as f32 + 1.0),
+                WORLD_HEIGHT as f32 - (get_surface_level(settings) as f32 + 1.0),
             )),
             anchor: Anchor::TopLeft,
             ..default()
@@ -189,7 +195,7 @@ fn setup_background(parent: &mut ChildBuilder) {
 }
 
 // Spawn interactive elements - air/dirt. Air isn't visible, background is revealed in its place.
-fn setup_elements(parent: &mut ChildBuilder) {
+fn setup_elements(parent: &mut ChildBuilder, settings: &Res<Settings>) {
     // Test Sand
     let sand_bundles = (0..1).flat_map(|row_index| {
         (0..WORLD_WIDTH).map(move |column_index| {
@@ -208,7 +214,7 @@ fn setup_elements(parent: &mut ChildBuilder) {
 
     // Air & Dirt
     // NOTE: starting at 1 to skip sand
-    let air_bundles = (1..SURFACE_LEVEL + 1).flat_map(|row_index| {
+    let air_bundles = (1..get_surface_level(settings) + 1).flat_map(|row_index| {
         (0..WORLD_WIDTH).map(move |column_index| {
             // NOTE: row_index goes negative because 0,0 is top-left corner
             AirBundle::new(Vec3::new(column_index as f32, -row_index as f32, 1.0))
@@ -219,7 +225,7 @@ fn setup_elements(parent: &mut ChildBuilder) {
         parent.spawn(air_bundle);
     }
 
-    let dirt_bundles = ((SURFACE_LEVEL + 1)..WORLD_HEIGHT).flat_map(|row_index| {
+    let dirt_bundles = ((get_surface_level(settings) + 1)..WORLD_HEIGHT).flat_map(|row_index| {
         (0..WORLD_WIDTH).map(move |column_index| {
             // NOTE: row_index goes negative because 0,0 is top-left corner
             DirtBundle::new(Vec3::new(column_index as f32, -row_index as f32, 1.0))
@@ -231,7 +237,11 @@ fn setup_elements(parent: &mut ChildBuilder) {
     }
 }
 
-fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
+fn setup_ants(
+    parent: &mut ChildBuilder,
+    asset_server: &Res<AssetServer>,
+    settings: &Res<Settings>,
+) {
     // let ant_bundles = (0..8).map(|_| {
     //     // Put the ant at a random location along the x-axis that fits within the bounds of the world.
     //     // TODO: technically old code was .round() and now it's just floored implicitly
@@ -249,7 +259,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
     //     (
     //         Vec3::new(x, -y, 0.0),
     //         AntSpriteBundle::new(
-    //             settings::SETTINGS.ant_color,
+    //             settings.ant_color,
     //             facing,
     //             ant::Angle::Zero,
     //             ant::Behavior::Wandering,
@@ -263,7 +273,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(5.0, -5.0, 100.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Left,
                 ant::AntAngle::Zero,
                 ant::AntBehavior::Carrying,
@@ -274,7 +284,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(10.0, -5.0, 1.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Left,
                 ant::AntAngle::Ninety,
                 ant::AntBehavior::Carrying,
@@ -285,7 +295,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(15.0, -5.0, 1.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Left,
                 ant::AntAngle::OneHundredEighty,
                 ant::AntBehavior::Carrying,
@@ -296,7 +306,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(20.0, -5.0, 1.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Left,
                 ant::AntAngle::TwoHundredSeventy,
                 ant::AntBehavior::Carrying,
@@ -307,7 +317,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(25.0, -5.0, 1.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Right,
                 ant::AntAngle::Zero,
                 ant::AntBehavior::Carrying,
@@ -318,7 +328,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(30.0, -5.0, 1.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Right,
                 ant::AntAngle::Ninety,
                 ant::AntBehavior::Carrying,
@@ -329,7 +339,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(35.0, -5.0, 1.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Right,
                 ant::AntAngle::OneHundredEighty,
                 ant::AntBehavior::Carrying,
@@ -340,7 +350,7 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
         (
             Vec3::new(40.0, -5.0, 1.0),
             AntSpriteBundle::new(
-                settings::SETTINGS.ant_color,
+                settings.ant_color,
                 ant::AntFacing::Right,
                 ant::AntAngle::TwoHundredSeventy,
                 ant::AntBehavior::Carrying,
@@ -379,4 +389,9 @@ fn setup_ants(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
                 parent.spawn(ant_bundle.2);
             });
     }
+}
+
+// TODO: Double-check for off-by-one here
+fn get_surface_level(settings: &Res<Settings>) -> i32 {
+    (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings.initial_dirt_percent)) as i32
 }
