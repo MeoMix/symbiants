@@ -4,8 +4,6 @@ mod dirt;
 mod sand;
 mod settings;
 
-use web_sys::console;
-
 use crate::antfarm::{
     air::AirBundle,
     ant::{AntLabelBundle, AntSpriteBundle},
@@ -82,7 +80,7 @@ fn window_resize_system(
 // TODO: Add support for crushing deep sand.
 // TODO: Add support for sand falling left/right randomly.
 fn sand_gravity_system(mut elements_query: Query<(&Element, &mut Active, &mut Transform)>) {
-    console::log_1(&"Sand Gravity System Runs!".into());
+    info!("Sand Gravity System Runs!");
 
     let (mut air_elements_query, mut sand_elements_query): (Vec<_>, Vec<_>) = elements_query
         .iter_mut()
@@ -91,14 +89,8 @@ fn sand_gravity_system(mut elements_query: Query<(&Element, &mut Active, &mut Tr
         })
         .partition(|&(element, _, _)| *element == Element::Air);
 
-    // console::log_2(
-    //     &"Air Count!".into(),
-    //     &air_elements_query.len().to_string().into(),
-    // );
-    // console::log_2(
-    //     &"Sand Count!".into(),
-    //     &sand_elements_query.len().to_string().into(),
-    // );
+    info!("Air Count: {}!", air_elements_query.len());
+    info!("Sand Count: {}", sand_elements_query.len());
 
     for (_, active, sand_transform) in sand_elements_query.iter_mut() {
         // Get the position beneath the sand and determine if it is air.
@@ -127,12 +119,12 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
     let world_scale =
         (window.width() / WORLD_WIDTH as f32).max(window.height() / WORLD_HEIGHT as f32);
 
-    // console::log_4(
-    //     &"Window Size / World Scale".into(),
-    //     &window.width().to_string().into(),
-    //     &window.height().to_string().into(),
-    //     &world_scale.to_string().into(),
-    // );
+    info!(
+        "Window Height/Width: {}/{}, World Scale: {}",
+        window.width(),
+        window.height(),
+        world_scale,
+    );
 
     (
         // translation:
@@ -143,8 +135,6 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, windows: Res<Windows>) {
-    console::log_2(&"Surface Level".into(), &SURFACE_LEVEL.to_string().into());
-
     let world_container_transform = get_world_container_transform(&windows.get_primary().unwrap());
 
     // Camera
