@@ -4,6 +4,8 @@ mod dirt;
 mod sand;
 mod settings;
 
+use web_sys::console;
+
 use crate::antfarm::{
     air::AirBundle,
     ant::{AntLabelBundle, AntSpriteBundle},
@@ -79,38 +81,39 @@ fn window_resize_system(
 // TODO: Add support for loosening neighboring sand.
 // TODO: Add support for crushing deep sand.
 // TODO: Add support for sand falling left/right randomly.
-fn sand_gravity_system(
-    // TODO: These queries are hacky. Shouldn't be filtering on Air/Sand, should be relying on ElementType
-    mut sand_query: Query<(&mut Active, &mut Transform), (With<sand::Sand>, Without<air::Air>)>,
-    mut air_query: Query<&mut Transform, (With<air::Air>, Without<sand::Sand>)>,
-) {
-    web_sys::console::log_1(&"Sand Gravity System Runs!".into());
+fn sand_gravity_system(mut elements_query: Query<(&Element, &mut Active, &mut Transform)>) {
+    console::log_1(&"Sand Gravity System Runs!".into());
 
-    for (mut active, mut sand_transform) in sand_query.iter_mut() {
-        // Skip inactive elements.
-        // TODO: Is this really better than removing a component entirely?
-        if !(&active).0 {
-            continue;
-        }
+    let (mut air_elements_query, mut sand_elements_query): (Vec<_>, Vec<_>) = elements_query
+        .iter_mut()
+        .filter(|(element, active, _)| {
+            active.0 == true && (**element == Element::Air || **element == Element::Sand)
+        })
+        .partition(|&(element, _, _)| *element == Element::Air);
 
+    // console::log_2(
+    //     &"Air Count!".into(),
+    //     &air_elements_query.len().to_string().into(),
+    // );
+    // console::log_2(
+    //     &"Sand Count!".into(),
+    //     &sand_elements_query.len().to_string().into(),
+    // );
+
+    for (_, active, sand_transform) in sand_elements_query.iter_mut() {
         // Get the position beneath the sand and determine if it is air.
         let below_sand_translation = sand_transform.translation + Vec3::NEG_Y;
 
         // TODO: This seems wildly inefficient compared to my previous architecture. I'm searching all air elements just to check one, specific spot in the world.
-        let air_below_sand = air_query
+        let air_below_sand = air_elements_query
             .iter_mut()
-            .find(|air_transform| air_transform.translation == below_sand_translation);
+            .find(|(_, _, transform)| transform.translation == below_sand_translation)
+            .map(|(_, _, transform)| transform);
 
         // If there is air below and sand above then swap the two
-        if let Some(mut air_below_sand) = air_below_sand {
+        if let Some(air_below_sand) = air_below_sand {
             air_below_sand.translation.y += 1.0;
             sand_transform.translation.y -= 1.0;
-
-            web_sys::console::log_3(
-                &"Mutated!".into(),
-                &sand_transform.translation.y.to_string().into(),
-                &air_below_sand.translation.y.to_string().into(),
-            );
         } else {
             // Done falling, no longer active.
             active.0 = false;
@@ -124,7 +127,7 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
     let world_scale =
         (window.width() / WORLD_WIDTH as f32).max(window.height() / WORLD_HEIGHT as f32);
 
-    // web_sys::console::log_4(
+    // console::log_4(
     //     &"Window Size / World Scale".into(),
     //     &window.width().to_string().into(),
     //     &window.height().to_string().into(),
@@ -140,7 +143,7 @@ fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, windows: Res<Windows>) {
-    web_sys::console::log_2(&"Surface Level".into(), &SURFACE_LEVEL.to_string().into());
+    console::log_2(&"Surface Level".into(), &SURFACE_LEVEL.to_string().into());
 
     let world_container_transform = get_world_container_transform(&windows.get_primary().unwrap());
 
