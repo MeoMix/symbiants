@@ -15,7 +15,7 @@ use bevy::{prelude::*, sprite::Anchor, time::FixedTimestep};
 
 use self::{
     gravity::sand_gravity_system,
-    settings::{Settings, SettingsPlugin},
+    settings::{Probabilities, Settings},
 };
 
 const WORLD_WIDTH: i32 = 144;
@@ -54,7 +54,19 @@ impl Plugin for AntfarmPlugin {
             ..default()
         }));
 
-        app.add_plugin(SettingsPlugin);
+        app.insert_resource(Settings {
+            compact_sand_depth: 15,
+            initial_dirt_percent: 3.0 / 4.0,
+            initial_ant_count: 20,
+            ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
+            probabilities: Probabilities {
+                random_dig: 0.003,
+                random_drop: 0.003,
+                random_turn: 0.005,
+                below_surface_dig: 0.10,
+                above_surface_drop: 0.10,
+            },
+        });
 
         app.add_startup_system(setup);
 
