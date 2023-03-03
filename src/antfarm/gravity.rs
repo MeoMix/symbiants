@@ -1,40 +1,55 @@
 use bevy::prelude::*;
 
-use super::{Active, Element};
+use super::{
+    elements::{AffectedByGravity, Elements2D, Position},
+    Element, WORLD_WIDTH,
+};
 
 // TODO: Add support for loosening neighboring sand.
 // TODO: Add support for crushing deep sand.
 // TODO: Add support for sand falling left/right randomly.
-pub fn sand_gravity_system(mut elements_query: Query<(&Element, &mut Active, &mut Transform)>) {
-    info!("Sand Gravity System Runs!");
+pub fn sand_gravity_system(
+    mut sand_query: Query<(&Element, &mut Position, &mut Transform), With<AffectedByGravity>>,
+    mut non_sand_query: Query<
+        (&Element, &mut Position, &mut Transform),
+        Without<AffectedByGravity>,
+    >,
+    mut elements2d_query: Query<&mut Elements2D>,
+) {
+    let mut elements2d = elements2d_query.single_mut();
 
-    let (mut air_elements_query, mut sand_elements_query): (Vec<_>, Vec<_>) = elements_query
+    // Iterate over each sand element
+    // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
+    // For each sand element which is above air, swap it with the air beneath it.
+    let sand_query = sand_query
         .iter_mut()
-        .filter(|(element, active, _)| {
-            active.0 == true && (**element == Element::Air || **element == Element::Sand)
-        })
-        .partition(|&(element, _, _)| *element == Element::Air);
+        // TODO: this is safety since in the future ants will be affected by gravity
+        .filter(|(element, _, _)| **element == Element::Sand);
 
-    info!("Air Count: {}!", air_elements_query.len());
-    info!("Sand Count: {}", sand_elements_query.len());
+    for (_, mut sand_position, mut sand_transform) in sand_query {
+        let element_below_sand =
+            elements2d.0[(sand_position.y + 1) * WORLD_WIDTH + sand_position.x];
 
-    for (_, active, sand_transform) in sand_elements_query.iter_mut() {
-        // Get the position beneath the sand and determine if it is air.
-        let below_sand_translation = sand_transform.translation + Vec3::NEG_Y;
+        // Use &Entity to look up element_below_sand reference
+        if let Ok((element, mut air_position, mut air_transform)) =
+            non_sand_query.get_mut(element_below_sand)
+        {
+            if *element == Element::Air {
+                // Swap elements in 2D vector to ensure they stay consistent with position and translation
+                elements2d.0.swap(
+                    air_position.y * WORLD_WIDTH + air_position.x,
+                    sand_position.y * WORLD_WIDTH + sand_position.x,
+                );
 
-        // TODO: This seems wildly inefficient compared to my previous architecture. I'm searching all air elements just to check one, specific spot in the world.
-        let air_below_sand = air_elements_query
-            .iter_mut()
-            .find(|(_, _, transform)| transform.translation == below_sand_translation)
-            .map(|(_, _, transform)| transform);
+                // TODO: It seems like a good idea to keep model/view concerns separate, but could drop position entirely and rely on translation.
+                // Swap element positions
+                (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
 
-        // If there is air below and sand above then swap the two
-        if let Some(air_below_sand) = air_below_sand {
-            air_below_sand.translation.y += 1.0;
-            sand_transform.translation.y -= 1.0;
-        } else {
-            // Done falling, no longer active.
-            active.0 = false;
+                // TODO: I could swap the Vec references instead of updating y, but that seems like a bad idea.
+                // Reflect the updated position visually
+                sand_transform.translation.y = -(sand_position.y as f32);
+                air_transform.translation.y = -(air_position.y as f32);
+            }
         }
     }
 }

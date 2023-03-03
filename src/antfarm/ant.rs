@@ -6,9 +6,9 @@ use bevy::prelude::*;
 #[derive(Bundle)]
 pub struct AntSpriteBundle {
     sprite_bundle: SpriteBundle,
-    // TODO: is it a code smell that these are pub?
-    pub facing: AntFacing,
-    pub angle: AntAngle,
+    facing: AntFacing,
+    angle: AntAngle,
+    // TODO: this should not be pub, Bundle should have no explicit meaning
     pub behavior: AntBehavior,
 }
 
@@ -64,14 +64,12 @@ impl AntSpriteBundle {
         Self {
             sprite_bundle: SpriteBundle {
                 texture: asset_server.load("images/ant.png"),
-
                 transform: Transform {
                     rotation,
                     scale: Vec3::new(x_flip, 1.0, 1.0),
                     translation: Vec3::new(0.5, -0.5, 100.0),
                     ..default()
                 },
-
                 sprite: Sprite {
                     color,
                     custom_size: Some(Vec2::new(ANT_SCALE, ANT_SCALE)),

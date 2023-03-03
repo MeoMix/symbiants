@@ -1,42 +1,43 @@
-mod air;
 mod ant;
-mod dirt;
+mod elements;
 mod gravity;
-mod sand;
 mod settings;
 
-use crate::antfarm::{
-    air::AirBundle,
-    ant::{AntLabelBundle, AntSpriteBundle},
-    dirt::DirtBundle,
-    sand::SandBundle,
-};
+use std::fmt;
+
+use crate::antfarm::ant::{AntLabelBundle, AntSpriteBundle};
 use bevy::{prelude::*, sprite::Anchor, time::FixedTimestep};
 
 use self::{
+    elements::{ElementBundle, ElementsPlugin},
     gravity::sand_gravity_system,
     settings::{Probabilities, Settings},
 };
 
-const WORLD_WIDTH: i32 = 144;
-const WORLD_HEIGHT: i32 = 81;
+const WORLD_WIDTH: usize = 144;
+const WORLD_HEIGHT: usize = 81;
 
 // TODO: it kinda sucks having to declare this all the time?
-#[derive(Component, PartialEq)]
+#[derive(Component, PartialEq, Copy, Clone, Debug)]
 pub enum Element {
     Air,
     Dirt,
     Sand,
 }
 
-#[derive(Component)]
-pub struct Active(pub bool);
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
+}
 
 #[derive(Component)]
 struct MainCamera;
 
 #[derive(Component)]
-struct WorldContainer;
+pub struct WorldContainer;
 
 // Defines the amount of time that should elapse between each physics step.
 // NOTE: should probably run in 1/60 but slowing down for dev
@@ -68,6 +69,8 @@ impl Plugin for AntfarmPlugin {
             },
         });
 
+        app.add_plugin(ElementsPlugin);
+
         app.add_startup_system(setup);
 
         app.add_system_set(
@@ -93,7 +96,7 @@ fn window_resize_system(
 
 // World dimensions are integer values (144/81) but <canvas/> has variable, floating point dimensions.
 // Determine a scaling factor so world fills available screen space.
-fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
+pub fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
     let world_scale =
         (window.width() / WORLD_WIDTH as f32).max(window.height() / WORLD_HEIGHT as f32);
 
@@ -120,28 +123,28 @@ fn setup(
 ) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 
-    // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
-    let (translation, scale) = get_world_container_transform(&windows.get_primary().unwrap());
-    let world_container_bundle = SpatialBundle {
-        transform: Transform {
-            translation,
-            scale,
-            ..default()
-        },
-        ..default()
-    };
+    // // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
+    // let (translation, scale) = get_world_container_transform(&windows.get_primary().unwrap());
+    // let world_container_bundle = SpatialBundle {
+    //     transform: Transform {
+    //         translation,
+    //         scale,
+    //         ..default()
+    //     },
+    //     ..default()
+    // };
 
-    commands
-        .spawn((world_container_bundle, WorldContainer))
-        .with_children(|parent| {
-            setup_background(parent, &settings);
-            setup_elements(parent, &settings);
-            setup_ants(parent, &asset_server, &settings);
-        });
+    // commands
+    //     .spawn((world_container_bundle, WorldContainer))
+    //     .with_children(|parent| {
+    //         setup_background(parent, &settings);
+    //         setup_elements(parent, &settings);
+    //         setup_ants(parent, &asset_server, &settings);
+    //     });
 }
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-fn setup_background(parent: &mut ChildBuilder, settings: &Res<Settings>) {
+pub fn setup_background(parent: &mut ChildBuilder, settings: &Res<Settings>) {
     parent.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgb(0.529, 0.808, 0.922),
@@ -171,49 +174,6 @@ fn setup_background(parent: &mut ChildBuilder, settings: &Res<Settings>) {
         },
         ..default()
     });
-}
-
-// Spawn interactive elements - air/dirt. Air isn't visible, background is revealed in its place.
-fn setup_elements(parent: &mut ChildBuilder, settings: &Res<Settings>) {
-    // Test Sand
-    let sand_bundles = (0..1).flat_map(|row_index| {
-        (0..WORLD_WIDTH).map(move |column_index| {
-            // NOTE: row_index goes negative because 0,0 is top-left corner
-            SandBundle::new(
-                Vec3::new(column_index as f32, -row_index as f32, 1.0),
-                Some(Vec2::ONE),
-                true,
-            )
-        })
-    });
-
-    for sand_bundle in sand_bundles {
-        parent.spawn(sand_bundle);
-    }
-
-    // Air & Dirt
-    // NOTE: starting at 1 to skip sand
-    let air_bundles = (1..get_surface_level(settings) + 1).flat_map(|row_index| {
-        (0..WORLD_WIDTH).map(move |column_index| {
-            // NOTE: row_index goes negative because 0,0 is top-left corner
-            AirBundle::new(Vec3::new(column_index as f32, -row_index as f32, 1.0))
-        })
-    });
-
-    for air_bundle in air_bundles {
-        parent.spawn(air_bundle);
-    }
-
-    let dirt_bundles = ((get_surface_level(settings) + 1)..WORLD_HEIGHT).flat_map(|row_index| {
-        (0..WORLD_WIDTH).map(move |column_index| {
-            // NOTE: row_index goes negative because 0,0 is top-left corner
-            DirtBundle::new(Vec3::new(column_index as f32, -row_index as f32, 1.0))
-        })
-    });
-
-    for dirt_bundle in dirt_bundles {
-        parent.spawn(dirt_bundle);
-    }
 }
 
 fn setup_ants(
@@ -358,10 +318,11 @@ fn setup_ants(
                 // Make sand a child of ant so they share rotation.
                 parent.spawn(ant_bundle.1).with_children(|parent| {
                     if is_carrying {
-                        parent.spawn(SandBundle::new(
+                        // NOTE: sand carried by ants is not "affected by gravity" intentionally
+                        // There might need to be a better way of handling this once ant gravity is implemented
+                        parent.spawn(ElementBundle::create_sand(
                             Vec3::new(0.5, 0.33, 0.0),
                             Option::Some(Vec2::new(0.5, 0.5)),
-                            false,
                         ));
                     }
                 });
@@ -371,6 +332,6 @@ fn setup_ants(
 }
 
 // TODO: Double-check for off-by-one here
-fn get_surface_level(settings: &Res<Settings>) -> i32 {
-    (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings.initial_dirt_percent)) as i32
+pub fn get_surface_level(settings: &Res<Settings>) -> usize {
+    (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings.initial_dirt_percent)) as usize
 }
