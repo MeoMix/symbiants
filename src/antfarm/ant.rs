@@ -10,8 +10,7 @@ pub struct AntSpriteBundle {
     sprite_bundle: SpriteBundle,
     facing: AntFacing,
     angle: AntAngle,
-    // TODO: this should not be pub, Bundle should have no explicit meaning
-    pub behavior: AntBehavior,
+    behavior: AntBehavior,
 }
 
 #[derive(Bundle)]
