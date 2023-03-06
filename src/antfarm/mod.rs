@@ -6,10 +6,10 @@ mod settings;
 use std::fmt;
 
 use crate::antfarm::ant::{AntLabelBundle, AntSpriteBundle};
-use bevy::{prelude::*, sprite::Anchor, time::FixedTimestep};
+use bevy::{prelude::*, sprite::Anchor, window::PrimaryWindow};
 
 use self::{
-    elements::{ElementBundle, ElementsPlugin},
+    elements::{setup_elements, ElementBundle},
     gravity::sand_gravity_system,
     settings::{Probabilities, Settings},
 };
@@ -48,10 +48,10 @@ pub struct AntfarmPlugin;
 impl Plugin for AntfarmPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 fit_canvas_to_parent: true,
                 ..default()
-            },
+            }),
             ..default()
         }));
 
@@ -69,26 +69,26 @@ impl Plugin for AntfarmPlugin {
             },
         });
 
-        app.add_plugin(ElementsPlugin);
-
         app.add_startup_system(setup);
 
-        app.add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
-                .with_system(window_resize_system)
-                .with_system(sand_gravity_system),
-        );
+        app.add_systems(
+            (window_resize_system, sand_gravity_system).in_schedule(CoreSchedule::FixedUpdate),
+        )
+        .insert_resource(FixedTime::new_from_secs(TIME_STEP));
     }
 }
 
 fn window_resize_system(
-    windows: Res<Windows>,
+    primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<&mut Transform, With<WorldContainer>>,
 ) {
+    let Ok(primary_window) = primary_window_query.get_single() else {
+        return;
+    };
+
     let mut transform = query.single_mut();
 
-    let (translation, scale) = get_world_container_transform(windows.get_primary().unwrap());
+    let (translation, scale) = get_world_container_transform(primary_window);
 
     transform.translation = translation;
     transform.scale = scale;
@@ -118,29 +118,35 @@ pub fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    windows: Res<Windows>,
+    primary_window_query: Query<&Window, With<PrimaryWindow>>,
     settings: Res<Settings>,
 ) {
+    // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
+    let Ok(primary_window) = primary_window_query.get_single() else {
+        return;
+    };
+
     commands.spawn((Camera2dBundle::default(), MainCamera));
 
-    // // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
-    // let (translation, scale) = get_world_container_transform(&windows.get_primary().unwrap());
-    // let world_container_bundle = SpatialBundle {
-    //     transform: Transform {
-    //         translation,
-    //         scale,
-    //         ..default()
-    //     },
-    //     ..default()
-    // };
+    // TODO: this feels super wrong
+    // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
+    let (translation, scale) = get_world_container_transform(primary_window);
+    let world_container_bundle = SpatialBundle {
+        transform: Transform {
+            translation,
+            scale,
+            ..default()
+        },
+        ..default()
+    };
 
-    // commands
-    //     .spawn((world_container_bundle, WorldContainer))
-    //     .with_children(|parent| {
-    //         setup_background(parent, &settings);
-    //         setup_elements(parent, &settings);
-    //         setup_ants(parent, &asset_server, &settings);
-    //     });
+    commands
+        .spawn((world_container_bundle, WorldContainer))
+        .with_children(|parent| {
+            setup_background(parent, &settings);
+            setup_elements(parent, &settings);
+            setup_ants(parent, &asset_server, &settings);
+        });
 }
 
 // Spawn non-interactive background (sky blue / tunnel brown)
@@ -150,7 +156,7 @@ pub fn setup_background(parent: &mut ChildBuilder, settings: &Res<Settings>) {
             color: Color::rgb(0.529, 0.808, 0.922),
             custom_size: Some(Vec2::new(
                 WORLD_WIDTH as f32,
-                get_surface_level(settings) as f32 + 1.0,
+                get_surface_level(settings.initial_dirt_percent) as f32 + 1.0,
             )),
             anchor: Anchor::TopLeft,
             ..default()
@@ -160,14 +166,19 @@ pub fn setup_background(parent: &mut ChildBuilder, settings: &Res<Settings>) {
 
     parent.spawn(SpriteBundle {
         transform: Transform {
-            translation: Vec3::new(0.0, -(get_surface_level(settings) as f32 + 1.0), 0.0),
+            translation: Vec3::new(
+                0.0,
+                -(get_surface_level(settings.initial_dirt_percent) as f32 + 1.0),
+                0.0,
+            ),
             ..default()
         },
         sprite: Sprite {
             color: Color::rgb(0.373, 0.290, 0.165),
             custom_size: Some(Vec2::new(
                 WORLD_WIDTH as f32,
-                WORLD_HEIGHT as f32 - (get_surface_level(settings) as f32 + 1.0),
+                WORLD_HEIGHT as f32
+                    - (get_surface_level(settings.initial_dirt_percent) as f32 + 1.0),
             )),
             anchor: Anchor::TopLeft,
             ..default()
@@ -332,6 +343,6 @@ fn setup_ants(
 }
 
 // TODO: Double-check for off-by-one here
-pub fn get_surface_level(settings: &Res<Settings>) -> usize {
-    (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * settings.initial_dirt_percent)) as usize
+pub fn get_surface_level(initial_dirt_percent: f32) -> usize {
+    (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * initial_dirt_percent)) as usize
 }
