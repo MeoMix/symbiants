@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::settings::Settings;
+use super::{elements::ElementBundle, settings::Settings};
 
 // TODO: Add support for behavior timer.
 // TODO: Add support for dynamic names.

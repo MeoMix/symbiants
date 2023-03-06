@@ -4,8 +4,6 @@ mod elements;
 mod gravity;
 mod settings;
 
-use std::fmt;
-
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use self::{
@@ -16,34 +14,22 @@ use self::{
     settings::{Probabilities, Settings},
 };
 
-const WORLD_WIDTH: usize = 144;
-const WORLD_HEIGHT: usize = 81;
-
-// TODO: it kinda sucks having to declare this all the time?
-#[derive(Component, PartialEq, Copy, Clone, Debug)]
-pub enum Element {
-    Air,
-    Dirt,
-    Sand,
-}
-
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-        // or, alternatively:
-        // fmt::Debug::fmt(self, f)
-    }
-}
-
 #[derive(Component)]
 struct MainCamera;
 
 #[derive(Component)]
-pub struct WorldContainer;
+struct WorldContainer;
 
 // Defines the amount of time that should elapse between each physics step.
 // NOTE: should probably run in 1/60 but slowing down for dev
 const TIME_STEP: f32 = 10.0 / 60.0;
+
+#[derive(Resource)]
+pub struct WorldState {
+    width: usize,
+    height: usize,
+    surface_level: usize,
+}
 
 pub struct AntfarmPlugin;
 
@@ -57,7 +43,7 @@ impl Plugin for AntfarmPlugin {
             ..default()
         }));
 
-        app.insert_resource(Settings {
+        const SETTINGS: Settings = Settings {
             compact_sand_depth: 15,
             initial_dirt_percent: 3.0 / 4.0,
             initial_ant_count: 20,
@@ -69,6 +55,20 @@ impl Plugin for AntfarmPlugin {
                 below_surface_dig: 0.10,
                 above_surface_drop: 0.10,
             },
+        };
+
+        app.insert_resource(SETTINGS);
+
+        const WORLD_WIDTH: usize = 144;
+        const WORLD_HEIGHT: usize = 81;
+
+        app.insert_resource(WorldState {
+            width: WORLD_WIDTH,
+            height: WORLD_HEIGHT,
+            // TODO: Double-check for off-by-one her
+            surface_level: (WORLD_HEIGHT as f32
+                - (WORLD_HEIGHT as f32 * SETTINGS.initial_dirt_percent))
+                as usize,
         });
 
         app.add_startup_system(setup);
@@ -83,6 +83,7 @@ impl Plugin for AntfarmPlugin {
 fn window_resize_system(
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<&mut Transform, With<WorldContainer>>,
+    world_state: Res<WorldState>,
 ) {
     let Ok(primary_window) = primary_window_query.get_single() else {
         return;
@@ -90,7 +91,7 @@ fn window_resize_system(
 
     let mut transform = query.single_mut();
 
-    let (translation, scale) = get_world_container_transform(primary_window);
+    let (translation, scale) = get_world_container_transform(primary_window, &world_state);
 
     transform.translation = translation;
     transform.scale = scale;
@@ -98,9 +99,9 @@ fn window_resize_system(
 
 // World dimensions are integer values (144/81) but <canvas/> has variable, floating point dimensions.
 // Determine a scaling factor so world fills available screen space.
-pub fn get_world_container_transform(window: &Window) -> (Vec3, Vec3) {
-    let world_scale =
-        (window.width() / WORLD_WIDTH as f32).max(window.height() / WORLD_HEIGHT as f32);
+fn get_world_container_transform(window: &Window, world_state: &Res<WorldState>) -> (Vec3, Vec3) {
+    let world_scale = (window.width() / world_state.width as f32)
+        .max(window.height() / world_state.height as f32);
 
     info!(
         "Window Height/Width: {}/{}, World Scale: {}",
@@ -122,6 +123,7 @@ fn setup(
     asset_server: Res<AssetServer>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     settings: Res<Settings>,
+    world_state: Res<WorldState>,
 ) {
     // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
     let Ok(primary_window) = primary_window_query.get_single() else {
@@ -132,7 +134,7 @@ fn setup(
 
     // TODO: this feels super wrong
     // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
-    let (translation, scale) = get_world_container_transform(primary_window);
+    let (translation, scale) = get_world_container_transform(primary_window, &world_state);
     let world_container_bundle = SpatialBundle {
         transform: Transform {
             translation,
@@ -145,13 +147,9 @@ fn setup(
     commands
         .spawn((world_container_bundle, WorldContainer))
         .with_children(|parent| {
-            setup_background(parent, &settings);
-            setup_elements(parent, &settings);
+            // TODO: This sucks! One of the main perks of Resource is to use DI to gain access rather than passing through hierarchy chain
+            setup_background(parent, &world_state);
+            setup_elements(parent, &world_state);
             setup_ants(parent, &asset_server, &settings);
         });
-}
-
-// TODO: Double-check for off-by-one here
-pub fn get_surface_level(initial_dirt_percent: f32) -> usize {
-    (WORLD_HEIGHT as f32 - (WORLD_HEIGHT as f32 * initial_dirt_percent)) as usize
 }

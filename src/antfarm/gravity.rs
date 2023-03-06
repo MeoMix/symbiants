@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use super::{
-    elements::{AffectedByGravity, Elements2D, Position},
-    Element, WORLD_WIDTH,
+    elements::{AffectedByGravity, Element, Elements2D, Position},
+    WorldState,
 };
 
 // TODO: Add support for loosening neighboring sand.
@@ -15,6 +15,7 @@ pub fn sand_gravity_system(
         Without<AffectedByGravity>,
     >,
     mut elements2d_query: Query<&mut Elements2D>,
+    world_state: Res<WorldState>,
 ) {
     let mut elements2d = elements2d_query.single_mut();
 
@@ -28,7 +29,7 @@ pub fn sand_gravity_system(
 
     for (_, mut sand_position, mut sand_transform) in sand_query {
         let element_below_sand =
-            elements2d.0[(sand_position.y + 1) * WORLD_WIDTH + sand_position.x];
+            elements2d.0[(sand_position.y + 1) * world_state.width + sand_position.x];
 
         // Use &Entity to look up element_below_sand reference
         if let Ok((element, mut air_position, mut air_transform)) =
@@ -37,8 +38,8 @@ pub fn sand_gravity_system(
             if *element == Element::Air {
                 // Swap elements in 2D vector to ensure they stay consistent with position and translation
                 elements2d.0.swap(
-                    air_position.y * WORLD_WIDTH + air_position.x,
-                    sand_position.y * WORLD_WIDTH + sand_position.x,
+                    air_position.y * world_state.width + air_position.x,
+                    sand_position.y * world_state.width + sand_position.x,
                 );
 
                 // TODO: It seems like a good idea to keep model/view concerns separate, but could drop position entirely and rely on translation.
