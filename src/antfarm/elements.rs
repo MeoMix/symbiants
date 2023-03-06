@@ -17,6 +17,8 @@ pub struct Position {
 #[derive(Component)]
 pub struct Elements2D(pub Vec<Entity>);
 
+// AffectedByGravity is just applied to Sand at the moment.
+// It is surprisingly necessary to avoid overlapping queries in gravity system.
 #[derive(Component)]
 pub struct AffectedByGravity;
 
@@ -24,7 +26,6 @@ pub struct AffectedByGravity;
 pub struct ElementBundle {
     sprite_bundle: SpriteBundle,
     element: Element,
-    position: Position,
 }
 
 #[derive(Component, PartialEq, Copy, Clone, Debug)]
@@ -43,11 +44,11 @@ impl fmt::Display for Element {
 }
 
 impl ElementBundle {
-    pub fn create_sand(position: Vec3, size: Option<Vec2>) -> Self {
+    pub fn create_sand(translation: Vec3, size: Option<Vec2>) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
-                    translation: Vec3::new(position.x as f32, -position.y as f32, 1.0),
+                    translation,
                     ..default()
                 },
                 sprite: Sprite {
@@ -59,22 +60,16 @@ impl ElementBundle {
                 ..default()
             },
             element: Element::Sand,
-            position: Position {
-                x: position.x as usize,
-                // TODO: terrifying that I am using negative sign then casting to usize
-                // TODO: Why is this negative if the translation is also negative? I thought position and translation were flipped?
-                y: -position.y as usize,
-            },
         }
     }
 
-    pub fn create_air(position: Vec3) -> Self {
+    pub fn create_air(translation: Vec3) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 // Air is transparent so reveal background
                 visibility: Visibility::Hidden,
                 transform: Transform {
-                    translation: position,
+                    translation,
                     ..default()
                 },
                 sprite: Sprite {
@@ -86,19 +81,14 @@ impl ElementBundle {
                 ..default()
             },
             element: Element::Air,
-            position: Position {
-                x: position.x as usize,
-                // TODO: terrifying that I am using negative sign then casting to usize
-                y: -position.y as usize,
-            },
         }
     }
 
-    pub fn create_dirt(position: Vec3) -> Self {
+    pub fn create_dirt(translation: Vec3) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
-                    translation: position,
+                    translation,
                     ..default()
                 },
                 sprite: Sprite {
@@ -109,11 +99,6 @@ impl ElementBundle {
                 ..default()
             },
             element: Element::Dirt,
-            position: Position {
-                x: position.x as usize,
-                // TODO: terrifying that I am using negative sign then casting to usize
-                y: -position.y as usize,
-            },
         }
     }
 }
@@ -126,12 +111,16 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
     // Test Sand
     let sand_bundles = (0..1).flat_map(|row_index| {
         (0..world_state.width).map(move |column_index| {
-            // NOTE: row_index goes negative because 0,0 is top-left corner
             (
                 ElementBundle::create_sand(
+                    // NOTE: row_index goes negative because 0,0 is top-left corner
                     Vec3::new(column_index as f32, -(row_index as f32), 1.0),
                     Some(Vec2::ONE),
                 ),
+                Position {
+                    x: column_index,
+                    y: row_index,
+                },
                 AffectedByGravity,
             )
         })
@@ -145,8 +134,14 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
     // NOTE: starting at 1 to skip sand
     let air_bundles = (1..(world_state.surface_level + 1)).flat_map(|row_index| {
         (0..world_state.width).map(move |column_index| {
-            // NOTE: row_index goes negative because 0,0 is top-left corner
-            ElementBundle::create_air(Vec3::new(column_index as f32, -(row_index as f32), 1.0))
+            (
+                // NOTE: row_index goes negative because 0,0 is top-left corner
+                ElementBundle::create_air(Vec3::new(column_index as f32, -(row_index as f32), 1.0)),
+                Position {
+                    x: column_index,
+                    y: row_index,
+                },
+            )
         })
     });
 
@@ -157,8 +152,18 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
     let dirt_bundles =
         ((world_state.surface_level + 1)..world_state.height).flat_map(|row_index| {
             (0..world_state.width).map(move |column_index| {
-                // NOTE: row_index goes negative because 0,0 is top-left corner
-                ElementBundle::create_dirt(Vec3::new(column_index as f32, -(row_index as f32), 1.0))
+                (
+                    ElementBundle::create_dirt(Vec3::new(
+                        column_index as f32,
+                        // NOTE: row_index goes negative because 0,0 is top-left corner
+                        -(row_index as f32),
+                        1.0,
+                    )),
+                    Position {
+                        x: column_index,
+                        y: row_index,
+                    },
+                )
             })
         });
 

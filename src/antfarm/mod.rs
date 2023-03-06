@@ -20,10 +20,6 @@ struct MainCamera;
 #[derive(Component)]
 struct WorldContainer;
 
-// Defines the amount of time that should elapse between each physics step.
-// NOTE: should probably run in 1/60 but slowing down for dev
-const TIME_STEP: f32 = 10.0 / 60.0;
-
 #[derive(Resource)]
 pub struct WorldState {
     width: usize,
@@ -35,13 +31,11 @@ pub struct AntfarmPlugin;
 
 impl Plugin for AntfarmPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                fit_canvas_to_parent: true,
-                ..default()
-            }),
-            ..default()
-        }));
+        // NOTE: I've declared const here to ensure they are accessed as resources
+
+        // Defines the amount of time that should elapse between each physics step.
+        // NOTE: should probably run in 1/60 but slowing down for dev
+        const TIME_STEP: f32 = 10.0 / 60.0;
 
         const SETTINGS: Settings = Settings {
             compact_sand_depth: 15,
@@ -57,26 +51,31 @@ impl Plugin for AntfarmPlugin {
             },
         };
 
-        app.insert_resource(SETTINGS);
-
         const WORLD_WIDTH: usize = 144;
         const WORLD_HEIGHT: usize = 81;
-
-        app.insert_resource(WorldState {
+        const WORLD_STATE: WorldState = WorldState {
             width: WORLD_WIDTH,
             height: WORLD_HEIGHT,
             // TODO: Double-check for off-by-one her
             surface_level: (WORLD_HEIGHT as f32
                 - (WORLD_HEIGHT as f32 * SETTINGS.initial_dirt_percent))
                 as usize,
-        });
+        };
 
-        app.add_startup_system(setup);
-
-        app.add_systems(
+        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                fit_canvas_to_parent: true,
+                ..default()
+            }),
+            ..default()
+        }))
+        .insert_resource(FixedTime::new_from_secs(TIME_STEP))
+        .insert_resource(SETTINGS)
+        .insert_resource(WORLD_STATE)
+        .add_startup_system(setup)
+        .add_systems(
             (window_resize_system, sand_gravity_system).in_schedule(CoreSchedule::FixedUpdate),
-        )
-        .insert_resource(FixedTime::new_from_secs(TIME_STEP));
+        );
     }
 }
 
