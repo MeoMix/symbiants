@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use super::settings::Settings;
+
 // TODO: Add support for behavior timer.
 // TODO: Add support for dynamic names.
 
@@ -102,4 +104,159 @@ pub enum AntAngle {
     Ninety = 90,
     OneHundredEighty = 180,
     TwoHundredSeventy = 270,
+}
+
+pub fn setup_ants(
+    parent: &mut ChildBuilder,
+    asset_server: &Res<AssetServer>,
+    settings: &Res<Settings>,
+) {
+    // let ant_bundles = (0..8).map(|_| {
+    //     // Put the ant at a random location along the x-axis that fits within the bounds of the world.
+    //     // TODO: technically old code was .round() and now it's just floored implicitly
+    //     let x = rand::thread_rng().gen_range(0..1000) as f32 % WORLD_WIDTH as f32;
+    //     // Put the ant on the dirt.
+    //     let y = SURFACE_LEVEL as f32;
+
+    //     // Randomly position ant facing left or right.
+    //     let facing = if rand::thread_rng().gen_range(0..10) < 5 {
+    //         Facing::Left
+    //     } else {
+    //         Facing::Right
+    //     };
+
+    //     (
+    //         Vec3::new(x, -y, 0.0),
+    //         AntSpriteBundle::new(
+    //             settings.ant_color,
+    //             facing,
+    //             Angle::Zero,
+    //             Behavior::Wandering,
+    //             &asset_server,
+    //         ),
+    //         AntLabelBundle::new("Test Name".to_string(), &asset_server),
+    //     )
+    // });
+
+    let test_ant_bundles = [
+        (
+            Vec3::new(5.0, -5.0, 100.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Left,
+                AntAngle::Zero,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant1".to_string(), &asset_server),
+        ),
+        (
+            Vec3::new(10.0, -5.0, 1.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Left,
+                AntAngle::Ninety,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant2".to_string(), &asset_server),
+        ),
+        (
+            Vec3::new(15.0, -5.0, 1.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Left,
+                AntAngle::OneHundredEighty,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant3".to_string(), &asset_server),
+        ),
+        (
+            Vec3::new(20.0, -5.0, 1.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Left,
+                AntAngle::TwoHundredSeventy,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant4".to_string(), &asset_server),
+        ),
+        (
+            Vec3::new(25.0, -5.0, 1.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Right,
+                AntAngle::Zero,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant5".to_string(), &asset_server),
+        ),
+        (
+            Vec3::new(30.0, -5.0, 1.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Right,
+                AntAngle::Ninety,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant6".to_string(), &asset_server),
+        ),
+        (
+            Vec3::new(35.0, -5.0, 1.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Right,
+                AntAngle::OneHundredEighty,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant7".to_string(), &asset_server),
+        ),
+        (
+            Vec3::new(40.0, -5.0, 1.0),
+            AntSpriteBundle::new(
+                settings.ant_color,
+                AntFacing::Right,
+                AntAngle::TwoHundredSeventy,
+                AntBehavior::Carrying,
+                &asset_server,
+            ),
+            AntLabelBundle::new("ant8".to_string(), &asset_server),
+        ),
+    ];
+
+    for ant_bundle in test_ant_bundles {
+        let is_carrying = ant_bundle.1.behavior == AntBehavior::Carrying;
+
+        parent
+            // Wrap label and ant with common parent to associate their movement, but not their rotation.
+            .spawn((
+                SpatialBundle {
+                    transform: Transform {
+                        translation: ant_bundle.0,
+                        ..default()
+                    },
+                    ..default()
+                },
+                Ant,
+            ))
+            .with_children(|parent| {
+                // Make sand a child of ant so they share rotation.
+                parent.spawn(ant_bundle.1).with_children(|parent| {
+                    if is_carrying {
+                        // NOTE: sand carried by ants is not "affected by gravity" intentionally
+                        // There might need to be a better way of handling this once ant gravity is implemented
+                        parent.spawn(ElementBundle::create_sand(
+                            Vec3::new(0.5, 0.33, 0.0),
+                            Option::Some(Vec2::new(0.5, 0.5)),
+                        ));
+                    }
+                });
+                parent.spawn(ant_bundle.2);
+            });
+    }
 }
