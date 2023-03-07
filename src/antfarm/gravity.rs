@@ -48,7 +48,7 @@ pub fn sand_gravity_system(
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::antfarm::{elements::*, *};
+    use crate::antfarm::elements::*;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     // Confirm that sand ontop of air falls downward.
@@ -72,7 +72,7 @@ pub mod tests {
         let air_id = app
             .world
             .spawn((
-                ElementBundle::create_air(Vec3::new(0.0, -1.0, 0.0)),
+                ElementBundle::create_air(Vec3::NEG_Y),
                 Position { x: 0, y: 1 },
             ))
             .id();
@@ -128,7 +128,7 @@ pub mod tests {
         let dirt_id = app
             .world
             .spawn((
-                ElementBundle::create_dirt(Vec3::new(0.0, -1.0, 0.0)),
+                ElementBundle::create_dirt(Vec3::NEG_Y),
                 Position { x: 0, y: 1 },
             ))
             .id();
