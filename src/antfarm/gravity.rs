@@ -19,15 +19,9 @@ pub fn sand_gravity_system(
 ) {
     let mut elements2d = elements2d_query.single_mut();
 
-    // Iterate over each sand element
     // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
     // For each sand element which is above air, swap it with the air beneath it.
-    let sand_query = sand_query
-        .iter_mut()
-        // TODO: this is safety since in the future ants will be affected by gravity
-        .filter(|(element, _, _)| **element == Element::Sand);
-
-    for (_, mut sand_position, mut sand_transform) in sand_query {
+    for (_, mut sand_position, mut sand_transform) in sand_query.iter_mut() {
         let element_below_sand =
             elements2d.0[(sand_position.y + 1) * world_state.width + sand_position.x];
 
