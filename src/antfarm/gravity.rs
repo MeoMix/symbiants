@@ -55,51 +55,68 @@ pub fn sand_gravity_system(
     }
 }
 
-// #[test]
-// fn did_drop_sand() {
-// let mut app = App::new();
+#[cfg(test)]
+pub mod tests {
+    use crate::antfarm::{elements::*, *};
+    use bevy::prelude::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
 
-// let world_state = WorldState {
-//     width: 1,
-//     height: 2,
-//     surface_level: 1,
-// };
+    #[wasm_bindgen_test]
+    fn did_drop_sand() {
+        let mut app = App::new();
 
-// let mut elements_2d = Vec::with_capacity((world_state.width * world_state.height) as usize);
+        let world_state = WorldState {
+            width: 1,
+            height: 2,
+            surface_level: 1,
+        };
 
-// app.insert_resource(world_state);
+        let mut elements_2d = Vec::with_capacity((world_state.width * world_state.height) as usize);
 
-// // Add gravity system
-// app.add_system(sand_gravity_system);
+        app.insert_resource(world_state);
 
-// // Setup test entities
-// let sand_id = app
-//     .world
-//     .spawn((
-//         ElementBundle::create_sand(Vec3::ZERO),
-//         Position { x: 0, y: 0 },
-//         AffectedByGravity,
-//     ))
-//     .id();
-// let air_id = app
-//     .world
-//     .spawn((
-//         ElementBundle::create_air(Vec3::new(0.0, -1.0, 0.0)),
-//         Position { x: 0, y: 1 },
-//     ))
-//     .id();
+        // Add gravity system
+        app.add_system(sand_gravity_system);
 
-// elements_2d.push(sand_id);
-// elements_2d.push(air_id);
+        // Setup test entities
+        let sand_id = app
+            .world
+            .spawn((
+                ElementBundle::create_sand(Vec3::ZERO),
+                Position { x: 0, y: 0 },
+                AffectedByGravity,
+            ))
+            .id();
+        let air_id = app
+            .world
+            .spawn((
+                ElementBundle::create_air(Vec3::new(0.0, -1.0, 0.0)),
+                Position { x: 0, y: 1 },
+            ))
+            .id();
 
-// let elements_2d_id = app.world.spawn(Elements2D(elements_2d)).id();
+        elements_2d.push(sand_id);
+        elements_2d.push(air_id);
 
-// // Run systems
-// app.update();
+        let elements_2d_id = app.world.spawn(Elements2D(elements_2d)).id();
 
-// let updated_elements_2d = app.world.get::<Elements2D>(elements_2d_id);
-// assert_eq!((updated_elements_2d.unwrap().0)[0], air_id);
-// assert_eq!((updated_elements_2d.unwrap().0)[1], sand_id);
+        // Run systems
+        app.update();
 
-// TODO: Check translation and position on element
-// }
+        let updated_elements_2d = app.world.get::<Elements2D>(elements_2d_id);
+        assert_eq!((updated_elements_2d.unwrap().0)[0], air_id);
+        assert_eq!((updated_elements_2d.unwrap().0)[1], sand_id);
+
+        assert_eq!(app.world.get::<Position>(sand_id).unwrap().y, 1);
+        assert_eq!(app.world.get::<Position>(air_id).unwrap().y, 0);
+
+        assert_eq!(
+            app.world.get::<Transform>(sand_id).unwrap().translation.y,
+            -1.0
+        );
+        assert_eq!(
+            app.world.get::<Transform>(air_id).unwrap().translation.y,
+            0.0
+        );
+    }
+}

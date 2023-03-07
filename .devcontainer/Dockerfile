@@ -3,8 +3,9 @@
 # FROM rust:1.67-bookworm
 FROM rustlang/rust:nightly
 
+# install nodejs for testing wasm
 RUN apt-get update && \
-  apt-get install -y libasound2-dev libudev-dev lld clang && \
+  apt-get install -y libasound2-dev libudev-dev lld clang nodejs && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # NOTE: switch to nightly if base image is rust:1.67-bookworm
@@ -12,4 +13,5 @@ RUN apt-get update && \
 # RUN rustup default nightly
 RUN rustup target install wasm32-unknown-unknown
 
+# TODO: maybe trunk isn't a good idea since wasm-pack is needed for testing??
 RUN cargo install trunk wasm-pack
