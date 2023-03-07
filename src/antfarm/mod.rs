@@ -22,9 +22,10 @@ struct WorldContainer;
 
 #[derive(Resource)]
 pub struct WorldState {
-    width: usize,
-    height: usize,
-    surface_level: usize,
+    // NOTE: These values should never be negative, but I am fearful of using `usize`
+    width: isize,
+    height: isize,
+    surface_level: isize,
 }
 
 pub struct AntfarmPlugin;
@@ -51,15 +52,15 @@ impl Plugin for AntfarmPlugin {
             },
         };
 
-        const WORLD_WIDTH: usize = 144;
-        const WORLD_HEIGHT: usize = 81;
+        const WORLD_WIDTH: isize = 144;
+        const WORLD_HEIGHT: isize = 81;
         const WORLD_STATE: WorldState = WorldState {
             width: WORLD_WIDTH,
             height: WORLD_HEIGHT,
             // TODO: Double-check for off-by-one her
             surface_level: (WORLD_HEIGHT as f32
                 - (WORLD_HEIGHT as f32 * SETTINGS.initial_dirt_percent))
-                as usize,
+                as isize,
         };
 
         app.add_plugins(DefaultPlugins.set(WindowPlugin {

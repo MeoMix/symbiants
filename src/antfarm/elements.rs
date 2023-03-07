@@ -7,15 +7,47 @@ use super::WorldState;
 #[derive(Component, Debug)]
 pub struct Position {
     // (0,0) is the top-left corner of the viewport so these values can be represented unsigned
-    pub x: usize,
-    pub y: usize,
+    pub x: isize,
+    pub y: isize,
 }
 
 // NOTE: This is a two-dimensional array expressed in a single Vector.
 // This is to allow for easier shorthand such as Vec.swap and Vec.get.
 // Access via vec![y * WORLD_WIDTH + x]
 #[derive(Component)]
-pub struct Elements2D(pub Vec<Entity>);
+pub struct Elements2D {
+    width: isize,
+    height: isize,
+    elements: Vec<Entity>,
+}
+
+impl Elements2D {
+    pub fn new(width: isize, height: isize, elements: Vec<Entity>) -> Self {
+        Self {
+            width,
+            height,
+            elements,
+        }
+    }
+
+    pub fn get(&self, x: isize, y: isize) -> Option<&Entity> {
+        let is_y_valid = y > -1 && y <= self.height;
+        let is_x_valid = x > -1 && x <= self.width;
+
+        if is_y_valid && is_x_valid {
+            self.elements.get((y * self.width + x) as usize)
+        } else {
+            None
+        }
+    }
+
+    pub fn swap(&mut self, a: &Position, b: &Position) {
+        self.elements.swap(
+            (a.y * self.width + a.x) as usize,
+            (b.y * self.width + b.x) as usize,
+        );
+    }
+}
 
 // AffectedByGravity is just applied to Sand at the moment.
 // It is surprisingly necessary to avoid overlapping queries in gravity system.
@@ -169,5 +201,9 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
         element_vector_2d.push(parent.spawn(dirt_bundle).id());
     }
 
-    parent.spawn(Elements2D(element_vector_2d));
+    parent.spawn(Elements2D::new(
+        world_state.width,
+        world_state.height,
+        element_vector_2d,
+    ));
 }
