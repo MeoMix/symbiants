@@ -3,12 +3,18 @@ name = "antfarm"
 version = "0.1.0"
 edition = "2021"
 
+# [lib]
+# crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 bevy = { version = "0.10.0" }
 console_error_panic_hook = { version = "0.1.7" }
 wasm-bindgen = { version = "0.2.84" }
 uuid = { version = "1.3.0" }
 rand = { version = "0.8.5" }
+# TODO: move to dev deps?
+wasm-bindgen-test = "0.3.34"
+
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

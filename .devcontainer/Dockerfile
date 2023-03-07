@@ -12,4 +12,4 @@ RUN apt-get update && \
 # RUN rustup default nightly
 RUN rustup target install wasm32-unknown-unknown
 
-RUN cargo install trunk
+RUN cargo install trunk wasm-pack

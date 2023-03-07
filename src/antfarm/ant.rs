@@ -249,10 +249,7 @@ pub fn setup_ants(
                     if is_carrying {
                         // NOTE: sand carried by ants is not "affected by gravity" intentionally
                         // There might need to be a better way of handling this once ant gravity is implemented
-                        parent.spawn(ElementBundle::create_sand(
-                            Vec3::new(0.5, 0.33, 0.0),
-                            Option::Some(Vec2::new(0.5, 0.5)),
-                        ));
+                        parent.spawn(ElementBundle::create_sand(Vec3::new(0.5, 0.5, 0.0)));
                     }
                 });
                 parent.spawn(ant_bundle.2);

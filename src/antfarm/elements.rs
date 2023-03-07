@@ -44,7 +44,7 @@ impl fmt::Display for Element {
 }
 
 impl ElementBundle {
-    pub fn create_sand(translation: Vec3, size: Option<Vec2>) -> Self {
+    pub fn create_sand(translation: Vec3) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
@@ -54,7 +54,6 @@ impl ElementBundle {
                 sprite: Sprite {
                     color: Color::rgb(0.761, 0.698, 0.502),
                     anchor: Anchor::TopLeft,
-                    custom_size: size,
                     ..default()
                 },
                 ..default()
@@ -115,7 +114,6 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
                 ElementBundle::create_sand(
                     // NOTE: row_index goes negative because 0,0 is top-left corner
                     Vec3::new(column_index as f32, -(row_index as f32), 1.0),
-                    Some(Vec2::ONE),
                 ),
                 Position {
                     x: column_index,

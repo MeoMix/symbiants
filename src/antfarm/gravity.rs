@@ -54,3 +54,52 @@ pub fn sand_gravity_system(
         }
     }
 }
+
+// #[test]
+// fn did_drop_sand() {
+// let mut app = App::new();
+
+// let world_state = WorldState {
+//     width: 1,
+//     height: 2,
+//     surface_level: 1,
+// };
+
+// let mut elements_2d = Vec::with_capacity((world_state.width * world_state.height) as usize);
+
+// app.insert_resource(world_state);
+
+// // Add gravity system
+// app.add_system(sand_gravity_system);
+
+// // Setup test entities
+// let sand_id = app
+//     .world
+//     .spawn((
+//         ElementBundle::create_sand(Vec3::ZERO),
+//         Position { x: 0, y: 0 },
+//         AffectedByGravity,
+//     ))
+//     .id();
+// let air_id = app
+//     .world
+//     .spawn((
+//         ElementBundle::create_air(Vec3::new(0.0, -1.0, 0.0)),
+//         Position { x: 0, y: 1 },
+//     ))
+//     .id();
+
+// elements_2d.push(sand_id);
+// elements_2d.push(air_id);
+
+// let elements_2d_id = app.world.spawn(Elements2D(elements_2d)).id();
+
+// // Run systems
+// app.update();
+
+// let updated_elements_2d = app.world.get::<Elements2D>(elements_2d_id);
+// assert_eq!((updated_elements_2d.unwrap().0)[0], air_id);
+// assert_eq!((updated_elements_2d.unwrap().0)[1], sand_id);
+
+// TODO: Check translation and position on element
+// }

@@ -13,5 +13,5 @@
     }
   },
   // NOTE: trunk serve will not fall back to polling and pushing notifications didn't work from Windows, but is fine from WSL2.
-  "postCreateCommand": "trunk serve"
+  // "postCreateCommand": "trunk serve"
 }
