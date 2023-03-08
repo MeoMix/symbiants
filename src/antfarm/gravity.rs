@@ -99,7 +99,6 @@ pub fn sand_gravity_system(
         }
 
         let Some(target_position) = target_position else { continue };
-
         let Some(&air_entity) = world_map.elements.get(&target_position) else { continue };
         let Ok((_, mut air_position, mut air_transform)) = non_sand_query.get_mut(air_entity) else { continue };
 
@@ -108,10 +107,10 @@ pub fn sand_gravity_system(
         (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
 
         // Swap element positions visually.
-        (sand_transform.translation.y, air_transform.translation.y) =
-            (air_transform.translation.y, sand_transform.translation.y);
         (sand_transform.translation.x, air_transform.translation.x) =
             (air_transform.translation.x, sand_transform.translation.x);
+        (sand_transform.translation.y, air_transform.translation.y) =
+            (air_transform.translation.y, sand_transform.translation.y);
     }
 }
 
