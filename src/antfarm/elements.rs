@@ -1,14 +1,39 @@
 use bevy::{prelude::*, sprite::Anchor, utils::HashMap};
-use std::fmt;
+use std::{fmt, ops::Add};
 
 use super::WorldState;
 
 // TODO: maybe introduce a Tile concept?
-#[derive(Component, Debug, Eq, Hash, PartialEq, Copy, Clone)]
+#[derive(Component, Debug, Eq, PartialEq, Hash, Copy, Clone)]
 pub struct Position {
     // (0,0) is the top-left corner of the viewport so these values can be represented unsigned
     pub x: isize,
     pub y: isize,
+}
+
+impl Position {
+    pub const ZERO: Self = Self::new(0, 0);
+    pub const X: Self = Self::new(1, 0);
+    pub const NEG_X: Self = Self::new(-1, 0);
+
+    pub const Y: Self = Self::new(0, 1);
+    pub const NEG_Y: Self = Self::new(0, -1);
+
+    pub const fn new(x: isize, y: isize) -> Self {
+        Self { x, y }
+    }
+}
+
+impl Add for Position {
+    type Output = Self;
+
+    // TODO: Hexx uses const_add here?
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
 }
 
 #[derive(Component)]

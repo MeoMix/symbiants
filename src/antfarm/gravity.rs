@@ -2,11 +2,11 @@ use bevy::prelude::*;
 
 use super::elements::{AffectedByGravity, Element, Position, WorldMap};
 
-// TODO: Add support for loosening neighboring sand.
-// TODO: Add support for crushing deep sand.
-// TODO: Add support for sand falling left/right randomly.
 pub fn sand_gravity_system(
-    mut sand_query: Query<(&Element, &mut Position, &mut Transform), With<AffectedByGravity>>,
+    mut sand_query: Query<
+        (&mut Position, &mut Transform),
+        (With<AffectedByGravity>, With<Element>),
+    >,
     mut non_sand_query: Query<
         (&Element, &mut Position, &mut Transform),
         Without<AffectedByGravity>,
@@ -17,14 +17,12 @@ pub fn sand_gravity_system(
 
     // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
     // For each sand element which is above air, swap it with the air beneath it.
-    for (_, mut sand_position, mut sand_transform) in sand_query.iter_mut() {
-        if let Some(element_below_sand) = world_map.elements.get(&Position {
-            x: sand_position.x,
-            y: sand_position.y + 1,
-        }) {
-            // If there is air below the sand then continue falling down.
+    for (mut sand_position, mut sand_transform) in sand_query.iter_mut() {
+        // TODO: am I supposed to deref like this? seems sus
+        // If there is air below the sand then continue falling down.
+        if let Some(&element_below_sand) = world_map.elements.get(&(*sand_position + Position::Y)) {
             if let Ok((&element, mut air_position, mut air_transform)) =
-                non_sand_query.get_mut(*element_below_sand) && element == Element::Air
+                non_sand_query.get_mut(element_below_sand) && element == Element::Air
             {
                 // Swap element positions
                 (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
@@ -32,12 +30,6 @@ pub fn sand_gravity_system(
                 // Reflect the updated position visually
                 sand_transform.translation.y = -(sand_position.y as f32);
                 air_transform.translation.y = -(air_position.y as f32);
-            } else {
-                // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
-                // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
-                // if let Some(element_left_sand) = elements2d.0.get(sand_position.y * world_state.width + sand_position.x - 1) {
-
-                // }
             }
         }
     }
@@ -57,8 +49,8 @@ pub mod tests {
 
         let mut elements = HashMap::<Position, Entity>::new();
 
-        let sand_position = Position { x: 0, y: 0 };
-        let air_position = Position { x: 0, y: 1 };
+        let sand_position = Position::ZERO;
+        let air_position = Position::Y;
 
         // Setup test entities
         let sand_id = app
@@ -104,8 +96,8 @@ pub mod tests {
 
         let mut elements = HashMap::<Position, Entity>::new();
 
-        let sand_position = Position { x: 0, y: 0 };
-        let dirt_position = Position { x: 0, y: 1 };
+        let sand_position = Position::ZERO;
+        let dirt_position = Position::Y;
 
         // Setup test entities
         let sand_id = app
@@ -151,7 +143,7 @@ pub mod tests {
 
         let mut elements = HashMap::<Position, Entity>::new();
 
-        let sand_position = Position { x: 0, y: 0 };
+        let sand_position = Position::ZERO;
 
         // Setup test entities
         let sand_id = app
