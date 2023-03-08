@@ -56,9 +56,9 @@ pub fn sand_gravity_system(
 
         let below_sand_position = *sand_position + Position::Y;
         let left_sand_position = *sand_position + Position::NEG_X;
-        let left_below_sand_position = *sand_position + Position::NEG_ONE;
-        let right_sand_position = *sand_position + Position::NEG_X;
-        let right_below_sand_position = *sand_position + Position::NEG_ONE;
+        let left_below_sand_position = *sand_position + Position::new(-1, 1);
+        let right_sand_position = *sand_position + Position::X;
+        let right_below_sand_position = *sand_position + Position::ONE;
 
         // If there is air below the sand then continue falling down.
         go_down = is_all_air(&world_map, &non_sand_query, vec![below_sand_position]);
@@ -98,23 +98,24 @@ pub fn sand_gravity_system(
             target_position = Some(right_below_sand_position);
         }
 
-        if let Some(target_position) = target_position {
-            if let Some(&air_entity) = world_map.elements.get(&target_position) {
-                if let Ok((_, mut air_position, mut air_transform)) =
-                    non_sand_query.get_mut(air_entity)
-                {
-                    // Swap element positions internally.
-                    (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
+        let Some(target_position) = target_position else { continue };
 
-                    // Swap element positions visually.
-                    (sand_transform.translation.y, air_transform.translation.y) =
-                        (air_transform.translation.y, sand_transform.translation.y);
-                }
-            }
-        }
+        let Some(&air_entity) = world_map.elements.get(&target_position) else { continue };
+        let Ok((_, mut air_position, mut air_transform)) = non_sand_query.get_mut(air_entity) else { continue };
+
+        // Swap element positions internally.
+        (sand_position.x, air_position.x) = (air_position.x, sand_position.x);
+        (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
+
+        // Swap element positions visually.
+        (sand_transform.translation.y, air_transform.translation.y) =
+            (air_transform.translation.y, sand_transform.translation.y);
+        (sand_transform.translation.x, air_transform.translation.x) =
+            (air_transform.translation.x, sand_transform.translation.x);
     }
 }
 
+// TODO: logging during tests doesn't seem to work - wasm-pack vs trunk issue?
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -124,7 +125,7 @@ pub mod tests {
 
     // Confirm that sand ontop of air falls downward.
     #[wasm_bindgen_test]
-    fn did_drop_sand() {
+    fn did_sand_fall_down() {
         let mut app = App::new();
 
         let mut elements = HashMap::<Position, Entity>::new();
@@ -171,7 +172,7 @@ pub mod tests {
 
     // Confirm that sand ontop of non-air stays put
     #[wasm_bindgen_test]
-    fn did_not_drop_sand() {
+    fn did_sand_not_fall_down() {
         let mut app = App::new();
 
         let mut elements = HashMap::<Position, Entity>::new();
@@ -190,6 +191,7 @@ pub mod tests {
             .id();
         let dirt_id = app
             .world
+            // TODO: The fact this NEG_Y has implicit relationship with air_position is no good
             .spawn((ElementBundle::create_dirt(Vec3::NEG_Y), dirt_position))
             .id();
 
@@ -218,7 +220,7 @@ pub mod tests {
 
     // Confirm that sand at the bottom of the world doesn't panic
     #[wasm_bindgen_test]
-    fn did_respect_bounds() {
+    fn did_not_panic() {
         let mut app = App::new();
 
         let mut elements = HashMap::<Position, Entity>::new();
@@ -251,4 +253,171 @@ pub mod tests {
             Vec3::ZERO
         );
     }
+
+    // Confirm that sand falls properly to the left
+    #[wasm_bindgen_test]
+    fn did_sand_fall_left() {
+        let mut app = App::new();
+
+        let mut elements = HashMap::<Position, Entity>::new();
+
+        let swapped_sand_position = Position::X;
+        let swapped_air_position = Position::Y;
+
+        let air_position = Position::ZERO;
+        let dirt_position = Position::ONE;
+
+        // Row 1
+        let air_id = app
+            .world
+            .spawn((ElementBundle::create_air(Vec3::ZERO), air_position))
+            .id();
+
+        let swapped_sand_id = app
+            .world
+            .spawn((
+                ElementBundle::create_sand(Vec3::X),
+                swapped_sand_position,
+                AffectedByGravity,
+            ))
+            .id();
+
+        // Row 2
+        let swapped_air_id = app
+            .world
+            .spawn((ElementBundle::create_air(Vec3::NEG_Y), swapped_air_position))
+            .id();
+
+        let dirt_id = app
+            .world
+            .spawn((ElementBundle::create_dirt(Vec3::NEG_ONE), dirt_position))
+            .id();
+
+        // Setup test entities
+        elements.insert(air_position, air_id);
+        elements.insert(swapped_sand_position, swapped_sand_id);
+        elements.insert(swapped_air_position, swapped_air_id);
+        elements.insert(dirt_position, dirt_id);
+
+        app.world.spawn(WorldMap { elements });
+
+        // Add gravity system
+        app.add_system(sand_gravity_system);
+        // Run systems
+        app.update();
+
+        assert_eq!(
+            app.world.get::<Position>(swapped_sand_id).unwrap(),
+            &Position::Y
+        );
+        assert_eq!(
+            app.world.get::<Position>(swapped_air_id).unwrap(),
+            &Position::X
+        );
+
+        assert_eq!(
+            app.world
+                .get::<Transform>(swapped_sand_id)
+                .unwrap()
+                .translation,
+            Vec3::NEG_Y
+        );
+        assert_eq!(
+            app.world
+                .get::<Transform>(swapped_air_id)
+                .unwrap()
+                .translation,
+            Vec3::X
+        );
+    }
+
+    // Confirm that sand falls properly to the right
+    #[wasm_bindgen_test]
+    fn did_sand_fall_right() {
+        let mut app = App::new();
+
+        let mut elements = HashMap::<Position, Entity>::new();
+
+        let swapped_sand_position = Position::ZERO;
+        let swapped_air_position = Position::ONE;
+
+        let air_position = Position::X;
+        let dirt_position = Position::Y;
+
+        // Row 1
+        let swapped_sand_id = app
+            .world
+            .spawn((
+                ElementBundle::create_sand(Vec3::ZERO),
+                swapped_sand_position,
+                AffectedByGravity,
+            ))
+            .id();
+
+        let air_id = app
+            .world
+            .spawn((ElementBundle::create_air(Vec3::X), air_position))
+            .id();
+
+        // Row 2
+        let dirt_id = app
+            .world
+            .spawn((ElementBundle::create_dirt(Vec3::NEG_Y), dirt_position))
+            .id();
+
+        let swapped_air_id = app
+            .world
+            .spawn((
+                ElementBundle::create_air(Vec3::new(1.0, -1.0, 0.0)),
+                swapped_air_position,
+            ))
+            .id();
+
+        // Setup test entities
+        elements.insert(swapped_sand_position, swapped_sand_id);
+        elements.insert(air_position, air_id);
+        elements.insert(dirt_position, dirt_id);
+        elements.insert(swapped_air_position, swapped_air_id);
+
+        app.world.spawn(WorldMap { elements });
+
+        // Add gravity system
+        app.add_system(sand_gravity_system);
+        // Run systems
+        app.update();
+
+        assert_eq!(
+            app.world.get::<Position>(swapped_sand_id).unwrap(),
+            &Position::ONE
+        );
+        assert_eq!(
+            app.world.get::<Position>(swapped_air_id).unwrap(),
+            &Position::ZERO
+        );
+
+        assert_eq!(
+            app.world
+                .get::<Transform>(swapped_sand_id)
+                .unwrap()
+                .translation,
+            Vec3::new(1.0, -1.0, 0.0)
+        );
+        assert_eq!(
+            app.world
+                .get::<Transform>(swapped_air_id)
+                .unwrap()
+                .translation,
+            Vec3::ZERO
+        );
+    }
+
+    // Confirm that sand does not fall to the left if blocked to its left
+
+    // Confirm that sand does not fall to the right if blocked to its right
+
+    // Confirm that sand does not fall to the left if blocked to its bottom-left
+
+    // Confirm that sand does not fall to the right if blocked to its bottom-right
+
+    // Confirm that coinflip occurs if sand can fall to both the left and right
 }
