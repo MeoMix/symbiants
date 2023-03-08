@@ -1,52 +1,19 @@
+use bevy::{prelude::*, sprite::Anchor, utils::HashMap};
 use std::fmt;
-
-use bevy::{prelude::*, sprite::Anchor};
 
 use super::WorldState;
 
-#[derive(Component, Debug)]
+// TODO: maybe introduce a Tile concept?
+#[derive(Component, Debug, Eq, Hash, PartialEq, Copy, Clone)]
 pub struct Position {
     // (0,0) is the top-left corner of the viewport so these values can be represented unsigned
     pub x: isize,
     pub y: isize,
 }
 
-// NOTE: This is a two-dimensional array expressed in a single Vector.
-// This is to allow for easier shorthand such as Vec.swap and Vec.get.
-// Access via vec![y * WORLD_WIDTH + x]
 #[derive(Component)]
-pub struct Elements2D {
-    width: isize,
-    height: isize,
-    elements: Vec<Entity>,
-}
-
-impl Elements2D {
-    pub fn new(width: isize, height: isize, elements: Vec<Entity>) -> Self {
-        Self {
-            width,
-            height,
-            elements,
-        }
-    }
-
-    pub fn get(&self, x: isize, y: isize) -> Option<&Entity> {
-        let is_y_valid = y > -1 && y <= self.height;
-        let is_x_valid = x > -1 && x <= self.width;
-
-        if is_y_valid && is_x_valid {
-            self.elements.get((y * self.width + x) as usize)
-        } else {
-            None
-        }
-    }
-
-    pub fn swap(&mut self, a: &Position, b: &Position) {
-        self.elements.swap(
-            (a.y * self.width + a.x) as usize,
-            (b.y * self.width + b.x) as usize,
-        );
-    }
+pub struct WorldMap {
+    pub elements: HashMap<Position, Entity>,
 }
 
 // AffectedByGravity is just applied to Sand at the moment.
@@ -70,8 +37,6 @@ pub enum Element {
 impl fmt::Display for Element {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
-        // or, alternatively:
-        // fmt::Debug::fmt(self, f)
     }
 }
 
@@ -134,10 +99,10 @@ impl ElementBundle {
     }
 }
 
+// Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
 pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) {
-    // Spawn interactive elements - air/dirt. Air isn't visible, background is revealed in its place.
-    let mut element_vector_2d =
-        Vec::with_capacity((world_state.width * world_state.height) as usize);
+    // TODO: probably better to create this all at once rather than spamming inserts
+    let mut elements = HashMap::<Position, Entity>::new();
 
     // Test Sand
     let sand_bundles = (0..1).flat_map(|row_index| {
@@ -157,7 +122,8 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
     });
 
     for sand_bundle in sand_bundles {
-        element_vector_2d.push(parent.spawn(sand_bundle).id());
+        let position = sand_bundle.1;
+        elements.insert(position, parent.spawn(sand_bundle).id());
     }
 
     // Air & Dirt
@@ -176,7 +142,8 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
     });
 
     for air_bundle in air_bundles {
-        element_vector_2d.push(parent.spawn(air_bundle).id());
+        let position = air_bundle.1;
+        elements.insert(position, parent.spawn(air_bundle).id());
     }
 
     let dirt_bundles =
@@ -198,12 +165,10 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
         });
 
     for dirt_bundle in dirt_bundles {
-        element_vector_2d.push(parent.spawn(dirt_bundle).id());
+        let position = dirt_bundle.1;
+        elements.insert(position, parent.spawn(dirt_bundle).id());
     }
 
-    parent.spawn(Elements2D::new(
-        world_state.width,
-        world_state.height,
-        element_vector_2d,
-    ));
+    // TODO: Will need to sort out how to add ants
+    parent.spawn(WorldMap { elements });
 }

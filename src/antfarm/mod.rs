@@ -103,12 +103,12 @@ fn get_world_container_transform(window: &Window, world_state: &Res<WorldState>)
     let world_scale = (window.width() / world_state.width as f32)
         .max(window.height() / world_state.height as f32);
 
-    info!(
-        "Window Height/Width: {}/{}, World Scale: {}",
-        window.width(),
-        window.height(),
-        world_scale,
-    );
+    // info!(
+    //     "Window Height/Width: {}/{}, World Scale: {}",
+    //     window.width(),
+    //     window.height(),
+    //     world_scale,
+    // );
 
     (
         // translation:
