@@ -1,12 +1,11 @@
 use bevy::{prelude::*, sprite::Anchor, utils::HashMap};
 use std::{fmt, ops::Add};
 
-use super::WorldState;
+use super::{gravity::AffectedByGravity, WorldState};
 
 // TODO: maybe introduce a Tile concept?
 #[derive(Component, Debug, Eq, PartialEq, Hash, Copy, Clone)]
 pub struct Position {
-    // (0,0) is the top-left corner of the viewport so these values can be represented unsigned
     pub x: isize,
     pub y: isize,
 }
@@ -18,6 +17,9 @@ impl Position {
 
     pub const Y: Self = Self::new(0, 1);
     pub const NEG_Y: Self = Self::new(0, -1);
+
+    pub const ONE: Self = Self::new(1, 1);
+    pub const NEG_ONE: Self = Self::new(-1, -1);
 
     pub const fn new(x: isize, y: isize) -> Self {
         Self { x, y }
@@ -40,11 +42,6 @@ impl Add for Position {
 pub struct WorldMap {
     pub elements: HashMap<Position, Entity>,
 }
-
-// AffectedByGravity is just applied to Sand at the moment.
-// It is surprisingly necessary to avoid overlapping queries in gravity system.
-#[derive(Component)]
-pub struct AffectedByGravity;
 
 #[derive(Bundle)]
 pub struct ElementBundle {

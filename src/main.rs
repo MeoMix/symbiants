@@ -1,5 +1,3 @@
-#![feature(let_chains)]
-
 use antfarm::AntfarmPlugin;
 use bevy::prelude::*;
 
