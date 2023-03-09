@@ -3,8 +3,8 @@ mod background;
 mod elements;
 mod gravity;
 mod settings;
-
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use std::ops::Add;
 
 use self::{
     ant::setup_ants,
@@ -26,6 +26,54 @@ pub struct WorldState {
     width: isize,
     height: isize,
     surface_level: isize,
+}
+
+#[derive(Resource)]
+pub struct WorldMap {
+    pub elements: HashMap<Position, Entity>,
+}
+
+impl WorldMap {
+    pub fn new() -> Self {
+        WorldMap {
+            elements: HashMap::default(),
+        }
+    }
+}
+
+// TODO: maybe introduce a Tile concept?
+#[derive(Component, Debug, Eq, PartialEq, Hash, Copy, Clone)]
+pub struct Position {
+    pub x: isize,
+    pub y: isize,
+}
+
+impl Position {
+    pub const ZERO: Self = Self::new(0, 0);
+    pub const X: Self = Self::new(1, 0);
+    pub const NEG_X: Self = Self::new(-1, 0);
+
+    pub const Y: Self = Self::new(0, 1);
+    pub const NEG_Y: Self = Self::new(0, -1);
+
+    pub const ONE: Self = Self::new(1, 1);
+    pub const NEG_ONE: Self = Self::new(-1, -1);
+
+    pub const fn new(x: isize, y: isize) -> Self {
+        Self { x, y }
+    }
+}
+
+impl Add for Position {
+    type Output = Self;
+
+    // TODO: Hexx uses const_add here?
+    fn add(self, other: Self) -> Self {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
 }
 
 pub struct AntfarmPlugin;
@@ -73,6 +121,7 @@ impl Plugin for AntfarmPlugin {
         .insert_resource(FixedTime::new_from_secs(TIME_STEP))
         .insert_resource(SETTINGS)
         .insert_resource(WORLD_STATE)
+        .insert_resource(WorldMap::new())
         .add_startup_system(setup)
         .add_systems(
             (window_resize_system, sand_gravity_system).in_schedule(CoreSchedule::FixedUpdate),
@@ -124,6 +173,7 @@ fn setup(
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     settings: Res<Settings>,
     world_state: Res<WorldState>,
+    world_map: ResMut<WorldMap>,
 ) {
     // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
     let Ok(primary_window) = primary_window_query.get_single() else {
@@ -149,7 +199,7 @@ fn setup(
         .with_children(|parent| {
             // TODO: This sucks! One of the main perks of Resource is to use DI to gain access rather than passing through hierarchy chain
             setup_background(parent, &world_state);
-            setup_elements(parent, &world_state);
+            setup_elements(parent, &world_state, world_map);
             setup_ants(parent, &asset_server, &settings);
         });
 }

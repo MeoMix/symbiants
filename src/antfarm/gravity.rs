@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::elements::{Element, Position, WorldMap};
+use super::{elements::Element, Position, WorldMap};
 use rand::Rng;
 
 // AffectedByGravity is just applied to Sand at the moment, but will try to make it work for Ant too.
@@ -44,10 +44,8 @@ pub fn sand_gravity_system(
         (&Element, &mut Position, &mut Transform),
         Without<AffectedByGravity>,
     >,
-    world_map_query: Query<&WorldMap>,
+    world_map: Res<WorldMap>,
 ) {
-    let world_map = world_map_query.single();
-
     for (mut sand_position, mut sand_transform) in sand_query.iter_mut() {
         // TODO: enum + match
         let mut go_down = false;
@@ -149,7 +147,7 @@ pub mod tests {
         elements.insert(sand_position, sand_id);
         elements.insert(air_position, air_id);
 
-        app.world.spawn(WorldMap { elements });
+        app.world.insert_resource(WorldMap { elements });
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -197,7 +195,7 @@ pub mod tests {
         elements.insert(sand_position, sand_id);
         elements.insert(dirt_position, dirt_id);
 
-        app.world.spawn(WorldMap { elements });
+        app.world.insert_resource(WorldMap { elements });
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -238,7 +236,7 @@ pub mod tests {
 
         elements.insert(sand_position, sand_id);
 
-        app.world.spawn(WorldMap { elements });
+        app.world.insert_resource(WorldMap { elements });
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -298,7 +296,7 @@ pub mod tests {
         elements.insert(swapped_air_position, swapped_air_id);
         elements.insert(dirt_position, dirt_id);
 
-        app.world.spawn(WorldMap { elements });
+        app.world.insert_resource(WorldMap { elements });
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -378,7 +376,7 @@ pub mod tests {
         elements.insert(dirt_position, dirt_id);
         elements.insert(swapped_air_position, swapped_air_id);
 
-        app.world.spawn(WorldMap { elements });
+        app.world.insert_resource(WorldMap { elements });
 
         // Add gravity system
         app.add_system(sand_gravity_system);

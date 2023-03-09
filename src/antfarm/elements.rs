@@ -1,47 +1,5 @@
-use bevy::{prelude::*, sprite::Anchor, utils::HashMap};
-use std::{fmt, ops::Add};
-
-use super::{gravity::AffectedByGravity, WorldState};
-
-// TODO: maybe introduce a Tile concept?
-#[derive(Component, Debug, Eq, PartialEq, Hash, Copy, Clone)]
-pub struct Position {
-    pub x: isize,
-    pub y: isize,
-}
-
-impl Position {
-    pub const ZERO: Self = Self::new(0, 0);
-    pub const X: Self = Self::new(1, 0);
-    pub const NEG_X: Self = Self::new(-1, 0);
-
-    pub const Y: Self = Self::new(0, 1);
-    pub const NEG_Y: Self = Self::new(0, -1);
-
-    pub const ONE: Self = Self::new(1, 1);
-    pub const NEG_ONE: Self = Self::new(-1, -1);
-
-    pub const fn new(x: isize, y: isize) -> Self {
-        Self { x, y }
-    }
-}
-
-impl Add for Position {
-    type Output = Self;
-
-    // TODO: Hexx uses const_add here?
-    fn add(self, other: Self) -> Self {
-        Self {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-}
-
-#[derive(Component)]
-pub struct WorldMap {
-    pub elements: HashMap<Position, Entity>,
-}
+use super::{gravity::AffectedByGravity, Position, WorldMap, WorldState};
+use bevy::{prelude::*, sprite::Anchor};
 
 #[derive(Bundle)]
 pub struct ElementBundle {
@@ -54,12 +12,6 @@ pub enum Element {
     Air,
     Dirt,
     Sand,
-}
-
-impl fmt::Display for Element {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }
 
 impl ElementBundle {
@@ -122,10 +74,11 @@ impl ElementBundle {
 }
 
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
-pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) {
-    // TODO: probably better to create this all at once rather than spamming inserts
-    let mut elements = HashMap::<Position, Entity>::new();
-
+pub fn setup_elements(
+    parent: &mut ChildBuilder,
+    world_state: &Res<WorldState>,
+    mut world_map: ResMut<WorldMap>,
+) {
     // Test Sand
     let sand_bundles = (0..1).flat_map(|row_index| {
         (0..world_state.width).map(move |column_index| {
@@ -145,7 +98,9 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
 
     for sand_bundle in sand_bundles {
         let position = sand_bundle.1;
-        elements.insert(position, parent.spawn(sand_bundle).id());
+        world_map
+            .elements
+            .insert(position, parent.spawn(sand_bundle).id());
     }
 
     // Air & Dirt
@@ -165,7 +120,9 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
 
     for air_bundle in air_bundles {
         let position = air_bundle.1;
-        elements.insert(position, parent.spawn(air_bundle).id());
+        world_map
+            .elements
+            .insert(position, parent.spawn(air_bundle).id());
     }
 
     let dirt_bundles =
@@ -188,9 +145,8 @@ pub fn setup_elements(parent: &mut ChildBuilder, world_state: &Res<WorldState>) 
 
     for dirt_bundle in dirt_bundles {
         let position = dirt_bundle.1;
-        elements.insert(position, parent.spawn(dirt_bundle).id());
+        world_map
+            .elements
+            .insert(position, parent.spawn(dirt_bundle).id());
     }
-
-    // TODO: Will need to sort out how to add ants
-    parent.spawn(WorldMap { elements });
 }
