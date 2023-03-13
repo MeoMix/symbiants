@@ -17,3 +17,21 @@ pub struct Settings {
     pub ant_color: Color,
     pub probabilities: Probabilities,
 }
+
+impl Default for Settings {
+    fn default() -> Settings {
+        Settings {
+            compact_sand_depth: 15,
+            initial_dirt_percent: 3.0 / 4.0,
+            initial_ant_count: 20,
+            ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
+            probabilities: Probabilities {
+                random_dig: 0.003,
+                random_drop: 0.003,
+                random_turn: 0.005,
+                below_surface_dig: 0.10,
+                above_surface_drop: 0.10,
+            },
+        }
+    }
+}

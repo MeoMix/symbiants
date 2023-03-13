@@ -12,7 +12,7 @@ use crate::antfarm::{
     gravity::GravityPlugin, root::RootPlugin,
 };
 
-use self::settings::{Probabilities, Settings};
+use self::settings::Settings;
 
 #[derive(Resource)]
 pub struct WorldState {
@@ -82,28 +82,16 @@ impl Plugin for AntfarmPlugin {
         // Defines the amount of time that should elapse between each physics step.
         const TIME_STEP: f32 = 1.0 / 60.0;
 
-        const SETTINGS: Settings = Settings {
-            compact_sand_depth: 15,
-            initial_dirt_percent: 3.0 / 4.0,
-            initial_ant_count: 20,
-            ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
-            probabilities: Probabilities {
-                random_dig: 0.003,
-                random_drop: 0.003,
-                random_turn: 0.005,
-                below_surface_dig: 0.10,
-                above_surface_drop: 0.10,
-            },
-        };
+        let settings = Settings::default();
 
         const WORLD_WIDTH: isize = 144;
         const WORLD_HEIGHT: isize = 81;
-        const WORLD_STATE: WorldState = WorldState {
+        let world_state: WorldState = WorldState {
             width: WORLD_WIDTH,
             height: WORLD_HEIGHT,
             // TODO: Double-check for off-by-one her
             surface_level: (WORLD_HEIGHT as f32
-                - (WORLD_HEIGHT as f32 * SETTINGS.initial_dirt_percent))
+                - (WORLD_HEIGHT as f32 * settings.initial_dirt_percent))
                 as isize,
         };
 
@@ -115,8 +103,8 @@ impl Plugin for AntfarmPlugin {
             ..default()
         }))
         .insert_resource(FixedTime::new_from_secs(TIME_STEP))
-        .insert_resource(SETTINGS)
-        .insert_resource(WORLD_STATE)
+        .insert_resource(settings)
+        .insert_resource(world_state)
         .insert_resource(WorldMap::new())
         .add_plugin(RootPlugin)
         .add_plugin(BackgroundPlugin)
