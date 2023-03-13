@@ -6,10 +6,9 @@ mod settings;
 use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
 use std::ops::Add;
 
+use crate::antfarm::{ant::AntsPlugin, background::BackgroundPlugin, elements::ElementsPlugin};
+
 use self::{
-    ant::setup_ants,
-    background::setup_background,
-    elements::setup_elements,
     gravity::sand_gravity_system,
     settings::{Probabilities, Settings},
 };
@@ -18,7 +17,7 @@ use self::{
 struct MainCamera;
 
 #[derive(Component)]
-struct WorldContainer;
+struct Root;
 
 #[derive(Resource)]
 pub struct WorldState {
@@ -83,8 +82,7 @@ impl Plugin for AntfarmPlugin {
         // NOTE: I've declared const here to ensure they are accessed as resources
 
         // Defines the amount of time that should elapse between each physics step.
-        // NOTE: should probably run in 1/60 but slowing down for dev
-        const TIME_STEP: f32 = 10.0 / 60.0;
+        const TIME_STEP: f32 = 1.0 / 60.0;
 
         const SETTINGS: Settings = Settings {
             compact_sand_depth: 15,
@@ -122,7 +120,12 @@ impl Plugin for AntfarmPlugin {
         .insert_resource(SETTINGS)
         .insert_resource(WORLD_STATE)
         .insert_resource(WorldMap::new())
-        .add_startup_system(setup)
+        // TODO: Not sure what dragons await me for doing this. Intention is to allow plugins to query for Root in their own startup systems.
+        // Inspiration comes from: https://github.com/Leafwing-Studios/Emergence/blob/4e1b12f72f1f73a460a4e2b836163890e31157e7/emergence_lib/src/ui/mod.rs#L32
+        .add_startup_system(setup.in_base_set(StartupSet::PreStartup))
+        .add_plugin(BackgroundPlugin)
+        .add_plugin(ElementsPlugin)
+        .add_plugin(AntsPlugin)
         .add_systems(
             (window_resize_system, sand_gravity_system).in_schedule(CoreSchedule::FixedUpdate),
         );
@@ -131,7 +134,7 @@ impl Plugin for AntfarmPlugin {
 
 fn window_resize_system(
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    mut query: Query<&mut Transform, With<WorldContainer>>,
+    mut query: Query<&mut Transform, With<Root>>,
     world_state: Res<WorldState>,
 ) {
     let Ok(primary_window) = primary_window_query.get_single() else {
@@ -169,11 +172,8 @@ fn get_world_container_transform(window: &Window, world_state: &Res<WorldState>)
 
 fn setup(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    settings: Res<Settings>,
     world_state: Res<WorldState>,
-    world_map: ResMut<WorldMap>,
 ) {
     // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
     let Ok(primary_window) = primary_window_query.get_single() else {
@@ -182,24 +182,18 @@ fn setup(
 
     commands.spawn((Camera2dBundle::default(), MainCamera));
 
-    // TODO: this feels super wrong
     // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
     let (translation, scale) = get_world_container_transform(primary_window, &world_state);
-    let world_container_bundle = SpatialBundle {
-        transform: Transform {
-            translation,
-            scale,
+
+    commands.spawn((
+        SpatialBundle {
+            transform: Transform {
+                translation,
+                scale,
+                ..default()
+            },
             ..default()
         },
-        ..default()
-    };
-
-    commands
-        .spawn((world_container_bundle, WorldContainer))
-        .with_children(|parent| {
-            // TODO: This sucks! One of the main perks of Resource is to use DI to gain access rather than passing through hierarchy chain
-            setup_background(parent, &world_state);
-            setup_elements(parent, &world_state, world_map);
-            setup_ants(parent, &asset_server, &settings);
-        });
+        Root,
+    ));
 }
