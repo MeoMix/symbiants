@@ -1,6 +1,7 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use super::{Root, WorldState};
+use super::WorldState;
+use crate::antfarm::root::Root;
 
 fn create_air_sprite(width: f32, height: f32, y_offset: f32) -> SpriteBundle {
     SpriteBundle {

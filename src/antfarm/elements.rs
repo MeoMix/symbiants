@@ -1,4 +1,5 @@
-use super::{gravity::AffectedByGravity, Position, Root, WorldMap, WorldState};
+use super::{gravity::AffectedByGravity, Position, WorldMap, WorldState};
+use crate::antfarm::root::Root;
 use bevy::{prelude::*, sprite::Anchor};
 
 #[derive(Bundle)]

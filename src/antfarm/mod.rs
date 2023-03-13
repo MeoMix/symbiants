@@ -2,22 +2,17 @@ mod ant;
 mod background;
 mod elements;
 mod gravity;
+mod root;
 mod settings;
-use bevy::{prelude::*, utils::HashMap, window::PrimaryWindow};
+use bevy::{prelude::*, utils::HashMap};
 use std::ops::Add;
 
-use crate::antfarm::{ant::AntsPlugin, background::BackgroundPlugin, elements::ElementsPlugin};
-
-use self::{
-    gravity::sand_gravity_system,
-    settings::{Probabilities, Settings},
+use crate::antfarm::{
+    ant::AntsPlugin, background::BackgroundPlugin, elements::ElementsPlugin,
+    gravity::GravityPlugin, root::RootPlugin,
 };
 
-#[derive(Component)]
-struct MainCamera;
-
-#[derive(Component)]
-struct Root;
+use self::settings::{Probabilities, Settings};
 
 #[derive(Resource)]
 pub struct WorldState {
@@ -33,7 +28,7 @@ pub struct WorldMap {
 }
 
 impl WorldMap {
-    pub fn new() -> Self {
+    fn new() -> Self {
         WorldMap {
             elements: HashMap::default(),
         }
@@ -48,14 +43,17 @@ pub struct Position {
 }
 
 impl Position {
+    #[allow(dead_code)]
     pub const ZERO: Self = Self::new(0, 0);
     pub const X: Self = Self::new(1, 0);
     pub const NEG_X: Self = Self::new(-1, 0);
 
     pub const Y: Self = Self::new(0, 1);
+    #[allow(dead_code)]
     pub const NEG_Y: Self = Self::new(0, -1);
 
     pub const ONE: Self = Self::new(1, 1);
+    #[allow(dead_code)]
     pub const NEG_ONE: Self = Self::new(-1, -1);
 
     pub const fn new(x: isize, y: isize) -> Self {
@@ -120,80 +118,10 @@ impl Plugin for AntfarmPlugin {
         .insert_resource(SETTINGS)
         .insert_resource(WORLD_STATE)
         .insert_resource(WorldMap::new())
-        // TODO: Not sure what dragons await me for doing this. Intention is to allow plugins to query for Root in their own startup systems.
-        // Inspiration comes from: https://github.com/Leafwing-Studios/Emergence/blob/4e1b12f72f1f73a460a4e2b836163890e31157e7/emergence_lib/src/ui/mod.rs#L32
-        .add_startup_system(setup.in_base_set(StartupSet::PreStartup))
+        .add_plugin(RootPlugin)
         .add_plugin(BackgroundPlugin)
         .add_plugin(ElementsPlugin)
         .add_plugin(AntsPlugin)
-        .add_systems(
-            (window_resize_system, sand_gravity_system).in_schedule(CoreSchedule::FixedUpdate),
-        );
+        .add_plugin(GravityPlugin);
     }
-}
-
-fn window_resize_system(
-    primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    mut query: Query<&mut Transform, With<Root>>,
-    world_state: Res<WorldState>,
-) {
-    let Ok(primary_window) = primary_window_query.get_single() else {
-        return;
-    };
-
-    let mut transform = query.single_mut();
-
-    let (translation, scale) = get_world_container_transform(primary_window, &world_state);
-
-    transform.translation = translation;
-    transform.scale = scale;
-}
-
-// World dimensions are integer values (144/81) but <canvas/> has variable, floating point dimensions.
-// Determine a scaling factor so world fills available screen space.
-fn get_world_container_transform(window: &Window, world_state: &Res<WorldState>) -> (Vec3, Vec3) {
-    let world_scale = (window.width() / world_state.width as f32)
-        .max(window.height() / world_state.height as f32);
-
-    // info!(
-    //     "Window Height/Width: {}/{}, World Scale: {}",
-    //     window.width(),
-    //     window.height(),
-    //     world_scale,
-    // );
-
-    (
-        // translation:
-        Vec3::new(window.width() / -2.0, window.height() / 2.0, 0.0),
-        // scale:
-        Vec3::new(world_scale, world_scale, 1.0),
-    )
-}
-
-fn setup(
-    mut commands: Commands,
-    primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    world_state: Res<WorldState>,
-) {
-    // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
-    let Ok(primary_window) = primary_window_query.get_single() else {
-        return;
-    };
-
-    commands.spawn((Camera2dBundle::default(), MainCamera));
-
-    // Wrap in container and shift to top-left viewport so 0,0 is top-left corner.
-    let (translation, scale) = get_world_container_transform(primary_window, &world_state);
-
-    commands.spawn((
-        SpatialBundle {
-            transform: Transform {
-                translation,
-                scale,
-                ..default()
-            },
-            ..default()
-        },
-        Root,
-    ));
 }

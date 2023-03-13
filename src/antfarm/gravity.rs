@@ -35,7 +35,7 @@ fn is_all_air(
 
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
 // For each sand element which is above air, swap it with the air beneath it.
-pub fn sand_gravity_system(
+fn sand_gravity_system(
     mut sand_query: Query<
         (&mut Position, &mut Transform),
         (With<AffectedByGravity>, With<Element>),
@@ -48,7 +48,6 @@ pub fn sand_gravity_system(
 ) {
     for (mut sand_position, mut sand_transform) in sand_query.iter_mut() {
         // TODO: enum + match
-        let mut go_down = false;
         let mut go_left = false;
         let mut go_right = false;
 
@@ -59,7 +58,7 @@ pub fn sand_gravity_system(
         let right_below_sand_position = *sand_position + Position::ONE;
 
         // If there is air below the sand then continue falling down.
-        go_down = is_all_air(&world_map, &non_sand_query, vec![below_sand_position]);
+        let go_down = is_all_air(&world_map, &non_sand_query, vec![below_sand_position]);
 
         // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
         // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
@@ -417,4 +416,13 @@ pub mod tests {
     // Confirm that sand does not fall to the right if blocked to its bottom-right
 
     // Confirm that coinflip occurs if sand can fall to both the left and right
+}
+
+pub struct GravityPlugin;
+
+// TODO: This is probably too aggressive of a plugin architecture, but it's good for practice
+impl Plugin for GravityPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system(sand_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
+    }
 }

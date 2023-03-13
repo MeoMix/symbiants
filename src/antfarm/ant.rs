@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 
-use super::{elements::ElementBundle, settings::Settings, Root};
+use super::{elements::ElementBundle, settings::Settings};
+use crate::antfarm::root::Root;
 
 // TODO: Add support for behavior timer.
 // TODO: Add support for dynamic names.
 
 #[derive(Bundle)]
-pub struct AntSpriteBundle {
+struct AntSpriteBundle {
     sprite_bundle: SpriteBundle,
     facing: AntFacing,
     angle: AntAngle,
@@ -14,15 +15,15 @@ pub struct AntSpriteBundle {
 }
 
 #[derive(Bundle)]
-pub struct AntLabelBundle {
+struct AntLabelBundle {
     text_bundle: Text2dBundle,
 }
 
 #[derive(Component)]
-pub struct Ant;
+struct Ant;
 
 impl AntLabelBundle {
-    pub fn new(label: String, asset_server: &Res<AssetServer>) -> Self {
+    fn new(label: String, asset_server: &Res<AssetServer>) -> Self {
         Self {
             text_bundle: Text2dBundle {
                 transform: Transform {
@@ -49,7 +50,7 @@ impl AntLabelBundle {
 const ANT_SCALE: f32 = 1.2;
 
 impl AntSpriteBundle {
-    pub fn new(
+    fn new(
         color: Color,
         facing: AntFacing,
         angle: AntAngle,
@@ -86,19 +87,19 @@ impl AntSpriteBundle {
 }
 
 #[derive(Component, PartialEq)]
-pub enum AntBehavior {
+enum AntBehavior {
     Wandering,
     Carrying,
 }
 
 #[derive(Component, PartialEq)]
-pub enum AntFacing {
+enum AntFacing {
     Left,
     Right,
 }
 
 #[derive(Component, PartialEq, Copy, Clone)]
-pub enum AntAngle {
+enum AntAngle {
     Zero = 0,
     Ninety = 90,
     OneHundredEighty = 180,
