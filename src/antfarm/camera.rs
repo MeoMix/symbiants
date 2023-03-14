@@ -7,7 +7,7 @@ use bevy::{
 #[derive(Component)]
 struct MainCamera;
 
-pub struct RootPlugin;
+pub struct CameraPlugin;
 
 // Determine a scaling factor so world fills available screen space.
 // NOTE: resize event is sent on load so this functions as an initializer, too.
@@ -37,7 +37,7 @@ fn setup(mut commands: Commands) {
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
-impl Plugin for RootPlugin {
+impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup).add_system(window_resize);
     }

@@ -1,15 +1,15 @@
 mod ant;
 mod background;
+mod camera;
 mod elements;
 mod gravity;
-mod root;
 mod settings;
 use bevy::{prelude::*, utils::HashMap};
 use std::ops::Add;
 
 use crate::antfarm::{
-    ant::AntsPlugin, background::BackgroundPlugin, elements::ElementsPlugin,
-    gravity::GravityPlugin, root::RootPlugin,
+    ant::AntsPlugin, background::BackgroundPlugin, camera::CameraPlugin, elements::ElementsPlugin,
+    gravity::GravityPlugin,
 };
 
 use self::settings::Settings;
@@ -106,7 +106,7 @@ impl Plugin for AntfarmPlugin {
         .insert_resource(settings)
         .insert_resource(world_state)
         .insert_resource(WorldMap::new())
-        .add_plugin(RootPlugin)
+        .add_plugin(CameraPlugin)
         .add_plugin(BackgroundPlugin)
         .add_plugin(ElementsPlugin)
         .add_plugin(AntsPlugin)
