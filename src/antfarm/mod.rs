@@ -19,15 +19,19 @@ use self::{
     settings::Settings,
 };
 
-// Defines the amount of time that should elapse between each physics step.
-const TIME_STEP: f32 = 1.0 / 60.0;
 pub struct AntfarmPlugin;
 
 impl Plugin for AntfarmPlugin {
     fn build(&self, app: &mut App) {
-        // NOTE: I've declared const here to ensure they are accessed as resources
-
+        // Defines the amount of time that should elapse between each physics step.
+        let fixed_time = FixedTime::new_from_secs(1.0 / 60.0);
         let settings = Settings::default();
+        let world_map = WorldMap::new(
+            settings.world_width,
+            settings.world_height,
+            settings.initial_dirt_percent,
+            None,
+        );
 
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
@@ -36,13 +40,8 @@ impl Plugin for AntfarmPlugin {
             }),
             ..default()
         }))
-        .insert_resource(FixedTime::new_from_secs(TIME_STEP))
-        .insert_resource(WorldMap::new(
-            settings.world_width,
-            settings.world_height,
-            settings.initial_dirt_percent,
-            None,
-        ))
+        .insert_resource(fixed_time)
+        .insert_resource(world_map)
         .insert_resource(settings)
         .add_plugin(CameraPlugin)
         .add_plugin(BackgroundPlugin)

@@ -15,7 +15,6 @@ rand = { version = "0.8.5" }
 # TODO: move to dev deps?
 wasm-bindgen-test = "0.3.34"
 
-
 # Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
