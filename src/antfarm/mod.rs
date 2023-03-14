@@ -4,6 +4,7 @@ mod camera;
 mod elements;
 mod gravity;
 mod position;
+mod render;
 mod settings;
 use bevy::{prelude::*, utils::HashMap};
 
@@ -12,11 +13,10 @@ use crate::antfarm::{
     gravity::GravityPlugin,
 };
 
-use self::{position::Position, settings::Settings};
+use self::{position::Position, render::RenderPlugin, settings::Settings};
 
 #[derive(Resource)]
 pub struct WorldState {
-    // NOTE: These values should never be negative, but I am fearful of using `usize`
     width: isize,
     height: isize,
     surface_level: isize,
@@ -27,7 +27,7 @@ impl WorldState {
         WorldState {
             width,
             height,
-            // TODO: Double-check for off-by-one her
+            // TODO: Double-check for off-by-one here
             surface_level: (height as f32 - (height as f32 * dirt_percent)) as isize,
         }
     }
@@ -75,6 +75,7 @@ impl Plugin for AntfarmPlugin {
         .add_plugin(BackgroundPlugin)
         .add_plugin(ElementsPlugin)
         .add_plugin(AntsPlugin)
-        .add_plugin(GravityPlugin);
+        .add_plugin(GravityPlugin)
+        .add_plugin(RenderPlugin);
     }
 }

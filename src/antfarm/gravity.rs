@@ -10,25 +10,18 @@ use rand::Rng;
 pub struct AffectedByGravity;
 
 // Returns true if every element in `positions` is Element::Air
+// NOTE: This returns true if given 0 positions.
 fn is_all_air(
     world_map: &WorldMap,
-    non_sand_query: &Query<(&Element, &mut Position, &mut Transform), Without<AffectedByGravity>>,
+    non_sand_query: &Query<(&Element, &mut Position), Without<AffectedByGravity>>,
     positions: Vec<Position>,
 ) -> bool {
     positions
         .iter()
         .map(|position| {
-            let mut is_air = false;
-
-            if let Some(&element) = world_map.elements.get(&position) {
-                if let Ok((&element, _, _)) = non_sand_query.get(element) {
-                    if element == Element::Air {
-                        is_air = true;
-                    }
-                }
-            }
-
-            is_air
+            let Some(&element) = world_map.elements.get(&position) else { return false; };
+            let Ok((&element, _)) = non_sand_query.get(element) else { return false; };
+            element == Element::Air
         })
         .all(|is_air| is_air)
 }
@@ -36,17 +29,11 @@ fn is_all_air(
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
 // For each sand element which is above air, swap it with the air beneath it.
 fn sand_gravity_system(
-    mut sand_query: Query<
-        (&mut Position, &mut Transform),
-        (With<AffectedByGravity>, With<Element>),
-    >,
-    mut non_sand_query: Query<
-        (&Element, &mut Position, &mut Transform),
-        Without<AffectedByGravity>,
-    >,
+    mut sand_query: Query<&mut Position, (With<AffectedByGravity>, With<Element>)>,
+    mut non_sand_query: Query<(&Element, &mut Position), Without<AffectedByGravity>>,
     world_map: Res<WorldMap>,
 ) {
-    for (mut sand_position, mut sand_transform) in sand_query.iter_mut() {
+    for mut sand_position in sand_query.iter_mut() {
         // TODO: enum + match
         let mut go_left = false;
         let mut go_right = false;
@@ -97,17 +84,11 @@ fn sand_gravity_system(
 
         let Some(target_position) = target_position else { continue };
         let Some(&air_entity) = world_map.elements.get(&target_position) else { continue };
-        let Ok((_, mut air_position, mut air_transform)) = non_sand_query.get_mut(air_entity) else { continue };
+        let Ok((_, mut air_position)) = non_sand_query.get_mut(air_entity) else { continue };
 
         // Swap element positions internally.
         (sand_position.x, air_position.x) = (air_position.x, sand_position.x);
         (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
-
-        // Swap element positions visually.
-        (sand_transform.translation.x, air_transform.translation.x) =
-            (air_transform.translation.x, sand_transform.translation.x);
-        (sand_transform.translation.y, air_transform.translation.y) =
-            (air_transform.translation.y, sand_transform.translation.y);
     }
 }
 
@@ -155,15 +136,6 @@ pub mod tests {
 
         assert_eq!(app.world.get::<Position>(sand_id).unwrap(), &Position::Y);
         assert_eq!(app.world.get::<Position>(air_id).unwrap(), &Position::ZERO);
-
-        assert_eq!(
-            app.world.get::<Transform>(sand_id).unwrap().translation,
-            Vec3::NEG_Y
-        );
-        assert_eq!(
-            app.world.get::<Transform>(air_id).unwrap().translation,
-            Vec3::ZERO
-        );
     }
 
     // Confirm that sand ontop of non-air stays put
@@ -203,15 +175,6 @@ pub mod tests {
 
         assert_eq!(app.world.get::<Position>(sand_id).unwrap(), &Position::ZERO);
         assert_eq!(app.world.get::<Position>(dirt_id).unwrap(), &Position::Y);
-
-        assert_eq!(
-            app.world.get::<Transform>(sand_id).unwrap().translation,
-            Vec3::ZERO
-        );
-        assert_eq!(
-            app.world.get::<Transform>(dirt_id).unwrap().translation,
-            Vec3::NEG_Y
-        );
     }
 
     // Confirm that sand at the bottom of the world doesn't panic
@@ -243,11 +206,6 @@ pub mod tests {
         app.update();
 
         assert_eq!(app.world.get::<Position>(sand_id).unwrap(), &Position::ZERO);
-
-        assert_eq!(
-            app.world.get::<Transform>(sand_id).unwrap().translation,
-            Vec3::ZERO
-        );
     }
 
     // Confirm that sand falls properly to the left
@@ -309,21 +267,6 @@ pub mod tests {
         assert_eq!(
             app.world.get::<Position>(swapped_air_id).unwrap(),
             &Position::X
-        );
-
-        assert_eq!(
-            app.world
-                .get::<Transform>(swapped_sand_id)
-                .unwrap()
-                .translation,
-            Vec3::NEG_Y
-        );
-        assert_eq!(
-            app.world
-                .get::<Transform>(swapped_air_id)
-                .unwrap()
-                .translation,
-            Vec3::X
         );
     }
 
@@ -389,21 +332,6 @@ pub mod tests {
         assert_eq!(
             app.world.get::<Position>(swapped_air_id).unwrap(),
             &Position::ZERO
-        );
-
-        assert_eq!(
-            app.world
-                .get::<Transform>(swapped_sand_id)
-                .unwrap()
-                .translation,
-            Vec3::new(1.0, -1.0, 0.0)
-        );
-        assert_eq!(
-            app.world
-                .get::<Transform>(swapped_air_id)
-                .unwrap()
-                .translation,
-            Vec3::ZERO
         );
     }
 
