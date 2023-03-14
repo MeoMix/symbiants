@@ -51,7 +51,6 @@ fn setup(mut commands: Commands, world_state: Res<WorldState>) {
     ));
 }
 
-// TODO: This is probably too aggressive of a plugin architecture, but it's good for practice
 impl Plugin for BackgroundPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup);

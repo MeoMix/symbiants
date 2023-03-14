@@ -420,7 +420,6 @@ pub mod tests {
 
 pub struct GravityPlugin;
 
-// TODO: This is probably too aggressive of a plugin architecture, but it's good for practice
 impl Plugin for GravityPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(sand_gravity_system.in_schedule(CoreSchedule::FixedUpdate));

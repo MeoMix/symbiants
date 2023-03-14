@@ -256,7 +256,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, settings: Res<S
     }
 }
 
-// TODO: This is probably too aggressive of a plugin architecture, but it's good for practice
 impl Plugin for AntsPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup);
