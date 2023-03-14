@@ -17,9 +17,9 @@ fn window_resize(
     mut query: Query<(&mut Transform, &mut OrthographicProjection), With<MainCamera>>,
     world_state: Res<WorldState>,
 ) {
-    let Ok(entity) = primary_window_query.get_single() else { panic!("missing primary window"); };
-
     for resize_event in resize_events.iter() {
+        let Ok(entity) = primary_window_query.get_single() else { continue };
+
         if resize_event.window == entity {
             let (mut transform, mut projection) = query.single_mut();
 
