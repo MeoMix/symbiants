@@ -34,7 +34,6 @@ fn sand_gravity_system(
     world_map: Res<WorldMap>,
 ) {
     for mut sand_position in sand_query.iter_mut() {
-        // TODO: enum + match
         let mut go_left = false;
         let mut go_right = false;
 

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::prelude::{Color, Resource};
 
 pub struct Probabilities {
     pub random_dig: f32,         // dig down while wandering

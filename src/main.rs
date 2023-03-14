@@ -1,5 +1,5 @@
 use antfarm::AntfarmPlugin;
-use bevy::prelude::*;
+use bevy::app::App;
 
 mod antfarm;
 
