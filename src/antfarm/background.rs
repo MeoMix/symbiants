@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use super::WorldState;
+use super::WorldMap;
 
 fn create_air_sprite(width: f32, height: f32, y_offset: f32) -> SpriteBundle {
     SpriteBundle {
@@ -37,17 +37,17 @@ fn create_tunnel_sprite(width: f32, height: f32, y_offset: f32) -> SpriteBundle 
 pub struct BackgroundPlugin;
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-fn setup(mut commands: Commands, world_state: Res<WorldState>) {
+fn setup(mut commands: Commands, world_map: Res<WorldMap>) {
     commands.spawn(create_air_sprite(
-        world_state.width as f32,
-        world_state.surface_level as f32 + 1.0,
+        world_map.width as f32,
+        world_map.surface_level as f32 + 1.0,
         0.0,
     ));
 
     commands.spawn(create_tunnel_sprite(
-        world_state.width as f32,
-        world_state.height as f32 - (world_state.surface_level as f32 + 1.0),
-        -(world_state.surface_level as f32 + 1.0),
+        world_map.width as f32,
+        world_map.height as f32 - (world_map.surface_level as f32 + 1.0),
+        -(world_map.surface_level as f32 + 1.0),
     ));
 }
 

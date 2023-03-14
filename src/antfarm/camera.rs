@@ -1,4 +1,4 @@
-use super::WorldState;
+use super::WorldMap;
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -15,7 +15,7 @@ fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
     mut query: Query<(&mut Transform, &mut OrthographicProjection), With<MainCamera>>,
-    world_state: Res<WorldState>,
+    world_map: Res<WorldMap>,
 ) {
     for resize_event in resize_events.iter() {
         let Ok(entity) = primary_window_query.get_single() else { continue };
@@ -23,8 +23,8 @@ fn window_resize(
         if resize_event.window == entity {
             let (mut transform, mut projection) = query.single_mut();
 
-            let world_scale = (resize_event.width / world_state.width as f32)
-                .max(resize_event.height / world_state.height as f32);
+            let world_scale = (resize_event.width / world_map.width as f32)
+                .max(resize_event.height / world_map.height as f32);
 
             transform.translation.x = resize_event.width / world_scale / 2.0;
             transform.translation.y = -resize_event.height / world_scale / 2.0;

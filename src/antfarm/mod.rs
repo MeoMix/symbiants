@@ -16,31 +16,20 @@ use crate::antfarm::{
 use self::{position::Position, render::RenderPlugin, settings::Settings};
 
 #[derive(Resource)]
-pub struct WorldState {
+struct WorldMap {
     width: isize,
     height: isize,
     surface_level: isize,
+    elements: HashMap<Position, Entity>,
 }
 
-impl WorldState {
+impl WorldMap {
     fn new(width: isize, height: isize, dirt_percent: f32) -> Self {
-        WorldState {
+        WorldMap {
             width,
             height,
             // TODO: Double-check for off-by-one here
             surface_level: (height as f32 - (height as f32 * dirt_percent)) as isize,
-        }
-    }
-}
-
-#[derive(Resource)]
-pub struct WorldMap {
-    pub elements: HashMap<Position, Entity>,
-}
-
-impl WorldMap {
-    fn new() -> Self {
-        WorldMap {
             elements: HashMap::default(),
         }
     }
@@ -64,13 +53,12 @@ impl Plugin for AntfarmPlugin {
             ..default()
         }))
         .insert_resource(FixedTime::new_from_secs(TIME_STEP))
-        .insert_resource(WorldState::new(
+        .insert_resource(WorldMap::new(
             settings.world_width,
             settings.world_height,
             settings.initial_dirt_percent,
         ))
         .insert_resource(settings)
-        .insert_resource(WorldMap::new())
         .add_plugin(CameraPlugin)
         .add_plugin(BackgroundPlugin)
         .add_plugin(ElementsPlugin)
