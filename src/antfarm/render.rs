@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::position::Position;
+use super::map::Position;
 
 fn render_system(mut query: Query<(&mut Transform, &Position), Changed<Position>>) {
     for (mut transform, position) in query.iter_mut() {

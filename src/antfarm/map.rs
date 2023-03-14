@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use std::ops::Add;
 
 // TODO: maybe introduce a Tile concept?
@@ -35,6 +35,44 @@ impl Add for Position {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct WorldMap {
+    width: isize,
+    height: isize,
+    surface_level: isize,
+    // TODO: Should not have this be public
+    pub elements: HashMap<Position, Entity>,
+}
+
+impl WorldMap {
+    pub fn width(&self) -> &isize {
+        &self.width
+    }
+
+    pub fn height(&self) -> &isize {
+        &self.height
+    }
+
+    pub fn surface_level(&self) -> &isize {
+        &self.surface_level
+    }
+
+    pub fn new(
+        width: isize,
+        height: isize,
+        dirt_percent: f32,
+        elements: Option<HashMap<Position, Entity>>,
+    ) -> Self {
+        WorldMap {
+            width,
+            height,
+            // TODO: Double-check for off-by-one here
+            surface_level: (height as f32 - (height as f32 * dirt_percent)) as isize,
+            elements: elements.unwrap_or_default(),
         }
     }
 }

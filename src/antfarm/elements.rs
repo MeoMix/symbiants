@@ -77,9 +77,9 @@ pub struct ElementsPlugin;
 
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
 fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
-    let width = world_map.width;
-    let height = world_map.height;
-    let surface_level = world_map.surface_level;
+    let &width = world_map.width();
+    let &height = world_map.height();
+    let &surface_level = world_map.surface_level();
 
     // Test Sand
     let sand_bundles = (0..1).flat_map(|row_index| {

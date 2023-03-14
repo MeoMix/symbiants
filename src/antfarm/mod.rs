@@ -3,37 +3,21 @@ mod background;
 mod camera;
 mod elements;
 mod gravity;
-mod position;
+mod map;
 mod render;
 mod settings;
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 
 use crate::antfarm::{
     ant::AntsPlugin, background::BackgroundPlugin, camera::CameraPlugin, elements::ElementsPlugin,
     gravity::GravityPlugin,
 };
 
-use self::{position::Position, render::RenderPlugin, settings::Settings};
-
-#[derive(Resource)]
-struct WorldMap {
-    width: isize,
-    height: isize,
-    surface_level: isize,
-    elements: HashMap<Position, Entity>,
-}
-
-impl WorldMap {
-    fn new(width: isize, height: isize, dirt_percent: f32) -> Self {
-        WorldMap {
-            width,
-            height,
-            // TODO: Double-check for off-by-one here
-            surface_level: (height as f32 - (height as f32 * dirt_percent)) as isize,
-            elements: HashMap::default(),
-        }
-    }
-}
+use self::{
+    map::{Position, WorldMap},
+    render::RenderPlugin,
+    settings::Settings,
+};
 
 // Defines the amount of time that should elapse between each physics step.
 const TIME_STEP: f32 = 1.0 / 60.0;
@@ -57,6 +41,7 @@ impl Plugin for AntfarmPlugin {
             settings.world_width,
             settings.world_height,
             settings.initial_dirt_percent,
+            None,
         ))
         .insert_resource(settings)
         .add_plugin(CameraPlugin)

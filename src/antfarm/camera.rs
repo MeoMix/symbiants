@@ -23,8 +23,8 @@ fn window_resize(
         if resize_event.window == entity {
             let (mut transform, mut projection) = query.single_mut();
 
-            let world_scale = (resize_event.width / world_map.width as f32)
-                .max(resize_event.height / world_map.height as f32);
+            let world_scale = (resize_event.width / *world_map.width() as f32)
+                .max(resize_event.height / *world_map.height() as f32);
 
             transform.translation.x = resize_event.width / world_scale / 2.0;
             transform.translation.y = -resize_event.height / world_scale / 2.0;

@@ -127,12 +127,8 @@ pub mod tests {
         elements.insert(sand_position, sand_id);
         elements.insert(air_position, air_id);
 
-        app.world.insert_resource(WorldMap {
-            elements,
-            width: 1,
-            height: 2,
-            surface_level: 1,
-        });
+        app.world
+            .insert_resource(WorldMap::new(1, 2, 0.0, Some(elements)));
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -171,12 +167,8 @@ pub mod tests {
         elements.insert(sand_position, sand_id);
         elements.insert(dirt_position, dirt_id);
 
-        app.world.insert_resource(WorldMap {
-            elements,
-            width: 1,
-            height: 2,
-            surface_level: 1,
-        });
+        app.world
+            .insert_resource(WorldMap::new(1, 2, 0.0, Some(elements)));
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -208,12 +200,8 @@ pub mod tests {
 
         elements.insert(sand_position, sand_id);
 
-        app.world.insert_resource(WorldMap {
-            elements,
-            width: 1,
-            height: 1,
-            surface_level: 0,
-        });
+        app.world
+            .insert_resource(WorldMap::new(1, 1, 0.0, Some(elements)));
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -268,12 +256,8 @@ pub mod tests {
         elements.insert(swapped_air_position, swapped_air_id);
         elements.insert(dirt_position, dirt_id);
 
-        app.world.insert_resource(WorldMap {
-            elements,
-            width: 2,
-            height: 2,
-            surface_level: 1,
-        });
+        app.world
+            .insert_resource(WorldMap::new(2, 2, 0.0, Some(elements)));
 
         // Add gravity system
         app.add_system(sand_gravity_system);
@@ -338,12 +322,8 @@ pub mod tests {
         elements.insert(dirt_position, dirt_id);
         elements.insert(swapped_air_position, swapped_air_id);
 
-        app.world.insert_resource(WorldMap {
-            elements,
-            width: 2,
-            height: 2,
-            surface_level: 1,
-        });
+        app.world
+            .insert_resource(WorldMap::new(2, 2, 0.0, Some(elements)));
 
         // Add gravity system
         app.add_system(sand_gravity_system);
