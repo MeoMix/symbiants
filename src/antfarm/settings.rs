@@ -10,10 +10,12 @@ pub struct Probabilities {
 
 #[derive(Resource)]
 pub struct Settings {
+    pub world_width: isize,
+    pub world_height: isize,
     // sand turns to dirt when stacked this high
-    pub compact_sand_depth: i32,
+    pub compact_sand_depth: isize,
     pub initial_dirt_percent: f32,
-    pub initial_ant_count: i32,
+    pub initial_ant_count: isize,
     pub ant_color: Color,
     pub probabilities: Probabilities,
 }
@@ -21,6 +23,8 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Settings {
         Settings {
+            world_width: 144,
+            world_height: 81,
             compact_sand_depth: 15,
             initial_dirt_percent: 3.0 / 4.0,
             initial_ant_count: 20,
