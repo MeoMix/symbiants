@@ -5,6 +5,8 @@ use bevy::{prelude::*, sprite::Anchor};
 pub struct ElementBundle {
     sprite_bundle: SpriteBundle,
     element: Element,
+    //  TODO: This should probably become a "Tile" in the future.
+    position: Position,
 }
 
 #[derive(Component, PartialEq, Copy, Clone, Debug)]
@@ -15,7 +17,10 @@ pub enum Element {
 }
 
 impl ElementBundle {
-    pub fn create_sand(translation: Vec3) -> Self {
+    pub fn create_sand(position: Position) -> Self {
+        // The view of the model position is just an inversion along the y-axis.
+        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
+
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
@@ -30,10 +35,14 @@ impl ElementBundle {
                 ..default()
             },
             element: Element::Sand,
+            position,
         }
     }
 
-    pub fn create_air(translation: Vec3) -> Self {
+    pub fn create_air(position: Position) -> Self {
+        // The view of the model position is just an inversion along the y-axis.
+        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
+
         Self {
             sprite_bundle: SpriteBundle {
                 // Air is transparent so reveal background
@@ -51,10 +60,14 @@ impl ElementBundle {
                 ..default()
             },
             element: Element::Air,
+            position,
         }
     }
 
-    pub fn create_dirt(translation: Vec3) -> Self {
+    pub fn create_dirt(position: Position) -> Self {
+        // The view of the model position is just an inversion along the y-axis.
+        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
+
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
@@ -69,6 +82,7 @@ impl ElementBundle {
                 ..default()
             },
             element: Element::Dirt,
+            position,
         }
     }
 }
@@ -85,14 +99,10 @@ fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
     let sand_bundles = (0..1).flat_map(|row_index| {
         (0..width).map(move |column_index| {
             (
-                ElementBundle::create_sand(
-                    // NOTE: row_index goes negative because 0,0 is top-left corner
-                    Vec3::new(column_index as f32, -(row_index as f32), 1.0),
-                ),
-                Position {
+                ElementBundle::create_sand(Position {
                     x: column_index,
                     y: row_index,
-                },
+                }),
                 AffectedByGravity,
             )
         })
@@ -104,49 +114,40 @@ fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
         (0..width).map(move |column_index| {
             (
                 // NOTE: row_index goes negative because 0,0 is top-left corner
-                ElementBundle::create_air(Vec3::new(column_index as f32, -(row_index as f32), 1.0)),
-                Position {
+                ElementBundle::create_air(Position {
                     x: column_index,
                     y: row_index,
-                },
+                }),
             )
         })
     });
 
     let dirt_bundles = ((surface_level + 1)..height).flat_map(|row_index| {
         (0..width).map(move |column_index| {
-            (
-                ElementBundle::create_dirt(Vec3::new(
-                    column_index as f32,
-                    // NOTE: row_index goes negative because 0,0 is top-left corner
-                    -(row_index as f32),
-                    1.0,
-                )),
-                Position {
-                    x: column_index,
-                    y: row_index,
-                },
-            )
+            (ElementBundle::create_dirt(Position {
+                x: column_index,
+                y: row_index,
+            }),)
         })
     });
 
     {
         for sand_bundle in sand_bundles {
-            let position = sand_bundle.1;
+            let position = sand_bundle.0.position;
             world_map
                 .elements
                 .insert(position, commands.spawn(sand_bundle).id());
         }
 
         for air_bundle in air_bundles {
-            let position = air_bundle.1;
+            let position = air_bundle.0.position;
             world_map
                 .elements
                 .insert(position, commands.spawn(air_bundle).id());
         }
 
         for dirt_bundle in dirt_bundles {
-            let position = dirt_bundle.1;
+            let position = dirt_bundle.0.position;
             world_map
                 .elements
                 .insert(position, commands.spawn(dirt_bundle).id());

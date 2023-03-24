@@ -1,6 +1,6 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
-use super::{elements::ElementBundle, settings::Settings};
+use super::{elements::Element, settings::Settings};
 
 // TODO: Add support for behavior timer.
 // TODO: Add support for dynamic names.
@@ -248,7 +248,23 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, settings: Res<S
                     if is_carrying {
                         // NOTE: sand carried by ants is not "affected by gravity" intentionally
                         // There might need to be a better way of handling this once ant gravity is implemented
-                        parent.spawn(ElementBundle::create_sand(Vec3::new(0.5, 0.5, 0.0)));
+                        // TODO: It seems like this logic should share ElementBundle create_sand but need to re-think position
+                        // otherwise maybe this shouldn't be a true SandSprite and instead be a sprite change on the ant itself?
+                        parent.spawn((
+                            SpriteBundle {
+                                transform: Transform {
+                                    translation: Vec3::new(0.5, 0.5, 0.0),
+                                    ..default()
+                                },
+                                sprite: Sprite {
+                                    color: Color::rgb(0.761, 0.698, 0.502),
+                                    anchor: Anchor::TopLeft,
+                                    ..default()
+                                },
+                                ..default()
+                            },
+                            Element::Sand,
+                        ));
                     }
                 });
                 parent.spawn(ant_bundle.2);

@@ -81,6 +81,8 @@ fn sand_gravity_system(
             target_position = Some(right_below_sand_position);
         }
 
+        // TODO: If not falling down, left, or right - consider being crushed
+
         let Some(target_position) = target_position else { continue };
         let Some(&air_entity) = world_map.elements.get(&target_position) else { continue };
         let Ok((_, mut air_position)) = non_sand_query.get_mut(air_entity) else { continue };
@@ -91,7 +93,6 @@ fn sand_gravity_system(
     }
 }
 
-// TODO: logging during tests doesn't seem to work - wasm-pack vs trunk issue?
 #[cfg(test)]
 pub mod tests {
     use super::*;
@@ -112,15 +113,11 @@ pub mod tests {
         // Setup test entities
         let sand_id = app
             .world
-            .spawn((
-                ElementBundle::create_sand(Vec3::ZERO),
-                sand_position,
-                AffectedByGravity,
-            ))
+            .spawn((ElementBundle::create_sand(sand_position), AffectedByGravity))
             .id();
         let air_id = app
             .world
-            .spawn((ElementBundle::create_air(Vec3::NEG_Y), air_position))
+            .spawn(ElementBundle::create_air(air_position))
             .id();
 
         elements.insert(sand_position, sand_id);
@@ -151,16 +148,12 @@ pub mod tests {
         // Setup test entities
         let sand_id = app
             .world
-            .spawn((
-                ElementBundle::create_sand(Vec3::ZERO),
-                sand_position,
-                AffectedByGravity,
-            ))
+            .spawn((ElementBundle::create_sand(sand_position), AffectedByGravity))
             .id();
         let dirt_id = app
             .world
             // TODO: The fact this NEG_Y has implicit relationship with air_position is no good
-            .spawn((ElementBundle::create_dirt(Vec3::NEG_Y), dirt_position))
+            .spawn(ElementBundle::create_dirt(dirt_position))
             .id();
 
         elements.insert(sand_position, sand_id);
@@ -190,11 +183,7 @@ pub mod tests {
         // Setup test entities
         let sand_id = app
             .world
-            .spawn((
-                ElementBundle::create_sand(Vec3::ZERO),
-                sand_position,
-                AffectedByGravity,
-            ))
+            .spawn((ElementBundle::create_sand(sand_position), AffectedByGravity))
             .id();
 
         elements.insert(sand_position, sand_id);
@@ -226,14 +215,13 @@ pub mod tests {
         // Row 1
         let air_id = app
             .world
-            .spawn((ElementBundle::create_air(Vec3::ZERO), air_position))
+            .spawn(ElementBundle::create_air(air_position))
             .id();
 
         let swapped_sand_id = app
             .world
             .spawn((
-                ElementBundle::create_sand(Vec3::X),
-                swapped_sand_position,
+                ElementBundle::create_sand(swapped_sand_position),
                 AffectedByGravity,
             ))
             .id();
@@ -241,12 +229,12 @@ pub mod tests {
         // Row 2
         let swapped_air_id = app
             .world
-            .spawn((ElementBundle::create_air(Vec3::NEG_Y), swapped_air_position))
+            .spawn(ElementBundle::create_air(swapped_air_position))
             .id();
 
         let dirt_id = app
             .world
-            .spawn((ElementBundle::create_dirt(Vec3::NEG_ONE), dirt_position))
+            .spawn(ElementBundle::create_dirt(dirt_position))
             .id();
 
         // Setup test entities
@@ -290,29 +278,25 @@ pub mod tests {
         let swapped_sand_id = app
             .world
             .spawn((
-                ElementBundle::create_sand(Vec3::ZERO),
-                swapped_sand_position,
+                ElementBundle::create_sand(swapped_sand_position),
                 AffectedByGravity,
             ))
             .id();
 
         let air_id = app
             .world
-            .spawn((ElementBundle::create_air(Vec3::X), air_position))
+            .spawn(ElementBundle::create_air(air_position))
             .id();
 
         // Row 2
         let dirt_id = app
             .world
-            .spawn((ElementBundle::create_dirt(Vec3::NEG_Y), dirt_position))
+            .spawn(ElementBundle::create_dirt(dirt_position))
             .id();
 
         let swapped_air_id = app
             .world
-            .spawn((
-                ElementBundle::create_air(Vec3::new(1.0, -1.0, 0.0)),
-                swapped_air_position,
-            ))
+            .spawn((ElementBundle::create_air(swapped_air_position),))
             .id();
 
         // Setup test entities
