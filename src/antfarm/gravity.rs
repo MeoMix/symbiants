@@ -3,12 +3,6 @@ use bevy::prelude::*;
 use super::{elements::Element, Position, WorldMap};
 use rand::Rng;
 
-// AffectedByGravity is just applied to Sand at the moment, but will try to make it work for Ant too.
-// It's not applied to dirt to ensure tunnels don't collapse, but obviously this is nonsense.
-// AffectedByGravity is, surprisingly, necessary to avoid overlapping queries in gravity system.
-#[derive(Component)]
-pub struct AffectedByGravity;
-
 // Returns true if every element in `positions` is Element::Air
 // NOTE: This returns true if given 0 positions.
 fn is_all_air(
@@ -26,6 +20,8 @@ fn is_all_air(
         .all(|is_air| is_air)
 }
 
+// PERF: could introduce 'active' concept and not consider all elements all the time
+// TODO: add sand crushing to dirt
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
 // For each sand element which is above air, swap it with the air beneath it.
 fn sand_gravity_system(
@@ -99,7 +95,8 @@ fn sand_gravity_system(
         (sand_position.x, air_position.x) = (air_position.x, sand_position.x);
         (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
 
-        // TODO: Instead of needing to keep this synced - should achieve the position swap by adjusting references to position
+        // TODO: maybe use references to position instead?
+        // Update indices since they're indexed by position and track where elements are at.
         world_map.elements.insert(*sand_position, sand_entity);
         world_map.elements.insert(*air_position, air_entity);
     }
@@ -120,23 +117,20 @@ pub mod tests {
     fn did_sand_fall_down() {
         let mut app = App::new();
 
-        let mut elements = HashMap::<Position, Entity>::new();
-
         let sand_position = Position::ZERO;
         let air_position = Position::Y;
 
         // Setup test entities
         let sand_id = app
             .world
-            .spawn((ElementBundle::create_sand(sand_position), AffectedByGravity))
+            .spawn(ElementBundle::create_sand(sand_position))
             .id();
         let air_id = app
             .world
             .spawn(ElementBundle::create_air(air_position))
             .id();
 
-        elements.insert(sand_position, sand_id);
-        elements.insert(air_position, air_id);
+        let elements = HashMap::from([(sand_position, sand_id), (air_position, air_id)]);
 
         app.world
             .insert_resource(WorldMap::new(1, 2, 0.0, Some(elements)));
@@ -157,8 +151,6 @@ pub mod tests {
 
         app.add_plugin(LogPlugin::default());
 
-        let mut elements = HashMap::<Position, Entity>::new();
-
         let sand_position = Position::ZERO;
         let air_position = Position::Y;
         let air_position2 = Position::new(0, 2);
@@ -166,7 +158,7 @@ pub mod tests {
         // Setup test entities
         let sand_id = app
             .world
-            .spawn((ElementBundle::create_sand(sand_position), AffectedByGravity))
+            .spawn(ElementBundle::create_sand(sand_position))
             .id();
         let air_id = app
             .world
@@ -178,9 +170,11 @@ pub mod tests {
             .spawn(ElementBundle::create_air(air_position2))
             .id();
 
-        elements.insert(sand_position, sand_id);
-        elements.insert(air_position, air_id);
-        elements.insert(air_position2, air_id2);
+        let elements = HashMap::from([
+            (sand_position, sand_id),
+            (air_position, air_id),
+            (air_position2, air_id2),
+        ]);
 
         app.world
             .insert_resource(WorldMap::new(1, 3, 0.0, Some(elements)));
@@ -210,15 +204,13 @@ pub mod tests {
     fn did_sand_not_fall_down() {
         let mut app = App::new();
 
-        let mut elements = HashMap::<Position, Entity>::new();
-
         let sand_position = Position::ZERO;
         let dirt_position = Position::Y;
 
         // Setup test entities
         let sand_id = app
             .world
-            .spawn((ElementBundle::create_sand(sand_position), AffectedByGravity))
+            .spawn(ElementBundle::create_sand(sand_position))
             .id();
         let dirt_id = app
             .world
@@ -226,8 +218,7 @@ pub mod tests {
             .spawn(ElementBundle::create_dirt(dirt_position))
             .id();
 
-        elements.insert(sand_position, sand_id);
-        elements.insert(dirt_position, dirt_id);
+        let elements = HashMap::from([(sand_position, sand_id), (dirt_position, dirt_id)]);
 
         app.world
             .insert_resource(WorldMap::new(1, 2, 0.0, Some(elements)));
@@ -246,17 +237,15 @@ pub mod tests {
     fn did_not_panic() {
         let mut app = App::new();
 
-        let mut elements = HashMap::<Position, Entity>::new();
-
         let sand_position = Position::ZERO;
 
         // Setup test entities
         let sand_id = app
             .world
-            .spawn((ElementBundle::create_sand(sand_position), AffectedByGravity))
+            .spawn(ElementBundle::create_sand(sand_position))
             .id();
 
-        elements.insert(sand_position, sand_id);
+        let elements = HashMap::from([(sand_position, sand_id)]);
 
         app.world
             .insert_resource(WorldMap::new(1, 1, 0.0, Some(elements)));
@@ -274,8 +263,6 @@ pub mod tests {
     fn did_sand_fall_left() {
         let mut app = App::new();
 
-        let mut elements = HashMap::<Position, Entity>::new();
-
         let swapped_sand_position = Position::X;
         let swapped_air_position = Position::Y;
 
@@ -290,10 +277,7 @@ pub mod tests {
 
         let swapped_sand_id = app
             .world
-            .spawn((
-                ElementBundle::create_sand(swapped_sand_position),
-                AffectedByGravity,
-            ))
+            .spawn(ElementBundle::create_sand(swapped_sand_position))
             .id();
 
         // Row 2
@@ -308,10 +292,12 @@ pub mod tests {
             .id();
 
         // Setup test entities
-        elements.insert(air_position, air_id);
-        elements.insert(swapped_sand_position, swapped_sand_id);
-        elements.insert(swapped_air_position, swapped_air_id);
-        elements.insert(dirt_position, dirt_id);
+        let elements = HashMap::from([
+            (air_position, air_id),
+            (swapped_sand_position, swapped_sand_id),
+            (swapped_air_position, swapped_air_id),
+            (dirt_position, dirt_id),
+        ]);
 
         app.world
             .insert_resource(WorldMap::new(2, 2, 0.0, Some(elements)));
@@ -336,8 +322,6 @@ pub mod tests {
     fn did_sand_fall_right() {
         let mut app = App::new();
 
-        let mut elements = HashMap::<Position, Entity>::new();
-
         let swapped_sand_position = Position::ZERO;
         let swapped_air_position = Position::ONE;
 
@@ -347,10 +331,7 @@ pub mod tests {
         // Row 1
         let swapped_sand_id = app
             .world
-            .spawn((
-                ElementBundle::create_sand(swapped_sand_position),
-                AffectedByGravity,
-            ))
+            .spawn(ElementBundle::create_sand(swapped_sand_position))
             .id();
 
         let air_id = app
@@ -370,10 +351,12 @@ pub mod tests {
             .id();
 
         // Setup test entities
-        elements.insert(swapped_sand_position, swapped_sand_id);
-        elements.insert(air_position, air_id);
-        elements.insert(dirt_position, dirt_id);
-        elements.insert(swapped_air_position, swapped_air_id);
+        let elements = HashMap::from([
+            (swapped_sand_position, swapped_sand_id),
+            (air_position, air_id),
+            (dirt_position, dirt_id),
+            (swapped_air_position, swapped_air_id),
+        ]);
 
         app.world
             .insert_resource(WorldMap::new(2, 2, 0.0, Some(elements)));

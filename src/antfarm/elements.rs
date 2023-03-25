@@ -1,4 +1,4 @@
-use super::{gravity::AffectedByGravity, Position, WorldMap};
+use super::{Position, WorldMap};
 use bevy::{prelude::*, sprite::Anchor};
 
 #[derive(Bundle)]
@@ -98,13 +98,10 @@ fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
     // Test Sand
     let sand_bundles = (0..1).flat_map(|row_index| {
         (0..width).map(move |column_index| {
-            (
-                ElementBundle::create_sand(Position {
-                    x: column_index,
-                    y: row_index,
-                }),
-                AffectedByGravity,
-            )
+            (ElementBundle::create_sand(Position {
+                x: column_index,
+                y: row_index,
+            }),)
         })
     });
 
