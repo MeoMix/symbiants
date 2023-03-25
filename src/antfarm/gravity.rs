@@ -1,25 +1,31 @@
 use bevy::prelude::*;
 
+use super::elements::ElementBundle;
+use super::settings::Settings;
 use super::{elements::Element, Position, WorldMap};
+use itertools::Either;
+use itertools::Itertools;
 use rand::Rng;
 
-// TODO:  make is_all_air more generic, introduce sand depth crushing
 // TODO: Introduce more tests for falling left/right + random + sand crushing
 // TODO: Add support for ant gravity?
+// PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
+// PERF: could make air more implicit and not represent it as an actual element to be iterated over.
 
-// Returns true if every element in `positions` is Element::Air
+// Returns true if every element in `positions` matches the provided Element type.
 // NOTE: This returns true if given 0 positions.
-fn is_all_air(
+fn is_all_element(
     world_map: &WorldMap,
     elements_query: &Query<(&Element, &mut Position)>,
     positions: Vec<Position>,
+    search_element: Element,
 ) -> bool {
     positions
         .iter()
         .map(|position| {
             let Some(&element) = world_map.elements.get(&position) else { return false; };
             let Ok((&element, _)) = elements_query.get(element) else { return false; };
-            element == Element::Air
+            element == search_element
         })
         .all(|is_air| is_air)
 }
@@ -34,7 +40,12 @@ fn get_sand_fall_position(
 ) -> Option<Position> {
     // If there is air below the sand then continue falling down.
     let below_sand_position = sand_position + Position::Y;
-    if is_all_air(&world_map, &elements_query, vec![below_sand_position]) {
+    if is_all_element(
+        &world_map,
+        &elements_query,
+        vec![below_sand_position],
+        Element::Air,
+    ) {
         return Some(below_sand_position);
     }
 
@@ -42,18 +53,20 @@ fn get_sand_fall_position(
     // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
     let left_sand_position = sand_position + Position::NEG_X;
     let left_below_sand_position = sand_position + Position::new(-1, 1);
-    let mut go_left = is_all_air(
+    let mut go_left = is_all_element(
         &world_map,
         &elements_query,
         vec![left_sand_position, left_below_sand_position],
+        Element::Air,
     );
 
     let right_sand_position = sand_position + Position::X;
     let right_below_sand_position = sand_position + Position::ONE;
-    let mut go_right = is_all_air(
+    let mut go_right = is_all_element(
         &world_map,
         &elements_query,
         vec![right_sand_position, right_below_sand_position],
+        Element::Air,
     );
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
@@ -71,49 +84,76 @@ fn get_sand_fall_position(
     }
 }
 
-// PERF: could introduce 'active' concept and not consider all elements all the time
-// TODO: add sand crushing to dirt
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
 // For each sand element which is above air, swap it with the air beneath it.
 fn sand_gravity_system(
     mut elements_query: Query<(&Element, &mut Position)>,
     mut world_map: ResMut<WorldMap>,
+    mut commands: Commands,
+    settings: Res<Settings>,
 ) {
-    let sand_air_positions: Vec<_> = elements_query
+    let (sand_air_swaps, none_positions): (Vec<_>, Vec<_>) = elements_query
         .iter()
         .filter(|(&element, _)| element == Element::Sand)
-        .filter_map(|(_, &sand_position)| {
-            get_sand_fall_position(sand_position, &world_map, &elements_query).and_then(
-                |air_position| {
+        .map(|(_, &sand_position)| {
+            get_sand_fall_position(sand_position, &world_map, &elements_query)
+                .and_then(|air_position| {
                     Some((
                         *world_map.elements.get(&sand_position)?,
                         *world_map.elements.get(&air_position)?,
                     ))
-                },
-            )
+                })
+                .map_or_else(|| Either::Right(sand_position), |swap| Either::Left(swap))
         })
-        .collect();
+        .partition_map(|x| x);
 
-    for &(sand_entity, air_entity) in sand_air_positions.iter() {
-        let Ok([(_, mut air_position), (_, mut sand_position)]) = elements_query.get_many_mut([air_entity, sand_entity]) else { continue };
+    for &(sand_entity, air_entity) in sand_air_swaps.iter() {
+        let Ok([
+            (_, mut air_position),
+            (_, mut sand_position)
+        ]) = elements_query.get_many_mut([air_entity, sand_entity]) else { continue };
 
         // Swap element positions internally.
         (sand_position.x, air_position.x) = (air_position.x, sand_position.x);
         (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
 
-        // TODO: maybe use references to position instead?
         // Update indices since they're indexed by position and track where elements are at.
         world_map.elements.insert(*sand_position, sand_entity);
         world_map.elements.insert(*air_position, air_entity);
     }
+
+    let stationary_sand = elements_query
+        .iter()
+        .filter(|(_, position)| none_positions.contains(&position));
+
+    for (_, sand_position) in stationary_sand {
+        // At deep enough levels, stationary sand finds itself crushed back into dirt.
+        let start = 1;
+        let end = settings.compact_sand_depth;
+        let above_sand_positions: Vec<_> = (start..=end)
+            .map(|y| Position::new(sand_position.x, sand_position.y - y))
+            .collect();
+
+        if is_all_element(
+            &world_map,
+            &elements_query,
+            above_sand_positions,
+            Element::Sand,
+        ) {
+            world_map.elements.insert(
+                *sand_position,
+                commands
+                    .spawn(ElementBundle::create_dirt(*sand_position))
+                    .id(),
+            );
+        }
+    }
 }
 
-// TODO: Figure out headless testing (prefer over node) and how to run single test
-// TODO: It would be much nicer to have a spec to create world state from rather than manually defining it
+// TODO: Figure out headless testing (logging causes panic in node) and how to run single test
 #[cfg(test)]
 pub mod tests {
     // wasm_bindgen_test_configure!(run_in_browser);
-
     use super::*;
     use crate::antfarm::elements::*;
     use bevy::utils::HashMap;
@@ -150,7 +190,12 @@ pub mod tests {
         let height = element_grid.len() as isize;
         let width = element_grid.first().map_or(0, |row| row.len()) as isize;
         let world_map = WorldMap::new(width, height, 0.0, Some(spawned_elements));
-        app.world.insert_resource(world_map);
+        app.insert_resource(world_map);
+        app.insert_resource(Settings {
+            world_width: width,
+            world_height: height,
+            ..default()
+        });
 
         (app, elements)
     }
