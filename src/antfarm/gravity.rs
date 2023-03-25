@@ -3,6 +3,10 @@ use bevy::prelude::*;
 use super::{elements::Element, Position, WorldMap};
 use rand::Rng;
 
+// TODO:  make is_all_air more generic, introduce sand depth crushing
+// TODO: Introduce more tests for falling left/right + random + sand crushing
+// TODO: Add support for ant gravity?
+
 // Returns true if every element in `positions` is Element::Air
 // NOTE: This returns true if given 0 positions.
 fn is_all_air(
@@ -20,6 +24,53 @@ fn is_all_air(
         .all(|is_air| is_air)
 }
 
+// Search for a valid location for sand to fall into by searching to the
+// bottom left/center/right of a given sand position. Prioritize falling straight down
+// and do not fall if surrounded by sand or
+fn get_sand_fall_position(
+    sand_position: Position,
+    world_map: &WorldMap,
+    elements_query: &Query<(&Element, &mut Position)>,
+) -> Option<Position> {
+    // If there is air below the sand then continue falling down.
+    let below_sand_position = sand_position + Position::Y;
+    if is_all_air(&world_map, &elements_query, vec![below_sand_position]) {
+        return Some(below_sand_position);
+    }
+
+    // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
+    // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
+    let left_sand_position = sand_position + Position::NEG_X;
+    let left_below_sand_position = sand_position + Position::new(-1, 1);
+    let mut go_left = is_all_air(
+        &world_map,
+        &elements_query,
+        vec![left_sand_position, left_below_sand_position],
+    );
+
+    let right_sand_position = sand_position + Position::X;
+    let right_below_sand_position = sand_position + Position::ONE;
+    let mut go_right = is_all_air(
+        &world_map,
+        &elements_query,
+        vec![right_sand_position, right_below_sand_position],
+    );
+
+    // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
+    if go_left && go_right {
+        go_left = rand::thread_rng().gen_range(0..10) < 5;
+        go_right = !go_left;
+    }
+
+    if go_left {
+        Some(left_below_sand_position)
+    } else if go_right {
+        Some(right_below_sand_position)
+    } else {
+        None
+    }
+}
+
 // PERF: could introduce 'active' concept and not consider all elements all the time
 // TODO: add sand crushing to dirt
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
@@ -28,67 +79,22 @@ fn sand_gravity_system(
     mut elements_query: Query<(&Element, &mut Position)>,
     mut world_map: ResMut<WorldMap>,
 ) {
-    let swaps: Vec<_> = elements_query
+    let sand_air_positions: Vec<_> = elements_query
         .iter()
         .filter(|(&element, _)| element == Element::Sand)
         .filter_map(|(_, &sand_position)| {
-            let mut go_left = false;
-            let mut go_right = false;
-
-            let below_sand_position = sand_position + Position::Y;
-            let left_sand_position = sand_position + Position::NEG_X;
-            let left_below_sand_position = sand_position + Position::new(-1, 1);
-            let right_sand_position = sand_position + Position::X;
-            let right_below_sand_position = sand_position + Position::ONE;
-
-            // If there is air below the sand then continue falling down.
-            let go_down = is_all_air(&world_map, &elements_query, vec![below_sand_position]);
-
-            // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
-            // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
-            if !go_down {
-                go_left = is_all_air(
-                    &world_map,
-                    &elements_query,
-                    vec![left_sand_position, left_below_sand_position],
-                );
-
-                go_right = is_all_air(
-                    &world_map,
-                    &elements_query,
-                    vec![right_sand_position, right_below_sand_position],
-                );
-
-                // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
-                if go_left && go_right {
-                    // TODO: control rand seed more for reliable testing
-                    if rand::thread_rng().gen_range(0..10) < 5 {
-                        go_left = false;
-                    } else {
-                        go_right = false;
-                    }
-                }
-            }
-
-            let target_position = if go_down {
-                Some(below_sand_position)
-            } else if go_left {
-                Some(left_below_sand_position)
-            } else if go_right {
-                Some(right_below_sand_position)
-            } else {
-                None
-            };
-
-            target_position.and_then(|target_position| {
-                let &air_entity = world_map.elements.get(&target_position)?;
-                let &sand_entity = world_map.elements.get(&sand_position)?;
-                Some((air_entity, sand_entity))
-            })
+            get_sand_fall_position(sand_position, &world_map, &elements_query).and_then(
+                |air_position| {
+                    Some((
+                        *world_map.elements.get(&sand_position)?,
+                        *world_map.elements.get(&air_position)?,
+                    ))
+                },
+            )
         })
         .collect();
 
-    for &(air_entity, sand_entity) in swaps.iter() {
+    for &(sand_entity, air_entity) in sand_air_positions.iter() {
         let Ok([(_, mut air_position), (_, mut sand_position)]) = elements_query.get_many_mut([air_entity, sand_entity]) else { continue };
 
         // Swap element positions internally.
