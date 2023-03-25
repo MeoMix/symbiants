@@ -17,6 +17,18 @@ pub enum Element {
 }
 
 impl ElementBundle {
+    pub fn create(element: Element, position: Position) -> Self {
+        if element == Element::Sand {
+            ElementBundle::create_sand(position)
+        } else if element == Element::Air {
+            ElementBundle::create_air(position)
+        } else if element == Element::Dirt {
+            ElementBundle::create_dirt(position)
+        } else {
+            panic!("unexpected element")
+        }
+    }
+
     pub fn create_sand(position: Position) -> Self {
         // The view of the model position is just an inversion along the y-axis.
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
