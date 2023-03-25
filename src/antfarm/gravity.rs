@@ -109,125 +109,96 @@ pub mod tests {
 
     use super::*;
     use crate::antfarm::elements::*;
-    use bevy::{log::LogPlugin, utils::HashMap};
+    use bevy::utils::HashMap;
     use wasm_bindgen_test::wasm_bindgen_test;
 
-    // Confirm that sand ontop of air falls downward.
+    // Confirm that sand successfully falls downward through multiple tiles of air.
     #[wasm_bindgen_test]
     fn did_sand_fall_down() {
+        // Arrange
         let mut app = App::new();
-
-        let sand_position = Position::ZERO;
-        let air_position = Position::Y;
-
-        // Setup test entities
-        let sand_id = app
-            .world
-            .spawn(ElementBundle::create_sand(sand_position))
-            .id();
-        let air_id = app
-            .world
-            .spawn(ElementBundle::create_air(air_position))
-            .id();
-
-        let elements = HashMap::from([(sand_position, sand_id), (air_position, air_id)]);
-
-        app.world
-            .insert_resource(WorldMap::new(1, 2, 0.0, Some(elements)));
-
-        // Add gravity system
         app.add_system(sand_gravity_system);
-        // Run systems
-        app.update();
 
-        assert_eq!(app.world.get::<Position>(sand_id).unwrap(), &Position::Y);
-        assert_eq!(app.world.get::<Position>(air_id).unwrap(), &Position::ZERO);
-    }
-
-    // Confirm that sand ontop of air falls downward multiple tiles.
-    #[wasm_bindgen_test]
-    fn did_sand_fall_down_multiple() {
-        let mut app = App::new();
-
-        app.add_plugin(LogPlugin::default());
-
+        // Col 0 / Row 0
         let sand_position = Position::ZERO;
-        let air_position = Position::Y;
-        let air_position2 = Position::new(0, 2);
-
-        // Setup test entities
         let sand_id = app
             .world
             .spawn(ElementBundle::create_sand(sand_position))
             .id();
+
+        // Col 0 / Row 1
+        let air_position = Position::Y;
         let air_id = app
             .world
             .spawn(ElementBundle::create_air(air_position))
             .id();
 
+        // Col 0 / Row 2
+        let air_position2 = Position::new(0, 2);
         let air_id2 = app
             .world
             .spawn(ElementBundle::create_air(air_position2))
             .id();
 
-        let elements = HashMap::from([
-            (sand_position, sand_id),
-            (air_position, air_id),
-            (air_position2, air_id2),
-        ]);
+        app.world.insert_resource(WorldMap::new(
+            1,
+            2,
+            0.0,
+            Some(HashMap::from([
+                (sand_position, sand_id),
+                (air_position, air_id),
+                (air_position2, air_id2),
+            ])),
+        ));
 
-        app.world
-            .insert_resource(WorldMap::new(1, 3, 0.0, Some(elements)));
-
-        // Add gravity system
-        app.add_system(sand_gravity_system);
-
-        // Run systems twice
+        // Act
+        app.update();
         app.update();
 
+        // Assert
+        assert_eq!(app.world.get::<Position>(air_id), Some(&Position::ZERO));
+        assert_eq!(app.world.get::<Position>(air_id2), Some(&Position::Y));
         assert_eq!(
-            app.world.get::<Position>(sand_id).unwrap(),
-            &Position::new(0, 1)
+            app.world.get::<Position>(sand_id),
+            Some(&Position::new(0, 2))
         );
-
-        app.update();
-
-        assert_eq!(
-            app.world.get::<Position>(sand_id).unwrap(),
-            &Position::new(0, 2)
-        );
-        //assert_eq!(app.world.get::<Position>(air_id).unwrap(), &Position::ZERO);
     }
 
     // Confirm that sand ontop of non-air stays put
     #[wasm_bindgen_test]
     fn did_sand_not_fall_down() {
+        // Arrange
         let mut app = App::new();
+        app.add_system(sand_gravity_system);
 
+        // Col 0 / Row 0
         let sand_position = Position::ZERO;
-        let dirt_position = Position::Y;
-
-        // Setup test entities
         let sand_id = app
             .world
             .spawn(ElementBundle::create_sand(sand_position))
             .id();
+
+        // Col 0 / Row 1
+        let dirt_position = Position::Y;
         let dirt_id = app
             .world
-            // TODO: The fact this NEG_Y has implicit relationship with air_position is no good
             .spawn(ElementBundle::create_dirt(dirt_position))
             .id();
 
-        let elements = HashMap::from([(sand_position, sand_id), (dirt_position, dirt_id)]);
+        app.world.insert_resource(WorldMap::new(
+            1,
+            2,
+            0.0,
+            Some(HashMap::from([
+                (sand_position, sand_id),
+                (dirt_position, dirt_id),
+            ])),
+        ));
 
-        app.world
-            .insert_resource(WorldMap::new(1, 2, 0.0, Some(elements)));
-
-        // Add gravity system
-        app.add_system(sand_gravity_system);
-        // Run systems
+        // Act
         app.update();
 
+        // Assert
         assert_eq!(app.world.get::<Position>(sand_id).unwrap(), &Position::ZERO);
         assert_eq!(app.world.get::<Position>(dirt_id).unwrap(), &Position::Y);
     }
@@ -235,144 +206,151 @@ pub mod tests {
     // Confirm that sand at the bottom of the world doesn't panic
     #[wasm_bindgen_test]
     fn did_not_panic() {
+        // Arrange
         let mut app = App::new();
+        app.add_system(sand_gravity_system);
 
+        // Col 0 / Row 0
         let sand_position = Position::ZERO;
-
-        // Setup test entities
         let sand_id = app
             .world
             .spawn(ElementBundle::create_sand(sand_position))
             .id();
 
-        let elements = HashMap::from([(sand_position, sand_id)]);
+        app.world.insert_resource(WorldMap::new(
+            1,
+            1,
+            0.0,
+            Some(HashMap::from([(sand_position, sand_id)])),
+        ));
 
-        app.world
-            .insert_resource(WorldMap::new(1, 1, 0.0, Some(elements)));
-
-        // Add gravity system
-        app.add_system(sand_gravity_system);
-        // Run systems
+        // Act
         app.update();
 
-        assert_eq!(app.world.get::<Position>(sand_id).unwrap(), &Position::ZERO);
+        // Assert
+        assert_eq!(app.world.get::<Position>(sand_id), Some(&Position::ZERO));
     }
 
     // Confirm that sand falls properly to the left
     #[wasm_bindgen_test]
     fn did_sand_fall_left() {
+        // Arrange
         let mut app = App::new();
+        app.add_system(sand_gravity_system);
 
-        let swapped_sand_position = Position::X;
-        let swapped_air_position = Position::Y;
-
+        // Col 0 / Row 0
         let air_position = Position::ZERO;
-        let dirt_position = Position::ONE;
-
-        // Row 1
         let air_id = app
             .world
             .spawn(ElementBundle::create_air(air_position))
             .id();
 
-        let swapped_sand_id = app
-            .world
-            .spawn(ElementBundle::create_sand(swapped_sand_position))
-            .id();
-
-        // Row 2
+        // Col 0 / Row 1
+        let swapped_air_position = Position::Y;
         let swapped_air_id = app
             .world
             .spawn(ElementBundle::create_air(swapped_air_position))
             .id();
 
+        // Col 1 / Row 0
+        let swapped_sand_position = Position::X;
+        let swapped_sand_id = app
+            .world
+            .spawn(ElementBundle::create_sand(swapped_sand_position))
+            .id();
+
+        // Col 1 / Row 1
+        let dirt_position = Position::ONE;
         let dirt_id = app
             .world
             .spawn(ElementBundle::create_dirt(dirt_position))
             .id();
 
-        // Setup test entities
-        let elements = HashMap::from([
-            (air_position, air_id),
-            (swapped_sand_position, swapped_sand_id),
-            (swapped_air_position, swapped_air_id),
-            (dirt_position, dirt_id),
-        ]);
+        app.world.insert_resource(WorldMap::new(
+            2,
+            2,
+            0.0,
+            Some(HashMap::from([
+                (air_position, air_id),
+                (swapped_sand_position, swapped_sand_id),
+                (swapped_air_position, swapped_air_id),
+                (dirt_position, dirt_id),
+            ])),
+        ));
 
-        app.world
-            .insert_resource(WorldMap::new(2, 2, 0.0, Some(elements)));
-
-        // Add gravity system
-        app.add_system(sand_gravity_system);
-        // Run systems
+        // Act
         app.update();
 
+        // Assert
         assert_eq!(
-            app.world.get::<Position>(swapped_sand_id).unwrap(),
-            &Position::Y
+            app.world.get::<Position>(swapped_sand_id),
+            Some(&Position::Y)
         );
         assert_eq!(
-            app.world.get::<Position>(swapped_air_id).unwrap(),
-            &Position::X
+            app.world.get::<Position>(swapped_air_id),
+            Some(&Position::X)
         );
     }
 
     // Confirm that sand falls properly to the right
     #[wasm_bindgen_test]
     fn did_sand_fall_right() {
+        // Arrange
         let mut app = App::new();
+        app.add_system(sand_gravity_system);
 
+        // Col 0 / Row 0
         let swapped_sand_position = Position::ZERO;
-        let swapped_air_position = Position::ONE;
-
-        let air_position = Position::X;
-        let dirt_position = Position::Y;
-
-        // Row 1
         let swapped_sand_id = app
             .world
             .spawn(ElementBundle::create_sand(swapped_sand_position))
             .id();
 
-        let air_id = app
-            .world
-            .spawn(ElementBundle::create_air(air_position))
-            .id();
-
-        // Row 2
+        // Col 0 / Row 1
+        let dirt_position = Position::Y;
         let dirt_id = app
             .world
             .spawn(ElementBundle::create_dirt(dirt_position))
             .id();
 
+        // Col 1 / Row 0
+        let air_position = Position::X;
+        let air_id = app
+            .world
+            .spawn(ElementBundle::create_air(air_position))
+            .id();
+
+        // Col 1 / Row 1
+        let swapped_air_position = Position::ONE;
         let swapped_air_id = app
             .world
             .spawn((ElementBundle::create_air(swapped_air_position),))
             .id();
 
         // Setup test entities
-        let elements = HashMap::from([
-            (swapped_sand_position, swapped_sand_id),
-            (air_position, air_id),
-            (dirt_position, dirt_id),
-            (swapped_air_position, swapped_air_id),
-        ]);
+        app.world.insert_resource(WorldMap::new(
+            2,
+            2,
+            0.0,
+            Some(HashMap::from([
+                (swapped_sand_position, swapped_sand_id),
+                (air_position, air_id),
+                (dirt_position, dirt_id),
+                (swapped_air_position, swapped_air_id),
+            ])),
+        ));
 
-        app.world
-            .insert_resource(WorldMap::new(2, 2, 0.0, Some(elements)));
-
-        // Add gravity system
-        app.add_system(sand_gravity_system);
-        // Run systems
+        // Act
         app.update();
 
+        // Assert
         assert_eq!(
-            app.world.get::<Position>(swapped_sand_id).unwrap(),
-            &Position::ONE
+            app.world.get::<Position>(swapped_sand_id),
+            Some(&Position::ONE)
         );
         assert_eq!(
-            app.world.get::<Position>(swapped_air_id).unwrap(),
-            &Position::ZERO
+            app.world.get::<Position>(swapped_air_id),
+            Some(&Position::ZERO)
         );
     }
 
