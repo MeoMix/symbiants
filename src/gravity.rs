@@ -143,13 +143,14 @@ fn sand_gravity_system(
             world_map.elements.insert(
                 *sand_position,
                 commands
-                    .spawn(ElementBundle::create_dirt(*sand_position))
+                    .spawn(ElementBundle::create(Element::Dirt, *sand_position))
                     .id(),
             );
         }
     }
 }
 
+// NOTE: To run just one test, run the command `cargo test <test_name>`
 // TODO: Figure out headless testing (logging causes panic in node) and how to run single test
 #[cfg(test)]
 pub mod tests {

@@ -29,7 +29,7 @@ impl ElementBundle {
         }
     }
 
-    pub fn create_sand(position: Position) -> Self {
+    fn create_sand(position: Position) -> Self {
         // The view of the model position is just an inversion along the y-axis.
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
@@ -51,7 +51,7 @@ impl ElementBundle {
         }
     }
 
-    pub fn create_air(position: Position) -> Self {
+    fn create_air(position: Position) -> Self {
         // The view of the model position is just an inversion along the y-axis.
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
@@ -76,7 +76,7 @@ impl ElementBundle {
         }
     }
 
-    pub fn create_dirt(position: Position) -> Self {
+    fn create_dirt(position: Position) -> Self {
         // The view of the model position is just an inversion along the y-axis.
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
@@ -110,10 +110,13 @@ fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
     // Test Sand
     let sand_bundles = (0..1).flat_map(|row_index| {
         (0..width).map(move |column_index| {
-            (ElementBundle::create_sand(Position {
-                x: column_index,
-                y: row_index,
-            }),)
+            (ElementBundle::create(
+                Element::Sand,
+                Position {
+                    x: column_index,
+                    y: row_index,
+                },
+            ),)
         })
     });
 
@@ -121,22 +124,25 @@ fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
     // NOTE: starting at 1 to skip sand
     let air_bundles = (1..(surface_level + 1)).flat_map(|row_index| {
         (0..width).map(move |column_index| {
-            (
-                // NOTE: row_index goes negative because 0,0 is top-left corner
-                ElementBundle::create_air(Position {
+            (ElementBundle::create(
+                Element::Air,
+                Position {
                     x: column_index,
                     y: row_index,
-                }),
-            )
+                },
+            ),)
         })
     });
 
     let dirt_bundles = ((surface_level + 1)..height).flat_map(|row_index| {
         (0..width).map(move |column_index| {
-            (ElementBundle::create_dirt(Position {
-                x: column_index,
-                y: row_index,
-            }),)
+            (ElementBundle::create(
+                Element::Dirt,
+                Position {
+                    x: column_index,
+                    y: row_index,
+                },
+            ),)
         })
     });
 
