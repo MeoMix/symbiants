@@ -6,18 +6,15 @@ mod gravity;
 mod map;
 mod render;
 mod settings;
+use ant::AntsPlugin;
+use background::BackgroundPlugin;
 use bevy::prelude::*;
-
-use crate::antfarm::{
-    ant::AntsPlugin, background::BackgroundPlugin, camera::CameraPlugin, elements::ElementsPlugin,
-    gravity::GravityPlugin,
-};
-
-use self::{
-    map::{Position, WorldMap},
-    render::RenderPlugin,
-    settings::Settings,
-};
+use camera::CameraPlugin;
+use elements::ElementsPlugin;
+use gravity::GravityPlugin;
+use map::WorldMap;
+use render::RenderPlugin;
+use settings::Settings;
 
 pub struct AntfarmPlugin;
 

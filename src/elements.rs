@@ -1,4 +1,4 @@
-use super::{Position, WorldMap};
+use super::map::{Position, WorldMap};
 use bevy::{prelude::*, sprite::Anchor};
 
 #[derive(Bundle)]

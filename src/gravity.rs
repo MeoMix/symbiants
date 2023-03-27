@@ -1,14 +1,14 @@
+use super::{
+    elements::{Element, ElementBundle},
+    map::{Position, WorldMap},
+    settings::Settings,
+};
 use bevy::prelude::*;
-
-use super::elements::ElementBundle;
-use super::settings::Settings;
-use super::{elements::Element, Position, WorldMap};
-use itertools::Either;
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use rand::Rng;
 
 // TODO: Introduce more tests for falling left/right + random + sand crushing
-// TODO: Add support for ant gravity?
+// TODO: Add support for ant gravity
 // PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
 // PERF: could make air more implicit and not represent it as an actual element to be iterated over.
 
@@ -153,11 +153,11 @@ fn sand_gravity_system(
 // TODO: Figure out headless testing (logging causes panic in node) and how to run single test
 #[cfg(test)]
 pub mod tests {
-    // wasm_bindgen_test_configure!(run_in_browser);
     use super::*;
-    use crate::antfarm::elements::*;
     use bevy::utils::HashMap;
     use wasm_bindgen_test::wasm_bindgen_test;
+
+    // wasm_bindgen_test_configure!(run_in_browser);
 
     // Create a new application to be used for testing the gravity system.
     // Map and flatten a grid of elements and spawn associated elements into the world.
@@ -295,15 +295,89 @@ pub mod tests {
         );
     }
 
-    // Confirm that sand does not fall to the left if blocked to its left
+    // Confirm that sand does not fall to the left if blocked to its upper-left
+    #[wasm_bindgen_test]
+    fn did_sand_not_fall_upper_left() {
+        // Arrange
+        let element_grid = vec![
+            vec![Element::Dirt, Element::Sand],
+            vec![Element::Air, Element::Dirt],
+        ];
+        let (mut app, elements) = setup(element_grid);
 
-    // Confirm that sand does not fall to the right if blocked to its right
+        // Act
+        app.update();
 
-    // Confirm that sand does not fall to the left if blocked to its bottom-left
+        // Assert
+        assert_eq!(
+            app.world.get::<Position>(elements[&Position::X]),
+            Some(&Position::X)
+        );
+    }
 
-    // Confirm that sand does not fall to the right if blocked to its bottom-right
+    // Confirm that sand does not fall to the left if blocked to its lower-left
+    #[wasm_bindgen_test]
+    fn did_sand_not_fall_lower_left() {
+        // Arrange
+        let element_grid = vec![
+            vec![Element::Air, Element::Sand],
+            vec![Element::Dirt, Element::Dirt],
+        ];
+        let (mut app, elements) = setup(element_grid);
+
+        // Act
+        app.update();
+
+        // Assert
+        assert_eq!(
+            app.world.get::<Position>(elements[&Position::X]),
+            Some(&Position::X)
+        );
+    }
+
+    // Confirm that sand does not fall to the right if blocked to its upper-right
+    #[wasm_bindgen_test]
+    fn did_sand_not_fall_upper_right() {
+        // Arrange
+        let element_grid = vec![
+            vec![Element::Sand, Element::Dirt],
+            vec![Element::Dirt, Element::Air],
+        ];
+        let (mut app, elements) = setup(element_grid);
+
+        // Act
+        app.update();
+
+        // Assert
+        assert_eq!(
+            app.world.get::<Position>(elements[&Position::ZERO]),
+            Some(&Position::ZERO)
+        );
+    }
+
+    // Confirm that sand does not fall to the right if blocked to its lower-right
+    #[wasm_bindgen_test]
+    fn did_sand_not_fall_lower_right() {
+        // Arrange
+        let element_grid = vec![
+            vec![Element::Sand, Element::Air],
+            vec![Element::Dirt, Element::Dirt],
+        ];
+        let (mut app, elements) = setup(element_grid);
+
+        // Act
+        app.update();
+
+        // Assert
+        assert_eq!(
+            app.world.get::<Position>(elements[&Position::ZERO]),
+            Some(&Position::ZERO)
+        );
+    }
 
     // Confirm that coinflip occurs if sand can fall to both the left and right
+
+    // Confirm that sand crushes at depth
 }
 
 pub struct GravityPlugin;
