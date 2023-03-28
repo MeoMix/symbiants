@@ -1,5 +1,5 @@
 use crate::{
-    ant::{get_delta, get_rotated_angle, Ant, AntAngle, AntFacing},
+    ant::{get_delta, get_rotated_angle, AntAngle, AntFacing},
     world_rng::WorldRng,
 };
 
@@ -22,18 +22,17 @@ use rand::{rngs::StdRng, Rng};
 fn is_all_element(
     world_map: &WorldMap,
     // TODO: This doesn't need (nor should accept) &mut Position
-    elements_query: &Query<(&Element, &mut Position)>,
+    elements_query: &Query<&Element>,
     positions: &Vec<Position>,
     search_element: Element,
 ) -> bool {
-    positions
-        .iter()
-        .map(|position| {
-            let Some(&element) = world_map.elements.get(&position) else { return false; };
-            let Ok((&element, _)) = elements_query.get(element) else { return false; };
-            element == search_element
-        })
-        .all(|is_element| is_element)
+    positions.iter().all(|position| {
+        world_map
+            .elements
+            .get(position)
+            .and_then(|&element| elements_query.get(element).ok())
+            .map_or(false, |&element| element == search_element)
+    })
 }
 
 // Search for a valid location for sand to fall into by searching to the
@@ -42,7 +41,7 @@ fn is_all_element(
 fn get_sand_fall_position(
     sand_position: Position,
     world_map: &WorldMap,
-    elements_query: &Query<(&Element, &mut Position)>,
+    elements_query: &Query<&Element>,
     world_rng: &mut StdRng,
 ) -> Option<Position> {
     // If there is air below the sand then continue falling down.
@@ -94,13 +93,14 @@ fn get_sand_fall_position(
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
 // For each sand element which is above air, swap it with the air beneath it.
 fn sand_gravity_system(
-    mut elements_query: Query<(&Element, &mut Position)>,
+    mut element_position_query: Query<(&Element, &mut Position)>,
+    elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
     mut commands: Commands,
     settings: Res<Settings>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let (sand_air_swaps, none_positions): (Vec<_>, Vec<_>) = elements_query
+    let (sand_air_swaps, none_positions): (Vec<_>, Vec<_>) = element_position_query
         .iter()
         .filter(|(&element, _)| element == Element::Sand)
         .map(|(_, &sand_position)| {
@@ -124,7 +124,7 @@ fn sand_gravity_system(
         let Ok([
             (_, mut air_position),
             (_, mut sand_position)
-        ]) = elements_query.get_many_mut([air_entity, sand_entity]) else { continue };
+        ]) = element_position_query.get_many_mut([air_entity, sand_entity]) else { continue };
 
         // Swap element positions internally.
         (sand_position.x, air_position.x) = (air_position.x, sand_position.x);
@@ -135,7 +135,7 @@ fn sand_gravity_system(
         world_map.elements.insert(*air_position, air_entity);
     }
 
-    let stationary_sand = elements_query
+    let stationary_sand = element_position_query
         .iter()
         .filter(|(_, position)| none_positions.contains(&position));
 
@@ -157,6 +157,7 @@ fn sand_gravity_system(
                 .spawn(ElementBundle::create(Element::Dirt, *sand_position))
                 .id();
 
+            // TODO: Do I need to despawn (recursive?) on the existing entity?
             world_map.elements.insert(*sand_position, entity);
         }
     }
@@ -166,11 +167,13 @@ fn sand_gravity_system(
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
 // TODO: This logic introduces a bug where an ant that starts falling sideways can cling to dirt halfway through a fall.
 fn ant_gravity_system(
-    mut ants_query: Query<(&AntFacing, &AntAngle, &mut Position), With<Ant>>,
-    elements_query: Query<(&Element, &mut Position)>,
+    mut ants_query: Query<(&AntFacing, &AntAngle, &mut Position)>,
+    elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
 ) {
     for (facing, angle, mut position) in ants_query.iter_mut() {
+        info!("ant!");
+
         // Figure out foot direction
         let foot_delta = get_delta(*facing, get_rotated_angle(*angle, 1));
         let below_feet_position = *position + foot_delta;
