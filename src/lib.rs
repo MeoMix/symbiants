@@ -6,6 +6,8 @@ mod gravity;
 mod map;
 mod render;
 mod settings;
+mod world_rng;
+
 use ant::AntsPlugin;
 use background::BackgroundPlugin;
 use bevy::prelude::*;
@@ -13,8 +15,13 @@ use camera::CameraPlugin;
 use elements::ElementsPlugin;
 use gravity::GravityPlugin;
 use map::WorldMap;
+use rand::{
+    rngs::{OsRng, StdRng},
+    Rng, SeedableRng,
+};
 use render::RenderPlugin;
 use settings::Settings;
+use world_rng::WorldRng;
 
 pub struct AntfarmPlugin;
 
@@ -30,6 +37,10 @@ impl Plugin for AntfarmPlugin {
             None,
         );
 
+        let world_rng = WorldRng {
+            rng: StdRng::seed_from_u64(OsRng {}.gen()),
+        };
+
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 fit_canvas_to_parent: true,
@@ -40,6 +51,7 @@ impl Plugin for AntfarmPlugin {
         .insert_resource(fixed_time)
         .insert_resource(world_map)
         .insert_resource(settings)
+        .insert_resource(world_rng)
         .add_plugin(CameraPlugin)
         .add_plugin(BackgroundPlugin)
         .add_plugin(ElementsPlugin)

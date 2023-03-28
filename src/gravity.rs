@@ -1,3 +1,5 @@
+use crate::world_rng::WorldRng;
+
 use super::{
     elements::{Element, ElementBundle},
     map::{Position, WorldMap},
@@ -5,9 +7,9 @@ use super::{
 };
 use bevy::prelude::*;
 use itertools::{Either, Itertools};
-use rand::Rng;
+use rand::{rngs::StdRng, Rng};
 
-// TODO: Introduce more tests for falling left/right + random + sand crushing
+// TODO: Introduce more tests for sand crushing
 // TODO: Add support for ant gravity
 // PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
 // PERF: could make air more implicit and not represent it as an actual element to be iterated over.
@@ -37,6 +39,7 @@ fn get_sand_fall_position(
     sand_position: Position,
     world_map: &WorldMap,
     elements_query: &Query<(&Element, &mut Position)>,
+    world_rng: &mut StdRng,
 ) -> Option<Position> {
     // If there is air below the sand then continue falling down.
     let below_sand_position = sand_position + Position::Y;
@@ -71,7 +74,7 @@ fn get_sand_fall_position(
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
     if go_left && go_right {
-        go_left = rand::thread_rng().gen_range(0..10) < 5;
+        go_left = world_rng.gen_bool(0.5);
         go_right = !go_left;
     }
 
@@ -91,19 +94,25 @@ fn sand_gravity_system(
     mut world_map: ResMut<WorldMap>,
     mut commands: Commands,
     settings: Res<Settings>,
+    mut world_rng: ResMut<WorldRng>,
 ) {
     let (sand_air_swaps, none_positions): (Vec<_>, Vec<_>) = elements_query
         .iter()
         .filter(|(&element, _)| element == Element::Sand)
         .map(|(_, &sand_position)| {
-            get_sand_fall_position(sand_position, &world_map, &elements_query)
-                .and_then(|air_position| {
-                    Some((
-                        *world_map.elements.get(&sand_position)?,
-                        *world_map.elements.get(&air_position)?,
-                    ))
-                })
-                .map_or_else(|| Either::Right(sand_position), |swap| Either::Left(swap))
+            get_sand_fall_position(
+                sand_position,
+                &world_map,
+                &elements_query,
+                &mut world_rng.rng,
+            )
+            .and_then(|air_position| {
+                Some((
+                    *world_map.elements.get(&sand_position)?,
+                    *world_map.elements.get(&air_position)?,
+                ))
+            })
+            .map_or_else(|| Either::Right(sand_position), |swap| Either::Left(swap))
         })
         .partition_map(|x| x);
 
@@ -154,17 +163,33 @@ fn sand_gravity_system(
 // TODO: Figure out headless testing (logging causes panic in node) and how to run single test
 #[cfg(test)]
 pub mod tests {
+    use crate::world_rng::WorldRng;
+
     use super::*;
-    use bevy::utils::HashMap;
+    use bevy::{log::LogPlugin, utils::HashMap};
+    use rand::{rngs::StdRng, SeedableRng};
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     // Create a new application to be used for testing the gravity system.
     // Map and flatten a grid of elements and spawn associated elements into the world.
-    fn setup(element_grid: Vec<Vec<Element>>) -> (App, HashMap<Position, Entity>) {
+    fn setup(
+        element_grid: Vec<Vec<Element>>,
+        seed: Option<u64>,
+    ) -> (App, HashMap<Position, Entity>) {
         let mut app = App::new();
+        // Not strictly necessary, but might as well keep info!("...")
+        // in production code from causing panics when tested.
+        app.add_plugin(LogPlugin::default());
         app.add_system(sand_gravity_system);
+
+        let seed = seed.unwrap_or(42069); // ayy lmao
+        let world_rng = WorldRng {
+            rng: StdRng::seed_from_u64(seed),
+        };
+
+        app.insert_resource(world_rng);
 
         let spawned_elements: HashMap<_, _> = element_grid
             .iter()
@@ -206,7 +231,7 @@ pub mod tests {
     fn did_sand_fall_down() {
         // Arrange
         let element_grid = vec![vec![Element::Sand], vec![Element::Air], vec![Element::Air]];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
@@ -232,7 +257,7 @@ pub mod tests {
     fn did_sand_not_fall_down() {
         // Arrange
         let element_grid = vec![vec![Element::Sand], vec![Element::Dirt]];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
@@ -256,7 +281,7 @@ pub mod tests {
             vec![Element::Air, Element::Sand],
             vec![Element::Air, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
@@ -280,7 +305,7 @@ pub mod tests {
             vec![Element::Sand, Element::Air],
             vec![Element::Dirt, Element::Air],
         ];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
@@ -296,6 +321,46 @@ pub mod tests {
         );
     }
 
+    // Confirm that sand falls to the left on a tie between l/r when given an appropriate random seed
+    #[wasm_bindgen_test]
+    fn did_sand_fall_left_by_chance() {
+        // Arrange
+        let element_grid = vec![
+            vec![Element::Air, Element::Sand, Element::Air],
+            vec![Element::Air, Element::Dirt, Element::Air],
+        ];
+        let (mut app, elements) = setup(element_grid, Some(3));
+
+        // Act
+        app.update();
+
+        // Assert
+        assert_eq!(
+            app.world.get::<Position>(elements[&Position::X]),
+            Some(&Position::Y)
+        );
+    }
+
+    // Confirm that sand falls to the right on a tie between l/r when given an appropriate random seed
+    #[wasm_bindgen_test]
+    fn did_sand_fall_right_by_chance() {
+        // Arrange
+        let element_grid = vec![
+            vec![Element::Air, Element::Sand, Element::Air],
+            vec![Element::Air, Element::Dirt, Element::Air],
+        ];
+        let (mut app, elements) = setup(element_grid, Some(1));
+
+        // Act
+        app.update();
+
+        // Assert
+        assert_eq!(
+            app.world.get::<Position>(elements[&Position::X]),
+            Some(&Position::new(2, 1))
+        );
+    }
+
     // Confirm that sand does not fall to the left if blocked to its upper-left
     #[wasm_bindgen_test]
     fn did_sand_not_fall_upper_left() {
@@ -304,7 +369,7 @@ pub mod tests {
             vec![Element::Dirt, Element::Sand],
             vec![Element::Air, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
@@ -324,7 +389,7 @@ pub mod tests {
             vec![Element::Air, Element::Sand],
             vec![Element::Dirt, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
@@ -344,7 +409,7 @@ pub mod tests {
             vec![Element::Sand, Element::Dirt],
             vec![Element::Dirt, Element::Air],
         ];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
@@ -364,7 +429,7 @@ pub mod tests {
             vec![Element::Sand, Element::Air],
             vec![Element::Dirt, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid);
+        let (mut app, elements) = setup(element_grid, None);
 
         // Act
         app.update();
