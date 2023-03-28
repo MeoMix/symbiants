@@ -1,4 +1,7 @@
-use crate::world_rng::WorldRng;
+use crate::{
+    ant::{get_delta, get_rotated_angle, Ant, AntAngle, AntFacing},
+    world_rng::WorldRng,
+};
 
 use super::{
     elements::{Element, ElementBundle},
@@ -9,14 +12,16 @@ use bevy::prelude::*;
 use itertools::{Either, Itertools};
 use rand::{rngs::StdRng, Rng};
 
+// TODO: How to do an exact match when running a test?
 // TODO: Add support for ant gravity
+// TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
 // PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
-// PERF: could make air more implicit and not represent it as an actual element to be iterated over.
 
 // Returns true if every element in `positions` matches the provided Element type.
 // NOTE: This returns true if given 0 positions.
 fn is_all_element(
     world_map: &WorldMap,
+    // TODO: This doesn't need (nor should accept) &mut Position
     elements_query: &Query<(&Element, &mut Position)>,
     positions: &Vec<Position>,
     search_element: Element,
@@ -157,10 +162,54 @@ fn sand_gravity_system(
     }
 }
 
-// NOTE: To run just one test, run the command `cargo test <test_name>`
-// TODO: Figure out headless testing (logging causes panic in node) and how to run single test
+// Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
+// However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
+// TODO: This logic introduces a bug where an ant that starts falling sideways can cling to dirt halfway through a fall.
+fn ant_gravity_system(
+    mut ants_query: Query<(&AntFacing, &AntAngle, &mut Position), With<Ant>>,
+    elements_query: Query<(&Element, &mut Position)>,
+    world_map: Res<WorldMap>,
+) {
+    for (facing, angle, mut position) in ants_query.iter_mut() {
+        // Figure out foot direction
+        let foot_delta = get_delta(*facing, get_rotated_angle(*angle, 1));
+        let below_feet_position = *position + foot_delta;
+
+        let is_air_beneath_feet = is_all_element(
+            &world_map,
+            &elements_query,
+            &vec![below_feet_position],
+            Element::Air,
+        );
+
+        if is_air_beneath_feet {
+            let below_position = *position + Position::Y;
+            let is_air_below = is_all_element(
+                &world_map,
+                &elements_query,
+                &vec![below_position],
+                Element::Air,
+            );
+
+            if is_air_below {
+                position.y = below_position.y;
+            }
+        }
+    }
+}
+
+pub struct GravityPlugin;
+
+impl Plugin for GravityPlugin {
+    fn build(&self, app: &mut App) {
+        // TODO: for now implement separate system for ant gravity, but seems like the benefit of ECS is to identify commonalities and write against them
+        app.add_system(sand_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
+        app.add_system(ant_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
+    }
+}
+
 #[cfg(test)]
-pub mod tests {
+pub mod sand_gravity_system_tests {
     use super::*;
     use bevy::{log::LogPlugin, utils::HashMap};
     use rand::{rngs::StdRng, SeedableRng};
@@ -231,7 +280,6 @@ pub mod tests {
         // Assert
         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
 
-        // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
         assert_eq!(
             app.world
                 .get::<Element>(world_map.elements[&Position::ZERO]),
@@ -505,13 +553,5 @@ pub mod tests {
                 .get::<Element>(world_map.elements[&Position::new(0, 16)]),
             Some(&Element::Sand)
         );
-    }
-}
-
-pub struct GravityPlugin;
-
-impl Plugin for GravityPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system(sand_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
     }
 }

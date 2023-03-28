@@ -1,6 +1,7 @@
-use bevy::{prelude::*, sprite::Anchor};
+use crate::map::Position;
 
 use super::{elements::Element, settings::Settings};
+use bevy::{prelude::*, sprite::Anchor};
 
 // TODO: Add support for behavior timer.
 // TODO: Add support for dynamic names.
@@ -19,7 +20,46 @@ struct AntLabelBundle {
 }
 
 #[derive(Component)]
-struct Ant;
+pub struct Ant;
+
+// TODO: get_delta should probably not be coupled to 'facing'?
+pub fn get_delta(facing: AntFacing, angle: AntAngle) -> Position {
+    match angle {
+        AntAngle::Zero | AntAngle::OneHundredEighty => match facing {
+            AntFacing::Right => Position {
+                x: if angle == AntAngle::Zero { 1 } else { -1 },
+                y: 0,
+            },
+            AntFacing::Left => Position {
+                x: if angle == AntAngle::Zero { -1 } else { 1 },
+                y: 0,
+            },
+        },
+        _ => Position {
+            x: 0,
+            y: if angle == AntAngle::Ninety { -1 } else { 1 },
+        },
+    }
+}
+
+/**
+ * Rotation is a value from 0 to 3. A value of 1 is a 90 degree counter-clockwise rotation. Negative values are accepted.
+ * Examples:
+ *  getRotatedAngle(0, -1); // 270
+ *  getRotatedAngle(0, 1); // 90
+ */
+pub fn get_rotated_angle(angle: AntAngle, rotation: i32) -> AntAngle {
+    let angles = [
+        AntAngle::Zero,
+        AntAngle::Ninety,
+        AntAngle::OneHundredEighty,
+        AntAngle::TwoHundredSeventy,
+    ];
+
+    let rotated_index =
+        (angles.iter().position(|&a| a == angle).unwrap() as i32 - rotation) % angles.len() as i32;
+    angles[((rotated_index + angles.len() as i32) % angles.len() as i32) as usize]
+}
 
 impl AntLabelBundle {
     fn new(label: String, asset_server: &Res<AssetServer>) -> Self {
@@ -85,20 +125,20 @@ impl AntSpriteBundle {
     }
 }
 
-#[derive(Component, PartialEq)]
+#[derive(Component, PartialEq, Copy, Clone)]
 enum AntBehavior {
     Wandering,
     Carrying,
 }
 
-#[derive(Component, PartialEq)]
-enum AntFacing {
+#[derive(Component, PartialEq, Copy, Clone)]
+pub enum AntFacing {
     Left,
     Right,
 }
 
 #[derive(Component, PartialEq, Copy, Clone)]
-enum AntAngle {
+pub enum AntAngle {
     Zero = 0,
     Ninety = 90,
     OneHundredEighty = 180,
