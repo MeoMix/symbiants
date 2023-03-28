@@ -28,7 +28,7 @@ fn is_all_element(
             let Ok((&element, _)) = elements_query.get(element) else { return false; };
             element == search_element
         })
-        .all(|is_air| is_air)
+        .all(|is_element| is_element)
 }
 
 // Search for a valid location for sand to fall into by searching to the
