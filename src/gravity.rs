@@ -18,7 +18,7 @@ use rand::{rngs::StdRng, Rng};
 fn is_all_element(
     world_map: &WorldMap,
     elements_query: &Query<(&Element, &mut Position)>,
-    positions: Vec<Position>,
+    positions: &Vec<Position>,
     search_element: Element,
 ) -> bool {
     positions
@@ -45,7 +45,7 @@ fn get_sand_fall_position(
     if is_all_element(
         &world_map,
         &elements_query,
-        vec![below_sand_position],
+        &vec![below_sand_position],
         Element::Air,
     ) {
         return Some(below_sand_position);
@@ -58,7 +58,7 @@ fn get_sand_fall_position(
     let mut go_left = is_all_element(
         &world_map,
         &elements_query,
-        vec![left_sand_position, left_below_sand_position],
+        &vec![left_sand_position, left_below_sand_position],
         Element::Air,
     );
 
@@ -67,7 +67,7 @@ fn get_sand_fall_position(
     let mut go_right = is_all_element(
         &world_map,
         &elements_query,
-        vec![right_sand_position, right_below_sand_position],
+        &vec![right_sand_position, right_below_sand_position],
         Element::Air,
     );
 
@@ -145,7 +145,7 @@ fn sand_gravity_system(
         if is_all_element(
             &world_map,
             &elements_query,
-            above_sand_positions,
+            &above_sand_positions,
             Element::Sand,
         ) {
             let entity = commands
