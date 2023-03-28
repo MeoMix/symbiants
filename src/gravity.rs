@@ -32,7 +32,7 @@ fn is_all_element(
 
 // Search for a valid location for sand to fall into by searching to the
 // bottom left/center/right of a given sand position. Prioritize falling straight down
-// and do not fall if surrounded by sand or
+// and do not fall if surrounded by non-air
 fn get_sand_fall_position(
     sand_position: Position,
     world_map: &WorldMap,
@@ -156,9 +156,9 @@ fn sand_gravity_system(
 pub mod tests {
     use super::*;
     use bevy::utils::HashMap;
-    use wasm_bindgen_test::wasm_bindgen_test;
+    use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
-    // wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test_configure!(run_in_browser);
 
     // Create a new application to be used for testing the gravity system.
     // Map and flatten a grid of elements and spawn associated elements into the world.
