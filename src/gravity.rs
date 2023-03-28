@@ -464,7 +464,7 @@ pub mod tests {
     #[wasm_bindgen_test]
     fn did_sand_column_compact() {
         // Arrange
-        let element_grid = vec![vec![Element::Sand]; 20];
+        let element_grid = vec![vec![Element::Sand]; 16];
         let mut app = setup(element_grid, None);
 
         // Act
@@ -477,6 +477,33 @@ pub mod tests {
             app.world
                 .get::<Element>(world_map.elements[&Position::new(0, 15)]),
             Some(&Element::Dirt)
+        );
+    }
+
+    // Confirm that a pillar of floating sand falls downward instead of compacting into dirt
+    #[wasm_bindgen_test]
+    fn did_floating_sand_column_not_compact() {
+        // Arrange
+        let mut element_grid = vec![vec![Element::Sand]; 16];
+        element_grid.push(vec![Element::Air]);
+        let mut app = setup(element_grid, None);
+
+        // Act
+        app.update();
+
+        // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
+        assert_eq!(
+            app.world
+                .get::<Element>(world_map.elements[&Position::new(0, 15)]),
+            Some(&Element::Air)
+        );
+
+        assert_eq!(
+            app.world
+                .get::<Element>(world_map.elements[&Position::new(0, 16)]),
+            Some(&Element::Sand)
         );
     }
 }
