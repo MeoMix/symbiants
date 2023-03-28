@@ -161,8 +161,6 @@ fn sand_gravity_system(
 // TODO: Figure out headless testing (logging causes panic in node) and how to run single test
 #[cfg(test)]
 pub mod tests {
-    use crate::world_rng::WorldRng;
-
     use super::*;
     use bevy::{log::LogPlugin, utils::HashMap};
     use rand::{rngs::StdRng, SeedableRng};
