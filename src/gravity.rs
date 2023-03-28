@@ -13,7 +13,8 @@ use itertools::{Either, Itertools};
 use rand::{rngs::StdRng, Rng};
 
 // TODO: How to do an exact match when running a test?
-// TODO: Add support for ant gravity
+// TODO: Add tests for ant gravity
+// TODO: extra bonus points for finding an abstraction that unifies element and ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
 // PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
 
@@ -172,8 +173,6 @@ fn ant_gravity_system(
     world_map: Res<WorldMap>,
 ) {
     for (facing, angle, mut position) in ants_query.iter_mut() {
-        info!("ant!");
-
         // Figure out foot direction
         let foot_delta = get_delta(*facing, get_rotated_angle(*angle, 1));
         let below_feet_position = *position + foot_delta;
