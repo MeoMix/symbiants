@@ -9,7 +9,6 @@ use bevy::prelude::*;
 use itertools::{Either, Itertools};
 use rand::{rngs::StdRng, Rng};
 
-// TODO: Introduce more tests for sand crushing
 // TODO: Add support for ant gravity
 // PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
 // PERF: could make air more implicit and not represent it as an actual element to be iterated over.
@@ -149,12 +148,11 @@ fn sand_gravity_system(
             above_sand_positions,
             Element::Sand,
         ) {
-            world_map.elements.insert(
-                *sand_position,
-                commands
-                    .spawn(ElementBundle::create(Element::Dirt, *sand_position))
-                    .id(),
-            );
+            let entity = commands
+                .spawn(ElementBundle::create(Element::Dirt, *sand_position))
+                .id();
+
+            world_map.elements.insert(*sand_position, entity);
         }
     }
 }
@@ -174,10 +172,7 @@ pub mod tests {
 
     // Create a new application to be used for testing the gravity system.
     // Map and flatten a grid of elements and spawn associated elements into the world.
-    fn setup(
-        element_grid: Vec<Vec<Element>>,
-        seed: Option<u64>,
-    ) -> (App, HashMap<Position, Entity>) {
+    fn setup(element_grid: Vec<Vec<Element>>, seed: Option<u64>) -> App {
         let mut app = App::new();
         // Not strictly necessary, but might as well keep info!("...")
         // in production code from causing panics when tested.
@@ -211,8 +206,6 @@ pub mod tests {
             .flatten()
             .collect();
 
-        let elements = spawned_elements.clone();
-
         let height = element_grid.len() as isize;
         let width = element_grid.first().map_or(0, |row| row.len()) as isize;
         let world_map = WorldMap::new(width, height, 0.0, Some(spawned_elements));
@@ -223,7 +216,7 @@ pub mod tests {
             ..default()
         });
 
-        (app, elements)
+        app
     }
 
     // Confirm that sand successfully falls downward through multiple tiles of air.
@@ -231,24 +224,29 @@ pub mod tests {
     fn did_sand_fall_down() {
         // Arrange
         let element_grid = vec![vec![Element::Sand], vec![Element::Air], vec![Element::Air]];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
+        // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::Y]),
-            Some(&Position::ZERO)
+            app.world
+                .get::<Element>(world_map.elements[&Position::ZERO]),
+            Some(&Element::Air)
         );
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::new(0, 2)]),
-            Some(&Position::Y)
+            app.world.get::<Element>(world_map.elements[&Position::Y]),
+            Some(&Element::Air)
         );
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::ZERO]),
-            Some(&Position::new(0, 2))
+            app.world
+                .get::<Element>(world_map.elements[&Position::new(0, 2)]),
+            Some(&Element::Sand)
         );
     }
 
@@ -257,19 +255,22 @@ pub mod tests {
     fn did_sand_not_fall_down() {
         // Arrange
         let element_grid = vec![vec![Element::Sand], vec![Element::Dirt]];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::ZERO]),
-            Some(&Position::ZERO)
+            app.world
+                .get::<Element>(world_map.elements[&Position::ZERO]),
+            Some(&Element::Sand)
         );
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::Y]),
-            Some(&Position::Y)
+            app.world.get::<Element>(world_map.elements[&Position::Y]),
+            Some(&Element::Dirt)
         );
     }
 
@@ -281,19 +282,21 @@ pub mod tests {
             vec![Element::Air, Element::Sand],
             vec![Element::Air, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::X]),
-            Some(&Position::Y)
+            app.world.get::<Element>(world_map.elements[&Position::X]),
+            Some(&Element::Air)
         );
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::Y]),
-            Some(&Position::X)
+            app.world.get::<Element>(world_map.elements[&Position::Y]),
+            Some(&Element::Sand)
         );
     }
 
@@ -305,19 +308,22 @@ pub mod tests {
             vec![Element::Sand, Element::Air],
             vec![Element::Dirt, Element::Air],
         ];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::ZERO]),
-            Some(&Position::ONE)
+            app.world
+                .get::<Element>(world_map.elements[&Position::ZERO]),
+            Some(&Element::Air)
         );
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::ONE]),
-            Some(&Position::ZERO)
+            app.world.get::<Element>(world_map.elements[&Position::ONE]),
+            Some(&Element::Sand)
         );
     }
 
@@ -329,15 +335,17 @@ pub mod tests {
             vec![Element::Air, Element::Sand, Element::Air],
             vec![Element::Air, Element::Dirt, Element::Air],
         ];
-        let (mut app, elements) = setup(element_grid, Some(3));
+        let mut app = setup(element_grid, Some(3));
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::X]),
-            Some(&Position::Y)
+            app.world.get::<Element>(world_map.elements[&Position::Y]),
+            Some(&Element::Sand)
         );
     }
 
@@ -349,15 +357,18 @@ pub mod tests {
             vec![Element::Air, Element::Sand, Element::Air],
             vec![Element::Air, Element::Dirt, Element::Air],
         ];
-        let (mut app, elements) = setup(element_grid, Some(1));
+        let mut app = setup(element_grid, Some(1));
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::X]),
-            Some(&Position::new(2, 1))
+            app.world
+                .get::<Element>(world_map.elements[&Position::new(2, 1)]),
+            Some(&Element::Sand)
         );
     }
 
@@ -369,15 +380,17 @@ pub mod tests {
             vec![Element::Dirt, Element::Sand],
             vec![Element::Air, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::X]),
-            Some(&Position::X)
+            app.world.get::<Element>(world_map.elements[&Position::X]),
+            Some(&Element::Sand)
         );
     }
 
@@ -389,15 +402,17 @@ pub mod tests {
             vec![Element::Air, Element::Sand],
             vec![Element::Dirt, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::X]),
-            Some(&Position::X)
+            app.world.get::<Element>(world_map.elements[&Position::X]),
+            Some(&Element::Sand)
         );
     }
 
@@ -409,15 +424,18 @@ pub mod tests {
             vec![Element::Sand, Element::Dirt],
             vec![Element::Dirt, Element::Air],
         ];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::ZERO]),
-            Some(&Position::ZERO)
+            app.world
+                .get::<Element>(world_map.elements[&Position::ZERO]),
+            Some(&Element::Sand)
         );
     }
 
@@ -429,21 +447,40 @@ pub mod tests {
             vec![Element::Sand, Element::Air],
             vec![Element::Dirt, Element::Dirt],
         ];
-        let (mut app, elements) = setup(element_grid, None);
+        let mut app = setup(element_grid, None);
 
         // Act
         app.update();
 
         // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
         assert_eq!(
-            app.world.get::<Position>(elements[&Position::ZERO]),
-            Some(&Position::ZERO)
+            app.world
+                .get::<Element>(world_map.elements[&Position::ZERO]),
+            Some(&Element::Sand)
         );
     }
 
-    // Confirm that coinflip occurs if sand can fall to both the left and right
+    // Confirm that a pillar of sand will compact the bottom into dirt
+    #[wasm_bindgen_test]
+    fn did_sand_column_compact() {
+        // Arrange
+        let element_grid = vec![vec![Element::Sand]; 20];
+        let mut app = setup(element_grid, None);
 
-    // Confirm that sand crushes at depth
+        // Act
+        app.update();
+
+        // Assert
+        let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+
+        assert_eq!(
+            app.world
+                .get::<Element>(world_map.elements[&Position::new(0, 15)]),
+            Some(&Element::Dirt)
+        );
+    }
 }
 
 pub struct GravityPlugin;
