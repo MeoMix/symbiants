@@ -75,4 +75,8 @@ impl WorldMap {
             elements: elements.unwrap_or_default(),
         }
     }
+
+    pub fn is_within_bounds(&self, position: &Position) -> bool {
+        position.x >= 0 && position.x < self.width && position.y >= 0 && position.y < self.height
+    }
 }

@@ -1,5 +1,6 @@
 use crate::{
     ant::{get_delta, get_rotated_angle, AntAngle, AntFacing},
+    elements::is_all_element,
     world_rng::WorldRng,
 };
 
@@ -17,24 +18,6 @@ use rand::{rngs::StdRng, Rng};
 // TODO: extra bonus points for finding an abstraction that unifies element and ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
 // PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
-
-// Returns true if every element in `positions` matches the provided Element type.
-// NOTE: This returns true if given 0 positions.
-fn is_all_element(
-    world_map: &WorldMap,
-    // TODO: This doesn't need (nor should accept) &mut Position
-    elements_query: &Query<&Element>,
-    positions: &Vec<Position>,
-    search_element: Element,
-) -> bool {
-    positions.iter().all(|position| {
-        world_map
-            .elements
-            .get(position)
-            .and_then(|&element| elements_query.get(element).ok())
-            .map_or(false, |&element| element == search_element)
-    })
-}
 
 // Search for a valid location for sand to fall into by searching to the
 // bottom left/center/right of a given sand position. Prioritize falling straight down
@@ -154,6 +137,8 @@ fn sand_gravity_system(
             &above_sand_positions,
             Element::Sand,
         ) {
+            // TODO: despawn
+
             let entity = commands
                 .spawn(ElementBundle::create(Element::Dirt, *sand_position))
                 .id();
