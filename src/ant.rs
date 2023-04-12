@@ -141,6 +141,9 @@ pub enum AntAngle {
     TwoHundredSeventy = 270,
 }
 
+#[derive(Component)]
+pub struct LabelContainer;
+
 pub struct AntsPlugin;
 
 fn create_ant(
@@ -177,7 +180,7 @@ fn setup(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let ant_bundles = (0..8).map(|_| {
+    let ant_bundles = (0..20).map(|_| {
         // Put the ant at a random location along the x-axis that fits within the bounds of the world.
         // TODO: technically old code was .round() and now it's just floored implicitly
         let x = world_rng.rng.gen_range(0..1000) % world_map.width();
@@ -283,46 +286,64 @@ fn setup(
         let is_carrying = behavior == AntBehavior::Carrying;
 
         commands
-            // Wrap label and ant with common parent to associate their movement, but not their rotation.
-            .spawn((
-                SpatialBundle {
-                    transform: Transform {
-                        translation,
-                        ..default()
-                    },
-                    ..default()
-                },
-                position,
-                facing,
-                angle,
-                behavior,
-            ))
-            .with_children(|parent| {
-                // Make sand a child of ant so they share rotation.
-                parent.spawn(sprite).with_children(|parent| {
-                    if is_carrying {
-                        // NOTE: sand carried by ants is not "affected by gravity" intentionally
-                        // There might need to be a better way of handling this once ant gravity is implemented
-                        // TODO: It seems like this logic should share ElementBundle create_sand but need to re-think position
-                        // otherwise maybe this shouldn't be a true SandSprite and instead be a sprite change on the ant itself?
-                        parent.spawn((
-                            SpriteBundle {
-                                transform: Transform {
-                                    translation: Vec3::new(0.5, 0.5, 0.0),
-                                    ..default()
-                                },
-                                sprite: Sprite {
-                                    color: Color::rgb(0.761, 0.698, 0.502),
-                                    anchor: Anchor::TopLeft,
-                                    ..default()
-                                },
+            // Wrap label and ant with common parent to allow a system to easily associate their position.
+            // Don't mess with parent transform to avoid rotating label.
+            .spawn(SpatialBundle::default())
+            .with_children(|ant_label_container| {
+                // Spawn a container for the ant sprite and sand so there's strong correlation between position and translation.
+                // If position is associated directly with sprite then offset is overwritten when position is updated.
+                ant_label_container
+                    .spawn((
+                        SpatialBundle {
+                            transform: Transform {
+                                translation,
                                 ..default()
                             },
-                            Element::Sand,
-                        ));
-                    }
-                });
-                parent.spawn(label);
+                            ..default()
+                        },
+                        position,
+                        facing,
+                        angle,
+                        behavior,
+                    ))
+                    .with_children(|ant_container| {
+                        ant_container.spawn(sprite).with_children(|parent| {
+                            if is_carrying {
+                                // Make sand a child of ant so they share rotation.
+                                parent.spawn((
+                                    SpriteBundle {
+                                        transform: Transform {
+                                            translation: Vec3::new(0.5, 0.5, 0.0),
+                                            ..default()
+                                        },
+                                        sprite: Sprite {
+                                            color: Color::rgb(0.761, 0.698, 0.502),
+                                            anchor: Anchor::TopLeft,
+                                            ..default()
+                                        },
+                                        ..default()
+                                    },
+                                    Element::Sand,
+                                ));
+                            }
+                        });
+                    });
+
+                // Put the label in its own container so offset on label itself isn't overwritten when updating position
+                ant_label_container
+                    .spawn((
+                        SpatialBundle {
+                            transform: Transform {
+                                translation,
+                                ..default()
+                            },
+                            ..default()
+                        },
+                        LabelContainer,
+                    ))
+                    .with_children(|label_container| {
+                        label_container.spawn(label);
+                    });
             });
     }
 }
@@ -336,7 +357,8 @@ fn is_valid_location(
 ) -> bool {
     // Need air at the ants' body for it to be a legal ant location.
     let Some(entity) = world_map.elements.get(&position) else { return false };
-    let element = elements_query.get(*entity).unwrap();
+    // NOTE: this can occur due to `spawn` not affecting query on current frame
+    let Ok(element) = elements_query.get(*entity) else { return false; };
 
     if *element != Element::Air {
         return false;
@@ -346,7 +368,8 @@ fn is_valid_location(
     let foot_position = position + get_delta(facing, get_rotated_angle(angle, 1));
     // TODO: returning true here seems awkward, but I want the ants to climb the sides of the container?
     let Some(entity) = world_map.elements.get(&foot_position) else { return false };
-    let element = elements_query.get(*entity).unwrap();
+    // NOTE: this can occur due to `spawn` not affecting query on current frame
+    let Ok(element) = elements_query.get(*entity) else { return false; };
 
     if *element == Element::Air {
         return false;
@@ -363,11 +386,11 @@ fn do_drop(
     commands: &mut Commands,
 ) {
     let Some(entity) = world_map.elements.get(&position) else { return; };
-    let element = elements_query.get(*entity).unwrap();
+    // NOTE: this can occur due to `spawn` not affecting query on current frame
+    let Ok(element) = elements_query.get(*entity) else { return; };
 
     if *element == Element::Air {
-        // TODO: it seems like I should do this...
-        // commands.entity(*entity).despawn();
+        commands.entity(*entity).despawn();
 
         // Drop sand on air
         let sand_entity = commands
@@ -459,10 +482,12 @@ fn do_turn(
     // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
     if *behavior == AntBehavior::Carrying {
         if let Some(entity) = world_map.elements.get(&position) {
-            let element = elements_query.get(*entity).unwrap();
-
-            if *element == Element::Air {
-                do_drop(behavior, *position, elements_query, world_map, commands);
+            // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
+            // NOTE: this can occur due to `spawn` not affecting query on current frame
+            if let Ok(element) = elements_query.get(*entity) {
+                if *element == Element::Air {
+                    do_drop(behavior, *position, elements_query, world_map, commands);
+                }
             }
         }
     }
@@ -491,12 +516,12 @@ fn do_dig(
     let dig_position = *position + get_delta(*facing, dig_angle);
 
     let Some(entity) = world_map.elements.get(&dig_position) else { return };
-    let element = elements_query.get(*entity).unwrap();
+    // NOTE: this can occur due to `spawn` not affecting query on current frame
+    let Ok(element) = elements_query.get(*entity) else { return };
 
     if *element == Element::Dirt || *element == Element::Sand {
         info!("digging NOW");
-        // TODO: it seems like I should do this...
-        // commands.entity(*entity).despawn();
+        commands.entity(*entity).despawn();
 
         // Dig up dirt/sand and replace with air
         let air_entity = commands
@@ -542,13 +567,8 @@ fn do_move(
 
     // Check if hitting dirt or sand and, if so, consider digging through it.
     let target_entity = world_map.elements.get(&new_position).unwrap();
-
-    info!(
-        "target_entity and position: {:?} {:?}",
-        target_entity, new_position
-    );
-
-    let target_element = elements_query.get(*target_entity).unwrap();
+    // NOTE: this can occur due to `spawn` not affecting query on current frame
+    let Ok(target_element) = elements_query.get(*target_entity) else { return };
 
     if *target_element == Element::Dirt || *target_element == Element::Sand {
         // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
@@ -596,7 +616,8 @@ fn do_move(
             target_foot_entity, target_foot_position
         );
 
-        let target_foot_element = elements_query.get(*target_foot_entity).unwrap();
+        // NOTE: this can occur due to `spawn` not affecting query on current frame
+        let Ok(target_foot_element) = elements_query.get(*target_foot_entity) else { return };
 
         if *target_foot_element == Element::Air {
             // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block

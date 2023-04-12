@@ -28,7 +28,7 @@ pub struct AntfarmPlugin;
 impl Plugin for AntfarmPlugin {
     fn build(&self, app: &mut App) {
         // Defines the amount of time that should elapse between each physics step.
-        let fixed_time = FixedTime::new_from_secs(1.0 / 60.0);
+        let fixed_time = FixedTime::new_from_secs(10.0 / 60.0);
         let settings = Settings::default();
         let world_map = WorldMap::new(
             settings.world_width,
