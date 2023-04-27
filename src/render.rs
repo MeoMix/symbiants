@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::ant::{AntAngle, AntFacing, LabelContainer};
+use crate::ant::{AntAngle, AntFacing, LabelContainer, TransformOffset};
 
 use super::map::Position;
 
@@ -14,14 +14,22 @@ pub fn get_xflip(facing: AntFacing) -> f32 {
 
 fn render_translation(
     mut query: Query<
-        (&mut Transform, &Position, Option<&Parent>),
+        (
+            &mut Transform,
+            &Position,
+            Option<&TransformOffset>,
+            Option<&Parent>,
+        ),
         (Changed<Position>, Without<LabelContainer>),
     >,
     mut label_container_query: Query<(&mut Transform, &Parent), With<LabelContainer>>,
 ) {
-    for (mut transform, &position, parent) in query.iter_mut() {
-        transform.translation.x = position.x as f32;
-        transform.translation.y = -position.y as f32;
+    for (mut transform, &position, transform_offset, parent) in query.iter_mut() {
+        let offset_x = transform_offset.map_or(0.0, |offset| offset.0.x);
+        let offset_y = transform_offset.map_or(0.0, |offset| offset.0.y);
+
+        transform.translation.x = position.x as f32 + offset_x;
+        transform.translation.y = -position.y as f32 + offset_y;
 
         // If entity has a parent container, check for sibling labels and update their position.
         if let Some(parent) = parent {

@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use crate::{
     elements::{is_all_element, ElementBundle},
     map::{Position, WorldMap},
@@ -88,28 +90,11 @@ struct AntSpriteBundle {
 }
 
 impl AntSpriteBundle {
-    fn new(
-        color: Color,
-        facing: AntFacing,
-        angle: AntAngle,
-        asset_server: &Res<AssetServer>,
-    ) -> Self {
-        // TODO: is this a bad architectural decision? technically I am thinking about mirroring improperly by inverting angle when x is flipped?
-        let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
-
-        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0 * x_flip;
-        let rotation = Quat::from_rotation_z(angle_radians);
-
+    fn new(color: Color, asset_server: &Res<AssetServer>) -> Self {
         Self {
             sprite_bundle: SpriteBundle {
                 // TODO: alient-cake-addict creates a handle on a resource for this instead
                 texture: asset_server.load("images/ant.png"),
-                transform: Transform {
-                    rotation,
-                    scale: Vec3::new(x_flip, 1.0, 1.0),
-                    translation: Vec3::new(0.5, -0.5, 100.0),
-                    ..default()
-                },
                 sprite: Sprite {
                     color,
                     custom_size: Some(Vec2::new(ANT_SCALE, ANT_SCALE)),
@@ -120,6 +105,9 @@ impl AntSpriteBundle {
         }
     }
 }
+
+#[derive(Component)]
+pub struct TransformOffset(pub Vec3);
 
 #[derive(Component, PartialEq, Copy, Clone)]
 enum AntBehavior {
@@ -156,18 +144,22 @@ fn create_ant(
     asset_server: &Res<AssetServer>,
 ) -> (
     Position,
+    TransformOffset,
     AntFacing,
     AntAngle,
     AntBehavior,
     AntSpriteBundle,
     AntLabelBundle,
 ) {
+    let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
+
     (
         position,
+        transform_offset,
         facing,
         angle,
         behavior,
-        AntSpriteBundle::new(color, facing, angle, &asset_server),
+        AntSpriteBundle::new(color, &asset_server),
         AntLabelBundle::new(name, &asset_server),
     )
 }
@@ -180,107 +172,107 @@ fn setup(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let ant_bundles = (0..20).map(|_| {
-        // Put the ant at a random location along the x-axis that fits within the bounds of the world.
-        // TODO: technically old code was .round() and now it's just floored implicitly
-        let x = world_rng.rng.gen_range(0..1000) % world_map.width();
-        // Put the ant on the dirt.
-        let &y = world_map.surface_level();
+    // let ant_bundles = (0..20).map(|_| {
+    //     // Put the ant at a random location along the x-axis that fits within the bounds of the world.
+    //     // TODO: technically old code was .round() and now it's just floored implicitly
+    //     let x = world_rng.rng.gen_range(0..1000) % world_map.width();
+    //     // Put the ant on the dirt.
+    //     let &y = world_map.surface_level();
 
-        // Randomly position ant facing left or right.
-        let facing = if rand::thread_rng().gen_range(0..10) < 5 {
-            AntFacing::Left
-        } else {
-            AntFacing::Right
-        };
+    //     // Randomly position ant facing left or right.
+    //     let facing = if rand::thread_rng().gen_range(0..10) < 5 {
+    //         AntFacing::Left
+    //     } else {
+    //         AntFacing::Right
+    //     };
 
-        create_ant(
-            Position::new(x, y),
-            settings.ant_color,
-            facing,
-            AntAngle::Zero,
-            AntBehavior::Wandering,
-            "Test Name".to_string(),
-            &asset_server,
-        )
-    });
-
-    // let test_ant_bundles = [
     //     create_ant(
-    //         Position::new(5, 5),
+    //         Position::new(x, y),
     //         settings.ant_color,
-    //         AntFacing::Left,
+    //         facing,
     //         AntAngle::Zero,
-    //         AntBehavior::Carrying,
-    //         "ant1".to_string(),
+    //         AntBehavior::Wandering,
+    //         "Test Name".to_string(),
     //         &asset_server,
-    //     ),
-    // create_ant(
-    //     Position::new(10, 5),
-    //     settings.ant_color,
-    //     AntFacing::Left,
-    //     AntAngle::Ninety,
-    //     AntBehavior::Carrying,
-    //     "ant2".to_string(),
-    //     &asset_server,
-    // ),
-    // create_ant(
-    //     Position::new(15, 5),
-    //     settings.ant_color,
-    //     AntFacing::Left,
-    //     AntAngle::OneHundredEighty,
-    //     AntBehavior::Carrying,
-    //     "ant3".to_string(),
-    //     &asset_server,
-    // ),
-    // create_ant(
-    //     Position::new(20, 5),
-    //     settings.ant_color,
-    //     AntFacing::Left,
-    //     AntAngle::TwoHundredSeventy,
-    //     AntBehavior::Carrying,
-    //     "ant4".to_string(),
-    //     &asset_server,
-    // ),
-    // create_ant(
-    //     Position::new(25, 5),
-    //     settings.ant_color,
-    //     AntFacing::Right,
-    //     AntAngle::Zero,
-    //     AntBehavior::Carrying,
-    //     "ant5".to_string(),
-    //     &asset_server,
-    // ),
-    // create_ant(
-    //     Position::new(30, 5),
-    //     settings.ant_color,
-    //     AntFacing::Right,
-    //     AntAngle::Ninety,
-    //     AntBehavior::Carrying,
-    //     "ant6".to_string(),
-    //     &asset_server,
-    // ),
-    // create_ant(
-    //     Position::new(35, 5),
-    //     settings.ant_color,
-    //     AntFacing::Right,
-    //     AntAngle::OneHundredEighty,
-    //     AntBehavior::Carrying,
-    //     "ant7".to_string(),
-    //     &asset_server,
-    // ),
-    // create_ant(
-    //     Position::new(40, 5),
-    //     settings.ant_color,
-    //     AntFacing::Right,
-    //     AntAngle::TwoHundredSeventy,
-    //     AntBehavior::Carrying,
-    //     "ant8".to_string(),
-    //     &asset_server,
-    // ),
-    // ];
+    //     )
+    // });
 
-    for (position, facing, angle, behavior, sprite, label) in ant_bundles {
+    let ant_bundles = [
+        create_ant(
+            Position::new(5, 5),
+            settings.ant_color,
+            AntFacing::Left,
+            AntAngle::Zero,
+            AntBehavior::Carrying,
+            "ant1".to_string(),
+            &asset_server,
+        ),
+        create_ant(
+            Position::new(10, 5),
+            settings.ant_color,
+            AntFacing::Left,
+            AntAngle::Ninety,
+            AntBehavior::Carrying,
+            "ant2".to_string(),
+            &asset_server,
+        ),
+        create_ant(
+            Position::new(15, 5),
+            settings.ant_color,
+            AntFacing::Left,
+            AntAngle::OneHundredEighty,
+            AntBehavior::Carrying,
+            "ant3".to_string(),
+            &asset_server,
+        ),
+        create_ant(
+            Position::new(20, 5),
+            settings.ant_color,
+            AntFacing::Left,
+            AntAngle::TwoHundredSeventy,
+            AntBehavior::Carrying,
+            "ant4".to_string(),
+            &asset_server,
+        ),
+        create_ant(
+            Position::new(25, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::Zero,
+            AntBehavior::Carrying,
+            "ant5".to_string(),
+            &asset_server,
+        ),
+        create_ant(
+            Position::new(30, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::Ninety,
+            AntBehavior::Carrying,
+            "ant6".to_string(),
+            &asset_server,
+        ),
+        create_ant(
+            Position::new(35, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::OneHundredEighty,
+            AntBehavior::Carrying,
+            "ant7".to_string(),
+            &asset_server,
+        ),
+        create_ant(
+            Position::new(40, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::TwoHundredSeventy,
+            AntBehavior::Carrying,
+            "ant8".to_string(),
+            &asset_server,
+        ),
+    ];
+
+    for (position, transform_offset, facing, angle, behavior, sprite, label) in ant_bundles {
         // The view of the model position is just an inversion along the y-axis.
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
         let is_carrying = behavior == AntBehavior::Carrying;
@@ -290,18 +282,26 @@ fn setup(
             // Don't mess with parent transform to avoid rotating label.
             .spawn(SpatialBundle::default())
             .with_children(|ant_label_container| {
+                let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
+
+                let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0 * x_flip;
+                let rotation = Quat::from_rotation_z(angle_radians);
+
                 // Spawn a container for the ant sprite and sand so there's strong correlation between position and translation.
                 // If position is associated directly with sprite then offset is overwritten when position is updated.
                 ant_label_container
                     .spawn((
                         SpatialBundle {
                             transform: Transform {
-                                translation,
+                                translation: translation.add(transform_offset.0),
+                                rotation,
+                                scale: Vec3::new(x_flip, 1.0, 1.0),
                                 ..default()
                             },
                             ..default()
                         },
                         position,
+                        transform_offset,
                         facing,
                         angle,
                         behavior,
@@ -773,6 +773,19 @@ impl Plugin for AntsPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(setup);
         // TODO: Does ordering of move_ant / gravity matter? If so, need to rearchitect to support
-        app.add_system(move_ant.in_schedule(CoreSchedule::FixedUpdate));
+        // app.add_system(move_ant.in_schedule(CoreSchedule::FixedUpdate));
     }
+}
+
+#[cfg(test)]
+pub mod move_ant_systems_tests {
+    use super::*;
+    use bevy::{log::LogPlugin, utils::HashMap};
+    use rand::{rngs::StdRng, SeedableRng};
+    use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    fn did_ant_move_right() {}
 }
