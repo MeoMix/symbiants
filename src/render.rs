@@ -1,6 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor};
 
-use crate::ant::{AntAngle, AntFacing, LabelContainer, TransformOffset};
+use crate::{
+    ant::{AntAngle, AntBehavior, AntFacing, LabelContainer, TransformOffset},
+    elements::Element,
+};
 
 use super::map::Position;
 
@@ -51,10 +54,55 @@ fn render_scale(mut query: Query<(&mut Transform, &AntFacing), Changed<AntFacing
     }
 }
 
-fn render_rotation(mut query: Query<(&mut Transform, &AntAngle, &AntFacing), Changed<AntFacing>>) {
+fn render_rotation(
+    mut query: Query<
+        (&mut Transform, &AntAngle, &AntFacing),
+        Or<(Changed<AntFacing>, Changed<AntAngle>)>,
+    >,
+) {
     for (mut transform, &angle, &facing) in query.iter_mut() {
         let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0 * get_xflip(facing);
+        info!("Updating angle: {:?}", angle);
         transform.rotation = Quat::from_rotation_z(angle_radians);
+    }
+}
+
+fn render_carrying(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Children, &AntBehavior), Changed<AntBehavior>>,
+) {
+    for (entity, children, behavior) in query.iter_mut() {
+        // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
+        // TODO: might *need* to know previous state to avoid unintentionally carrying twice
+        if *behavior == AntBehavior::Carrying {
+            info!("Carrying");
+            commands
+                .entity(entity)
+                .with_children(|ant: &mut ChildBuilder| {
+                    ant.spawn((
+                        SpriteBundle {
+                            transform: Transform {
+                                translation: Vec3::new(0.5, 0.5, 0.0),
+                                ..default()
+                            },
+                            sprite: Sprite {
+                                color: Color::rgb(0.761, 0.698, 0.502),
+                                anchor: Anchor::TopLeft,
+                                ..default()
+                            },
+                            ..default()
+                        },
+                        Element::Sand,
+                    ));
+                });
+        } else {
+            info!("Not carrying");
+
+            commands.entity(entity).remove_children(children);
+            for child in children {
+                commands.entity(*child).despawn();
+            }
+        }
     }
 }
 
@@ -65,5 +113,6 @@ impl Plugin for RenderPlugin {
         app.add_system(render_translation.in_schedule(CoreSchedule::FixedUpdate));
         app.add_system(render_scale.in_schedule(CoreSchedule::FixedUpdate));
         app.add_system(render_rotation.in_schedule(CoreSchedule::FixedUpdate));
+        app.add_system(render_carrying.in_schedule(CoreSchedule::FixedUpdate));
     }
 }

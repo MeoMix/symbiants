@@ -191,7 +191,7 @@ impl Plugin for GravityPlugin {
     fn build(&self, app: &mut App) {
         // TODO: for now implement separate system for ant gravity, but seems like the benefit of ECS is to identify commonalities and write against them
         app.add_system(sand_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
-        // app.add_system(ant_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
+        app.add_system(ant_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
     }
 }
 
