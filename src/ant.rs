@@ -15,19 +15,17 @@ use rand::Rng;
 
 // TODO: get_delta should probably not be coupled to 'facing'?
 pub fn get_delta(facing: AntFacing, angle: AntAngle) -> Position {
-    match (facing, angle) {
-        (AntFacing::Left, AntAngle::Zero) => Position { x: -1, y: 0 },
-        (AntFacing::Left, AntAngle::OneHundredEighty) => Position { x: 1, y: 0 },
+    let delta = match angle {
+        AntAngle::Zero => Position::X,
+        AntAngle::Ninety => Position::NEG_Y,
+        AntAngle::OneHundredEighty => Position::NEG_X,
+        AntAngle::TwoHundredSeventy => Position::Y,
+    };
 
-        (AntFacing::Left, AntAngle::Ninety) => Position { x: 0, y: -1 },
-        (AntFacing::Left, AntAngle::TwoHundredSeventy) => Position { x: 0, y: 1 },
-
-        (AntFacing::Right, AntAngle::Zero) => Position { x: 1, y: 0 },
-        (AntFacing::Right, AntAngle::OneHundredEighty) => Position { x: -1, y: 0 },
-
-        // TODO: it's awkward that these aren't the inverse of left, need to fix how mirroring is implemented
-        (AntFacing::Right, AntAngle::Ninety) => Position { x: 0, y: -1 },
-        (AntFacing::Right, AntAngle::TwoHundredSeventy) => Position { x: 0, y: 1 },
+    if facing == AntFacing::Left {
+        delta * Position::NEG_ONE
+    } else {
+        delta
     }
 }
 
@@ -74,7 +72,7 @@ impl AntBundle {
     ) -> Self {
         let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
         let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
-        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0 * x_flip;
+        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0;
         let rotation = Quat::from_rotation_z(angle_radians);
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
@@ -337,7 +335,8 @@ fn is_valid_location(
     }
 
     // Get the location beneath the ants' feet and check for air
-    let foot_position = position + get_delta(facing, get_rotated_angle(angle, 1));
+    let rotation = if facing == AntFacing::Left { -1 } else { 1 };
+    let foot_position = position + get_delta(facing, get_rotated_angle(angle, rotation));
     // TODO: returning true here seems awkward, but I want the ants to climb the sides of the container?
     let Some(entity) = world_map.elements.get(&foot_position) else { return false };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
@@ -387,7 +386,8 @@ fn do_turn(
     commands: &mut Commands,
 ) {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
-    let back_angle = get_rotated_angle(*angle, -1);
+    let rotation = if *facing == AntFacing::Left { 1 } else { -1 };
+    let back_angle = get_rotated_angle(*angle, rotation);
     if is_valid_location(*facing, back_angle, *position, elements_query, world_map) {
         *angle = back_angle;
         info!("back turn, angle is now: {:?}", angle);
@@ -490,7 +490,8 @@ fn do_dig(
     let dig_angle = if is_forced_forward {
         *angle
     } else {
-        get_rotated_angle(*angle, 1)
+        let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
+        get_rotated_angle(*angle, rotation)
     };
 
     let dig_position = *position + get_delta(*facing, dig_angle);
@@ -587,7 +588,8 @@ fn do_move(
     }
 
     // We can move forward.  But first, check footing.
-    let target_foot_angle = get_rotated_angle(*angle, 1);
+    let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
+    let target_foot_angle = get_rotated_angle(*angle, rotation);
     let target_foot_position = new_position + get_delta(*facing, target_foot_angle);
 
     if let Some(target_foot_entity) = world_map.elements.get(&target_foot_position) {
@@ -639,7 +641,8 @@ fn move_ant(
 ) {
     for (facing, angle, behavior, position) in ants_query.iter_mut() {
         // TODO: prefer this not copy/pasted logic, should be able to easily check if there is air underneath a unit's feet
-        let foot_delta = get_delta(*facing, get_rotated_angle(*angle, 1));
+        let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
+        let foot_delta = get_delta(*facing, get_rotated_angle(*angle, rotation));
         let below_feet_position = *position + foot_delta;
 
         let is_air_beneath_feet = is_all_element(

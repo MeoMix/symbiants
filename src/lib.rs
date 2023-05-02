@@ -55,6 +55,8 @@ impl Plugin for AntfarmPlugin {
         .add_plugin(CameraPlugin)
         .add_plugin(BackgroundPlugin)
         .add_plugin(ElementsPlugin)
+        // TODO: WARNING: GravityPlugin must be added before AntsPlugin
+        // TODO: There's a system ordering issue here. If I apply gravity first then ants walk with their feet not on the ground for a frame due to Changed<T>
         .add_plugin(AntsPlugin)
         .add_plugin(GravityPlugin)
         .add_plugin(RenderPlugin);

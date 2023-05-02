@@ -1,5 +1,5 @@
 use bevy::{prelude::*, utils::HashMap};
-use std::ops::Add;
+use std::ops::{Add, Mul};
 
 // TODO: maybe introduce a Tile concept?
 #[derive(Component, Debug, Eq, PartialEq, Hash, Copy, Clone)]
@@ -35,6 +35,17 @@ impl Add for Position {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Mul for Position {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        Self {
+            x: self.x * other.x,
+            y: self.y * other.y,
         }
     }
 }

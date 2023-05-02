@@ -159,7 +159,8 @@ fn ant_gravity_system(
 ) {
     for (facing, angle, mut position) in ants_query.iter_mut() {
         // Figure out foot direction
-        let foot_delta = get_delta(*facing, get_rotated_angle(*angle, 1));
+        let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
+        let foot_delta = get_delta(*facing, get_rotated_angle(*angle, rotation));
         let below_feet_position = *position + foot_delta;
 
         let is_air_beneath_feet = is_all_element(

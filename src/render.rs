@@ -7,14 +7,6 @@ use crate::{
 
 use super::map::Position;
 
-pub fn get_xflip(facing: AntFacing) -> f32 {
-    if facing == AntFacing::Left {
-        -1.0
-    } else {
-        1.0
-    }
-}
-
 fn render_translation(
     mut query: Query<
         (
@@ -50,18 +42,14 @@ fn render_translation(
 
 fn render_scale(mut query: Query<(&mut Transform, &AntFacing), Changed<AntFacing>>) {
     for (mut transform, &facing) in query.iter_mut() {
-        transform.scale = Vec3::new(get_xflip(facing), 1.0, 1.0);
+        let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
+        transform.scale = Vec3::new(x_flip, 1.0, 1.0);
     }
 }
 
-fn render_rotation(
-    mut query: Query<
-        (&mut Transform, &AntAngle, &AntFacing),
-        Or<(Changed<AntFacing>, Changed<AntAngle>)>,
-    >,
-) {
-    for (mut transform, &angle, &facing) in query.iter_mut() {
-        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0 * get_xflip(facing);
+fn render_rotation(mut query: Query<(&mut Transform, &AntAngle), Changed<AntAngle>>) {
+    for (mut transform, &angle) in query.iter_mut() {
+        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0;
         info!("Updating angle: {:?}", angle);
         transform.rotation = Quat::from_rotation_z(angle_radians);
     }
