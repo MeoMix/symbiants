@@ -151,8 +151,6 @@ impl AntAngle {
 #[derive(Component)]
 pub struct LabelContainer;
 
-pub struct AntsPlugin;
-
 // Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_ants(
     mut commands: Commands,

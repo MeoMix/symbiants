@@ -18,14 +18,30 @@ impl Plugin for SimulationPlugin {
             (
                 // NOTE: move_ant needs to run first to avoid situation where ant falls + moves in same frame
                 move_ant,
-                // TODO: I think these can run in any order?
+                // TODO: sand/ant gravity systems can run in parallel, but not clear how to express that without allowing render to run
                 sand_gravity_system.after(move_ant),
                 ant_gravity_system.after(sand_gravity_system),
-                // TODO: These can run in any order - how to express that?
-                render_translation.after(ant_gravity_system),
-                render_scale.after(render_translation),
-                render_rotation.after(render_scale),
-                render_carrying.after(render_rotation),
+                // Rendering systems need to run after all other systems, but can run in any order.
+                render_translation
+                    .after(ant_gravity_system)
+                    .ambiguous_with(render_scale)
+                    .ambiguous_with(render_rotation)
+                    .ambiguous_with(render_carrying),
+                render_scale
+                    .after(ant_gravity_system)
+                    .ambiguous_with(render_translation)
+                    .ambiguous_with(render_rotation)
+                    .ambiguous_with(render_carrying),
+                render_rotation
+                    .after(ant_gravity_system)
+                    .ambiguous_with(render_translation)
+                    .ambiguous_with(render_scale)
+                    .ambiguous_with(render_carrying),
+                render_carrying
+                    .after(ant_gravity_system)
+                    .ambiguous_with(render_translation)
+                    .ambiguous_with(render_scale)
+                    .ambiguous_with(render_rotation),
             )
                 .in_schedule(CoreSchedule::FixedUpdate),
         );
