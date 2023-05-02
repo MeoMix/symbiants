@@ -13,7 +13,6 @@ use rand::Rng;
 // TODO: Add support for behavior timer.
 // TODO: Add support for dynamic names.
 
-// TODO: get_delta should probably not be coupled to 'facing'?
 pub fn get_delta(facing: AntFacing, angle: AntAngle) -> Position {
     let delta = match angle {
         AntAngle::Zero => Position::X,
@@ -155,7 +154,7 @@ pub struct LabelContainer;
 pub struct AntsPlugin;
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-fn setup(
+pub fn setup_ants(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     settings: Res<Settings>,
@@ -597,11 +596,6 @@ fn do_move(
     let target_foot_position = new_position + get_delta(*facing, target_foot_angle);
 
     if let Some(target_foot_entity) = world_map.elements.get(&target_foot_position) {
-        info!(
-            "target_foot_entity and position: {:?} {:?}",
-            target_foot_entity, target_foot_position
-        );
-
         // NOTE: this can occur due to `spawn` not affecting query on current frame
         let Ok(target_foot_element) = elements_query.get(*target_foot_entity) else { return };
 
@@ -630,7 +624,7 @@ fn do_move(
 
 // TODO: untangle mutability, many functions accept mutable but do not mutate which seems wrong
 // TODO: first pass is going to be just dumping all code into one system, but suspect want multiple systems
-fn move_ant(
+pub fn move_ant(
     mut ants_query: Query<(
         &mut AntFacing,
         &mut AntAngle,
@@ -643,6 +637,8 @@ fn move_ant(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
+    info!("move_ant");
+
     for (facing, angle, behavior, position) in ants_query.iter_mut() {
         // TODO: prefer this not copy/pasted logic, should be able to easily check if there is air underneath a unit's feet
         let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
@@ -657,7 +653,6 @@ fn move_ant(
         );
 
         if is_air_beneath_feet {
-            info!("is_air_beneath_feet");
             // Whoops, whatever we were walking on disappeared.
             let below_position = *position + Position::Y;
             let is_air_below = is_all_element(
@@ -754,14 +749,6 @@ fn move_ant(
         } else {
             info!("error - unsupported behavior");
         }
-    }
-}
-
-impl Plugin for AntsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(setup);
-        // TODO: Does ordering of move_ant / gravity matter? If so, need to rearchitect to support
-        app.add_system(move_ant.in_schedule(CoreSchedule::FixedUpdate));
     }
 }
 

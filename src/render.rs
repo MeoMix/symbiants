@@ -7,7 +7,7 @@ use crate::{
 
 use super::map::Position;
 
-fn render_translation(
+pub fn render_translation(
     mut query: Query<
         (
             &mut Transform,
@@ -19,6 +19,7 @@ fn render_translation(
     >,
     mut label_container_query: Query<(&mut Transform, &Parent), With<LabelContainer>>,
 ) {
+    info!("render_translation");
     for (mut transform, &position, transform_offset, parent) in query.iter_mut() {
         let offset_x = transform_offset.map_or(0.0, |offset| offset.0.x);
         let offset_y = transform_offset.map_or(0.0, |offset| offset.0.y);
@@ -40,23 +41,26 @@ fn render_translation(
     }
 }
 
-fn render_scale(mut query: Query<(&mut Transform, &AntFacing), Changed<AntFacing>>) {
+pub fn render_scale(mut query: Query<(&mut Transform, &AntFacing), Changed<AntFacing>>) {
+    info!("render_scale");
     for (mut transform, &facing) in query.iter_mut() {
         let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
         transform.scale = Vec3::new(x_flip, 1.0, 1.0);
     }
 }
 
-fn render_rotation(mut query: Query<(&mut Transform, &AntAngle), Changed<AntAngle>>) {
+pub fn render_rotation(mut query: Query<(&mut Transform, &AntAngle), Changed<AntAngle>>) {
+    info!("render_rotation");
     for (mut transform, &angle) in query.iter_mut() {
         transform.rotation = Quat::from_rotation_z(angle.as_radians());
     }
 }
 
-fn render_carrying(
+pub fn render_carrying(
     mut commands: Commands,
     mut query: Query<(Entity, &Children, &AntBehavior), Changed<AntBehavior>>,
 ) {
+    info!("render_carrying");
     for (entity, children, behavior) in query.iter_mut() {
         // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
         // TODO: might *need* to know previous state to avoid unintentionally carrying twice
@@ -86,16 +90,5 @@ fn render_carrying(
                 commands.entity(*child).despawn();
             }
         }
-    }
-}
-
-pub struct RenderPlugin;
-
-impl Plugin for RenderPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_system(render_translation.in_schedule(CoreSchedule::FixedUpdate));
-        app.add_system(render_scale.in_schedule(CoreSchedule::FixedUpdate));
-        app.add_system(render_rotation.in_schedule(CoreSchedule::FixedUpdate));
-        app.add_system(render_carrying.in_schedule(CoreSchedule::FixedUpdate));
     }
 }

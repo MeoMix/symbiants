@@ -99,8 +99,6 @@ impl ElementBundle {
     }
 }
 
-pub struct ElementsPlugin;
-
 // Returns true if every element in `positions` matches the provided Element type.
 // NOTE: This returns true if given 0 positions.
 pub fn is_all_element(
@@ -119,7 +117,7 @@ pub fn is_all_element(
 }
 
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
-fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
+pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
     let &width = world_map.width();
     let &height = world_map.height();
     let &surface_level = world_map.surface_level();
@@ -184,11 +182,5 @@ fn setup(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
                 .elements
                 .insert(position, commands.spawn(dirt_bundle).id());
         }
-    }
-}
-
-impl Plugin for ElementsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(setup);
     }
 }

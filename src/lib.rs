@@ -6,21 +6,21 @@ mod gravity;
 mod map;
 mod render;
 mod settings;
+mod simulation;
 mod world_rng;
 
-use ant::AntsPlugin;
-use background::BackgroundPlugin;
-use bevy::prelude::*;
+use bevy::{
+    ecs::schedule::{LogLevel, ScheduleBuildSettings},
+    prelude::*,
+};
 use camera::CameraPlugin;
-use elements::ElementsPlugin;
-use gravity::GravityPlugin;
 use map::WorldMap;
 use rand::{
     rngs::{OsRng, StdRng},
     Rng, SeedableRng,
 };
-use render::RenderPlugin;
 use settings::Settings;
+use simulation::SimulationPlugin;
 use world_rng::WorldRng;
 
 pub struct AntfarmPlugin;
@@ -52,13 +52,13 @@ impl Plugin for AntfarmPlugin {
         .insert_resource(world_map)
         .insert_resource(settings)
         .insert_resource(world_rng)
+        .edit_schedule(CoreSchedule::FixedUpdate, |schedule| {
+            schedule.set_build_settings(ScheduleBuildSettings {
+                ambiguity_detection: LogLevel::Error,
+                ..default()
+            });
+        })
         .add_plugin(CameraPlugin)
-        .add_plugin(BackgroundPlugin)
-        .add_plugin(ElementsPlugin)
-        // TODO: WARNING: GravityPlugin must be added before AntsPlugin
-        // TODO: There's a system ordering issue here. If I apply gravity first then ants walk with their feet not on the ground for a frame due to Changed<T>
-        .add_plugin(AntsPlugin)
-        .add_plugin(GravityPlugin)
-        .add_plugin(RenderPlugin);
+        .add_plugin(SimulationPlugin);
     }
 }

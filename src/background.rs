@@ -34,10 +34,8 @@ fn create_tunnel_sprite(width: f32, height: f32, y_offset: f32) -> SpriteBundle 
     }
 }
 
-pub struct BackgroundPlugin;
-
 // Spawn non-interactive background (sky blue / tunnel brown)
-fn setup(mut commands: Commands, world_map: Res<WorldMap>) {
+pub fn setup_background(mut commands: Commands, world_map: Res<WorldMap>) {
     commands.spawn(create_air_sprite(
         *world_map.width() as f32,
         *world_map.surface_level() as f32 + 1.0,
@@ -49,10 +47,4 @@ fn setup(mut commands: Commands, world_map: Res<WorldMap>) {
         *world_map.height() as f32 - (*world_map.surface_level() as f32 + 1.0),
         -(*world_map.surface_level() as f32 + 1.0),
     ));
-}
-
-impl Plugin for BackgroundPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(setup);
-    }
 }

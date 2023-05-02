@@ -76,7 +76,7 @@ fn get_sand_fall_position(
 
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
 // For each sand element which is above air, swap it with the air beneath it.
-fn sand_gravity_system(
+pub fn sand_gravity_system(
     mut element_position_query: Query<(&Element, &mut Position)>,
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
@@ -152,11 +152,13 @@ fn sand_gravity_system(
 // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
 // TODO: This logic introduces a bug where an ant that starts falling sideways can cling to dirt halfway through a fall.
-fn ant_gravity_system(
+pub fn ant_gravity_system(
     mut ants_query: Query<(&AntFacing, &AntAngle, &mut Position)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
 ) {
+    info!("ant_gravity");
+
     for (facing, angle, mut position) in ants_query.iter_mut() {
         // Figure out foot direction
         let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
@@ -183,16 +185,6 @@ fn ant_gravity_system(
                 position.y = below_position.y;
             }
         }
-    }
-}
-
-pub struct GravityPlugin;
-
-impl Plugin for GravityPlugin {
-    fn build(&self, app: &mut App) {
-        // TODO: for now implement separate system for ant gravity, but seems like the benefit of ECS is to identify commonalities and write against them
-        app.add_system(sand_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
-        app.add_system(ant_gravity_system.in_schedule(CoreSchedule::FixedUpdate));
     }
 }
 
