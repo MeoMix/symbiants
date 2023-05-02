@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::{f32::consts::PI, ops::Add};
 
 use crate::{
     elements::{is_all_element, ElementBundle},
@@ -72,8 +72,6 @@ impl AntBundle {
     ) -> Self {
         let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
         let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
-        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0;
-        let rotation = Quat::from_rotation_z(angle_radians);
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
         Self {
@@ -92,7 +90,7 @@ impl AntBundle {
                 },
                 transform: Transform {
                     translation: translation.add(transform_offset.0),
-                    rotation,
+                    rotation: Quat::from_rotation_z(angle.as_radians()),
                     scale: Vec3::new(x_flip, 1.0, 1.0),
                     ..default()
                 },
@@ -143,6 +141,12 @@ pub enum AntAngle {
     Ninety = 90,
     OneHundredEighty = 180,
     TwoHundredSeventy = 270,
+}
+
+impl AntAngle {
+    pub fn as_radians(&self) -> f32 {
+        (*self as isize as f32) * PI / 180.0
+    }
 }
 
 #[derive(Component)]

@@ -49,9 +49,7 @@ fn render_scale(mut query: Query<(&mut Transform, &AntFacing), Changed<AntFacing
 
 fn render_rotation(mut query: Query<(&mut Transform, &AntAngle), Changed<AntAngle>>) {
     for (mut transform, &angle) in query.iter_mut() {
-        let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0;
-        info!("Updating angle: {:?}", angle);
-        transform.rotation = Quat::from_rotation_z(angle_radians);
+        transform.rotation = Quat::from_rotation_z(angle.as_radians());
     }
 }
 
