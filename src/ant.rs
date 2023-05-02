@@ -15,21 +15,19 @@ use rand::Rng;
 
 // TODO: get_delta should probably not be coupled to 'facing'?
 pub fn get_delta(facing: AntFacing, angle: AntAngle) -> Position {
-    match angle {
-        AntAngle::Zero | AntAngle::OneHundredEighty => match facing {
-            AntFacing::Right => Position {
-                x: if angle == AntAngle::Zero { 1 } else { -1 },
-                y: 0,
-            },
-            AntFacing::Left => Position {
-                x: if angle == AntAngle::Zero { -1 } else { 1 },
-                y: 0,
-            },
-        },
-        _ => Position {
-            x: 0,
-            y: if angle == AntAngle::Ninety { -1 } else { 1 },
-        },
+    match (facing, angle) {
+        (AntFacing::Left, AntAngle::Zero) => Position { x: -1, y: 0 },
+        (AntFacing::Left, AntAngle::OneHundredEighty) => Position { x: 1, y: 0 },
+
+        (AntFacing::Left, AntAngle::Ninety) => Position { x: 0, y: -1 },
+        (AntFacing::Left, AntAngle::TwoHundredSeventy) => Position { x: 0, y: 1 },
+
+        (AntFacing::Right, AntAngle::Zero) => Position { x: 1, y: 0 },
+        (AntFacing::Right, AntAngle::OneHundredEighty) => Position { x: -1, y: 0 },
+
+        // TODO: it's awkward that these aren't the inverse of left, need to fix how mirroring is implemented
+        (AntFacing::Right, AntAngle::Ninety) => Position { x: 0, y: -1 },
+        (AntFacing::Right, AntAngle::TwoHundredSeventy) => Position { x: 0, y: 1 },
     }
 }
 
