@@ -52,60 +52,40 @@ pub fn get_rotated_angle(angle: AntAngle, rotation: i32) -> AntAngle {
     angles[((rotated_index + angles.len() as i32) % angles.len() as i32) as usize]
 }
 
+// TODO: It feels wrong to call this a bundle because I can't spawn it directly, need to setup parent/child hierarchy when spawning.
 #[derive(Bundle)]
-struct AntLabelBundle {
-    text_bundle: Text2dBundle,
-}
-
-impl AntLabelBundle {
-    fn new(label: String, asset_server: &Res<AssetServer>) -> Self {
-        Self {
-            text_bundle: Text2dBundle {
-                transform: Transform {
-                    translation: Vec3::new(-ANT_SCALE / 4.0, -1.5, 100.0),
-                    scale: Vec3::new(0.05, 0.05, 0.0),
-                    ..default()
-                },
-                text: Text::from_section(
-                    label,
-                    TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        color: Color::rgb(0.0, 0.0, 0.0),
-                        font_size: 12.0,
-                        ..default()
-                    },
-                ),
-                ..default()
-            },
-        }
-    }
-}
-
-// 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
-const ANT_SCALE: f32 = 1.2;
-
-#[derive(Bundle)]
-struct AntSpriteBundle {
+struct AntBundle {
+    position: Position,
+    transform_offset: TransformOffset,
+    facing: AntFacing,
+    angle: AntAngle,
+    behavior: AntBehavior,
     sprite_bundle: SpriteBundle,
+    label_bundle: Text2dBundle,
 }
 
-impl AntSpriteBundle {
-    fn new(
+impl AntBundle {
+    pub fn new(
         position: Position,
-        transform_offset: TransformOffset,
+        color: Color,
         facing: AntFacing,
         angle: AntAngle,
-        color: Color,
+        behavior: AntBehavior,
+        name: String,
         asset_server: &Res<AssetServer>,
     ) -> Self {
+        let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
         let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
-
         let angle_radians = angle as u32 as f32 * std::f32::consts::PI / 180.0 * x_flip;
         let rotation = Quat::from_rotation_z(angle_radians);
-
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
         Self {
+            position,
+            transform_offset,
+            facing,
+            angle,
+            behavior,
             sprite_bundle: SpriteBundle {
                 // TODO: alient-cake-addict creates a handle on a resource for this instead
                 texture: asset_server.load("images/ant.png"),
@@ -122,9 +102,29 @@ impl AntSpriteBundle {
                 },
                 ..default()
             },
+            label_bundle: Text2dBundle {
+                transform: Transform {
+                    translation: Vec3::new(-ANT_SCALE / 4.0, -1.5, 1.0),
+                    scale: Vec3::new(0.05, 0.05, 0.0),
+                    ..default()
+                },
+                text: Text::from_section(
+                    name,
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        color: Color::rgb(0.0, 0.0, 0.0),
+                        font_size: 12.0,
+                        ..default()
+                    },
+                ),
+                ..default()
+            },
         }
     }
 }
+
+// 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
+const ANT_SCALE: f32 = 1.2;
 
 #[derive(Component, Copy, Clone)]
 pub struct TransformOffset(pub Vec3);
@@ -154,43 +154,6 @@ pub struct LabelContainer;
 
 pub struct AntsPlugin;
 
-fn create_ant(
-    position: Position,
-    color: Color,
-    facing: AntFacing,
-    angle: AntAngle,
-    behavior: AntBehavior,
-    name: String,
-    asset_server: &Res<AssetServer>,
-) -> (
-    Position,
-    TransformOffset,
-    AntFacing,
-    AntAngle,
-    AntBehavior,
-    AntSpriteBundle,
-    AntLabelBundle,
-) {
-    let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
-
-    (
-        position,
-        transform_offset,
-        facing,
-        angle,
-        behavior,
-        AntSpriteBundle::new(
-            position,
-            transform_offset,
-            facing,
-            angle,
-            color,
-            &asset_server,
-        ),
-        AntLabelBundle::new(name, &asset_server),
-    )
-}
-
 // Spawn non-interactive background (sky blue / tunnel brown)
 fn setup(
     mut commands: Commands,
@@ -199,111 +162,107 @@ fn setup(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let ant_bundles = (0..20).map(|_| {
-        // Put the ant at a random location along the x-axis that fits within the bounds of the world.
-        // TODO: technically old code was .round() and now it's just floored implicitly
-        let x = world_rng.rng.gen_range(0..1000) % world_map.width();
-        // Put the ant on the dirt.
-        let &y = world_map.surface_level();
+    // let ant_bundles = (0..20).map(|_| {
+    //     // Put the ant at a random location along the x-axis that fits within the bounds of the world.
+    //     // TODO: technically old code was .round() and now it's just floored implicitly
+    //     let x = world_rng.rng.gen_range(0..1000) % world_map.width();
+    //     // Put the ant on the dirt.
+    //     let &y = world_map.surface_level();
 
-        // Randomly position ant facing left or right.
-        let facing = if rand::thread_rng().gen_range(0..10) < 5 {
-            AntFacing::Left
-        } else {
-            AntFacing::Right
-        };
+    //     // Randomly position ant facing left or right.
+    //     let facing = if rand::thread_rng().gen_range(0..10) < 5 {
+    //         AntFacing::Left
+    //     } else {
+    //         AntFacing::Right
+    //     };
 
-        create_ant(
-            Position::new(x, y),
+    //     AntBundle::new(
+    //         Position::new(x, y),
+    //         settings.ant_color,
+    //         facing,
+    //         AntAngle::Zero,
+    //         AntBehavior::Wandering,
+    //         "Test Name".to_string(),
+    //         &asset_server,
+    //     )
+    // });
+
+    let ant_bundles = [
+        AntBundle::new(
+            Position::new(5, 5),
             settings.ant_color,
-            facing,
+            AntFacing::Left,
             AntAngle::Zero,
-            AntBehavior::Wandering,
-            "Test Name".to_string(),
+            AntBehavior::Carrying,
+            "ant1".to_string(),
             &asset_server,
-        )
-    });
+        ),
+        AntBundle::new(
+            Position::new(10, 5),
+            settings.ant_color,
+            AntFacing::Left,
+            AntAngle::Ninety,
+            AntBehavior::Carrying,
+            "ant2".to_string(),
+            &asset_server,
+        ),
+        AntBundle::new(
+            Position::new(15, 5),
+            settings.ant_color,
+            AntFacing::Left,
+            AntAngle::OneHundredEighty,
+            AntBehavior::Carrying,
+            "ant3".to_string(),
+            &asset_server,
+        ),
+        AntBundle::new(
+            Position::new(20, 5),
+            settings.ant_color,
+            AntFacing::Left,
+            AntAngle::TwoHundredSeventy,
+            AntBehavior::Carrying,
+            "ant4".to_string(),
+            &asset_server,
+        ),
+        AntBundle::new(
+            Position::new(25, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::Zero,
+            AntBehavior::Carrying,
+            "ant5".to_string(),
+            &asset_server,
+        ),
+        AntBundle::new(
+            Position::new(30, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::Ninety,
+            AntBehavior::Carrying,
+            "ant6".to_string(),
+            &asset_server,
+        ),
+        AntBundle::new(
+            Position::new(35, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::OneHundredEighty,
+            AntBehavior::Carrying,
+            "ant7".to_string(),
+            &asset_server,
+        ),
+        AntBundle::new(
+            Position::new(40, 5),
+            settings.ant_color,
+            AntFacing::Right,
+            AntAngle::TwoHundredSeventy,
+            AntBehavior::Carrying,
+            "ant8".to_string(),
+            &asset_server,
+        ),
+    ];
 
-    // let ant_bundles = [
-    //     create_ant(
-    //         Position::new(5, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::Zero,
-    //         AntBehavior::Carrying,
-    //         "ant1".to_string(),
-    //         &asset_server,
-    //     ),
-    //     create_ant(
-    //         Position::new(10, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::Ninety,
-    //         AntBehavior::Carrying,
-    //         "ant2".to_string(),
-    //         &asset_server,
-    //     ),
-    //     create_ant(
-    //         Position::new(15, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::OneHundredEighty,
-    //         AntBehavior::Carrying,
-    //         "ant3".to_string(),
-    //         &asset_server,
-    //     ),
-    //     create_ant(
-    //         Position::new(20, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::TwoHundredSeventy,
-    //         AntBehavior::Carrying,
-    //         "ant4".to_string(),
-    //         &asset_server,
-    //     ),
-    //     create_ant(
-    //         Position::new(25, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::Zero,
-    //         AntBehavior::Carrying,
-    //         "ant5".to_string(),
-    //         &asset_server,
-    //     ),
-    //     create_ant(
-    //         Position::new(30, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::Ninety,
-    //         AntBehavior::Carrying,
-    //         "ant6".to_string(),
-    //         &asset_server,
-    //     ),
-    //     create_ant(
-    //         Position::new(35, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::OneHundredEighty,
-    //         AntBehavior::Carrying,
-    //         "ant7".to_string(),
-    //         &asset_server,
-    //     ),
-    //     create_ant(
-    //         Position::new(40, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::TwoHundredSeventy,
-    //         AntBehavior::Carrying,
-    //         "ant8".to_string(),
-    //         &asset_server,
-    //     ),
-    // ];
-
-    for (position, transform_offset, facing, angle, behavior, sprite, label) in ant_bundles {
-        // The view of the model position is just an inversion along the y-axis.
-        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
-        let is_carrying = behavior == AntBehavior::Carrying;
-
+    for ant_bundle in ant_bundles {
         commands
             // Wrap label and ant with common parent to allow a system to easily associate their position.
             // Don't mess with parent transform to avoid rotating label.
@@ -311,9 +270,16 @@ fn setup(
             .with_children(|ant_label_container| {
                 // Spawn a container for the ant sprite and sand so there's strong correlation between position and translation.
                 ant_label_container
-                    .spawn((sprite, position, transform_offset, facing, angle, behavior))
+                    .spawn((
+                        ant_bundle.sprite_bundle,
+                        ant_bundle.position,
+                        ant_bundle.transform_offset,
+                        ant_bundle.facing,
+                        ant_bundle.angle,
+                        ant_bundle.behavior,
+                    ))
                     .with_children(|parent| {
-                        if is_carrying {
+                        if ant_bundle.behavior == AntBehavior::Carrying {
                             // Make sand a child of ant so they share rotation.
                             parent.spawn((
                                 SpriteBundle {
@@ -338,7 +304,11 @@ fn setup(
                     .spawn((
                         SpatialBundle {
                             transform: Transform {
-                                translation,
+                                translation: Vec3::new(
+                                    ant_bundle.position.x as f32,
+                                    -ant_bundle.position.y as f32,
+                                    1.0,
+                                ),
                                 ..default()
                             },
                             ..default()
@@ -346,7 +316,7 @@ fn setup(
                         LabelContainer,
                     ))
                     .with_children(|label_container| {
-                        label_container.spawn(label);
+                        label_container.spawn(ant_bundle.label_bundle);
                     });
             });
     }

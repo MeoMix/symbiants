@@ -75,7 +75,6 @@ fn render_carrying(
         // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
         // TODO: might *need* to know previous state to avoid unintentionally carrying twice
         if *behavior == AntBehavior::Carrying {
-            info!("Carrying");
             commands
                 .entity(entity)
                 .with_children(|ant: &mut ChildBuilder| {
@@ -96,8 +95,6 @@ fn render_carrying(
                     ));
                 });
         } else {
-            info!("Not carrying");
-
             commands.entity(entity).remove_children(children);
             for child in children {
                 commands.entity(*child).despawn();
