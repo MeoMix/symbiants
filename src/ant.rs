@@ -6,12 +6,11 @@ use crate::{
     world_rng::WorldRng,
 };
 
-use super::{elements::Element, settings::Settings};
+use super::{elements::Element, name_list::NAMES, settings::Settings};
 use bevy::{prelude::*, sprite::Anchor};
 use rand::Rng;
 
 // TODO: Add support for behavior timer.
-// TODO: Add support for dynamic names.
 
 pub fn get_delta(facing: AntFacing, angle: AntAngle) -> Position {
     let delta = match angle {
@@ -65,7 +64,7 @@ impl Ant {
         facing: AntFacing,
         angle: AntAngle,
         behavior: AntBehavior,
-        name: String,
+        name: &str,
         asset_server: &Res<AssetServer>,
     ) -> Self {
         let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
@@ -158,105 +157,106 @@ pub fn setup_ants(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    // let ants = (0..20).map(|_| {
-    //     // Put the ant at a random location along the x-axis that fits within the bounds of the world.
-    //     // TODO: technically old code was .round() and now it's just floored implicitly
-    //     let x = world_rng.rng.gen_range(0..1000) % world_map.width();
-    //     // Put the ant on the dirt.
-    //     let &y = world_map.surface_level();
+    let ants = (0..20).map(|_| {
+        // Put the ant at a random location along the x-axis that fits within the bounds of the world.
+        let x = world_rng.rng.gen_range(0..1000) % world_map.width();
+        // Put the ant on the dirt.
+        let &y = world_map.surface_level();
 
-    //     // Randomly position ant facing left or right.
-    //     let facing = if rand::thread_rng().gen_range(0..10) < 5 {
-    //         AntFacing::Left
-    //     } else {
-    //         AntFacing::Right
-    //     };
+        // Randomly position ant facing left or right.
+        let facing = if world_rng.rng.gen_bool(0.5) {
+            AntFacing::Left
+        } else {
+            AntFacing::Right
+        };
 
+        let name = NAMES[world_rng.rng.gen_range(0..NAMES.len())].clone();
+
+        Ant::new(
+            Position::new(x, y),
+            settings.ant_color,
+            facing,
+            AntAngle::Zero,
+            AntBehavior::Wandering,
+            name,
+            &asset_server,
+        )
+    });
+
+    // let ants = [
     //     Ant::new(
-    //         Position::new(x, y),
+    //         Position::new(5, 5),
     //         settings.ant_color,
-    //         facing,
+    //         AntFacing::Left,
     //         AntAngle::Zero,
-    //         AntBehavior::Wandering,
-    //         "Test Name".to_string(),
+    //         AntBehavior::Carrying,
+    //         "ant1".to_string(),
     //         &asset_server,
-    //     )
-    // });
-
-    let ants = [
-        Ant::new(
-            Position::new(5, 5),
-            settings.ant_color,
-            AntFacing::Left,
-            AntAngle::Zero,
-            AntBehavior::Carrying,
-            "ant1".to_string(),
-            &asset_server,
-        ),
-        Ant::new(
-            Position::new(10, 5),
-            settings.ant_color,
-            AntFacing::Left,
-            AntAngle::Ninety,
-            AntBehavior::Carrying,
-            "ant2".to_string(),
-            &asset_server,
-        ),
-        Ant::new(
-            Position::new(15, 5),
-            settings.ant_color,
-            AntFacing::Left,
-            AntAngle::OneHundredEighty,
-            AntBehavior::Carrying,
-            "ant3".to_string(),
-            &asset_server,
-        ),
-        Ant::new(
-            Position::new(20, 5),
-            settings.ant_color,
-            AntFacing::Left,
-            AntAngle::TwoHundredSeventy,
-            AntBehavior::Carrying,
-            "ant4".to_string(),
-            &asset_server,
-        ),
-        Ant::new(
-            Position::new(25, 5),
-            settings.ant_color,
-            AntFacing::Right,
-            AntAngle::Zero,
-            AntBehavior::Carrying,
-            "ant5".to_string(),
-            &asset_server,
-        ),
-        Ant::new(
-            Position::new(30, 5),
-            settings.ant_color,
-            AntFacing::Right,
-            AntAngle::Ninety,
-            AntBehavior::Carrying,
-            "ant6".to_string(),
-            &asset_server,
-        ),
-        Ant::new(
-            Position::new(35, 5),
-            settings.ant_color,
-            AntFacing::Right,
-            AntAngle::OneHundredEighty,
-            AntBehavior::Carrying,
-            "ant7".to_string(),
-            &asset_server,
-        ),
-        Ant::new(
-            Position::new(40, 5),
-            settings.ant_color,
-            AntFacing::Right,
-            AntAngle::TwoHundredSeventy,
-            AntBehavior::Carrying,
-            "ant8".to_string(),
-            &asset_server,
-        ),
-    ];
+    //     ),
+    //     Ant::new(
+    //         Position::new(10, 5),
+    //         settings.ant_color,
+    //         AntFacing::Left,
+    //         AntAngle::Ninety,
+    //         AntBehavior::Carrying,
+    //         "ant2".to_string(),
+    //         &asset_server,
+    //     ),
+    //     Ant::new(
+    //         Position::new(15, 5),
+    //         settings.ant_color,
+    //         AntFacing::Left,
+    //         AntAngle::OneHundredEighty,
+    //         AntBehavior::Carrying,
+    //         "ant3".to_string(),
+    //         &asset_server,
+    //     ),
+    //     Ant::new(
+    //         Position::new(20, 5),
+    //         settings.ant_color,
+    //         AntFacing::Left,
+    //         AntAngle::TwoHundredSeventy,
+    //         AntBehavior::Carrying,
+    //         "ant4".to_string(),
+    //         &asset_server,
+    //     ),
+    //     Ant::new(
+    //         Position::new(25, 5),
+    //         settings.ant_color,
+    //         AntFacing::Right,
+    //         AntAngle::Zero,
+    //         AntBehavior::Carrying,
+    //         "ant5".to_string(),
+    //         &asset_server,
+    //     ),
+    //     Ant::new(
+    //         Position::new(30, 5),
+    //         settings.ant_color,
+    //         AntFacing::Right,
+    //         AntAngle::Ninety,
+    //         AntBehavior::Carrying,
+    //         "ant6".to_string(),
+    //         &asset_server,
+    //     ),
+    //     Ant::new(
+    //         Position::new(35, 5),
+    //         settings.ant_color,
+    //         AntFacing::Right,
+    //         AntAngle::OneHundredEighty,
+    //         AntBehavior::Carrying,
+    //         "ant7".to_string(),
+    //         &asset_server,
+    //     ),
+    //     Ant::new(
+    //         Position::new(40, 5),
+    //         settings.ant_color,
+    //         AntFacing::Right,
+    //         AntAngle::TwoHundredSeventy,
+    //         AntBehavior::Carrying,
+    //         "ant8".to_string(),
+    //         &asset_server,
+    //     ),
+    // ];
 
     for ant in ants {
         commands

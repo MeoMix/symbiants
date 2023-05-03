@@ -4,6 +4,7 @@ mod camera;
 mod elements;
 mod gravity;
 mod map;
+mod name_list;
 mod render;
 mod settings;
 mod simulation;
