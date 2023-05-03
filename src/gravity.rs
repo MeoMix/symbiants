@@ -137,13 +137,14 @@ pub fn sand_gravity_system(
             &above_sand_positions,
             Element::Sand,
         ) {
-            // TODO: despawn
+            // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
+            let crushed_sand_entity = world_map.elements.get(&sand_position).unwrap();
+            commands.entity(*crushed_sand_entity).despawn();
 
             let entity = commands
                 .spawn(ElementBundle::create(Element::Dirt, *sand_position))
                 .id();
 
-            // TODO: Do I need to despawn (recursive?) on the existing entity?
             world_map.elements.insert(*sand_position, entity);
         }
     }
@@ -151,14 +152,11 @@ pub fn sand_gravity_system(
 
 // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
-// TODO: This logic introduces a bug where an ant that starts falling sideways can cling to dirt halfway through a fall.
 pub fn ant_gravity_system(
     mut ants_query: Query<(&AntFacing, &AntAngle, &mut Position)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
 ) {
-    info!("ant_gravity");
-
     for (facing, angle, mut position) in ants_query.iter_mut() {
         // Figure out foot direction
         let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
@@ -189,6 +187,84 @@ pub fn ant_gravity_system(
 }
 
 #[cfg(test)]
+pub mod ant_gravity_system_tests {
+    use super::*;
+    use bevy::{log::LogPlugin, utils::HashMap};
+    use rand::{rngs::StdRng, SeedableRng};
+    use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    fn setup(element_grid: Vec<Vec<Element>>) -> App {
+        let mut app = App::new();
+        app.add_plugin(LogPlugin::default());
+        app.add_system(ant_gravity_system);
+
+        let seed = 42069; // ayy lmao
+        let world_rng = WorldRng {
+            rng: StdRng::seed_from_u64(seed),
+        };
+
+        app.insert_resource(world_rng);
+
+        // TODO: probably reuse setup function between gravity and ant tests - maybe all tests
+        let spawned_elements: HashMap<_, _> = element_grid
+            .iter()
+            .enumerate()
+            .map(|(y, row)| {
+                row.iter()
+                    .enumerate()
+                    .map(|(x, element)| {
+                        let position = Position::new(x as isize, y as isize);
+                        let entity = app
+                            .world
+                            .spawn(ElementBundle::create(*element, position))
+                            .id();
+
+                        (position, entity)
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect();
+
+        let height = element_grid.len() as isize;
+        let width = element_grid.first().map_or(0, |row| row.len()) as isize;
+        let world_map = WorldMap::new(width, height, 0.0, Some(spawned_elements));
+        app.insert_resource(world_map);
+        app.insert_resource(Settings {
+            world_width: width,
+            world_height: height,
+            ..default()
+        });
+
+        app
+    }
+
+    #[wasm_bindgen_test]
+    fn upright_ant_over_air_falls_down() {
+        // Arrange
+        let element_grid = vec![vec![Element::Air], vec![Element::Air]];
+        let mut app = setup(element_grid);
+    }
+
+    fn upright_ant_over_dirt_stays_put() {}
+
+    fn sideways_left_ant_standing_dirt_over_air_stays_put() {}
+
+    fn sideways_left_ant_standing_air_over_air_falls_down() {}
+
+    fn sideways_right_ant_standing_dirt_over_air_stays_put() {}
+
+    fn sideways_right_ant_standing_air_over_air_falls_down() {}
+
+    // TODO: This is sus. A sideways ant is able to cling to dirt, but if it starts falling, it should probably keep falling
+    // rather than exhibiting a super-ant ability to cling to dirt mid-fall.
+    fn sideways_falling_ant_grabs_dirt() {}
+}
+
+// TODO: confirm elements are despawned not just that grid is correct
+#[cfg(test)]
 pub mod sand_gravity_system_tests {
     use super::*;
     use bevy::{log::LogPlugin, utils::HashMap};
@@ -201,8 +277,6 @@ pub mod sand_gravity_system_tests {
     // Map and flatten a grid of elements and spawn associated elements into the world.
     fn setup(element_grid: Vec<Vec<Element>>, seed: Option<u64>) -> App {
         let mut app = App::new();
-        // Not strictly necessary, but might as well keep info!("...")
-        // in production code from causing panics when tested.
         app.add_plugin(LogPlugin::default());
         app.add_system(sand_gravity_system);
 

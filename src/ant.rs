@@ -47,9 +47,8 @@ pub fn get_rotated_angle(angle: AntAngle, rotation: i32) -> AntAngle {
     angles[((rotated_index + angles.len() as i32) % angles.len() as i32) as usize]
 }
 
-// TODO: It feels wrong to call this a bundle because I can't spawn it directly, need to setup parent/child hierarchy when spawning.
-#[derive(Bundle)]
-struct AntBundle {
+// TODO: This seems like an anti-pattern, it's sort of like a bundle, but it needs parent/child relationships so it can't just be spawned as a bundle itself
+struct Ant {
     position: Position,
     transform_offset: TransformOffset,
     facing: AntFacing,
@@ -59,7 +58,7 @@ struct AntBundle {
     label_bundle: Text2dBundle,
 }
 
-impl AntBundle {
+impl Ant {
     pub fn new(
         position: Position,
         color: Color,
@@ -159,7 +158,7 @@ pub fn setup_ants(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    // let ant_bundles = (0..20).map(|_| {
+    // let ants = (0..20).map(|_| {
     //     // Put the ant at a random location along the x-axis that fits within the bounds of the world.
     //     // TODO: technically old code was .round() and now it's just floored implicitly
     //     let x = world_rng.rng.gen_range(0..1000) % world_map.width();
@@ -173,7 +172,7 @@ pub fn setup_ants(
     //         AntFacing::Right
     //     };
 
-    //     AntBundle::new(
+    //     Ant::new(
     //         Position::new(x, y),
     //         settings.ant_color,
     //         facing,
@@ -184,8 +183,8 @@ pub fn setup_ants(
     //     )
     // });
 
-    let ant_bundles = [
-        AntBundle::new(
+    let ants = [
+        Ant::new(
             Position::new(5, 5),
             settings.ant_color,
             AntFacing::Left,
@@ -194,7 +193,7 @@ pub fn setup_ants(
             "ant1".to_string(),
             &asset_server,
         ),
-        AntBundle::new(
+        Ant::new(
             Position::new(10, 5),
             settings.ant_color,
             AntFacing::Left,
@@ -203,7 +202,7 @@ pub fn setup_ants(
             "ant2".to_string(),
             &asset_server,
         ),
-        AntBundle::new(
+        Ant::new(
             Position::new(15, 5),
             settings.ant_color,
             AntFacing::Left,
@@ -212,7 +211,7 @@ pub fn setup_ants(
             "ant3".to_string(),
             &asset_server,
         ),
-        AntBundle::new(
+        Ant::new(
             Position::new(20, 5),
             settings.ant_color,
             AntFacing::Left,
@@ -221,7 +220,7 @@ pub fn setup_ants(
             "ant4".to_string(),
             &asset_server,
         ),
-        AntBundle::new(
+        Ant::new(
             Position::new(25, 5),
             settings.ant_color,
             AntFacing::Right,
@@ -230,7 +229,7 @@ pub fn setup_ants(
             "ant5".to_string(),
             &asset_server,
         ),
-        AntBundle::new(
+        Ant::new(
             Position::new(30, 5),
             settings.ant_color,
             AntFacing::Right,
@@ -239,7 +238,7 @@ pub fn setup_ants(
             "ant6".to_string(),
             &asset_server,
         ),
-        AntBundle::new(
+        Ant::new(
             Position::new(35, 5),
             settings.ant_color,
             AntFacing::Right,
@@ -248,7 +247,7 @@ pub fn setup_ants(
             "ant7".to_string(),
             &asset_server,
         ),
-        AntBundle::new(
+        Ant::new(
             Position::new(40, 5),
             settings.ant_color,
             AntFacing::Right,
@@ -259,7 +258,7 @@ pub fn setup_ants(
         ),
     ];
 
-    for ant_bundle in ant_bundles {
+    for ant in ants {
         commands
             // Wrap label and ant with common parent to allow a system to easily associate their position.
             // Don't mess with parent transform to avoid rotating label.
@@ -268,15 +267,15 @@ pub fn setup_ants(
                 // Spawn a container for the ant sprite and sand so there's strong correlation between position and translation.
                 ant_label_container
                     .spawn((
-                        ant_bundle.sprite_bundle,
-                        ant_bundle.position,
-                        ant_bundle.transform_offset,
-                        ant_bundle.facing,
-                        ant_bundle.angle,
-                        ant_bundle.behavior,
+                        ant.sprite_bundle,
+                        ant.position,
+                        ant.transform_offset,
+                        ant.facing,
+                        ant.angle,
+                        ant.behavior,
                     ))
                     .with_children(|parent| {
-                        if ant_bundle.behavior == AntBehavior::Carrying {
+                        if ant.behavior == AntBehavior::Carrying {
                             // Make sand a child of ant so they share rotation.
                             parent.spawn((
                                 SpriteBundle {
@@ -302,8 +301,8 @@ pub fn setup_ants(
                         SpatialBundle {
                             transform: Transform {
                                 translation: Vec3::new(
-                                    ant_bundle.position.x as f32,
-                                    -ant_bundle.position.y as f32,
+                                    ant.position.x as f32,
+                                    -ant.position.y as f32,
                                     1.0,
                                 ),
                                 ..default()
@@ -313,7 +312,7 @@ pub fn setup_ants(
                         LabelContainer,
                     ))
                     .with_children(|label_container| {
-                        label_container.spawn(ant_bundle.label_bundle);
+                        label_container.spawn(ant.label_bundle);
                     });
             });
     }
@@ -681,71 +680,72 @@ pub fn move_ant(
             }
         }
 
-        if *behavior == AntBehavior::Wandering {
-            // Wandering:
-            // - Update timer to reflect behavior change
-            // - Maybe behavior should be its own system?
+        match *behavior {
+            AntBehavior::Wandering => {
+                // Wandering:
+                // - Update timer to reflect behavior change
+                // - Maybe behavior should be its own system?
 
-            if world_rng.rng.gen::<f32>() < settings.probabilities.random_dig {
-                info!("dig!!!");
-                do_dig(
-                    false,
-                    behavior,
-                    facing,
-                    angle,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut commands,
-                )
-            } else if world_rng.rng.gen::<f32>() < settings.probabilities.random_turn {
-                do_turn(
-                    facing,
-                    angle,
-                    behavior,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut world_rng,
-                    &mut commands,
-                );
-            } else {
-                do_move(
-                    facing,
-                    angle,
-                    behavior,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut world_rng,
-                    &settings,
-                    &mut commands,
-                );
+                if world_rng.rng.gen::<f32>() < settings.probabilities.random_dig {
+                    info!("dig!!!");
+                    do_dig(
+                        false,
+                        behavior,
+                        facing,
+                        angle,
+                        position,
+                        &elements_query,
+                        &mut world_map,
+                        &mut commands,
+                    )
+                } else if world_rng.rng.gen::<f32>() < settings.probabilities.random_turn {
+                    do_turn(
+                        facing,
+                        angle,
+                        behavior,
+                        position,
+                        &elements_query,
+                        &mut world_map,
+                        &mut world_rng,
+                        &mut commands,
+                    );
+                } else {
+                    do_move(
+                        facing,
+                        angle,
+                        behavior,
+                        position,
+                        &elements_query,
+                        &mut world_map,
+                        &mut world_rng,
+                        &settings,
+                        &mut commands,
+                    );
+                }
             }
-        } else if *behavior == AntBehavior::Carrying {
-            if world_rng.rng.gen::<f32>() < settings.probabilities.random_drop {
-                do_drop(
-                    behavior,
-                    *position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut commands,
-                );
-            } else {
-                do_move(
-                    facing,
-                    angle,
-                    behavior,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut world_rng,
-                    &settings,
-                    &mut commands,
-                );
+            AntBehavior::Carrying => {
+                if world_rng.rng.gen::<f32>() < settings.probabilities.random_drop {
+                    do_drop(
+                        behavior,
+                        *position,
+                        &elements_query,
+                        &mut world_map,
+                        &mut commands,
+                    );
+                } else {
+                    do_move(
+                        facing,
+                        angle,
+                        behavior,
+                        position,
+                        &elements_query,
+                        &mut world_map,
+                        &mut world_rng,
+                        &settings,
+                        &mut commands,
+                    );
+                }
             }
-        } else {
-            info!("error - unsupported behavior");
         }
     }
 }

@@ -15,11 +15,9 @@ impl Position {
     pub const NEG_X: Self = Self::new(-1, 0);
 
     pub const Y: Self = Self::new(0, 1);
-    #[allow(dead_code)]
     pub const NEG_Y: Self = Self::new(0, -1);
 
     pub const ONE: Self = Self::new(1, 1);
-    #[allow(dead_code)]
     pub const NEG_ONE: Self = Self::new(-1, -1);
 
     pub const fn new(x: isize, y: isize) -> Self {
@@ -75,6 +73,8 @@ impl WorldMap {
     pub fn new(
         width: isize,
         height: isize,
+        // TODO: maybe pass in surface_level rather than calculating from dirt_percent since
+        // there's an implicit relationship between elements and dirt_percent (makes no sense during testing)
         dirt_percent: f32,
         elements: Option<HashMap<Position, Entity>>,
     ) -> Self {
