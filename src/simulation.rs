@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
-    ant::{move_ant, setup_ants},
+    ant::{move_ants_system, setup_ants},
     background::setup_background,
     elements::setup_elements,
     gravity::{ant_gravity_system, sand_gravity_system},
+    map::save_world_state_system,
     render::{render_carrying, render_rotation, render_scale, render_translation},
 };
 
@@ -16,33 +17,21 @@ impl Plugin for SimulationPlugin {
 
         app.add_systems(
             (
-                // NOTE: move_ant needs to run first to avoid situation where ant falls + moves in same frame
-                move_ant,
-                // TODO: sand/ant gravity systems can run in parallel, but not clear how to express that without allowing render to run
-                sand_gravity_system.after(move_ant),
-                ant_gravity_system.after(sand_gravity_system),
-                // Rendering systems need to run after all other systems, but can run in any order.
-                render_translation
-                    .after(ant_gravity_system)
-                    .ambiguous_with(render_scale)
-                    .ambiguous_with(render_rotation)
-                    .ambiguous_with(render_carrying),
-                render_scale
-                    .after(ant_gravity_system)
-                    .ambiguous_with(render_translation)
-                    .ambiguous_with(render_rotation)
-                    .ambiguous_with(render_carrying),
-                render_rotation
-                    .after(ant_gravity_system)
-                    .ambiguous_with(render_translation)
-                    .ambiguous_with(render_scale)
-                    .ambiguous_with(render_carrying),
-                render_carrying
-                    .after(ant_gravity_system)
-                    .ambiguous_with(render_translation)
-                    .ambiguous_with(render_scale)
-                    .ambiguous_with(render_rotation),
+                // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
+                move_ants_system,
+                // TODO: sand/ant gravity systems could run in parallel at the query level if effort is put into combining their logic.
+                sand_gravity_system,
+                ant_gravity_system,
+                // Try to save world state periodically after updating world state.
+                save_world_state_system,
+                // Render world state after updating world state.
+                // NOTE: all render methods can run in parallel but don't due to conflicting mutable Transform access
+                render_translation,
+                render_scale,
+                render_rotation,
+                render_carrying,
             )
+                .chain()
                 .in_schedule(CoreSchedule::FixedUpdate),
         );
     }

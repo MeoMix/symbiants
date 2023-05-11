@@ -16,10 +16,6 @@ use bevy::{
 };
 use camera::CameraPlugin;
 use map::WorldMap;
-use rand::{
-    rngs::{OsRng, StdRng},
-    Rng, SeedableRng,
-};
 use settings::Settings;
 use simulation::SimulationPlugin;
 use world_rng::WorldRng;
@@ -28,20 +24,6 @@ pub struct AntfarmPlugin;
 
 impl Plugin for AntfarmPlugin {
     fn build(&self, app: &mut App) {
-        // Defines the amount of time that should elapse between each physics step.
-        let fixed_time = FixedTime::new_from_secs(10.0 / 60.0);
-        let settings = Settings::default();
-        let world_map = WorldMap::new(
-            settings.world_width,
-            settings.world_height,
-            settings.initial_dirt_percent,
-            None,
-        );
-
-        let world_rng = WorldRng {
-            rng: StdRng::seed_from_u64(OsRng {}.gen()),
-        };
-
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 fit_canvas_to_parent: true,
@@ -49,10 +31,13 @@ impl Plugin for AntfarmPlugin {
             }),
             ..default()
         }))
-        .insert_resource(fixed_time)
-        .insert_resource(world_map)
-        .insert_resource(settings)
-        .insert_resource(world_rng)
+        // Defines the amount of time that should elapse between each physics step.
+        // TODO: Naturally I would think 60FPS is preferable, but it runs way too fast. Maybe this is fine?
+        .insert_resource(FixedTime::new_from_secs(10.0 / 60.0))
+        .init_resource::<Settings>()
+        .init_resource::<WorldRng>()
+        .init_resource::<WorldMap>()
+        // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
         .edit_schedule(CoreSchedule::FixedUpdate, |schedule| {
             schedule.set_build_settings(ScheduleBuildSettings {
                 ambiguity_detection: LogLevel::Error,

@@ -7,6 +7,10 @@ use crate::{
 
 use super::map::Position;
 
+// NOTE: All of these are able to be ran in parallel, but a lot of them require mutable access to transform which means Bevy
+// can't run the systems in parallel. It would be possible to use par_iter_mut() to a query in parallel, but there is performance
+// overhead in doing so. So, for now, just run the systems in sequence.
+
 pub fn render_translation(
     mut query: Query<
         (

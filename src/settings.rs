@@ -1,5 +1,6 @@
 use bevy::prelude::{Color, Resource};
 
+#[derive(Clone)]
 pub struct Probabilities {
     pub random_dig: f32,         // dig down while wandering
     pub random_drop: f32,        // drop while wandering
@@ -8,8 +9,9 @@ pub struct Probabilities {
     pub above_surface_drop: f32, // chance to randomly drop sand when at-or-above surface level
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct Settings {
+    pub auto_save_interval_ms: isize,
     pub world_width: isize,
     pub world_height: isize,
     // sand turns to dirt when stacked this high
@@ -23,6 +25,9 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Settings {
         Settings {
+            // TODO: How do I run my save system immediately when browser is unloading?
+            // Save the world automatically because it's possible the browser could crash so saving on window unload isn't 100% reliable.
+            auto_save_interval_ms: 10_000,
             world_width: 144,
             world_height: 81,
             compact_sand_depth: 15,

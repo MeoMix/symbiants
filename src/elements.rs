@@ -1,15 +1,22 @@
 use super::map::{Position, WorldMap};
 use bevy::{prelude::*, sprite::Anchor};
+use serde::{Deserialize, Serialize};
+
+// This is what's persisted as JSON.
+#[derive(Serialize, Deserialize)]
+pub struct ElementSaveState {
+    pub element: Element,
+    pub position: Position,
+}
 
 #[derive(Bundle)]
 pub struct ElementBundle {
     sprite_bundle: SpriteBundle,
     element: Element,
-    //  TODO: This should probably become a "Tile" in the future.
     position: Position,
 }
 
-#[derive(Component, PartialEq, Copy, Clone, Debug)]
+#[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Element {
     Air,
     Dirt,
@@ -118,69 +125,18 @@ pub fn is_all_element(
 
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
 pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
-    let &width = world_map.width();
-    let &height = world_map.height();
-    let &surface_level = world_map.surface_level();
-
-    // Test Sand
-    // let sand_bundles = (0..1).flat_map(|row_index| {
-    //     (0..width).map(move |column_index| {
-    //         (ElementBundle::create(
-    //             Element::Sand,
-    //             Position {
-    //                 x: column_index,
-    //                 y: row_index,
-    //             },
-    //         ),)
-    //     })
-    // });
-
-    // Air & Dirt
-    // NOTE: starting at 1 to skip sand
-    let air_bundles = (0..(surface_level + 1)).flat_map(|row_index| {
-        (0..width).map(move |column_index| {
-            (ElementBundle::create(
-                Element::Air,
-                Position {
-                    x: column_index,
-                    y: row_index,
-                },
-            ),)
+    let element_bundles = world_map
+        .initial_state
+        .elements
+        .iter()
+        .map(|element_save_state| {
+            ElementBundle::create(element_save_state.element, element_save_state.position)
         })
-    });
+        .collect::<Vec<_>>();
 
-    let dirt_bundles = ((surface_level + 1)..height).flat_map(|row_index| {
-        (0..width).map(move |column_index| {
-            (ElementBundle::create(
-                Element::Dirt,
-                Position {
-                    x: column_index,
-                    y: row_index,
-                },
-            ),)
-        })
-    });
-
-    {
-        // for sand_bundle in sand_bundles {
-        //     let position = sand_bundle.0.position;
-        //     world_map
-        //         .elements
-        //         .insert(position, commands.spawn(sand_bundle).id());
-        // }
-
-        for air_bundle in air_bundles {
-            let position = air_bundle.0.position;
-            world_map
-                .elements
-                .insert(position, commands.spawn(air_bundle).id());
-        }
-
-        for dirt_bundle in dirt_bundles {
-            let position = dirt_bundle.0.position;
-            world_map
-                .elements
-                .insert(position, commands.spawn(dirt_bundle).id());
-        }
+    for element_bundle in element_bundles {
+        world_map
+            .elements
+            .insert(element_bundle.position, commands.spawn(element_bundle).id());
     }
 }

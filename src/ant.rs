@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::{f32::consts::PI, ops::Add};
 
 use crate::{
@@ -6,7 +7,7 @@ use crate::{
     world_rng::WorldRng,
 };
 
-use super::{elements::Element, name_list::NAMES, settings::Settings};
+use super::{elements::Element, settings::Settings};
 use bevy::{prelude::*, sprite::Anchor};
 use rand::Rng;
 
@@ -46,6 +47,17 @@ pub fn get_rotated_angle(angle: AntAngle, rotation: i32) -> AntAngle {
     angles[((rotated_index + angles.len() as i32) % angles.len() as i32) as usize]
 }
 
+// This is what is persisted as JSON.
+#[derive(Serialize, Deserialize)]
+pub struct AntSaveState {
+    pub position: Position,
+    pub color: AntColor,
+    pub facing: AntFacing,
+    pub angle: AntAngle,
+    pub behavior: AntBehavior,
+    pub name: AntName,
+}
+
 // TODO: This seems like an anti-pattern, it's sort of like a bundle, but it needs parent/child relationships so it can't just be spawned as a bundle itself
 struct Ant {
     position: Position,
@@ -53,6 +65,8 @@ struct Ant {
     facing: AntFacing,
     angle: AntAngle,
     behavior: AntBehavior,
+    name: AntName,
+    color: AntColor,
     sprite_bundle: SpriteBundle,
     label_bundle: Text2dBundle,
 }
@@ -77,6 +91,8 @@ impl Ant {
             facing,
             angle,
             behavior,
+            name: AntName(name.to_string()),
+            color: AntColor(color),
             sprite_bundle: SpriteBundle {
                 // TODO: alient-cake-addict creates a handle on a resource for this instead
                 texture: asset_server.load("images/ant.png"),
@@ -120,19 +136,26 @@ const ANT_SCALE: f32 = 1.2;
 #[derive(Component, Copy, Clone)]
 pub struct TransformOffset(pub Vec3);
 
-#[derive(Component, PartialEq, Copy, Clone)]
+// TODO: copy cant be implemented for String?
+#[derive(Component, PartialEq, Clone, Serialize, Deserialize)]
+pub struct AntName(pub String);
+
+#[derive(Component, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct AntColor(pub Color);
+
+#[derive(Component, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum AntBehavior {
     Wandering,
     Carrying,
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum AntFacing {
     Left,
     Right,
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum AntAngle {
     Zero = 0,
     Ninety = 90,
@@ -155,108 +178,23 @@ pub fn setup_ants(
     asset_server: Res<AssetServer>,
     settings: Res<Settings>,
     world_map: ResMut<WorldMap>,
-    mut world_rng: ResMut<WorldRng>,
 ) {
-    let ants = (0..20).map(|_| {
-        // Put the ant at a random location along the x-axis that fits within the bounds of the world.
-        let x = world_rng.rng.gen_range(0..1000) % world_map.width();
-        // Put the ant on the dirt.
-        let &y = world_map.surface_level();
-
-        // Randomly position ant facing left or right.
-        let facing = if world_rng.rng.gen_bool(0.5) {
-            AntFacing::Left
-        } else {
-            AntFacing::Right
-        };
-
-        let name = NAMES[world_rng.rng.gen_range(0..NAMES.len())].clone();
-
-        Ant::new(
-            Position::new(x, y),
-            settings.ant_color,
-            facing,
-            AntAngle::Zero,
-            AntBehavior::Wandering,
-            name,
-            &asset_server,
-        )
-    });
-
-    // let ants = [
-    //     Ant::new(
-    //         Position::new(5, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::Zero,
-    //         AntBehavior::Carrying,
-    //         "ant1".to_string(),
-    //         &asset_server,
-    //     ),
-    //     Ant::new(
-    //         Position::new(10, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::Ninety,
-    //         AntBehavior::Carrying,
-    //         "ant2".to_string(),
-    //         &asset_server,
-    //     ),
-    //     Ant::new(
-    //         Position::new(15, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::OneHundredEighty,
-    //         AntBehavior::Carrying,
-    //         "ant3".to_string(),
-    //         &asset_server,
-    //     ),
-    //     Ant::new(
-    //         Position::new(20, 5),
-    //         settings.ant_color,
-    //         AntFacing::Left,
-    //         AntAngle::TwoHundredSeventy,
-    //         AntBehavior::Carrying,
-    //         "ant4".to_string(),
-    //         &asset_server,
-    //     ),
-    //     Ant::new(
-    //         Position::new(25, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::Zero,
-    //         AntBehavior::Carrying,
-    //         "ant5".to_string(),
-    //         &asset_server,
-    //     ),
-    //     Ant::new(
-    //         Position::new(30, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::Ninety,
-    //         AntBehavior::Carrying,
-    //         "ant6".to_string(),
-    //         &asset_server,
-    //     ),
-    //     Ant::new(
-    //         Position::new(35, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::OneHundredEighty,
-    //         AntBehavior::Carrying,
-    //         "ant7".to_string(),
-    //         &asset_server,
-    //     ),
-    //     Ant::new(
-    //         Position::new(40, 5),
-    //         settings.ant_color,
-    //         AntFacing::Right,
-    //         AntAngle::TwoHundredSeventy,
-    //         AntBehavior::Carrying,
-    //         "ant8".to_string(),
-    //         &asset_server,
-    //     ),
-    // ];
+    let ants = world_map
+        .initial_state
+        .ants
+        .iter()
+        .map(|ant_save_state| {
+            Ant::new(
+                ant_save_state.position,
+                settings.ant_color,
+                ant_save_state.facing,
+                ant_save_state.angle,
+                ant_save_state.behavior,
+                ant_save_state.name.0.as_str(),
+                &asset_server,
+            )
+        })
+        .collect::<Vec<_>>();
 
     for ant in ants {
         commands
@@ -273,6 +211,8 @@ pub fn setup_ants(
                         ant.facing,
                         ant.angle,
                         ant.behavior,
+                        ant.name,
+                        ant.color,
                     ))
                     .with_children(|parent| {
                         if ant.behavior == AntBehavior::Carrying {
@@ -280,7 +220,7 @@ pub fn setup_ants(
                             parent.spawn((
                                 SpriteBundle {
                                     transform: Transform {
-                                        translation: Vec3::new(0.5, 0.5, 0.0),
+                                        translation: Vec3::new(0.5, 0.5, 1.0),
                                         ..default()
                                     },
                                     sprite: Sprite {
@@ -390,7 +330,6 @@ fn do_turn(
     let back_angle = get_rotated_angle(*angle, rotation);
     if is_valid_location(*facing, back_angle, *position, elements_query, world_map) {
         *angle = back_angle;
-        info!("back turn, angle is now: {:?}", angle);
         return;
     }
 
@@ -408,7 +347,6 @@ fn do_turn(
         world_map,
     ) {
         *facing = opposite_facing;
-        info!("opposite turn");
         return;
     }
 
@@ -424,8 +362,6 @@ fn do_turn(
         .iter()
         .flat_map(|facing| angles.iter().map(move |angle| (*facing, *angle)))
         .collect::<Vec<_>>();
-
-    info!("facing angle length: {}", facing_angles.len());
 
     let valid_facing_angles = facing_angles
         .iter()
@@ -444,16 +380,12 @@ fn do_turn(
         })
         .collect::<Vec<_>>();
 
-    info!("valid facing angles: {:?}", valid_facing_angles);
-
     if valid_facing_angles.len() > 0 {
         let valid_facing_angle =
             valid_facing_angles[world_rng.rng.gen_range(0..valid_facing_angles.len())];
 
         *facing = valid_facing_angle.0;
         *angle = valid_facing_angle.1;
-
-        info!("valid facing turn");
         return;
     }
 
@@ -473,8 +405,6 @@ fn do_turn(
     let random_facing_angle = facing_angles[world_rng.rng.gen_range(0..facing_angles.len())];
     *facing = random_facing_angle.0;
     *angle = random_facing_angle.1;
-
-    info!("random turn");
 }
 
 fn do_dig(
@@ -501,7 +431,6 @@ fn do_dig(
     let Ok(element) = elements_query.get(*entity) else { return };
 
     if *element == Element::Dirt || *element == Element::Sand {
-        info!("digging NOW");
         commands.entity(*entity).despawn();
 
         // Dig up dirt/sand and replace with air
@@ -558,7 +487,6 @@ fn do_move(
             && (*target_element == Element::Sand
                 || world_rng.rng.gen::<f32>() < settings.probabilities.below_surface_dig)
         {
-            info!("below surface dig");
             do_dig(
                 false,
                 behavior,
@@ -571,7 +499,6 @@ fn do_move(
             );
             return;
         } else {
-            info!("above surface turn");
             do_turn(
                 facing,
                 angle,
@@ -621,7 +548,7 @@ fn do_move(
 
 // TODO: untangle mutability, many functions accept mutable but do not mutate which seems wrong
 // TODO: first pass is going to be just dumping all code into one system, but suspect want multiple systems
-pub fn move_ant(
+pub fn move_ants_system(
     mut ants_query: Query<(
         &mut AntFacing,
         &mut AntAngle,
@@ -634,8 +561,6 @@ pub fn move_ant(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
-    info!("move_ant");
-
     for (facing, angle, behavior, position) in ants_query.iter_mut() {
         // TODO: prefer this not copy/pasted logic, should be able to easily check if there is air underneath a unit's feet
         let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
@@ -687,7 +612,6 @@ pub fn move_ant(
                 // - Maybe behavior should be its own system?
 
                 if world_rng.rng.gen::<f32>() < settings.probabilities.random_dig {
-                    info!("dig!!!");
                     do_dig(
                         false,
                         behavior,

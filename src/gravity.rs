@@ -186,86 +186,96 @@ pub fn ant_gravity_system(
     }
 }
 
-#[cfg(test)]
-pub mod ant_gravity_system_tests {
-    use super::*;
-    use bevy::{log::LogPlugin, utils::HashMap};
-    use rand::{rngs::StdRng, SeedableRng};
-    use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
+// #[cfg(test)]
+// pub mod ant_gravity_system_tests {
+//     use crate::save::WorldSaveState;
 
-    wasm_bindgen_test_configure!(run_in_browser);
+//     use super::*;
+//     use bevy::{log::LogPlugin, utils::HashMap};
+//     use rand::{rngs::StdRng, SeedableRng};
+//     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
-    fn setup(element_grid: Vec<Vec<Element>>) -> App {
-        let mut app = App::new();
-        app.add_plugin(LogPlugin::default());
-        app.add_system(ant_gravity_system);
+//     wasm_bindgen_test_configure!(run_in_browser);
 
-        let seed = 42069; // ayy lmao
-        let world_rng = WorldRng {
-            rng: StdRng::seed_from_u64(seed),
-        };
+//     fn setup(element_grid: Vec<Vec<Element>>) -> App {
+//         let mut app = App::new();
+//         app.add_plugin(LogPlugin::default());
+//         app.add_system(ant_gravity_system);
 
-        app.insert_resource(world_rng);
+//         let seed = 42069; // ayy lmao
+//         let world_rng = WorldRng {
+//             rng: StdRng::seed_from_u64(seed),
+//         };
 
-        // TODO: probably reuse setup function between gravity and ant tests - maybe all tests
-        let spawned_elements: HashMap<_, _> = element_grid
-            .iter()
-            .enumerate()
-            .map(|(y, row)| {
-                row.iter()
-                    .enumerate()
-                    .map(|(x, element)| {
-                        let position = Position::new(x as isize, y as isize);
-                        let entity = app
-                            .world
-                            .spawn(ElementBundle::create(*element, position))
-                            .id();
+//         app.insert_resource(world_rng);
 
-                        (position, entity)
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .flatten()
-            .collect();
+//         // TODO: probably reuse setup function between gravity and ant tests - maybe all tests
+//         let spawned_elements: HashMap<_, _> = element_grid
+//             .iter()
+//             .enumerate()
+//             .map(|(y, row)| {
+//                 row.iter()
+//                     .enumerate()
+//                     .map(|(x, element)| {
+//                         let position = Position::new(x as isize, y as isize);
+//                         let entity = app
+//                             .world
+//                             .spawn(ElementBundle::create(*element, position))
+//                             .id();
 
-        let height = element_grid.len() as isize;
-        let width = element_grid.first().map_or(0, |row| row.len()) as isize;
-        let world_map = WorldMap::new(width, height, 0.0, Some(spawned_elements));
-        app.insert_resource(world_map);
-        app.insert_resource(Settings {
-            world_width: width,
-            world_height: height,
-            ..default()
-        });
+//                         (position, entity)
+//                     })
+//                     .collect::<Vec<_>>()
+//             })
+//             .flatten()
+//             .collect();
 
-        app
-    }
+//         let height = element_grid.len() as isize;
+//         let width = element_grid.first().map_or(0, |row| row.len()) as isize;
+//         let world_map = WorldMap::new(
+//             width,
+//             height,
+//             0.0,
+//             WorldSaveState::default(),
+//             Some(spawned_elements),
+//         );
+//         app.insert_resource(world_map);
+//         app.insert_resource(Settings {
+//             world_width: width,
+//             world_height: height,
+//             ..default()
+//         });
 
-    #[wasm_bindgen_test]
-    fn upright_ant_over_air_falls_down() {
-        // Arrange
-        let element_grid = vec![vec![Element::Air], vec![Element::Air]];
-        let mut app = setup(element_grid);
-    }
+//         app
+//     }
 
-    fn upright_ant_over_dirt_stays_put() {}
+//     #[wasm_bindgen_test]
+//     fn upright_ant_over_air_falls_down() {
+//         // Arrange
+//         // let element_grid = vec![vec![Element::Air], vec![Element::Air]];
+//         // let mut app = setup(element_grid);
+//     }
 
-    fn sideways_left_ant_standing_dirt_over_air_stays_put() {}
+//     fn upright_ant_over_dirt_stays_put() {}
 
-    fn sideways_left_ant_standing_air_over_air_falls_down() {}
+//     fn sideways_left_ant_standing_dirt_over_air_stays_put() {}
 
-    fn sideways_right_ant_standing_dirt_over_air_stays_put() {}
+//     fn sideways_left_ant_standing_air_over_air_falls_down() {}
 
-    fn sideways_right_ant_standing_air_over_air_falls_down() {}
+//     fn sideways_right_ant_standing_dirt_over_air_stays_put() {}
 
-    // TODO: This is sus. A sideways ant is able to cling to dirt, but if it starts falling, it should probably keep falling
-    // rather than exhibiting a super-ant ability to cling to dirt mid-fall.
-    fn sideways_falling_ant_grabs_dirt() {}
-}
+//     fn sideways_right_ant_standing_air_over_air_falls_down() {}
+
+//     // TODO: This is sus. A sideways ant is able to cling to dirt, but if it starts falling, it should probably keep falling
+//     // rather than exhibiting a super-ant ability to cling to dirt mid-fall.
+//     fn sideways_falling_ant_grabs_dirt() {}
+// }
 
 // TODO: confirm elements are despawned not just that grid is correct
 #[cfg(test)]
 pub mod sand_gravity_system_tests {
+    use crate::map::WorldSaveState;
+
     use super::*;
     use bevy::{log::LogPlugin, utils::HashMap};
     use rand::{rngs::StdRng, SeedableRng};
@@ -309,7 +319,13 @@ pub mod sand_gravity_system_tests {
 
         let height = element_grid.len() as isize;
         let width = element_grid.first().map_or(0, |row| row.len()) as isize;
-        let world_map = WorldMap::new(width, height, 0.0, Some(spawned_elements));
+        let world_map = WorldMap::new(
+            width,
+            height,
+            0,
+            WorldSaveState::default(),
+            Some(spawned_elements),
+        );
         app.insert_resource(world_map);
         app.insert_resource(Settings {
             world_width: width,
