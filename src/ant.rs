@@ -48,7 +48,7 @@ pub fn get_rotated_angle(angle: AntAngle, rotation: i32) -> AntAngle {
 }
 
 // This is what is persisted as JSON.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct AntSaveState {
     pub position: Position,
     pub color: AntColor,
@@ -137,13 +137,13 @@ const ANT_SCALE: f32 = 1.2;
 pub struct TransformOffset(pub Vec3);
 
 // TODO: copy cant be implemented for String?
-#[derive(Component, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct AntName(pub String);
 
-#[derive(Component, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntColor(pub Color);
 
-#[derive(Component, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum AntBehavior {
     Wandering,
     Carrying,

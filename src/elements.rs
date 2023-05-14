@@ -3,7 +3,7 @@ use bevy::{prelude::*, sprite::Anchor};
 use serde::{Deserialize, Serialize};
 
 // This is what's persisted as JSON.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ElementSaveState {
     pub element: Element,
     pub position: Position,

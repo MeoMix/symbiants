@@ -8,6 +8,7 @@ mod name_list;
 mod render;
 mod settings;
 mod simulation;
+mod time;
 mod world_rng;
 
 use bevy::{
@@ -18,8 +19,8 @@ use camera::CameraPlugin;
 use map::WorldMap;
 use settings::Settings;
 use simulation::SimulationPlugin;
+use time::{IsFastForwarding, DEFAULT_TICK_RATE};
 use world_rng::WorldRng;
-
 pub struct AntfarmPlugin;
 
 impl Plugin for AntfarmPlugin {
@@ -32,8 +33,8 @@ impl Plugin for AntfarmPlugin {
             ..default()
         }))
         // Defines the amount of time that should elapse between each physics step.
-        // TODO: Naturally I would think 60FPS is preferable, but it runs way too fast. Maybe this is fine?
-        .insert_resource(FixedTime::new_from_secs(10.0 / 60.0))
+        .insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE))
+        .insert_resource(IsFastForwarding(false))
         .init_resource::<Settings>()
         .init_resource::<WorldRng>()
         .init_resource::<WorldMap>()

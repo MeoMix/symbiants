@@ -163,6 +163,8 @@ pub fn ant_gravity_system(
         let foot_delta = get_delta(*facing, get_rotated_angle(*angle, rotation));
         let below_feet_position = *position + foot_delta;
 
+        // TODO: There's a bug here - ant that rotates such that its feet are on the side of the world
+        // and then has soil dug out from underneath it - hovers in the air.
         let is_air_beneath_feet = is_all_element(
             &world_map,
             &elements_query,

@@ -2,7 +2,11 @@ use bevy::{prelude::*, utils::HashMap};
 use gloo_storage::{LocalStorage, Storage};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, Mul};
+use std::{
+    ops::{Add, Deref, Mul},
+    sync::Mutex,
+};
+use wasm_bindgen::{prelude::Closure, JsCast};
 
 use crate::{
     ant::{AntAngle, AntBehavior, AntColor, AntFacing, AntName, AntSaveState},
@@ -11,6 +15,9 @@ use crate::{
     settings::Settings,
     world_rng::WorldRng,
 };
+
+use chrono::serde::ts_seconds;
+use chrono::{DateTime, Utc};
 
 #[derive(Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct Position {
@@ -61,8 +68,10 @@ impl Mul for Position {
 // TODO: This should probably persist the settings it was generated with to prevent desync
 // TODO: *no* idea if this is an acceptable way to persist state. It seems very OOP-y, but
 // Bevy scenes did not seem like the right tool for the job, either.
-#[derive(Default, Serialize, Deserialize, Resource)]
+#[derive(Default, Debug, Serialize, Deserialize, Resource)]
 pub struct WorldSaveState {
+    #[serde(with = "ts_seconds")]
+    pub time_stamp: DateTime<Utc>,
     pub elements: Vec<ElementSaveState>,
     pub ants: Vec<AntSaveState>,
 }
@@ -77,7 +86,7 @@ pub struct WorldMap {
     pub elements: HashMap<Position, Entity>,
 }
 
-const LOCAL_STORAGE_KEY: &str = "world-save-state";
+pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
 impl FromWorld for WorldMap {
     fn from_world(world: &mut World) -> Self {
@@ -91,18 +100,15 @@ impl FromWorld for WorldMap {
             - (settings.world_height as f32 * settings.initial_dirt_percent))
             as isize;
 
-        if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
-            return WorldMap::new(
-                settings.world_width,
-                settings.world_height,
-                surface_level,
-                WorldSaveState {
-                    elements: saved_state.elements,
-                    ants: saved_state.ants,
-                },
-                None,
-            );
-        }
+        // if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
+        //     return WorldMap::new(
+        //         settings.world_width,
+        //         settings.world_height,
+        //         surface_level,
+        //         saved_state,
+        //         None,
+        //     );
+        // }
 
         let air = (0..(surface_level + 1)).flat_map(|row_index| {
             (0..settings.world_width).map(move |column_index| ElementSaveState {
@@ -229,6 +235,7 @@ impl FromWorld for WorldMap {
             settings.world_height,
             surface_level,
             WorldSaveState {
+                time_stamp: Utc::now(),
                 elements: air.chain(dirt).collect(),
                 ants: ants.collect(),
             },
@@ -271,7 +278,37 @@ impl WorldMap {
     }
 }
 
-pub fn save_world_state_system(
+pub fn setup_window_onunload_save_world_state() {
+    let window = web_sys::window().expect("window not available");
+
+    let on_beforeunload = Closure::wrap(Box::new(move |_event: web_sys::BeforeUnloadEvent| {
+        let save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
+        let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, save_snapshot.deref().clone());
+
+        if save_result.is_err() {
+            error!(
+                "Failed to save world state to local storage: {:?}",
+                save_result
+            );
+        }
+    }) as Box<dyn FnMut(web_sys::BeforeUnloadEvent)>);
+
+    let add_event_listener_result = window
+        .add_event_listener_with_callback("beforeunload", on_beforeunload.as_ref().unchecked_ref());
+
+    if add_event_listener_result.is_err() {
+        error!(
+            "Failed to add event listener for beforeunload: {:?}",
+            add_event_listener_result
+        );
+    }
+
+    on_beforeunload.forget();
+}
+
+static SAVE_SNAPSHOT: Mutex<Option<WorldSaveState>> = Mutex::new(None);
+
+pub fn save_snapshot_system(
     mut elements_query: Query<(&Element, &Position)>,
     mut ants_query: Query<(
         &AntFacing,
@@ -281,17 +318,52 @@ pub fn save_world_state_system(
         &AntColor,
         &Position,
     )>,
-    mut last_save_time: Local<f32>,
-    time: Res<Time>,
-    settings: Res<Settings>,
 ) {
-    if *last_save_time != 0.0
-        && time.raw_elapsed_seconds() - *last_save_time
-            < settings.auto_save_interval_ms as f32 / 1000.0
-    {
-        return;
-    }
+    // TODO: don't copy/paste this code
+    let elements_save_state = elements_query
+        .iter_mut()
+        .map(|(element, position)| ElementSaveState {
+            element: element.clone(),
+            position: position.clone(),
+        })
+        .collect::<Vec<ElementSaveState>>();
 
+    let ants_save_state = ants_query
+        .iter_mut()
+        .map(
+            |(facing, angle, behavior, name, color, position)| AntSaveState {
+                facing: facing.clone(),
+                angle: angle.clone(),
+                behavior: behavior.clone(),
+                name: name.clone(),
+                color: color.clone(),
+                position: position.clone(),
+            },
+        )
+        .collect::<Vec<AntSaveState>>();
+
+    {
+        let mut save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
+
+        *save_snapshot = Some(WorldSaveState {
+            time_stamp: Utc::now(),
+            elements: elements_save_state,
+            ants: ants_save_state,
+        });
+    }
+}
+
+fn save_world_state(
+    elements_query: &mut Query<(&Element, &Position)>,
+    ants_query: &mut Query<(
+        &AntFacing,
+        &AntAngle,
+        &AntBehavior,
+        &AntName,
+        &AntColor,
+        &Position,
+    )>,
+) {
     let elements_save_state = elements_query
         .iter_mut()
         .map(|(element, position)| ElementSaveState {
@@ -317,6 +389,7 @@ pub fn save_world_state_system(
     let result = LocalStorage::set::<WorldSaveState>(
         LOCAL_STORAGE_KEY.to_string(),
         WorldSaveState {
+            time_stamp: Utc::now(),
             elements: elements_save_state,
             ants: ants_save_state,
         },
@@ -325,6 +398,32 @@ pub fn save_world_state_system(
     if result.is_err() {
         error!("Failed to save world state: {:?}", result);
     }
+}
+
+pub fn periodic_save_world_state_system(
+    mut elements_query: Query<(&Element, &Position)>,
+    mut ants_query: Query<(
+        &AntFacing,
+        &AntAngle,
+        &AntBehavior,
+        &AntName,
+        &AntColor,
+        &Position,
+    )>,
+    mut last_save_time: Local<f32>,
+    time: Res<Time>,
+    settings: Res<Settings>,
+) {
+    // TODO: don't run this when fast forwarding
+
+    if *last_save_time != 0.0
+        && time.raw_elapsed_seconds() - *last_save_time
+            < settings.auto_save_interval_ms as f32 / 1000.0
+    {
+        return;
+    }
+
+    save_world_state(&mut elements_query, &mut ants_query);
 
     *last_save_time = time.raw_elapsed_seconds();
 }

@@ -5,16 +5,30 @@ use crate::{
     background::setup_background,
     elements::setup_elements,
     gravity::{ant_gravity_system, sand_gravity_system},
-    map::save_world_state_system,
+    map::{
+        periodic_save_world_state_system, save_snapshot_system,
+        setup_window_onunload_save_world_state,
+    },
     render::{render_carrying, render_rotation, render_scale, render_translation},
+    time::{play_time_system, setup_fast_forward_time_system},
 };
 
 pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_systems((setup_ants, setup_elements, setup_background));
-
+        app.add_startup_systems(
+            (
+                setup_fast_forward_time_system,
+                setup_background,
+                setup_elements,
+                setup_ants,
+                setup_window_onunload_save_world_state,
+            )
+                .chain(),
+        );
+        // TODO: need to be more aggressive in reusing state between update render and initial draw
+        // currently if I turn off render systems there are minor graphical differences between initial draw and update render
         app.add_systems(
             (
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
@@ -23,16 +37,19 @@ impl Plugin for SimulationPlugin {
                 sand_gravity_system,
                 ant_gravity_system,
                 // Try to save world state periodically after updating world state.
-                save_world_state_system,
+                // periodic_save_world_state_system,
                 // Render world state after updating world state.
                 // NOTE: all render methods can run in parallel but don't due to conflicting mutable Transform access
                 render_translation,
                 render_scale,
                 render_rotation,
                 render_carrying,
+                play_time_system,
             )
                 .chain()
                 .in_schedule(CoreSchedule::FixedUpdate),
         );
+
+        // app.add_system(save_snapshot_system);
     }
 }
