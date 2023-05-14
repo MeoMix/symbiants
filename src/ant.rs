@@ -570,8 +570,8 @@ pub fn move_ants_system(
         let is_air_beneath_feet = is_all_element(
             &world_map,
             &elements_query,
-            &vec![below_feet_position],
-            Element::Air,
+            &[below_feet_position],
+            &Element::Air,
         );
 
         if is_air_beneath_feet {
@@ -580,8 +580,8 @@ pub fn move_ants_system(
             let is_air_below = is_all_element(
                 &world_map,
                 &elements_query,
-                &vec![below_position],
-                Element::Air,
+                &[below_position],
+                &Element::Air,
             );
 
             // Gravity system will handle things if going to fall

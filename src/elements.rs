@@ -111,15 +111,15 @@ impl ElementBundle {
 pub fn is_all_element(
     world_map: &WorldMap,
     elements_query: &Query<&Element>,
-    positions: &Vec<Position>,
-    search_element: Element,
+    positions: &[Position],
+    search_element: &Element,
 ) -> bool {
     positions.iter().all(|position| {
-        world_map
-            .elements
-            .get(position)
-            .and_then(|&element| elements_query.get(element).ok())
-            .map_or(false, |&element| element == search_element)
+        world_map.elements.get(position).map_or(false, |&element| {
+            elements_query
+                .get(element)
+                .map_or(false, |queried_element| *queried_element == *search_element)
+        })
     })
 }
 

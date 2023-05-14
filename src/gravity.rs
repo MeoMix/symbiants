@@ -9,7 +9,7 @@ use super::{
     map::{Position, WorldMap},
     settings::Settings,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 use itertools::{Either, Itertools};
 use rand::{rngs::StdRng, Rng};
 
@@ -33,8 +33,8 @@ fn get_sand_fall_position(
     if is_all_element(
         &world_map,
         &elements_query,
-        &vec![below_sand_position],
-        Element::Air,
+        &[below_sand_position],
+        &Element::Air,
     ) {
         return Some(below_sand_position);
     }
@@ -46,8 +46,8 @@ fn get_sand_fall_position(
     let mut go_left = is_all_element(
         &world_map,
         &elements_query,
-        &vec![left_sand_position, left_below_sand_position],
-        Element::Air,
+        &[left_sand_position, left_below_sand_position],
+        &Element::Air,
     );
 
     let right_sand_position = sand_position + Position::X;
@@ -55,8 +55,8 @@ fn get_sand_fall_position(
     let mut go_right = is_all_element(
         &world_map,
         &elements_query,
-        &vec![right_sand_position, right_below_sand_position],
-        Element::Air,
+        &[right_sand_position, right_below_sand_position],
+        &Element::Air,
     );
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
@@ -84,7 +84,9 @@ pub fn sand_gravity_system(
     settings: Res<Settings>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let (sand_air_swaps, none_positions): (Vec<_>, Vec<_>) = element_position_query
+    // Go through all elements, find those which are sand, figure out where that sand might fall to,
+    // and then return two sets of data - pairings of elements to swap (sand<->air) and positions that are unaffected.
+    let (sand_air_swaps, none_positions): (Vec<_>, HashSet<_>) = element_position_query
         .iter()
         .filter(|(&element, _)| element == Element::Sand)
         .map(|(_, &sand_position)| {
@@ -104,6 +106,7 @@ pub fn sand_gravity_system(
         })
         .partition_map(|x| x);
 
+    // Swap sand/air positions and update internal state to reflect the swap
     for &(sand_entity, air_entity) in sand_air_swaps.iter() {
         let Ok([
             (_, mut air_position),
@@ -119,12 +122,13 @@ pub fn sand_gravity_system(
         world_map.elements.insert(*air_position, air_entity);
     }
 
+    // Find all sand which did not move
     let stationary_sand = element_position_query
         .iter()
         .filter(|(_, position)| none_positions.contains(&position));
 
+    // Crush sand that didn't move if it's under a sufficient amount of depth
     for (_, sand_position) in stationary_sand {
-        // At deep enough levels, stationary sand finds itself crushed back into dirt.
         let start = 1;
         let end = settings.compact_sand_depth;
         let above_sand_positions: Vec<_> = (start..=end)
@@ -135,7 +139,7 @@ pub fn sand_gravity_system(
             &world_map,
             &elements_query,
             &above_sand_positions,
-            Element::Sand,
+            &Element::Sand,
         ) {
             // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
             let crushed_sand_entity = world_map.elements.get(&sand_position).unwrap();
@@ -168,8 +172,8 @@ pub fn ant_gravity_system(
         let is_air_beneath_feet = is_all_element(
             &world_map,
             &elements_query,
-            &vec![below_feet_position],
-            Element::Air,
+            &[below_feet_position],
+            &Element::Air,
         );
 
         if is_air_beneath_feet {
@@ -177,8 +181,8 @@ pub fn ant_gravity_system(
             let is_air_below = is_all_element(
                 &world_map,
                 &elements_query,
-                &vec![below_position],
-                Element::Air,
+                &[below_position],
+                &Element::Air,
             );
 
             if is_air_below {
