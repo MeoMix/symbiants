@@ -4,7 +4,7 @@ use crate::{
     ant::{move_ants_system, setup_ants},
     background::setup_background,
     elements::setup_elements,
-    gravity::{ant_gravity_system, sand_gravity_system},
+    gravity::{ant_gravity_system, sand_crush_system, sand_gravity_system},
     map::{
         periodic_save_world_state_system, save_snapshot_system,
         setup_window_onunload_save_world_state,
@@ -35,6 +35,7 @@ impl Plugin for SimulationPlugin {
                 move_ants_system,
                 // TODO: sand/ant gravity systems could run in parallel at the query level if effort is put into combining their logic.
                 sand_gravity_system,
+                sand_crush_system,
                 ant_gravity_system,
                 // Try to save world state periodically after updating world state.
                 // periodic_save_world_state_system,

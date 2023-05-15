@@ -10,55 +10,14 @@ pub struct ElementSaveState {
 }
 
 #[derive(Bundle)]
-pub struct ElementBundle {
+pub struct AirElementBundle {
     sprite_bundle: SpriteBundle,
     element: Element,
     position: Position,
 }
 
-#[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum Element {
-    Air,
-    Dirt,
-    Sand,
-}
-
-impl ElementBundle {
-    pub fn create(element: Element, position: Position) -> Self {
-        if element == Element::Sand {
-            ElementBundle::create_sand(position)
-        } else if element == Element::Air {
-            ElementBundle::create_air(position)
-        } else if element == Element::Dirt {
-            ElementBundle::create_dirt(position)
-        } else {
-            panic!("unexpected element")
-        }
-    }
-
-    fn create_sand(position: Position) -> Self {
-        // The view of the model position is just an inversion along the y-axis.
-        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
-
-        Self {
-            sprite_bundle: SpriteBundle {
-                transform: Transform {
-                    translation,
-                    ..default()
-                },
-                sprite: Sprite {
-                    color: Color::rgb(0.761, 0.698, 0.502),
-                    anchor: Anchor::TopLeft,
-                    ..default()
-                },
-                ..default()
-            },
-            element: Element::Sand,
-            position,
-        }
-    }
-
-    fn create_air(position: Position) -> Self {
+impl AirElementBundle {
+    pub fn new(position: Position) -> Self {
         // The view of the model position is just an inversion along the y-axis.
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
@@ -82,8 +41,17 @@ impl ElementBundle {
             position,
         }
     }
+}
 
-    fn create_dirt(position: Position) -> Self {
+#[derive(Bundle)]
+pub struct DirtElementBundle {
+    sprite_bundle: SpriteBundle,
+    element: Element,
+    position: Position,
+}
+
+impl DirtElementBundle {
+    pub fn new(position: Position) -> Self {
         // The view of the model position is just an inversion along the y-axis.
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
@@ -106,6 +74,44 @@ impl ElementBundle {
     }
 }
 
+#[derive(Bundle)]
+pub struct SandElementBundle {
+    sprite_bundle: SpriteBundle,
+    element: Element,
+    position: Position,
+}
+
+impl SandElementBundle {
+    pub fn new(position: Position) -> Self {
+        // The view of the model position is just an inversion along the y-axis.
+        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
+
+        Self {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation,
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: Color::rgb(0.761, 0.698, 0.502),
+                    anchor: Anchor::TopLeft,
+                    ..default()
+                },
+                ..default()
+            },
+            element: Element::Sand,
+            position,
+        }
+    }
+}
+
+#[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
+pub enum Element {
+    Air,
+    Dirt,
+    Sand,
+}
+
 // Returns true if every element in `positions` matches the provided Element type.
 // NOTE: This returns true if given 0 positions.
 pub fn is_all_element(
@@ -125,18 +131,22 @@ pub fn is_all_element(
 
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
 pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
-    let element_bundles = world_map
+    let elements_data = world_map
         .initial_state
         .elements
         .iter()
-        .map(|element_save_state| {
-            ElementBundle::create(element_save_state.element, element_save_state.position)
+        .map(|&ElementSaveState { element, position }| {
+            let id = match element {
+                Element::Air => commands.spawn(AirElementBundle::new(position)).id(),
+                Element::Dirt => commands.spawn(DirtElementBundle::new(position)).id(),
+                Element::Sand => commands.spawn(SandElementBundle::new(position)).id(),
+            };
+
+            (position, id)
         })
         .collect::<Vec<_>>();
 
-    for element_bundle in element_bundles {
-        world_map
-            .elements
-            .insert(element_bundle.position, commands.spawn(element_bundle).id());
+    for (position, id) in elements_data {
+        world_map.elements.insert(position, id);
     }
 }

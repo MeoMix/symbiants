@@ -1,23 +1,22 @@
 use crate::{
     ant::{get_delta, get_rotated_angle, AntAngle, AntFacing},
-    elements::is_all_element,
+    elements::{is_all_element, DirtElementBundle},
     world_rng::WorldRng,
 };
 
 use super::{
-    elements::{Element, ElementBundle},
+    elements::Element,
     map::{Position, WorldMap},
     settings::Settings,
 };
-use bevy::{prelude::*, utils::HashSet};
-use itertools::{Either, Itertools};
+use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng};
 
 // TODO: How to do an exact match when running a test?
 // TODO: Add tests for ant gravity
 // TODO: extra bonus points for finding an abstraction that unifies element and ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
-// PERF: could introduce 'active' component which isn't on everything, filter always, and not consider all elements all the time
+// TODO: add the concept of "active/loose" sand
 
 // Search for a valid location for sand to fall into by searching to the
 // bottom left/center/right of a given sand position. Prioritize falling straight down
@@ -80,16 +79,15 @@ pub fn sand_gravity_system(
     mut element_position_query: Query<(&Element, &mut Position)>,
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
-    mut commands: Commands,
-    settings: Res<Settings>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    // Go through all elements, find those which are sand, figure out where that sand might fall to,
-    // and then return two sets of data - pairings of elements to swap (sand<->air) and positions that are unaffected.
-    let (sand_air_swaps, none_positions): (Vec<_>, HashSet<_>) = element_position_query
+    let sand_air_swaps: Vec<_> = element_position_query
         .iter()
-        .filter(|(&element, _)| element == Element::Sand)
-        .map(|(_, &sand_position)| {
+        .filter_map(|(&element, &sand_position)| {
+            if element != Element::Sand {
+                return None;
+            }
+
             get_sand_fall_position(
                 sand_position,
                 &world_map,
@@ -102,9 +100,8 @@ pub fn sand_gravity_system(
                     *world_map.elements.get(&air_position)?,
                 ))
             })
-            .map_or_else(|| Either::Right(sand_position), |swap| Either::Left(swap))
         })
-        .partition_map(|x| x);
+        .collect();
 
     // Swap sand/air positions and update internal state to reflect the swap
     for &(sand_entity, air_entity) in sand_air_swaps.iter() {
@@ -121,18 +118,25 @@ pub fn sand_gravity_system(
         world_map.elements.insert(*sand_position, sand_entity);
         world_map.elements.insert(*air_position, air_entity);
     }
+}
 
-    // Find all sand which did not move
-    let stationary_sand = element_position_query
-        .iter()
-        .filter(|(_, position)| none_positions.contains(&position));
+// TODO: wire up tests properly
+pub fn sand_crush_system(
+    element_position_query: Query<(&Element, Ref<Position>, Entity)>,
+    elements_query: Query<&Element>,
+    mut world_map: ResMut<WorldMap>,
+    mut commands: Commands,
+    settings: Res<Settings>,
+) {
+    for (element, position, entity) in element_position_query.iter() {
+        // Find all stationary sand
+        if *element != Element::Sand || position.is_changed() {
+            continue;
+        }
 
-    // Crush sand that didn't move if it's under a sufficient amount of depth
-    for (_, sand_position) in stationary_sand {
-        let start = 1;
-        let end = settings.compact_sand_depth;
-        let above_sand_positions: Vec<_> = (start..=end)
-            .map(|y| Position::new(sand_position.x, sand_position.y - y))
+        // Crush sand that is under sufficient pressure
+        let above_sand_positions: Vec<_> = (1..=settings.compact_sand_depth)
+            .map(|y| Position::new(position.x, position.y - y))
             .collect();
 
         if is_all_element(
@@ -142,14 +146,11 @@ pub fn sand_gravity_system(
             &Element::Sand,
         ) {
             // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
-            let crushed_sand_entity = world_map.elements.get(&sand_position).unwrap();
-            commands.entity(*crushed_sand_entity).despawn();
-
-            let entity = commands
-                .spawn(ElementBundle::create(Element::Dirt, *sand_position))
-                .id();
-
-            world_map.elements.insert(*sand_position, entity);
+            commands.entity(entity).despawn();
+            world_map.elements.insert(
+                *position,
+                commands.spawn(DirtElementBundle::new(*position)).id(),
+            );
         }
     }
 }
@@ -280,7 +281,10 @@ pub fn ant_gravity_system(
 // TODO: confirm elements are despawned not just that grid is correct
 #[cfg(test)]
 pub mod sand_gravity_system_tests {
-    use crate::map::WorldSaveState;
+    use crate::{
+        elements::{AirElementBundle, SandElementBundle},
+        map::WorldSaveState,
+    };
 
     use super::*;
     use bevy::{log::LogPlugin, utils::HashMap};
@@ -311,10 +315,12 @@ pub mod sand_gravity_system_tests {
                     .enumerate()
                     .map(|(x, element)| {
                         let position = Position::new(x as isize, y as isize);
-                        let entity = app
-                            .world
-                            .spawn(ElementBundle::create(*element, position))
-                            .id();
+
+                        let entity = match element {
+                            Element::Air => app.world.spawn(AirElementBundle::new(position)).id(),
+                            Element::Dirt => app.world.spawn(DirtElementBundle::new(position)).id(),
+                            Element::Sand => app.world.spawn(SandElementBundle::new(position)).id(),
+                        };
 
                         (position, entity)
                     })

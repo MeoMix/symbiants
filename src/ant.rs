@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{f32::consts::PI, ops::Add};
 
 use crate::{
-    elements::{is_all_element, ElementBundle},
+    elements::{is_all_element, AirElementBundle, SandElementBundle},
     map::{Position, WorldMap},
     world_rng::WorldRng,
 };
@@ -304,9 +304,7 @@ fn do_drop(
         commands.entity(*entity).despawn();
 
         // Drop sand on air
-        let sand_entity = commands
-            .spawn(ElementBundle::create(Element::Sand, position))
-            .id();
+        let sand_entity = commands.spawn(SandElementBundle::new(position)).id();
 
         world_map.elements.insert(position, sand_entity);
 
@@ -434,9 +432,7 @@ fn do_dig(
         commands.entity(*entity).despawn();
 
         // Dig up dirt/sand and replace with air
-        let air_entity = commands
-            .spawn(ElementBundle::create(Element::Air, dig_position))
-            .id();
+        let air_entity = commands.spawn(AirElementBundle::new(dig_position)).id();
 
         world_map.elements.insert(dig_position, air_entity);
 
