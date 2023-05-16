@@ -107,7 +107,7 @@ pub fn render_carrying(
                         ant.spawn((
                             SpriteBundle {
                                 transform: Transform {
-                                    translation: Vec3::new(0.5, 0.5, 0.0),
+                                    translation: Vec3::new(0.5, 0.5, 1.0),
                                     ..default()
                                 },
                                 sprite: Sprite {

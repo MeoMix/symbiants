@@ -3,6 +3,7 @@ use std::{f32::consts::PI, ops::Add};
 
 use crate::{
     elements::{is_all_element, AirElementBundle, SandElementBundle},
+    gravity::loosen_neighboring_sand,
     map::{Position, WorldMap},
     world_rng::WorldRng,
 };
@@ -58,7 +59,7 @@ pub struct AntSaveState {
     pub name: AntName,
 }
 
-// TODO: This seems like an anti-pattern, it's sort of like a bundle, but it needs parent/child relationships so it can't just be spawned as a bundle itself
+// TODO: This seems like an ANTi-pattern (heh heh heh), it's sort of like a bundle, but it needs parent/child relationships so it can't just be spawned as a bundle itself
 struct Ant {
     position: Position,
     transform_offset: TransformOffset,
@@ -67,6 +68,7 @@ struct Ant {
     behavior: AntBehavior,
     name: AntName,
     color: AntColor,
+    // TODO: Ants should be crushable
     sprite_bundle: SpriteBundle,
     label_bundle: Text2dBundle,
 }
@@ -94,7 +96,6 @@ impl Ant {
             name: AntName(name.to_string()),
             color: AntColor(color),
             sprite_bundle: SpriteBundle {
-                // TODO: alient-cake-addict creates a handle on a resource for this instead
                 texture: asset_server.load("images/ant.png"),
                 sprite: Sprite {
                     color,
@@ -433,8 +434,9 @@ fn do_dig(
 
         // Dig up dirt/sand and replace with air
         let air_entity = commands.spawn(AirElementBundle::new(dig_position)).id();
-
         world_map.elements.insert(dig_position, air_entity);
+
+        loosen_neighboring_sand(dig_position, world_map, elements_query, commands);
 
         // TODO: timer
         *behavior = AntBehavior::Carrying;

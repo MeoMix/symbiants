@@ -1,3 +1,5 @@
+use crate::gravity::Unstable;
+
 use super::map::{Position, WorldMap};
 use bevy::{prelude::*, sprite::Anchor};
 use serde::{Deserialize, Serialize};
@@ -74,11 +76,16 @@ impl DirtElementBundle {
     }
 }
 
+#[derive(Component)]
+pub struct Crushable;
+
 #[derive(Bundle)]
 pub struct SandElementBundle {
     sprite_bundle: SpriteBundle,
     element: Element,
     position: Position,
+    crushable: Crushable,
+    unstable: Unstable,
 }
 
 impl SandElementBundle {
@@ -101,6 +108,8 @@ impl SandElementBundle {
             },
             element: Element::Sand,
             position,
+            crushable: Crushable,
+            unstable: Unstable,
         }
     }
 }
@@ -139,6 +148,7 @@ pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
             let id = match element {
                 Element::Air => commands.spawn(AirElementBundle::new(position)).id(),
                 Element::Dirt => commands.spawn(DirtElementBundle::new(position)).id(),
+                // TODO: not all sand is unstable just because it was recently loaded from save state.
                 Element::Sand => commands.spawn(SandElementBundle::new(position)).id(),
             };
 

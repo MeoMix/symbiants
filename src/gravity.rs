@@ -1,6 +1,6 @@
 use crate::{
     ant::{get_delta, get_rotated_angle, AntAngle, AntFacing},
-    elements::{is_all_element, DirtElementBundle},
+    elements::{is_all_element, Crushable, DirtElementBundle},
     world_rng::WorldRng,
 };
 
@@ -12,11 +12,15 @@ use super::{
 use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng};
 
+// Sand becomes unstable temporarily when falling or adjacent to falling sand
+// It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
+#[derive(Component)]
+pub struct Unstable;
+
 // TODO: How to do an exact match when running a test?
 // TODO: Add tests for ant gravity
 // TODO: extra bonus points for finding an abstraction that unifies element and ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
-// TODO: add the concept of "active/loose" sand
 
 // Search for a valid location for sand to fall into by searching to the
 // bottom left/center/right of a given sand position. Prioritize falling straight down
@@ -76,14 +80,21 @@ fn get_sand_fall_position(
 // For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
 // For each sand element which is above air, swap it with the air beneath it.
 pub fn sand_gravity_system(
-    mut element_position_query: Query<(&Element, &mut Position)>,
+    mut element_position_queries: ParamSet<(
+        Query<(&Element, &Position), With<Unstable>>,
+        Query<(&Element, &mut Position)>,
+    )>,
+
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let sand_air_swaps: Vec<_> = element_position_query
+    let sand_query = element_position_queries.p0();
+
+    let sand_air_swaps: Vec<_> = sand_query
         .iter()
         .filter_map(|(&element, &sand_position)| {
+            // technically only sand can be unstable right now, but keeping this as a safeguard for now
             if element != Element::Sand {
                 return None;
             }
@@ -105,6 +116,8 @@ pub fn sand_gravity_system(
 
     // Swap sand/air positions and update internal state to reflect the swap
     for &(sand_entity, air_entity) in sand_air_swaps.iter() {
+        let mut element_position_query = element_position_queries.p1();
+
         let Ok([
             (_, mut air_position),
             (_, mut sand_position)
@@ -121,8 +134,9 @@ pub fn sand_gravity_system(
 }
 
 // TODO: wire up tests properly
-pub fn sand_crush_system(
-    element_position_query: Query<(&Element, Ref<Position>, Entity)>,
+// TODO: add support for crushing ants
+pub fn gravity_crush_system(
+    element_position_query: Query<(&Element, Ref<Position>, Entity), With<Crushable>>,
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
     mut commands: Commands,
@@ -151,6 +165,61 @@ pub fn sand_crush_system(
                 *position,
                 commands.spawn(DirtElementBundle::new(*position)).id(),
             );
+        }
+    }
+}
+
+pub fn loosen_neighboring_sand(
+    location: Position,
+    world_map: &WorldMap,
+    elements_query: &Query<&Element>,
+    commands: &mut Commands,
+) {
+    // For a given position, get all positions adjacent with a radius of two.
+    let mut adjacent_positions = Vec::new();
+    for x in -2..=2 {
+        for y in -2..=2 {
+            if x == 0 && y == 0 {
+                continue;
+            }
+
+            adjacent_positions.push(location + Position::new(x, y));
+        }
+    }
+
+    // For each adjacent position, if the element at that position is sand, mark it as unstable.
+    for position in adjacent_positions.iter() {
+        if let Some(entity) = world_map.elements.get(position) {
+            if let Ok(element) = elements_query.get(*entity) {
+                if *element == Element::Sand {
+                    commands.entity(*entity).insert(Unstable);
+                }
+            }
+        }
+    }
+}
+
+pub fn gravity_stability_system(
+    sand_query: Query<(&Element, Ref<Position>, Entity), With<Unstable>>,
+    elements_query: Query<&Element>,
+    mut commands: Commands,
+    world_map: Res<WorldMap>,
+) {
+    for (element, position, entity) in sand_query.iter() {
+        // TODO: technically sand is the only unstable element right now but keeping this as a safeguard
+        if *element != Element::Sand {
+            continue;
+        }
+
+        // Sand which fell in the current frame is still unstable and has potentially loosened its neighbors
+        // So, mark all neighboring sand as unstable
+        // TODO: it might not be acceptable to use `is_changed` because when loading saved state - it will not have been marked as changed but be unstable
+        if position.is_changed() {
+            loosen_neighboring_sand(*position, &world_map, &elements_query, &mut commands);
+            // TODO: need to mark neighboring as unstable
+        } else {
+            // Sand which has stopped falling is no longer unstable.
+            commands.entity(entity).remove::<Unstable>();
         }
     }
 }

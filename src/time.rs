@@ -31,7 +31,7 @@ pub fn setup_fast_forward_time_system(
     // To fast forward 60 ticks of time at 60 ticks per second we need to step forward 60/60 = 1 second.
     // let missed_ticks = (60.0 * RENDERED_TICKS_RATE) * delta_seconds as f32;
 
-    let missed_ticks = 500.0;
+    let missed_ticks = 50_000.0;
 
     info!("missed ticks: {}", missed_ticks);
 
