@@ -6,8 +6,6 @@ use std::time::Duration;
 use crate::map::{WorldSaveState, LOCAL_STORAGE_KEY};
 
 // Normally run at 6fps but fast forward at 600fps
-// TODO: is running at 6fps smart? maybe default should be 60fps and systems should accomodate running slower/infrequently?
-// seems like this will matter if I want to smoothly animate ants moving
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
 pub const FAST_FORWARD_TICK_RATE: f32 = 0.01 / 60.0;
 

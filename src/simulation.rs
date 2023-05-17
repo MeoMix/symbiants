@@ -32,7 +32,6 @@ impl Plugin for SimulationPlugin {
             (
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
                 move_ants_system,
-                // TODO: sand/ant gravity systems could run in parallel at the query level if effort is put into combining their logic.
                 sand_gravity_system,
                 gravity_crush_system,
                 gravity_stability_system,
