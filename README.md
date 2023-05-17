@@ -1,10 +1,16 @@
 # Symbiants
 
+![image](https://github.com/MeoMix/symbiants/assets/1380995/dda710c1-5aba-4d47-b1ea-685560aff254)
+
 What is this? A project for ANTS?
 
 Yup!
 
-Symbiants is a slow-moving, real-time simulation of an ant colony. It's a homage to SimAnt, Tamagotchi, Progress Quest, and RimWorld. It's also mental health software. Wait, what? Mental health software? Yeah! You heard me. You know how keeping a dog for a pet encourages you to go for daily walks? Yeah, it's like that, but for your brain... and with ants.
+Symbiants is a slow-moving, real-time simulation of an ant colony. It's a homage to SimAnt, Tamagotchi, Progress Quest, and RimWorld. It's also mental health software.
+
+Wait, what? Mental health software? 
+
+Yeah! You heard me. You know how keeping a dog for a pet encourages you to go for daily walks? Yeah, it's like that, but for your brain... and with ants.
 
 Anyway.
 
