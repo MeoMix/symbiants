@@ -19,7 +19,6 @@ pub struct Unstable;
 
 // TODO: How to do an exact match when running a test?
 // TODO: Add tests for ant gravity
-// TODO: extra bonus points for finding an abstraction that unifies element and ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
 
 // Search for a valid location for sand to fall into by searching to the
@@ -130,7 +129,6 @@ pub fn sand_gravity_system(
 }
 
 // TODO: wire up tests properly
-// TODO: add support for crushing ants
 pub fn gravity_crush_system(
     element_position_query: Query<(&Element, Ref<Position>, Entity), With<Crushable>>,
     elements_query: Query<&Element>,
@@ -212,10 +210,8 @@ pub fn gravity_stability_system(
 
         // Sand which fell in the current frame is still unstable and has potentially loosened its neighbors
         // So, mark all neighboring sand as unstable
-        // TODO: it might not be acceptable to use `is_changed` because when loading saved state - it will not have been marked as changed but be unstable
         if position.is_changed() {
             loosen_neighboring_sand(*position, &world_map, &elements_query, &mut commands);
-            // TODO: need to mark neighboring as unstable
         } else {
             // Sand which has stopped falling is no longer unstable.
             commands.entity(entity).remove::<Unstable>();

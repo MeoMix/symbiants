@@ -306,7 +306,6 @@ fn is_valid_location(
     // Get the location beneath the ants' feet and check for air
     let rotation = if facing == AntFacing::Left { -1 } else { 1 };
     let foot_position = position + get_delta(facing, get_rotated_angle(angle, rotation));
-    // TODO: returning true here seems awkward, but I want the ants to climb the sides of the container?
     let Some(entity) = world_map.elements.get(&foot_position) else { return false };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return false; };
@@ -484,7 +483,6 @@ fn do_dig(
     }
 }
 
-// TODO: repent for my sins. I'm just throwing & and &mut everywhere to get this shit to compile lol.
 fn do_move(
     facing: Mut<AntFacing>,
     mut angle: Mut<AntAngle>,
