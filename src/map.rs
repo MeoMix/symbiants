@@ -46,7 +46,6 @@ impl Position {
 impl Add for Position {
     type Output = Self;
 
-    // TODO: Hexx uses const_add here?
     fn add(self, other: Self) -> Self {
         Self {
             x: self.x + other.x,
