@@ -319,11 +319,9 @@ fn is_valid_location(
 
 fn do_drop(
     mut behavior: Mut<AntBehavior>,
-    mut timer: Mut<AntTimer>,
     position: Position,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
-    mut world_rng: &mut ResMut<WorldRng>,
     commands: &mut Commands,
 ) {
     let Some(entity) = world_map.elements.get(&position) else { return; };
@@ -339,7 +337,6 @@ fn do_drop(
         world_map.elements.insert(position, sand_entity);
 
         *behavior = AntBehavior::Wandering;
-        *timer = get_timer(AntBehavior::Wandering, &mut world_rng);
     }
 }
 
@@ -347,7 +344,6 @@ fn do_turn(
     mut facing: Mut<AntFacing>,
     mut angle: Mut<AntAngle>,
     behavior: Mut<AntBehavior>,
-    timer: Mut<AntTimer>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
@@ -425,15 +421,7 @@ fn do_turn(
             // NOTE: this can occur due to `spawn` not affecting query on current frame
             if let Ok(element) = elements_query.get(*entity) {
                 if *element == Element::Air {
-                    do_drop(
-                        behavior,
-                        timer,
-                        *position,
-                        elements_query,
-                        world_map,
-                        world_rng,
-                        commands,
-                    );
+                    do_drop(behavior, *position, elements_query, world_map, commands);
                 }
             }
         }
@@ -447,13 +435,11 @@ fn do_turn(
 fn do_dig(
     is_forced_forward: bool,
     mut behavior: Mut<AntBehavior>,
-    mut timer: Mut<AntTimer>,
     facing: Mut<AntFacing>,
     angle: Mut<AntAngle>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
-    mut world_rng: &mut ResMut<WorldRng>,
     commands: &mut Commands,
 ) {
     let dig_angle = if is_forced_forward {
@@ -479,7 +465,6 @@ fn do_dig(
         loosen_neighboring_sand(dig_position, world_map, elements_query, commands);
 
         *behavior = AntBehavior::Carrying;
-        *timer = get_timer(AntBehavior::Carrying, &mut world_rng);
     }
 }
 
@@ -487,7 +472,6 @@ fn do_move(
     facing: Mut<AntFacing>,
     mut angle: Mut<AntAngle>,
     behavior: Mut<AntBehavior>,
-    timer: Mut<AntTimer>,
     mut position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
@@ -504,7 +488,6 @@ fn do_move(
             facing,
             angle,
             behavior,
-            timer,
             position,
             elements_query,
             world_map,
@@ -529,13 +512,11 @@ fn do_move(
             do_dig(
                 true,
                 behavior,
-                timer,
                 facing,
                 angle,
                 position,
                 &elements_query,
                 world_map,
-                world_rng,
                 commands,
             );
             return;
@@ -544,7 +525,6 @@ fn do_move(
                 facing,
                 angle,
                 behavior,
-                timer,
                 position,
                 elements_query,
                 world_map,
@@ -574,15 +554,7 @@ fn do_move(
                 && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_drop;
 
             if should_drop_sand {
-                do_drop(
-                    behavior,
-                    timer,
-                    *position,
-                    &elements_query,
-                    world_map,
-                    world_rng,
-                    commands,
-                );
+                do_drop(behavior, *position, &elements_query, world_map, commands);
             } else {
                 // Update position and angle
                 *position = target_foot_position;
@@ -603,7 +575,7 @@ pub fn move_ants_system(
         &mut AntFacing,
         &mut AntAngle,
         &mut AntBehavior,
-        &mut AntTimer,
+        &AntTimer,
         &mut Position,
     )>,
     elements_query: Query<&Element>,
@@ -612,9 +584,8 @@ pub fn move_ants_system(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
-    for (facing, angle, behavior, mut timer, position) in ants_query.iter_mut() {
+    for (facing, angle, behavior, timer, position) in ants_query.iter_mut() {
         if timer.0 > 0 {
-            timer.0 -= 1;
             continue;
         }
 
@@ -643,23 +614,21 @@ pub fn move_ants_system(
             // Gravity system will handle things if going to fall
             if is_air_below {
                 continue;
-            } else {
-                // Not falling? Try turning
-
-                do_turn(
-                    facing,
-                    angle,
-                    behavior,
-                    timer,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut world_rng,
-                    &mut commands,
-                );
-
-                continue;
             }
+
+            // Not falling? Try turning
+            do_turn(
+                facing,
+                angle,
+                behavior,
+                position,
+                &elements_query,
+                &mut world_map,
+                &mut world_rng,
+                &mut commands,
+            );
+
+            continue;
         }
 
         match *behavior {
@@ -672,13 +641,11 @@ pub fn move_ants_system(
                     do_dig(
                         false,
                         behavior,
-                        timer,
                         facing,
                         angle,
                         position,
                         &elements_query,
                         &mut world_map,
-                        &mut world_rng,
                         &mut commands,
                     )
                 } else if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
@@ -686,7 +653,6 @@ pub fn move_ants_system(
                         facing,
                         angle,
                         behavior,
-                        timer,
                         position,
                         &elements_query,
                         &mut world_map,
@@ -698,7 +664,6 @@ pub fn move_ants_system(
                         facing,
                         angle,
                         behavior,
-                        timer,
                         position,
                         &elements_query,
                         &mut world_map,
@@ -712,11 +677,9 @@ pub fn move_ants_system(
                 if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
                     do_drop(
                         behavior,
-                        timer,
                         *position,
                         &elements_query,
                         &mut world_map,
-                        &mut world_rng,
                         &mut commands,
                     );
                 } else {
@@ -724,7 +687,6 @@ pub fn move_ants_system(
                         facing,
                         angle,
                         behavior,
-                        timer,
                         position,
                         &elements_query,
                         &mut world_map,
@@ -734,6 +696,19 @@ pub fn move_ants_system(
                     );
                 }
             }
+        }
+    }
+}
+
+pub fn update_ant_timer_system(
+    mut ants_query: Query<(Ref<AntBehavior>, &mut AntTimer)>,
+    mut world_rng: ResMut<WorldRng>,
+) {
+    for (behavior, mut timer) in ants_query.iter_mut() {
+        if behavior.is_changed() {
+            *timer = get_timer(AntBehavior::Wandering, &mut world_rng);
+        } else if timer.0 > 0 {
+            timer.0 -= 1;
         }
     }
 }

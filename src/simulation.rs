@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    ant::{move_ants_system, setup_ants},
+    ant::{move_ants_system, setup_ants, update_ant_timer_system},
     background::setup_background,
     elements::setup_elements,
     gravity::{
@@ -32,6 +32,7 @@ impl Plugin for SimulationPlugin {
             (
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
                 move_ants_system,
+                update_ant_timer_system,
                 sand_gravity_system,
                 gravity_crush_system,
                 gravity_stability_system,
