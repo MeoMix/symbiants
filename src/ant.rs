@@ -486,7 +486,7 @@ fn do_move(
                 || world_rng.rng.gen::<f32>() < settings.probabilities.below_surface_dig)
         {
             do_dig(
-                false,
+                true,
                 behavior,
                 facing,
                 angle,

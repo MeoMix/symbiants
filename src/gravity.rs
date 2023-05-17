@@ -42,6 +42,7 @@ fn get_sand_fall_position(
         return Some(below_sand_position);
     }
 
+    // TODO: maybe don't always fall left/right even if possible to fall
     // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
     // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
     let left_sand_position = sand_position + Position::NEG_X;
@@ -198,6 +199,9 @@ pub fn loosen_neighboring_sand(
         }
     }
 }
+
+// TODO: I think there's a bug in this still where if there's two sand stacked ontop of one another
+// and then there's a gap of air, one of the sands can become stuck in the air?
 
 pub fn gravity_stability_system(
     sand_query: Query<(&Element, Ref<Position>, Entity), With<Unstable>>,
