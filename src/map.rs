@@ -133,18 +133,18 @@ impl FromWorld for WorldMap {
         let mut world_rng = world.get_resource_mut::<WorldRng>().unwrap();
         let ants = (0..settings.initial_ant_count).map(|_| {
             // Put the ant at a random location along the x-axis that fits within the bounds of the world.
-            let x = world_rng.rng.gen_range(0..1000) % settings.world_width;
+            let x = world_rng.0.gen_range(0..1000) % settings.world_width;
             // Put the ant on the dirt.
             let y = surface_level;
 
             // Randomly position ant facing left or right.
-            let facing = if world_rng.rng.gen_bool(0.5) {
+            let facing = if world_rng.0.gen_bool(0.5) {
                 AntFacing::Left
             } else {
                 AntFacing::Right
             };
 
-            let name = NAMES[world_rng.rng.gen_range(0..NAMES.len())].clone();
+            let name = NAMES[world_rng.0.gen_range(0..NAMES.len())].clone();
 
             AntSaveState {
                 position: Position::new(x, y),

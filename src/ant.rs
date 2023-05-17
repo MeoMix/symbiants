@@ -67,7 +67,6 @@ struct Ant {
     timer: AntTimer,
     name: AntName,
     color: AntColor,
-    // TODO: Ants should be crushable
     sprite_bundle: SpriteBundle,
     label_bundle: Text2dBundle,
 }
@@ -138,7 +137,6 @@ const ANT_SCALE: f32 = 1.2;
 #[derive(Component, Copy, Clone)]
 pub struct TransformOffset(pub Vec3);
 
-// TODO: copy cant be implemented for String?
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct AntName(pub String);
 
@@ -161,7 +159,7 @@ pub fn get_timer(behavior: AntBehavior, world_rng: &mut ResMut<WorldRng>) -> Ant
         AntBehavior::Carrying => 5,
     };
 
-    AntTimer(timing_factor + world_rng.rng.gen_range(-1..2))
+    AntTimer(timing_factor + world_rng.0.gen_range(-1..2))
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -401,7 +399,7 @@ fn do_turn(
 
     if valid_facing_angles.len() > 0 {
         let valid_facing_angle =
-            valid_facing_angles[world_rng.rng.gen_range(0..valid_facing_angles.len())];
+            valid_facing_angles[world_rng.0.gen_range(0..valid_facing_angles.len())];
 
         *facing = valid_facing_angle.0;
         *angle = valid_facing_angle.1;
@@ -429,7 +427,7 @@ fn do_turn(
         }
     }
 
-    let random_facing_angle = facing_angles[world_rng.rng.gen_range(0..facing_angles.len())];
+    let random_facing_angle = facing_angles[world_rng.0.gen_range(0..facing_angles.len())];
     *facing = random_facing_angle.0;
     *angle = random_facing_angle.1;
 }
@@ -515,7 +513,7 @@ fn do_move(
         if *behavior == AntBehavior::Wandering
             && position.y > *world_map.surface_level()
             && (*target_element == Element::Sand
-                || world_rng.rng.gen::<f32>() < settings.probabilities.below_surface_dig)
+                || world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dig)
         {
             do_dig(
                 true,
@@ -562,7 +560,7 @@ fn do_move(
 
             let should_drop_sand = *behavior == AntBehavior::Carrying
                 && position.y <= *world_map.surface_level()
-                && world_rng.rng.gen::<f32>() < settings.probabilities.above_surface_drop;
+                && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_drop;
 
             if should_drop_sand {
                 do_drop(
@@ -659,7 +657,7 @@ pub fn move_ants_system(
                 // - Update timer to reflect behavior change
                 // - Maybe behavior should be its own system?
 
-                if world_rng.rng.gen::<f32>() < settings.probabilities.random_dig {
+                if world_rng.0.gen::<f32>() < settings.probabilities.random_dig {
                     do_dig(
                         false,
                         behavior,
@@ -672,7 +670,7 @@ pub fn move_ants_system(
                         &mut world_rng,
                         &mut commands,
                     )
-                } else if world_rng.rng.gen::<f32>() < settings.probabilities.random_turn {
+                } else if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
                     do_turn(
                         facing,
                         angle,
@@ -700,7 +698,7 @@ pub fn move_ants_system(
                 }
             }
             AntBehavior::Carrying => {
-                if world_rng.rng.gen::<f32>() < settings.probabilities.random_drop {
+                if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
                     do_drop(
                         behavior,
                         timer,

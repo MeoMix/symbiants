@@ -100,18 +100,13 @@ pub fn sand_gravity_system(
                 return None;
             }
 
-            get_sand_fall_position(
-                sand_position,
-                &world_map,
-                &elements_query,
-                &mut world_rng.rng,
-            )
-            .and_then(|air_position| {
-                Some((
-                    *world_map.elements.get(&sand_position)?,
-                    *world_map.elements.get(&air_position)?,
-                ))
-            })
+            get_sand_fall_position(sand_position, &world_map, &elements_query, &mut world_rng.0)
+                .and_then(|air_position| {
+                    Some((
+                        *world_map.elements.get(&sand_position)?,
+                        *world_map.elements.get(&air_position)?,
+                    ))
+                })
         })
         .collect();
 
@@ -374,9 +369,7 @@ pub mod sand_gravity_system_tests {
         app.add_system(sand_gravity_system);
 
         let seed = seed.unwrap_or(42069); // ayy lmao
-        let world_rng = WorldRng {
-            rng: StdRng::seed_from_u64(seed),
-        };
+        let world_rng = WorldRng(StdRng::seed_from_u64(seed));
 
         app.insert_resource(world_rng);
 
