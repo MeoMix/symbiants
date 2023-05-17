@@ -10,7 +10,7 @@ use crate::{
 
 use super::{elements::Element, settings::Settings};
 use bevy::{prelude::*, sprite::Anchor};
-use rand::Rng;
+use rand::{rngs::StdRng, Rng};
 
 pub fn get_delta(facing: AntFacing, angle: AntAngle) -> Position {
     let delta = match angle {
@@ -81,7 +81,7 @@ impl Ant {
         behavior: AntBehavior,
         name: &str,
         asset_server: &Res<AssetServer>,
-        mut world_rng: &mut ResMut<WorldRng>,
+        mut rng: &mut StdRng,
     ) -> Self {
         let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
         let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
@@ -93,7 +93,7 @@ impl Ant {
             facing,
             angle,
             behavior,
-            timer: get_timer(behavior, &mut world_rng),
+            timer: AntTimer::new(&behavior, &mut rng),
             name: AntName(name.to_string()),
             color: AntColor(color),
             sprite_bundle: SpriteBundle {
@@ -150,29 +150,18 @@ pub enum AntBehavior {
     Carrying,
 }
 
-// const AntBehaviorTimingFactors = { wandering: 4, carrying: 5 };
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntTimer(pub isize);
 
 impl AntTimer {
-    // TODO: uhh this function signature should match get_timer and be combined - how to do that?
-    pub fn new(behavior: AntBehavior, world_rng: &mut Mut<WorldRng>) -> Self {
+    pub fn new(behavior: &AntBehavior, rng: &mut StdRng) -> Self {
         let timing_factor = match behavior {
-            AntBehavior::Wandering => 4,
-            AntBehavior::Carrying => 5,
+            AntBehavior::Wandering => 3,
+            AntBehavior::Carrying => 4,
         };
 
-        Self(timing_factor + world_rng.0.gen_range(-1..2))
+        Self(timing_factor + rng.gen_range(0..3))
     }
-}
-
-pub fn get_timer(behavior: AntBehavior, world_rng: &mut ResMut<WorldRng>) -> AntTimer {
-    let timing_factor = match behavior {
-        AntBehavior::Wandering => 4,
-        AntBehavior::Carrying => 5,
-    };
-
-    AntTimer(timing_factor + world_rng.0.gen_range(-1..2))
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -219,7 +208,7 @@ pub fn setup_ants(
                 ant_save_state.behavior,
                 ant_save_state.name.0.as_str(),
                 &asset_server,
-                &mut world_rng,
+                &mut world_rng.0,
             )
         })
         .collect::<Vec<_>>();
@@ -633,10 +622,6 @@ pub fn move_ants_system(
 
         match *behavior {
             AntBehavior::Wandering => {
-                // Wandering:
-                // - Update timer to reflect behavior change
-                // - Maybe behavior should be its own system?
-
                 if world_rng.0.gen::<f32>() < settings.probabilities.random_dig {
                     do_dig(
                         false,
@@ -706,7 +691,7 @@ pub fn update_ant_timer_system(
 ) {
     for (behavior, mut timer) in ants_query.iter_mut() {
         if behavior.is_changed() {
-            *timer = get_timer(AntBehavior::Wandering, &mut world_rng);
+            *timer = AntTimer::new(&behavior, &mut world_rng.0);
         } else if timer.0 > 0 {
             timer.0 -= 1;
         }

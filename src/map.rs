@@ -152,7 +152,7 @@ impl FromWorld for WorldMap {
                 facing,
                 angle: AntAngle::Zero,
                 behavior: AntBehavior::Wandering,
-                timer: AntTimer::new(AntBehavior::Wandering, &mut world_rng),
+                timer: AntTimer::new(&AntBehavior::Wandering, &mut world_rng.0),
                 name: AntName(name.to_string()),
             }
         });
