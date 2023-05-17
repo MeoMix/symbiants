@@ -9,10 +9,11 @@ use std::{
 use wasm_bindgen::{prelude::Closure, JsCast};
 
 use crate::{
-    ant::{AntAngle, AntBehavior, AntColor, AntFacing, AntName, AntSaveState},
+    ant::{AntAngle, AntBehavior, AntColor, AntFacing, AntName, AntSaveState, AntTimer},
     elements::{Element, ElementSaveState},
     name_list::NAMES,
     settings::Settings,
+    time::IsFastForwarding,
     world_rng::WorldRng,
 };
 
@@ -100,15 +101,15 @@ impl FromWorld for WorldMap {
             - (settings.world_height as f32 * settings.initial_dirt_percent))
             as isize;
 
-        // if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
-        //     return WorldMap::new(
-        //         settings.world_width,
-        //         settings.world_height,
-        //         surface_level,
-        //         saved_state,
-        //         None,
-        //     );
-        // }
+        if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
+            return WorldMap::new(
+                settings.world_width,
+                settings.world_height,
+                surface_level,
+                saved_state,
+                None,
+            );
+        }
 
         let air = (0..(surface_level + 1)).flat_map(|row_index| {
             (0..settings.world_width).map(move |column_index| ElementSaveState {
@@ -152,6 +153,7 @@ impl FromWorld for WorldMap {
                 facing,
                 angle: AntAngle::Zero,
                 behavior: AntBehavior::Wandering,
+                timer: AntTimer::new(AntBehavior::Wandering, &mut world_rng),
                 name: AntName(name.to_string()),
             }
         });
@@ -281,16 +283,8 @@ impl WorldMap {
 pub fn setup_window_onunload_save_world_state() {
     let window = web_sys::window().expect("window not available");
 
-    let on_beforeunload = Closure::wrap(Box::new(move |_event: web_sys::BeforeUnloadEvent| {
-        let save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
-        let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, save_snapshot.deref().clone());
-
-        if save_result.is_err() {
-            error!(
-                "Failed to save world state to local storage: {:?}",
-                save_result
-            );
-        }
+    let on_beforeunload = Closure::wrap(Box::new(move |_| {
+        write_save_snapshot();
     }) as Box<dyn FnMut(web_sys::BeforeUnloadEvent)>);
 
     let add_event_listener_result = window
@@ -308,62 +302,18 @@ pub fn setup_window_onunload_save_world_state() {
 
 static SAVE_SNAPSHOT: Mutex<Option<WorldSaveState>> = Mutex::new(None);
 
-pub fn save_snapshot_system(
-    mut elements_query: Query<(&Element, &Position)>,
-    mut ants_query: Query<(
-        &AntFacing,
-        &AntAngle,
-        &AntBehavior,
-        &AntName,
-        &AntColor,
-        &Position,
-    )>,
-) {
-    // TODO: don't copy/paste this code
-    let elements_save_state = elements_query
-        .iter_mut()
-        .map(|(element, position)| ElementSaveState {
-            element: element.clone(),
-            position: position.clone(),
-        })
-        .collect::<Vec<ElementSaveState>>();
-
-    let ants_save_state = ants_query
-        .iter_mut()
-        .map(
-            |(facing, angle, behavior, name, color, position)| AntSaveState {
-                facing: facing.clone(),
-                angle: angle.clone(),
-                behavior: behavior.clone(),
-                name: name.clone(),
-                color: color.clone(),
-                position: position.clone(),
-            },
-        )
-        .collect::<Vec<AntSaveState>>();
-
-    {
-        let mut save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
-
-        *save_snapshot = Some(WorldSaveState {
-            time_stamp: Utc::now(),
-            elements: elements_save_state,
-            ants: ants_save_state,
-        });
-    }
-}
-
-fn save_world_state(
+fn get_world_save_state(
     elements_query: &mut Query<(&Element, &Position)>,
     ants_query: &mut Query<(
         &AntFacing,
         &AntAngle,
         &AntBehavior,
+        &AntTimer,
         &AntName,
         &AntColor,
         &Position,
     )>,
-) {
+) -> WorldSaveState {
     let elements_save_state = elements_query
         .iter_mut()
         .map(|(element, position)| ElementSaveState {
@@ -375,10 +325,11 @@ fn save_world_state(
     let ants_save_state = ants_query
         .iter_mut()
         .map(
-            |(facing, angle, behavior, name, color, position)| AntSaveState {
+            |(facing, angle, behavior, timer, name, color, position)| AntSaveState {
                 facing: facing.clone(),
                 angle: angle.clone(),
                 behavior: behavior.clone(),
+                timer: timer.clone(),
                 name: name.clone(),
                 color: color.clone(),
                 position: position.clone(),
@@ -386,17 +337,10 @@ fn save_world_state(
         )
         .collect::<Vec<AntSaveState>>();
 
-    let result = LocalStorage::set::<WorldSaveState>(
-        LOCAL_STORAGE_KEY.to_string(),
-        WorldSaveState {
-            time_stamp: Utc::now(),
-            elements: elements_save_state,
-            ants: ants_save_state,
-        },
-    );
-
-    if result.is_err() {
-        error!("Failed to save world state: {:?}", result);
+    WorldSaveState {
+        time_stamp: Utc::now(),
+        elements: elements_save_state,
+        ants: ants_save_state,
     }
 }
 
@@ -406,6 +350,7 @@ pub fn periodic_save_world_state_system(
         &AntFacing,
         &AntAngle,
         &AntBehavior,
+        &AntTimer,
         &AntName,
         &AntColor,
         &Position,
@@ -413,8 +358,18 @@ pub fn periodic_save_world_state_system(
     mut last_save_time: Local<f32>,
     time: Res<Time>,
     settings: Res<Settings>,
+    is_fast_forwarding: Res<IsFastForwarding>,
 ) {
-    // TODO: don't run this when fast forwarding
+    // Don't save while state is fast forwarding because it will cause a lot of lag.
+    if is_fast_forwarding.0 {
+        return;
+    }
+
+    // Limit the lifetime of the lock so that `write_save_snapshot` is able to re-acquire
+    {
+        let mut save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
+        *save_snapshot = Some(get_world_save_state(&mut elements_query, &mut ants_query));
+    }
 
     if *last_save_time != 0.0
         && time.raw_elapsed_seconds() - *last_save_time
@@ -423,7 +378,21 @@ pub fn periodic_save_world_state_system(
         return;
     }
 
-    save_world_state(&mut elements_query, &mut ants_query);
+    if write_save_snapshot() {
+        *last_save_time = time.raw_elapsed_seconds();
+    }
+}
 
-    *last_save_time = time.raw_elapsed_seconds();
+fn write_save_snapshot() -> bool {
+    let save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
+    let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, save_snapshot.deref().clone());
+
+    if save_result.is_err() {
+        error!(
+            "Failed to save world state to local storage: {:?}",
+            save_result
+        );
+    }
+
+    save_result.is_ok()
 }

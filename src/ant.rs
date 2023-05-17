@@ -47,13 +47,14 @@ pub fn get_rotated_angle(angle: AntAngle, rotation: i32) -> AntAngle {
 }
 
 // This is what is persisted as JSON.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct AntSaveState {
     pub position: Position,
     pub color: AntColor,
     pub facing: AntFacing,
     pub angle: AntAngle,
     pub behavior: AntBehavior,
+    pub timer: AntTimer,
     pub name: AntName,
 }
 
@@ -152,6 +153,18 @@ pub enum AntBehavior {
 // const AntBehaviorTimingFactors = { wandering: 4, carrying: 5 };
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntTimer(pub isize);
+
+impl AntTimer {
+    // TODO: uhh this function signature should match get_timer and be combined - how to do that?
+    pub fn new(behavior: AntBehavior, world_rng: &mut Mut<WorldRng>) -> Self {
+        let timing_factor = match behavior {
+            AntBehavior::Wandering => 4,
+            AntBehavior::Carrying => 5,
+        };
+
+        Self(timing_factor + world_rng.0.gen_range(-1..2))
+    }
+}
 
 pub fn get_timer(behavior: AntBehavior, world_rng: &mut ResMut<WorldRng>) -> AntTimer {
     let timing_factor = match behavior {

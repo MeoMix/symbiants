@@ -7,10 +7,7 @@ use crate::{
     gravity::{
         ant_gravity_system, gravity_crush_system, gravity_stability_system, sand_gravity_system,
     },
-    map::{
-        periodic_save_world_state_system, save_snapshot_system,
-        setup_window_onunload_save_world_state,
-    },
+    map::{periodic_save_world_state_system, setup_window_onunload_save_world_state},
     render::{render_carrying, render_rotation, render_scale, render_translation},
     time::{play_time_system, setup_fast_forward_time_system},
 };
@@ -41,7 +38,7 @@ impl Plugin for SimulationPlugin {
                 gravity_stability_system,
                 ant_gravity_system,
                 // Try to save world state periodically after updating world state.
-                // periodic_save_world_state_system,
+                periodic_save_world_state_system,
                 // Render world state after updating world state.
                 // NOTE: all render methods can run in parallel but don't due to conflicting mutable Transform access
                 render_translation,
@@ -53,7 +50,5 @@ impl Plugin for SimulationPlugin {
                 .chain()
                 .in_schedule(CoreSchedule::FixedUpdate),
         );
-
-        // app.add_system(save_snapshot_system);
     }
 }

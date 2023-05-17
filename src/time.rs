@@ -52,7 +52,6 @@ pub fn play_time_system(
             .checked_sub(fixed_time.period)
             .is_none()
     {
-        info!("done");
         fixed_time.period = Duration::from_secs_f32(DEFAULT_TICK_RATE);
         is_fast_forwarding.0 = false;
     }
