@@ -8,7 +8,7 @@ use crate::{
         ant_gravity_system, gravity_crush_system, gravity_stability_system, sand_gravity_system,
     },
     map::{periodic_save_world_state_system, setup_window_onunload_save_world_state},
-    render::{render_carrying, render_rotation, render_scale, render_translation},
+    render::{render_carrying, render_orientation, render_translation},
     time::{play_time_system, setup_fast_forward_time_system},
 };
 
@@ -42,8 +42,7 @@ impl Plugin for SimulationPlugin {
                 // Render world state after updating world state.
                 // NOTE: all render methods can run in parallel but don't due to conflicting mutable Transform access
                 render_translation,
-                render_scale,
-                render_rotation,
+                render_orientation,
                 render_carrying,
                 play_time_system,
             )

@@ -12,47 +12,12 @@ use super::{elements::Element, settings::Settings};
 use bevy::{prelude::*, sprite::Anchor};
 use rand::{rngs::StdRng, Rng};
 
-pub fn get_delta(facing: AntFacing, angle: AntAngle) -> Position {
-    let delta = match angle {
-        AntAngle::Zero => Position::X,
-        AntAngle::Ninety => Position::NEG_Y,
-        AntAngle::OneHundredEighty => Position::NEG_X,
-        AntAngle::TwoHundredSeventy => Position::Y,
-    };
-
-    if facing == AntFacing::Left {
-        delta * Position::NEG_ONE
-    } else {
-        delta
-    }
-}
-
-/**
- * Rotation is a value from 0 to 3. A value of 1 is a 90 degree counter-clockwise rotation. Negative values are accepted.
- * Examples:
- *  getRotatedAngle(0, -1); // 270
- *  getRotatedAngle(0, 1); // 90
- */
-pub fn get_rotated_angle(angle: AntAngle, rotation: i32) -> AntAngle {
-    let angles = [
-        AntAngle::Zero,
-        AntAngle::Ninety,
-        AntAngle::OneHundredEighty,
-        AntAngle::TwoHundredSeventy,
-    ];
-
-    let rotated_index =
-        (angles.iter().position(|&a| a == angle).unwrap() as i32 - rotation) % angles.len() as i32;
-    angles[((rotated_index + angles.len() as i32) % angles.len() as i32) as usize]
-}
-
 // This is what is persisted as JSON.
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct AntSaveState {
     pub position: Position,
     pub color: AntColor,
-    pub facing: AntFacing,
-    pub angle: AntAngle,
+    pub orientation: AntOrientation,
     pub behavior: AntBehavior,
     pub timer: AntTimer,
     pub name: AntName,
@@ -62,8 +27,7 @@ pub struct AntSaveState {
 struct Ant {
     position: Position,
     transform_offset: TransformOffset,
-    facing: AntFacing,
-    angle: AntAngle,
+    orientation: AntOrientation,
     behavior: AntBehavior,
     timer: AntTimer,
     name: AntName,
@@ -76,22 +40,24 @@ impl Ant {
     pub fn new(
         position: Position,
         color: Color,
-        facing: AntFacing,
-        angle: AntAngle,
+        orientation: AntOrientation,
         behavior: AntBehavior,
         name: &str,
         asset_server: &Res<AssetServer>,
         mut rng: &mut StdRng,
     ) -> Self {
         let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
-        let x_flip = if facing == AntFacing::Left { -1.0 } else { 1.0 };
+        let x_flip = if orientation.facing == Facing::Left {
+            -1.0
+        } else {
+            1.0
+        };
         let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
         Self {
             position,
             transform_offset,
-            facing,
-            angle,
+            orientation,
             behavior,
             timer: AntTimer::new(&behavior, &mut rng),
             name: AntName(name.to_string()),
@@ -105,7 +71,7 @@ impl Ant {
                 },
                 transform: Transform {
                     translation: translation.add(transform_offset.0),
-                    rotation: Quat::from_rotation_z(angle.as_radians()),
+                    rotation: Quat::from_rotation_z(orientation.angle.as_radians()),
                     scale: Vec3::new(x_flip, 1.0, 1.0),
                     ..default()
                 },
@@ -164,23 +130,96 @@ impl AntTimer {
     }
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub enum AntFacing {
+#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub enum Facing {
     Left,
     Right,
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub enum AntAngle {
+#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub enum Angle {
     Zero = 0,
     Ninety = 90,
     OneHundredEighty = 180,
     TwoHundredSeventy = 270,
 }
 
-impl AntAngle {
-    pub fn as_radians(&self) -> f32 {
-        (*self as isize as f32) * PI / 180.0
+impl Angle {
+    pub fn as_radians(self) -> f32 {
+        (self as isize as f32) * PI / 180.0
+    }
+
+    /**
+     * Rotation is a value from 0 to 3. A value of 1 is a 90 degree counter-clockwise rotation. Negative values are accepted.
+     * Examples:
+     *  rotate(0, -1); // 270
+     *  rotate(0, 1); // 90
+     */
+    pub fn rotate(self, rotation: i32) -> Self {
+        let angles = [
+            Angle::Zero,
+            Angle::Ninety,
+            Angle::OneHundredEighty,
+            Angle::TwoHundredSeventy,
+        ];
+
+        let rotated_index = (angles.iter().position(|&a| a == self).unwrap() as i32 - rotation)
+            % angles.len() as i32;
+        angles[((rotated_index + angles.len() as i32) % angles.len() as i32) as usize]
+    }
+}
+
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct AntOrientation {
+    pub facing: Facing,
+    pub angle: Angle,
+}
+
+impl AntOrientation {
+    pub fn turn_around(self) -> Self {
+        let opposite_facing = if self.facing == Facing::Left {
+            Facing::Right
+        } else {
+            Facing::Left
+        };
+
+        Self {
+            facing: opposite_facing,
+            angle: self.angle,
+        }
+    }
+
+    pub fn rotate_towards_feet(self) -> Self {
+        let rotation = if self.facing == Facing::Left { -1 } else { 1 };
+
+        Self {
+            facing: self.facing,
+            angle: self.angle.rotate(rotation),
+        }
+    }
+
+    pub fn rotate_towards_back(self) -> Self {
+        let rotation = if self.facing == Facing::Left { 1 } else { -1 };
+
+        Self {
+            facing: self.facing,
+            angle: self.angle.rotate(rotation),
+        }
+    }
+
+    pub fn get_forward_delta(self) -> Position {
+        let delta = match self.angle {
+            Angle::Zero => Position::X,
+            Angle::Ninety => Position::NEG_Y,
+            Angle::OneHundredEighty => Position::NEG_X,
+            Angle::TwoHundredSeventy => Position::Y,
+        };
+
+        if self.facing == Facing::Left {
+            delta * Position::NEG_ONE
+        } else {
+            delta
+        }
     }
 }
 
@@ -203,8 +242,7 @@ pub fn setup_ants(
             Ant::new(
                 ant_save_state.position,
                 settings.ant_color,
-                ant_save_state.facing,
-                ant_save_state.angle,
+                ant_save_state.orientation,
                 ant_save_state.behavior,
                 ant_save_state.name.0.as_str(),
                 &asset_server,
@@ -225,8 +263,7 @@ pub fn setup_ants(
                         ant.sprite_bundle,
                         ant.position,
                         ant.transform_offset,
-                        ant.facing,
-                        ant.angle,
+                        ant.orientation,
                         ant.behavior,
                         ant.timer,
                         ant.name,
@@ -277,8 +314,7 @@ pub fn setup_ants(
 }
 
 fn is_valid_location(
-    facing: AntFacing,
-    angle: AntAngle,
+    orientation: AntOrientation,
     position: Position,
     elements_query: &Query<&Element>,
     world_map: &ResMut<WorldMap>,
@@ -293,8 +329,7 @@ fn is_valid_location(
     }
 
     // Get the location beneath the ants' feet and check for air
-    let rotation = if facing == AntFacing::Left { -1 } else { 1 };
-    let foot_position = position + get_delta(facing, get_rotated_angle(angle, rotation));
+    let foot_position = position + orientation.rotate_towards_feet().get_forward_delta();
     let Some(entity) = world_map.elements.get(&foot_position) else { return false };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return false; };
@@ -330,8 +365,7 @@ fn do_drop(
 }
 
 fn do_turn(
-    mut facing: Mut<AntFacing>,
-    mut angle: Mut<AntAngle>,
+    mut orientation: Mut<AntOrientation>,
     behavior: Mut<AntBehavior>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
@@ -340,66 +374,54 @@ fn do_turn(
     commands: &mut Commands,
 ) {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
-    let rotation = if *facing == AntFacing::Left { 1 } else { -1 };
-    let back_angle = get_rotated_angle(*angle, rotation);
-    if is_valid_location(*facing, back_angle, *position, elements_query, world_map) {
-        *angle = back_angle;
+    let back_orientation = orientation.rotate_towards_back();
+    if is_valid_location(back_orientation, *position, elements_query, world_map) {
+        *orientation = back_orientation;
         return;
     }
 
-    let opposite_facing = if *facing == AntFacing::Left {
-        AntFacing::Right
-    } else {
-        AntFacing::Left
-    };
-
-    if is_valid_location(
-        opposite_facing,
-        *angle,
-        *position,
-        elements_query,
-        world_map,
-    ) {
-        *facing = opposite_facing;
+    let opposite_orientation = orientation.turn_around();
+    if is_valid_location(opposite_orientation, *position, elements_query, world_map) {
+        *orientation = opposite_orientation;
         return;
     }
 
     // Randomly turn in a valid different when unable to simply turn around.
-    let facings = [AntFacing::Left, AntFacing::Right];
+    let facings = [Facing::Left, Facing::Right];
     let angles = [
-        AntAngle::Zero,
-        AntAngle::Ninety,
-        AntAngle::OneHundredEighty,
-        AntAngle::TwoHundredSeventy,
+        Angle::Zero,
+        Angle::Ninety,
+        Angle::OneHundredEighty,
+        Angle::TwoHundredSeventy,
     ];
-    let facing_angles = facings
+    let facing_orientations = facings
         .iter()
-        .flat_map(|facing| angles.iter().map(move |angle| (*facing, *angle)))
-        .collect::<Vec<_>>();
-
-    let valid_facing_angles = facing_angles
-        .iter()
-        .filter(|(inner_facing, inner_angle)| {
-            if *inner_facing == *facing && *inner_angle == *angle {
-                return false;
-            }
-
-            is_valid_location(
-                *inner_facing,
-                *inner_angle,
-                *position,
-                elements_query,
-                world_map,
-            )
+        .flat_map(|facing| {
+            angles.iter().map(move |angle| AntOrientation {
+                facing: *facing,
+                angle: *angle,
+            })
         })
         .collect::<Vec<_>>();
 
-    if valid_facing_angles.len() > 0 {
-        let valid_facing_angle =
-            valid_facing_angles[world_rng.0.gen_range(0..valid_facing_angles.len())];
+    let valid_facing_orientations = facing_orientations
+        .iter()
+        .filter(|&inner_orientation| {
+            if inner_orientation.facing == orientation.facing
+                && inner_orientation.angle == orientation.angle
+            {
+                return false;
+            }
 
-        *facing = valid_facing_angle.0;
-        *angle = valid_facing_angle.1;
+            is_valid_location(*inner_orientation, *position, elements_query, world_map)
+        })
+        .collect::<Vec<_>>();
+
+    if valid_facing_orientations.len() > 0 {
+        let valid_facing_orientation =
+            valid_facing_orientations[world_rng.0.gen_range(0..valid_facing_orientations.len())];
+
+        *orientation = *valid_facing_orientation;
         return;
     }
 
@@ -416,29 +438,25 @@ fn do_turn(
         }
     }
 
-    let random_facing_angle = facing_angles[world_rng.0.gen_range(0..facing_angles.len())];
-    *facing = random_facing_angle.0;
-    *angle = random_facing_angle.1;
+    let random_facing_orientation =
+        facing_orientations[world_rng.0.gen_range(0..facing_orientations.len())];
+    *orientation = random_facing_orientation;
 }
 
 fn do_dig(
     is_forced_forward: bool,
     mut behavior: Mut<AntBehavior>,
-    facing: Mut<AntFacing>,
-    angle: Mut<AntAngle>,
+    orientation: Mut<AntOrientation>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
     commands: &mut Commands,
 ) {
-    let dig_angle = if is_forced_forward {
-        *angle
+    let dig_position = if is_forced_forward {
+        orientation.get_forward_delta() + *position
     } else {
-        let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
-        get_rotated_angle(*angle, rotation)
+        orientation.rotate_towards_feet().get_forward_delta() + *position
     };
-
-    let dig_position = *position + get_delta(*facing, dig_angle);
 
     let Some(entity) = world_map.elements.get(&dig_position) else { return };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
@@ -458,8 +476,7 @@ fn do_dig(
 }
 
 fn do_move(
-    facing: Mut<AntFacing>,
-    mut angle: Mut<AntAngle>,
+    mut orientation: Mut<AntOrientation>,
     behavior: Mut<AntBehavior>,
     mut position: Mut<Position>,
     elements_query: &Query<&Element>,
@@ -468,14 +485,12 @@ fn do_move(
     settings: &Res<Settings>,
     commands: &mut Commands,
 ) {
-    let delta = get_delta(*facing, *angle);
-    let new_position = *position + delta;
+    let new_position = *position + orientation.get_forward_delta();
 
     if !world_map.is_within_bounds(&new_position) {
         // Hit an edge - need to turn.
         do_turn(
-            facing,
-            angle,
+            orientation,
             behavior,
             position,
             elements_query,
@@ -487,22 +502,21 @@ fn do_move(
     }
 
     // Check if hitting dirt or sand and, if so, consider digging through it.
-    let target_entity = world_map.elements.get(&new_position).unwrap();
+    let entity = world_map.elements.get(&new_position).unwrap();
     // NOTE: this can occur due to `spawn` not affecting query on current frame
-    let Ok(target_element) = elements_query.get(*target_entity) else { return };
+    let Ok(element) = elements_query.get(*entity) else { return };
 
-    if *target_element == Element::Dirt || *target_element == Element::Sand {
+    if *element == Element::Dirt || *element == Element::Sand {
         // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
         if *behavior == AntBehavior::Wandering
             && position.y > *world_map.surface_level()
-            && (*target_element == Element::Sand
+            && (*element == Element::Sand
                 || world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dig)
         {
             do_dig(
                 true,
                 behavior,
-                facing,
-                angle,
+                orientation,
                 position,
                 &elements_query,
                 world_map,
@@ -511,8 +525,7 @@ fn do_move(
             return;
         } else {
             do_turn(
-                facing,
-                angle,
+                orientation,
                 behavior,
                 position,
                 elements_query,
@@ -525,19 +538,18 @@ fn do_move(
         return;
     }
 
+    // TODO: This reads sort of awkwardly
     // We can move forward.  But first, check footing.
-    let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
-    let target_foot_angle = get_rotated_angle(*angle, rotation);
-    let target_foot_position = new_position + get_delta(*facing, target_foot_angle);
+    let foot_orientation = orientation.rotate_towards_feet();
+    let foot_position = new_position + foot_orientation.get_forward_delta();
 
-    if let Some(target_foot_entity) = world_map.elements.get(&target_foot_position) {
+    if let Some(foot_entity) = world_map.elements.get(&foot_position) {
         // NOTE: this can occur due to `spawn` not affecting query on current frame
-        let Ok(target_foot_element) = elements_query.get(*target_foot_entity) else { return };
+        let Ok(foot_element) = elements_query.get(*foot_entity) else { return };
 
-        if *target_foot_element == Element::Air {
+        if *foot_element == Element::Air {
             // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
             // Ant will try to fill the gap with sand if possible.
-
             let should_drop_sand = *behavior == AntBehavior::Carrying
                 && position.y <= *world_map.surface_level()
                 && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_drop;
@@ -546,8 +558,8 @@ fn do_move(
                 do_drop(behavior, *position, &elements_query, world_map, commands);
             } else {
                 // Update position and angle
-                *position = target_foot_position;
-                *angle = target_foot_angle;
+                *position = foot_position;
+                *orientation = foot_orientation;
             }
             return;
         }
@@ -561,8 +573,7 @@ fn do_move(
 // TODO: first pass is going to be just dumping all code into one system, but suspect want multiple systems
 pub fn move_ants_system(
     mut ants_query: Query<(
-        &mut AntFacing,
-        &mut AntAngle,
+        &mut AntOrientation,
         &mut AntBehavior,
         &AntTimer,
         &mut Position,
@@ -573,15 +584,12 @@ pub fn move_ants_system(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
-    for (facing, angle, behavior, timer, position) in ants_query.iter_mut() {
+    for (orientation, behavior, timer, position) in ants_query.iter_mut() {
         if timer.0 > 0 {
             continue;
         }
 
-        // TODO: prefer this not copy/pasted logic, should be able to easily check if there is air underneath a unit's feet
-        let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
-        let foot_delta = get_delta(*facing, get_rotated_angle(*angle, rotation));
-        let below_feet_position = *position + foot_delta;
+        let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
 
         let is_air_beneath_feet = is_all_element(
             &world_map,
@@ -607,8 +615,7 @@ pub fn move_ants_system(
 
             // Not falling? Try turning
             do_turn(
-                facing,
-                angle,
+                orientation,
                 behavior,
                 position,
                 &elements_query,
@@ -626,8 +633,7 @@ pub fn move_ants_system(
                     do_dig(
                         false,
                         behavior,
-                        facing,
-                        angle,
+                        orientation,
                         position,
                         &elements_query,
                         &mut world_map,
@@ -635,8 +641,7 @@ pub fn move_ants_system(
                     )
                 } else if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
                     do_turn(
-                        facing,
-                        angle,
+                        orientation,
                         behavior,
                         position,
                         &elements_query,
@@ -646,8 +651,7 @@ pub fn move_ants_system(
                     );
                 } else {
                     do_move(
-                        facing,
-                        angle,
+                        orientation,
                         behavior,
                         position,
                         &elements_query,
@@ -669,8 +673,7 @@ pub fn move_ants_system(
                     );
                 } else {
                     do_move(
-                        facing,
-                        angle,
+                        orientation,
                         behavior,
                         position,
                         &elements_query,

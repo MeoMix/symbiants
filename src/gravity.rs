@@ -1,5 +1,5 @@
 use crate::{
-    ant::{get_delta, get_rotated_angle, AntAngle, AntFacing},
+    ant::AntOrientation,
     elements::{is_all_element, Crushable, DirtElementBundle},
     world_rng::WorldRng,
 };
@@ -222,15 +222,13 @@ pub fn gravity_stability_system(
 // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
 pub fn ant_gravity_system(
-    mut ants_query: Query<(&AntFacing, &AntAngle, &mut Position)>,
+    mut ants_query: Query<(&AntOrientation, &mut Position)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
 ) {
-    for (facing, angle, mut position) in ants_query.iter_mut() {
+    for (orientation, mut position) in ants_query.iter_mut() {
         // Figure out foot direction
-        let rotation = if *facing == AntFacing::Left { -1 } else { 1 };
-        let foot_delta = get_delta(*facing, get_rotated_angle(*angle, rotation));
-        let below_feet_position = *position + foot_delta;
+        let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
 
         // TODO: There's a bug here - ant that rotates such that its feet are on the side of the world
         // and then has soil dug out from underneath it - hovers in the air.

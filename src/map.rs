@@ -9,7 +9,7 @@ use std::{
 use wasm_bindgen::{prelude::Closure, JsCast};
 
 use crate::{
-    ant::{AntAngle, AntBehavior, AntColor, AntFacing, AntName, AntSaveState, AntTimer},
+    ant::{Angle, AntBehavior, AntColor, AntName, AntOrientation, AntSaveState, AntTimer, Facing},
     elements::{Element, ElementSaveState},
     name_list::NAMES,
     settings::Settings,
@@ -139,18 +139,20 @@ impl FromWorld for WorldMap {
 
             // Randomly position ant facing left or right.
             let facing = if world_rng.0.gen_bool(0.5) {
-                AntFacing::Left
+                Facing::Left
             } else {
-                AntFacing::Right
+                Facing::Right
             };
 
-            let name = NAMES[world_rng.0.gen_range(0..NAMES.len())].clone();
+            let name: &str = NAMES[world_rng.0.gen_range(0..NAMES.len())].clone();
 
             AntSaveState {
                 position: Position::new(x, y),
                 color: AntColor(settings.ant_color),
-                facing,
-                angle: AntAngle::Zero,
+                orientation: AntOrientation {
+                    facing,
+                    angle: Angle::Zero,
+                },
                 behavior: AntBehavior::Wandering,
                 timer: AntTimer::new(&AntBehavior::Wandering, &mut world_rng.0),
                 name: AntName(name.to_string()),
@@ -161,16 +163,16 @@ impl FromWorld for WorldMap {
         //     AntSaveState {
         //         position: Position::new(5, 5),
         //         color: settings.ant_color,
-        //         facing: AntFacing::Left,
-        //         angle: AntAngle::Zero,
+        //         facing: Facing::Left,
+        //         angle: Angle::Zero,
         //         behavior: AntBehavior::Carrying,
         //         name: "ant1".to_string(),
         //     },
         //     Ant::new(
         //         Position::new(10, 5),
         //         settings.ant_color,
-        //         AntFacing::Left,
-        //         AntAngle::Ninety,
+        //         Facing::Left,
+        //         Angle::Ninety,
         //         AntBehavior::Carrying,
         //         "ant2".to_string(),
         //         &asset_server,
@@ -178,8 +180,8 @@ impl FromWorld for WorldMap {
         //     Ant::new(
         //         Position::new(15, 5),
         //         settings.ant_color,
-        //         AntFacing::Left,
-        //         AntAngle::OneHundredEighty,
+        //         Facing::Left,
+        //         Angle::OneHundredEighty,
         //         AntBehavior::Carrying,
         //         "ant3".to_string(),
         //         &asset_server,
@@ -187,8 +189,8 @@ impl FromWorld for WorldMap {
         //     Ant::new(
         //         Position::new(20, 5),
         //         settings.ant_color,
-        //         AntFacing::Left,
-        //         AntAngle::TwoHundredSeventy,
+        //         Facing::Left,
+        //         Angle::TwoHundredSeventy,
         //         AntBehavior::Carrying,
         //         "ant4".to_string(),
         //         &asset_server,
@@ -196,8 +198,8 @@ impl FromWorld for WorldMap {
         //     Ant::new(
         //         Position::new(25, 5),
         //         settings.ant_color,
-        //         AntFacing::Right,
-        //         AntAngle::Zero,
+        //         Facing::Right,
+        //         Angle::Zero,
         //         AntBehavior::Carrying,
         //         "ant5".to_string(),
         //         &asset_server,
@@ -205,8 +207,8 @@ impl FromWorld for WorldMap {
         //     Ant::new(
         //         Position::new(30, 5),
         //         settings.ant_color,
-        //         AntFacing::Right,
-        //         AntAngle::Ninety,
+        //         Facing::Right,
+        //         Angle::Ninety,
         //         AntBehavior::Carrying,
         //         "ant6".to_string(),
         //         &asset_server,
@@ -214,8 +216,8 @@ impl FromWorld for WorldMap {
         //     Ant::new(
         //         Position::new(35, 5),
         //         settings.ant_color,
-        //         AntFacing::Right,
-        //         AntAngle::OneHundredEighty,
+        //         Facing::Right,
+        //         Angle::OneHundredEighty,
         //         AntBehavior::Carrying,
         //         "ant7".to_string(),
         //         &asset_server,
@@ -223,8 +225,8 @@ impl FromWorld for WorldMap {
         //     Ant::new(
         //         Position::new(40, 5),
         //         settings.ant_color,
-        //         AntFacing::Right,
-        //         AntAngle::TwoHundredSeventy,
+        //         Facing::Right,
+        //         Angle::TwoHundredSeventy,
         //         AntBehavior::Carrying,
         //         "ant8".to_string(),
         //         &asset_server,
@@ -304,8 +306,7 @@ static SAVE_SNAPSHOT: Mutex<Option<WorldSaveState>> = Mutex::new(None);
 fn get_world_save_state(
     elements_query: &mut Query<(&Element, &Position)>,
     ants_query: &mut Query<(
-        &AntFacing,
-        &AntAngle,
+        &AntOrientation,
         &AntBehavior,
         &AntTimer,
         &AntName,
@@ -324,9 +325,8 @@ fn get_world_save_state(
     let ants_save_state = ants_query
         .iter_mut()
         .map(
-            |(facing, angle, behavior, timer, name, color, position)| AntSaveState {
-                facing: facing.clone(),
-                angle: angle.clone(),
+            |(orientation, behavior, timer, name, color, position)| AntSaveState {
+                orientation: orientation.clone(),
                 behavior: behavior.clone(),
                 timer: timer.clone(),
                 name: name.clone(),
@@ -346,8 +346,7 @@ fn get_world_save_state(
 pub fn periodic_save_world_state_system(
     mut elements_query: Query<(&Element, &Position)>,
     mut ants_query: Query<(
-        &AntFacing,
-        &AntAngle,
+        &AntOrientation,
         &AntBehavior,
         &AntTimer,
         &AntName,

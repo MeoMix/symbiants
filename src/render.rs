@@ -1,7 +1,7 @@
 use bevy::{prelude::*, sprite::Anchor};
 
 use crate::{
-    ant::{AntAngle, AntBehavior, AntFacing, LabelContainer, TransformOffset},
+    ant::{AntBehavior, AntOrientation, Facing, LabelContainer, TransformOffset},
     elements::Element,
     IsFastForwarding,
 };
@@ -52,37 +52,23 @@ pub fn render_translation(
     }
 }
 
-pub fn render_scale(
-    mut query: Query<(&mut Transform, Ref<AntFacing>)>,
+pub fn render_orientation(
+    mut query: Query<(&mut Transform, Ref<AntOrientation>)>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
     if is_fast_forwarding.0 {
         return;
     }
 
-    for (mut transform, facing) in query.iter_mut() {
-        if is_fast_forwarding.is_changed() || facing.is_changed() {
-            let x_flip = if *facing == AntFacing::Left {
+    for (mut transform, orientation) in query.iter_mut() {
+        if is_fast_forwarding.is_changed() || orientation.is_changed() {
+            let x_flip = if orientation.facing == Facing::Left {
                 -1.0
             } else {
                 1.0
             };
             transform.scale = Vec3::new(x_flip, 1.0, 1.0);
-        }
-    }
-}
-
-pub fn render_rotation(
-    mut query: Query<(&mut Transform, Ref<AntAngle>)>,
-    is_fast_forwarding: Res<IsFastForwarding>,
-) {
-    if is_fast_forwarding.0 {
-        return;
-    }
-
-    for (mut transform, angle) in query.iter_mut() {
-        if is_fast_forwarding.is_changed() || angle.is_changed() {
-            transform.rotation = Quat::from_rotation_z(angle.as_radians());
+            transform.rotation = Quat::from_rotation_z(orientation.angle.as_radians());
         }
     }
 }
