@@ -171,40 +171,43 @@ impl Angle {
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntOrientation {
-    pub facing: Facing,
-    pub angle: Angle,
+    facing: Facing,
+    angle: Angle,
 }
 
 impl AntOrientation {
+    pub fn new(facing: Facing, angle: Angle) -> Self {
+        Self { facing, angle }
+    }
+
+    pub fn get_facing(self) -> Facing {
+        self.facing
+    }
+
+    pub fn get_angle(self) -> Angle {
+        self.angle
+    }
+
     pub fn turn_around(self) -> Self {
-        let opposite_facing = if self.facing == Facing::Left {
+        let facing = if self.facing == Facing::Left {
             Facing::Right
         } else {
             Facing::Left
         };
 
-        Self {
-            facing: opposite_facing,
-            angle: self.angle,
-        }
+        Self::new(facing, self.angle)
     }
 
     pub fn rotate_towards_feet(self) -> Self {
         let rotation = if self.facing == Facing::Left { -1 } else { 1 };
 
-        Self {
-            facing: self.facing,
-            angle: self.angle.rotate(rotation),
-        }
+        Self::new(self.facing, self.angle.rotate(rotation))
     }
 
     pub fn rotate_towards_back(self) -> Self {
         let rotation = if self.facing == Facing::Left { 1 } else { -1 };
 
-        Self {
-            facing: self.facing,
-            angle: self.angle.rotate(rotation),
-        }
+        Self::new(self.facing, self.angle.rotate(rotation))
     }
 
     pub fn get_forward_delta(self) -> Position {
@@ -397,10 +400,9 @@ fn do_turn(
     let facing_orientations = facings
         .iter()
         .flat_map(|facing| {
-            angles.iter().map(move |angle| AntOrientation {
-                facing: *facing,
-                angle: *angle,
-            })
+            angles
+                .iter()
+                .map(move |angle| AntOrientation::new(*facing, *angle))
         })
         .collect::<Vec<_>>();
 
@@ -538,7 +540,6 @@ fn do_move(
         return;
     }
 
-    // TODO: This reads sort of awkwardly
     // We can move forward.  But first, check footing.
     let foot_orientation = orientation.rotate_towards_feet();
     let foot_position = new_position + foot_orientation.get_forward_delta();

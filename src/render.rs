@@ -62,13 +62,13 @@ pub fn render_orientation(
 
     for (mut transform, orientation) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || orientation.is_changed() {
-            let x_flip = if orientation.facing == Facing::Left {
+            let x_flip = if orientation.get_facing() == Facing::Left {
                 -1.0
             } else {
                 1.0
             };
             transform.scale = Vec3::new(x_flip, 1.0, 1.0);
-            transform.rotation = Quat::from_rotation_z(orientation.angle.as_radians());
+            transform.rotation = Quat::from_rotation_z(orientation.get_angle().as_radians());
         }
     }
 }

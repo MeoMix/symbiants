@@ -149,10 +149,7 @@ impl FromWorld for WorldMap {
             AntSaveState {
                 position: Position::new(x, y),
                 color: AntColor(settings.ant_color),
-                orientation: AntOrientation {
-                    facing,
-                    angle: Angle::Zero,
-                },
+                orientation: AntOrientation::new(facing, Angle::Zero),
                 behavior: AntBehavior::Wandering,
                 timer: AntTimer::new(&AntBehavior::Wandering, &mut world_rng.0),
                 name: AntName(name.to_string()),
