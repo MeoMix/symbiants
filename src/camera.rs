@@ -1,4 +1,5 @@
 use super::WorldMap;
+use crate::pancam::{PanCam, PanCamPlugin};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -6,7 +7,6 @@ use bevy::{
 
 #[derive(Component)]
 struct MainCamera;
-
 pub struct CameraPlugin;
 
 // Determine a scaling factor so world fills available screen space.
@@ -33,12 +33,22 @@ fn window_resize(
     }
 }
 
-fn setup(mut commands: Commands) {
-    commands.spawn((Camera2dBundle::default(), MainCamera));
+fn setup(mut commands: Commands, world_map: Res<WorldMap>) {
+    commands
+        .spawn((Camera2dBundle::default(), MainCamera))
+        .insert(PanCam {
+            min_x: Some(0.0),
+            min_y: Some(-world_map.height() as f32),
+            max_x: Some(*world_map.width() as f32),
+            max_y: Some(0.0),
+            min_scale: 0.01,
+            ..default()
+        });
 }
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugin(PanCamPlugin::default());
         app.add_startup_system(setup).add_system(window_resize);
     }
 }

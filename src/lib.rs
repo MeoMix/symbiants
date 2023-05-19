@@ -5,6 +5,7 @@ mod elements;
 mod gravity;
 mod map;
 mod name_list;
+mod pancam;
 mod render;
 mod settings;
 mod simulation;
