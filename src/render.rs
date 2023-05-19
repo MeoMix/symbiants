@@ -75,14 +75,14 @@ pub fn render_orientation(
 
 pub fn render_carrying(
     mut commands: Commands,
-    mut query: Query<(Entity, &Children, Ref<AntBehavior>)>,
+    mut query: Query<(Entity, Ref<AntBehavior>, Option<&Children>)>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
     if is_fast_forwarding.0 {
         return;
     }
 
-    for (entity, children, behavior) in query.iter_mut() {
+    for (entity, behavior, children) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || behavior.is_changed() {
             // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
             // TODO: might *need* to know previous state to avoid unintentionally carrying twice
@@ -107,9 +107,12 @@ pub fn render_carrying(
                         ));
                     });
             } else {
-                commands.entity(entity).remove_children(children);
-                for child in children {
-                    commands.entity(*child).despawn();
+                // If children exists, remove them.
+                if let Some(children) = children {
+                    commands.entity(entity).remove_children(children);
+                    for child in children {
+                        commands.entity(*child).despawn();
+                    }
                 }
             }
         }

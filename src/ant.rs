@@ -472,7 +472,6 @@ fn do_dig(
         world_map.elements.insert(dig_position, air_entity);
 
         loosen_neighboring_sand(dig_position, world_map, elements_query, commands);
-
         *behavior = AntBehavior::Carrying;
     }
 }
