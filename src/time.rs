@@ -31,9 +31,14 @@ pub fn setup_fast_forward_time_system(
             let missed_ticks = (60.0 * DEFAULT_TICK_RATE) * delta_seconds as f32;
 
             let fast_forward_delta_seconds = missed_ticks / (1.0 / FAST_FORWARD_TICK_RATE);
+            let fast_forward_delta_nanoseconds =
+                (fast_forward_delta_seconds * 1_000_000_000.0) as u64;
 
             fixed_time.period = Duration::from_secs_f32(FAST_FORWARD_TICK_RATE);
-            fixed_time.tick(Duration::new(fast_forward_delta_seconds as u64, 0));
+            // NOTE: It's important to go with nanoseconds here rather than using `Duration::new` and providing seconds.
+            // Otherwise, on a simple browser refresh where elapsed time is quite small, seconds rounds down to 0 and much
+            // more time elapses than what should be fast-forwarded.
+            fixed_time.tick(Duration::from_nanos(fast_forward_delta_nanoseconds));
             is_fast_forwarding.0 = true;
         }
     }
