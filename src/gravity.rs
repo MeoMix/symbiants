@@ -82,7 +82,7 @@ fn get_sand_fall_position(
 pub fn sand_gravity_system(
     mut element_position_queries: ParamSet<(
         Query<(&Element, &Position), With<Unstable>>,
-        Query<(&Element, &mut Position)>,
+        Query<&mut Position, With<Element>>,
     )>,
 
     elements_query: Query<&Element>,
@@ -114,8 +114,8 @@ pub fn sand_gravity_system(
         let mut element_position_query = element_position_queries.p1();
 
         let Ok([
-            (_, mut air_position),
-            (_, mut sand_position)
+            mut air_position,
+            mut sand_position
         ]) = element_position_query.get_many_mut([air_entity, sand_entity]) else { continue };
 
         // Swap element positions internally.
@@ -136,6 +136,7 @@ pub fn gravity_crush_system(
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
+    // TODO: this could benefit from par_iter, but would need to reenvision it a bit.
     for (element, position, entity) in element_position_query.iter() {
         // Find all stationary sand
         if *element != Element::Sand || position.is_changed() {

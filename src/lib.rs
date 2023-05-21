@@ -10,6 +10,7 @@ mod render;
 mod settings;
 mod simulation;
 mod time;
+mod ui;
 mod world_rng;
 
 use bevy::{
@@ -20,7 +21,8 @@ use camera::CameraPlugin;
 use map::WorldMap;
 use settings::Settings;
 use simulation::SimulationPlugin;
-use time::{IsFastForwarding, DEFAULT_TICK_RATE};
+use time::{IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE};
+use ui::{loading_text_update_system, setup_loading_text_system};
 use world_rng::WorldRng;
 pub struct AntfarmPlugin;
 
@@ -36,6 +38,7 @@ impl Plugin for AntfarmPlugin {
         // Defines the amount of time that should elapse between each physics step.
         .insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE))
         .insert_resource(IsFastForwarding(false))
+        .insert_resource(PendingTicks(0))
         .init_resource::<Settings>()
         .init_resource::<WorldRng>()
         .init_resource::<WorldMap>()
@@ -46,6 +49,8 @@ impl Plugin for AntfarmPlugin {
                 ..default()
             });
         })
+        .add_startup_system(setup_loading_text_system)
+        .add_system(loading_text_update_system)
         .add_plugin(CameraPlugin)
         .add_plugin(SimulationPlugin);
     }
