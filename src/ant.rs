@@ -110,6 +110,36 @@ pub enum AntBehavior {
     Carrying,
 }
 
+#[derive(Bundle)]
+pub struct CarryingBundle {
+    sprite_bundle: SpriteBundle,
+    element: Element,
+}
+
+impl AntBehavior {
+    pub fn get_carrying_bundle(&self) -> Option<CarryingBundle> {
+        if self == &AntBehavior::Carrying {
+            return Some(CarryingBundle {
+                sprite_bundle: SpriteBundle {
+                    transform: Transform {
+                        translation: Vec3::new(0.5, 0.5, 1.0),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        color: Color::rgb(0.761, 0.698, 0.502),
+                        anchor: Anchor::TopLeft,
+                        ..default()
+                    },
+                    ..default()
+                },
+                element: Element::Sand,
+            });
+        }
+
+        None
+    }
+}
+
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntTimer(pub isize);
 
@@ -284,23 +314,9 @@ pub fn setup_ants(
                         ant.color,
                     ))
                     .with_children(|parent| {
-                        if ant.behavior == AntBehavior::Carrying {
+                        if let Some(bundle) = ant.behavior.get_carrying_bundle() {
                             // Make sand a child of ant so they share rotation.
-                            parent.spawn((
-                                SpriteBundle {
-                                    transform: Transform {
-                                        translation: Vec3::new(0.5, 0.5, 1.0),
-                                        ..default()
-                                    },
-                                    sprite: Sprite {
-                                        color: Color::rgb(0.761, 0.698, 0.502),
-                                        anchor: Anchor::TopLeft,
-                                        ..default()
-                                    },
-                                    ..default()
-                                },
-                                Element::Sand,
-                            ));
+                            parent.spawn(bundle);
                         }
                     });
 
@@ -308,14 +324,9 @@ pub fn setup_ants(
                 ant_label_container
                     .spawn((
                         SpatialBundle {
-                            transform: Transform {
-                                translation: Vec3::new(
-                                    ant.position.x as f32,
-                                    -ant.position.y as f32,
-                                    1.0,
-                                ),
-                                ..default()
-                            },
+                            transform: Transform::from_translation(
+                                ant.position.as_world_position(),
+                            ),
                             ..default()
                         },
                         LabelContainer,

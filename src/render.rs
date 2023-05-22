@@ -1,14 +1,10 @@
-use std::ops::Add;
-
-use bevy::{prelude::*, sprite::Anchor};
-
+use super::map::Position;
 use crate::{
     ant::{AntBehavior, AntOrientation, LabelContainer, TransformOffset},
-    elements::Element,
     IsFastForwarding,
 };
-
-use super::map::Position;
+use bevy::prelude::*;
+use std::ops::Add;
 
 // NOTE: All of these are able to be ran in parallel, but a lot of them require mutable access to transform which means Bevy
 // can't run the systems in parallel. It would be possible to use par_iter_mut() to a query in parallel, but there is performance
@@ -80,25 +76,11 @@ pub fn render_carrying(
         if is_fast_forwarding.is_changed() || behavior.is_changed() {
             // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
             // TODO: might *need* to know previous state to avoid unintentionally carrying twice
-            if *behavior == AntBehavior::Carrying {
+            if let Some(bundle) = behavior.get_carrying_bundle() {
                 commands
                     .entity(entity)
                     .with_children(|ant: &mut ChildBuilder| {
-                        ant.spawn((
-                            SpriteBundle {
-                                transform: Transform {
-                                    translation: Vec3::new(0.5, 0.5, 1.0),
-                                    ..default()
-                                },
-                                sprite: Sprite {
-                                    color: Color::rgb(0.761, 0.698, 0.502),
-                                    anchor: Anchor::TopLeft,
-                                    ..default()
-                                },
-                                ..default()
-                            },
-                            Element::Sand,
-                        ));
+                        ant.spawn(bundle);
                     });
             } else {
                 // If children exists, remove them.
