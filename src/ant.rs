@@ -47,11 +47,6 @@ impl Ant {
         mut rng: &mut StdRng,
     ) -> Self {
         let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
-        let x_flip = if orientation.facing == Facing::Left {
-            -1.0
-        } else {
-            1.0
-        };
 
         Self {
             position,
@@ -70,8 +65,8 @@ impl Ant {
                 },
                 transform: Transform {
                     translation: position.as_world_position().add(transform_offset.0),
-                    rotation: Quat::from_rotation_z(orientation.angle.as_radians()),
-                    scale: Vec3::new(x_flip, 1.0, 1.0),
+                    rotation: orientation.as_world_rotation(),
+                    scale: orientation.as_world_scale(),
                     ..default()
                 },
                 ..default()
@@ -177,6 +172,23 @@ pub struct AntOrientation {
 impl AntOrientation {
     pub fn new(facing: Facing, angle: Angle) -> Self {
         Self { facing, angle }
+    }
+
+    // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
+    pub fn as_world_scale(&self) -> Vec3 {
+        Vec3 {
+            x: if self.get_facing() == Facing::Left {
+                -1.0
+            } else {
+                1.0
+            },
+            y: 1.0,
+            z: 1.0,
+        }
+    }
+
+    pub fn as_world_rotation(&self) -> Quat {
+        Quat::from_rotation_z(self.get_angle().as_radians())
     }
 
     pub fn get_facing(self) -> Facing {
