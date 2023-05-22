@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use bevy::{prelude::*, sprite::Anchor};
 
 use crate::{
@@ -31,19 +33,16 @@ pub fn render_translation(
 
     for (mut transform, position, transform_offset, parent) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || position.is_changed() {
-            let offset_x = transform_offset.map_or(0.0, |offset| offset.0.x);
-            let offset_y = transform_offset.map_or(0.0, |offset| offset.0.y);
-
-            transform.translation.x = position.x as f32 + offset_x;
-            transform.translation.y = -position.y as f32 + offset_y;
+            transform.translation = position
+                .as_world_position()
+                .add(transform_offset.map_or(Vec3::ZERO, |offset| offset.0));
 
             // If entity has a parent container, check for sibling labels and update their position.
             if let Some(parent) = parent {
                 label_container_query.iter_mut().for_each(
                     |(mut label_container_transform, label_container_parent)| {
                         if label_container_parent == parent {
-                            label_container_transform.translation.x = transform.translation.x;
-                            label_container_transform.translation.y = transform.translation.y;
+                            label_container_transform.translation = transform.translation;
                         }
                     },
                 );

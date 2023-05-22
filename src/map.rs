@@ -41,6 +41,16 @@ impl Position {
     pub const fn new(x: isize, y: isize) -> Self {
         Self { x, y }
     }
+
+    // Convert Position to Transform, z-index is naively set to 1 for now
+    pub fn as_world_position(&self) -> Vec3 {
+        Vec3 {
+            x: self.x as f32,
+            // The view of the model position is just an inversion along the y-axis.
+            y: -self.y as f32,
+            z: 1.0,
+        }
+    }
 }
 
 impl Add for Position {

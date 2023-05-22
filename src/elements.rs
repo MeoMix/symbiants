@@ -20,15 +20,12 @@ pub struct AirElementBundle {
 
 impl AirElementBundle {
     pub fn new(position: Position) -> Self {
-        // The view of the model position is just an inversion along the y-axis.
-        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
-
         Self {
             sprite_bundle: SpriteBundle {
                 // Air is transparent so reveal background
                 visibility: Visibility::Hidden,
                 transform: Transform {
-                    translation,
+                    translation: position.as_world_position(),
                     ..default()
                 },
                 sprite: Sprite {
@@ -54,13 +51,10 @@ pub struct DirtElementBundle {
 
 impl DirtElementBundle {
     pub fn new(position: Position) -> Self {
-        // The view of the model position is just an inversion along the y-axis.
-        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
-
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
-                    translation,
+                    translation: position.as_world_position(),
                     ..default()
                 },
                 sprite: Sprite {
@@ -90,13 +84,10 @@ pub struct SandElementBundle {
 
 impl SandElementBundle {
     pub fn new(position: Position) -> Self {
-        // The view of the model position is just an inversion along the y-axis.
-        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
-
         Self {
             sprite_bundle: SpriteBundle {
                 transform: Transform {
-                    translation,
+                    translation: position.as_world_position(),
                     ..default()
                 },
                 sprite: Sprite {

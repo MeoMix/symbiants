@@ -52,7 +52,6 @@ impl Ant {
         } else {
             1.0
         };
-        let translation = Vec3::new(position.x as f32, -position.y as f32, 1.0);
 
         Self {
             position,
@@ -70,7 +69,7 @@ impl Ant {
                     ..default()
                 },
                 transform: Transform {
-                    translation: translation.add(transform_offset.0),
+                    translation: position.as_world_position().add(transform_offset.0),
                     rotation: Quat::from_rotation_z(orientation.angle.as_radians()),
                     scale: Vec3::new(x_flip, 1.0, 1.0),
                     ..default()
