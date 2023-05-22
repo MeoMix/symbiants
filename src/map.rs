@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 use gloo_storage::{LocalStorage, Storage};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -78,12 +78,14 @@ pub struct WorldSaveState {
 
 #[derive(Resource)]
 pub struct WorldMap {
+    // TODO: consider making width/height here `usize` since never expect them to be negative
     width: isize,
     height: isize,
     surface_level: isize,
     // TODO: Should not have this be public
     pub initial_state: WorldSaveState,
-    pub elements: HashMap<Position, Entity>,
+    // TODO: refactor code such that Option isn't needed here - always instantiate with properly populated elements
+    pub elements: Vec<Vec<Option<Entity>>>,
 }
 
 pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
@@ -262,19 +264,40 @@ impl WorldMap {
         height: isize,
         surface_level: isize,
         initial_state: WorldSaveState,
-        elements: Option<HashMap<Position, Entity>>,
+        elements: Option<Vec<Vec<Option<Entity>>>>,
     ) -> Self {
+        let elements = match elements {
+            Some(elements) => elements,
+            None => vec![vec![None; width as usize]; height as usize],
+        };
+
         WorldMap {
             width,
             height,
             surface_level,
             initial_state,
-            elements: elements.unwrap_or_default(),
+            elements,
         }
     }
 
     pub fn is_within_bounds(&self, position: &Position) -> bool {
         position.x >= 0 && position.x < self.width && position.y >= 0 && position.y < self.height
+    }
+
+    pub fn get_element(&self, position: Position) -> Option<&Entity> {
+        match self
+            .elements
+            .get(position.y as usize)
+            .and_then(|row| row.get(position.x as usize))
+        {
+            Some(Some(entity)) => Some(entity),
+            _ => None,
+        }
+    }
+
+    // TODO: Could consider returning something to prevent panic on misuse
+    pub fn set_element(&mut self, position: Position, entity: Entity) {
+        self.elements[position.y as usize][position.x as usize] = Some(entity);
     }
 }
 

@@ -130,7 +130,7 @@ pub fn is_all_element(
     search_element: &Element,
 ) -> bool {
     positions.iter().all(|position| {
-        world_map.elements.get(position).map_or(false, |&element| {
+        world_map.get_element(*position).map_or(false, |&element| {
             elements_query
                 .get(element)
                 .map_or(false, |queried_element| *queried_element == *search_element)
@@ -156,7 +156,8 @@ pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
         })
         .collect::<Vec<_>>();
 
+    // TODO: might be able to do this quicker now that it's 2D vector
     for (position, id) in elements_data {
-        world_map.elements.insert(position, id);
+        world_map.set_element(position, id);
     }
 }

@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 use chrono::Utc;
 use gloo_storage::{LocalStorage, Storage};
-use std::{future::pending, time::Duration};
+use std::time::Duration;
 
 use crate::map::{WorldSaveState, LOCAL_STORAGE_KEY};
 
 // Normally run at 6fps but fast forward at 6000fps
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
-pub const FAST_FORWARD_TICK_RATE: f32 = 0.01 / 60.0;
+pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
+pub const SECONDS_IN_DAY: i64 = 86_400;
 
 #[derive(Resource)]
 pub struct IsFastForwarding(pub bool);
@@ -29,12 +30,13 @@ pub fn setup_fast_forward_time_system(
             .signed_duration_since(saved_state.time_stamp)
             .num_seconds();
 
-        // let delta_seconds = 86_400; // simulate a full day
+        // Only one day of time is allowed to be fast-forwarded. If the user skips more time than this - they lose out on simulation.
+        let elapsed_seconds = std::cmp::min(delta_seconds, SECONDS_IN_DAY);
 
-        if delta_seconds > 0 {
+        if elapsed_seconds > 0 {
             fixed_time.period = Duration::from_secs_f32(FAST_FORWARD_TICK_RATE);
             is_fast_forwarding.0 = true;
-            pending_ticks.0 = ((60.0 * DEFAULT_TICK_RATE) * delta_seconds as f32) as isize;
+            pending_ticks.0 = ((60.0 * DEFAULT_TICK_RATE) * elapsed_seconds as f32) as isize;
         }
     }
 }

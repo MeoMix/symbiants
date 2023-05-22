@@ -323,7 +323,8 @@ fn is_valid_location(
     world_map: &ResMut<WorldMap>,
 ) -> bool {
     // Need air at the ants' body for it to be a legal ant location.
-    let Some(entity) = world_map.elements.get(&position) else { return false };
+    let Some(entity) = world_map.get_element(position) else { return false };
+
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return false; };
 
@@ -333,7 +334,7 @@ fn is_valid_location(
 
     // Get the location beneath the ants' feet and check for air
     let foot_position = position + orientation.rotate_towards_feet().get_forward_delta();
-    let Some(entity) = world_map.elements.get(&foot_position) else { return false };
+    let Some(entity) = world_map.get_element(foot_position) else { return false };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return false; };
 
@@ -351,7 +352,7 @@ fn do_drop(
     world_map: &mut ResMut<WorldMap>,
     commands: &mut Commands,
 ) {
-    let Some(entity) = world_map.elements.get(&position) else { return; };
+    let Some(entity) = world_map.get_element(position) else { return; };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return; };
 
@@ -360,8 +361,7 @@ fn do_drop(
 
         // Drop sand on air
         let sand_entity = commands.spawn(SandElementBundle::new(position)).id();
-
-        world_map.elements.insert(position, sand_entity);
+        world_map.set_element(position, sand_entity);
 
         *behavior = AntBehavior::Wandering;
     }
@@ -429,7 +429,7 @@ fn do_turn(
 
     // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
     if *behavior == AntBehavior::Carrying {
-        if let Some(entity) = world_map.elements.get(&position) {
+        if let Some(entity) = world_map.get_element(*position) {
             // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
             // NOTE: this can occur due to `spawn` not affecting query on current frame
             if let Ok(element) = elements_query.get(*entity) {
@@ -460,7 +460,7 @@ fn do_dig(
         orientation.rotate_towards_feet().get_forward_delta() + *position
     };
 
-    let Some(entity) = world_map.elements.get(&dig_position) else { return };
+    let Some(entity) = world_map.get_element(dig_position) else { return };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
 
@@ -469,7 +469,7 @@ fn do_dig(
 
         // Dig up dirt/sand and replace with air
         let air_entity = commands.spawn(AirElementBundle::new(dig_position)).id();
-        world_map.elements.insert(dig_position, air_entity);
+        world_map.set_element(dig_position, air_entity);
 
         loosen_neighboring_sand(dig_position, world_map, elements_query, commands);
         *behavior = AntBehavior::Carrying;
@@ -503,7 +503,7 @@ fn do_move(
     }
 
     // Check if hitting dirt or sand and, if so, consider digging through it.
-    let entity = world_map.elements.get(&new_position).unwrap();
+    let entity = world_map.get_element(new_position).unwrap();
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
 
@@ -543,7 +543,7 @@ fn do_move(
     let foot_orientation = orientation.rotate_towards_feet();
     let foot_position = new_position + foot_orientation.get_forward_delta();
 
-    if let Some(foot_entity) = world_map.elements.get(&foot_position) {
+    if let Some(foot_entity) = world_map.get_element(foot_position) {
         // NOTE: this can occur due to `spawn` not affecting query on current frame
         let Ok(foot_element) = elements_query.get(*foot_entity) else { return };
 
