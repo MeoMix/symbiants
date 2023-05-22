@@ -5,7 +5,7 @@ use crate::{
     background::setup_background,
     elements::setup_elements,
     gravity::{
-        ant_gravity_system, gravity_crush_system, gravity_stability_system, sand_gravity_system,
+        ant_gravity_system, element_gravity_system, gravity_crush_system, gravity_stability_system,
     },
     map::{periodic_save_world_state_system, setup_window_onunload_save_world_state},
     render::{render_carrying, render_orientation, render_translation},
@@ -33,7 +33,7 @@ impl Plugin for SimulationPlugin {
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
                 move_ants_system,
                 update_ant_timer_system,
-                sand_gravity_system,
+                element_gravity_system,
                 gravity_crush_system,
                 gravity_stability_system,
                 ant_gravity_system,

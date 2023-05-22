@@ -22,44 +22,44 @@ pub struct Unstable;
 // TODO: Add tests for ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
 
-// Search for a valid location for sand to fall into by searching to the
-// bottom left/center/right of a given sand position. Prioritize falling straight down
+// Search for a valid location for an element to fall into by searching to the
+// bottom left/center/right of a given position. Prioritize falling straight down
 // and do not fall if surrounded by non-air
-fn get_sand_fall_position(
-    sand_position: Position,
+fn get_element_fall_position(
+    position: Position,
     world_map: &WorldMap,
     elements_query: &Query<&Element>,
     world_rng: &mut StdRng,
 ) -> Option<Position> {
-    // If there is air below the sand then continue falling down.
-    let below_sand_position = sand_position + Position::Y;
+    // If there is air below then continue falling down.
+    let below_position = position + Position::Y;
     if is_all_element(
         &world_map,
         &elements_query,
-        &[below_sand_position],
+        &[below_position],
         &Element::Air,
     ) {
-        return Some(below_sand_position);
+        return Some(below_position);
     }
 
     // TODO: maybe don't always fall left/right even if possible to fall
     // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
-    // Look for a column of air two units tall to either side of the sand and consider going in one of those directions.
-    let left_sand_position = sand_position + Position::NEG_X;
-    let left_below_sand_position = sand_position + Position::new(-1, 1);
+    // Look for a column of air two units tall to either side and consider going in one of those directions.
+    let left_position = position + Position::NEG_X;
+    let left_below_position = position + Position::new(-1, 1);
     let mut go_left = is_all_element(
         &world_map,
         &elements_query,
-        &[left_sand_position, left_below_sand_position],
+        &[left_position, left_below_position],
         &Element::Air,
     );
 
-    let right_sand_position = sand_position + Position::X;
-    let right_below_sand_position = sand_position + Position::ONE;
+    let right_position = position + Position::X;
+    let right_below_position = position + Position::ONE;
     let mut go_right = is_all_element(
         &world_map,
         &elements_query,
-        &[right_sand_position, right_below_sand_position],
+        &[right_position, right_below_position],
         &Element::Air,
     );
 
@@ -70,62 +70,90 @@ fn get_sand_fall_position(
     }
 
     if go_left {
-        Some(left_below_sand_position)
+        Some(left_below_position)
     } else if go_right {
-        Some(right_below_sand_position)
+        Some(right_below_position)
     } else {
         None
     }
 }
 
-// For each sand element, look beneath it in the 2D array and determine if the element beneath it is air.
-// For each sand element which is above air, swap it with the air beneath it.
-pub fn sand_gravity_system(
+pub fn element_gravity_system(
     mut element_position_queries: ParamSet<(
-        Query<(&Element, &Position), With<Unstable>>,
+        Query<&Position, (With<Element>, With<Unstable>)>,
         Query<&mut Position, With<Element>>,
     )>,
-
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let sand_query = element_position_queries.p0();
-
-    let sand_air_swaps: Vec<_> = sand_query
+    let element_air_swaps: Vec<_> = element_position_queries
+        .p0()
         .iter()
-        .filter_map(|(&element, &sand_position)| {
-            // technically only sand can be unstable right now, but keeping this as a safeguard for now
-            if element != Element::Sand {
-                return None;
-            }
-
-            get_sand_fall_position(sand_position, &world_map, &elements_query, &mut world_rng.0)
+        .filter_map(|&position| {
+            get_element_fall_position(position, &world_map, &elements_query, &mut world_rng.0)
                 .and_then(|air_position| {
                     Some((
-                        *world_map.get_element(sand_position)?,
+                        *world_map.get_element(position)?,
                         *world_map.get_element(air_position)?,
                     ))
                 })
         })
         .collect();
 
-    // Swap sand/air positions and update internal state to reflect the swap
-    for &(sand_entity, air_entity) in sand_air_swaps.iter() {
+    // Swap element/air positions and update internal state to reflect the swap
+    for &(element_entity, air_entity) in element_air_swaps.iter() {
         let mut element_position_query = element_position_queries.p1();
 
         let Ok([
             mut air_position,
-            mut sand_position
-        ]) = element_position_query.get_many_mut([air_entity, sand_entity]) else { continue };
+            mut element_position
+        ]) = element_position_query.get_many_mut([air_entity, element_entity]) else { continue };
 
         // Swap element positions internally.
-        (sand_position.x, air_position.x) = (air_position.x, sand_position.x);
-        (sand_position.y, air_position.y) = (air_position.y, sand_position.y);
+        (element_position.x, air_position.x) = (air_position.x, element_position.x);
+        (element_position.y, air_position.y) = (air_position.y, element_position.y);
 
         // Update indices since they're indexed by position and track where elements are at.
-        world_map.set_element(*sand_position, sand_entity);
+        world_map.set_element(*element_position, element_entity);
         world_map.set_element(*air_position, air_entity);
+    }
+}
+
+// Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
+// However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
+pub fn ant_gravity_system(
+    mut ants_query: Query<(&AntOrientation, &mut Position)>,
+    elements_query: Query<&Element>,
+    world_map: Res<WorldMap>,
+) {
+    for (orientation, mut position) in ants_query.iter_mut() {
+        // Figure out foot direction
+        let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
+
+        // TODO: There's a bug here - ant that rotates such that its feet are on the side of the world
+        // and then has soil dug out from underneath it - hovers in the air. This could be fine,
+        // but ants don't climb the walls right now, so there's a mismatch in behavior.
+        let is_air_beneath_feet = is_all_element(
+            &world_map,
+            &elements_query,
+            &[below_feet_position],
+            &Element::Air,
+        );
+
+        if is_air_beneath_feet {
+            let below_position = *position + Position::Y;
+            let is_air_below = is_all_element(
+                &world_map,
+                &elements_query,
+                &[below_position],
+                &Element::Air,
+            );
+
+            if is_air_below {
+                position.y = below_position.y;
+            }
+        }
     }
 }
 
@@ -227,43 +255,6 @@ pub fn gravity_stability_system(
         }
     }
 }
-
-// Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
-// However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
-pub fn ant_gravity_system(
-    mut ants_query: Query<(&AntOrientation, &mut Position)>,
-    elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
-) {
-    for (orientation, mut position) in ants_query.iter_mut() {
-        // Figure out foot direction
-        let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
-
-        // TODO: There's a bug here - ant that rotates such that its feet are on the side of the world
-        // and then has soil dug out from underneath it - hovers in the air.
-        let is_air_beneath_feet = is_all_element(
-            &world_map,
-            &elements_query,
-            &[below_feet_position],
-            &Element::Air,
-        );
-
-        if is_air_beneath_feet {
-            let below_position = *position + Position::Y;
-            let is_air_below = is_all_element(
-                &world_map,
-                &elements_query,
-                &[below_position],
-                &Element::Air,
-            );
-
-            if is_air_below {
-                position.y = below_position.y;
-            }
-        }
-    }
-}
-
 // #[cfg(test)]
 // pub mod ant_gravity_system_tests {
 //     use crate::save::WorldSaveState;
