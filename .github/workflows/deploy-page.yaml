@@ -20,7 +20,7 @@ jobs:
       - name: Install Dependencies
         run: sudo apt-get update; sudo apt-get install libasound2-dev libudev-dev lld clang
       - name: Install trunk
-        uses: jetli/trunk-action@v0.1.0
+        uses: jetli/trunk-action@v0.4.0
         with:
           version: 'latest'
       - name: Add wasm target
@@ -34,7 +34,7 @@ jobs:
         with:
           file: dist/*.wasm
       - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.2.5
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           branch: gh-pages
           folder: dist
