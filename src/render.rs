@@ -1,6 +1,6 @@
 use super::map::Position;
 use crate::{
-    ant::{AntBehavior, AntOrientation, Label, TransformOffset},
+    ant::{AntBehavior, AntOrientation, Label, TranslationOffset},
     IsFastForwarding,
 };
 use bevy::prelude::*;
@@ -15,32 +15,32 @@ pub fn render_translation(
         (
             &mut Transform,
             Ref<Position>,
-            Option<&TransformOffset>,
+            Option<&TranslationOffset>,
             Option<&Parent>,
         ),
         Without<Label>,
     >,
-    mut label_query: Query<(&mut Transform, Option<&TransformOffset>, &Parent), With<Label>>,
+    mut label_query: Query<(&mut Transform, Option<&TranslationOffset>, &Parent), With<Label>>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
     if is_fast_forwarding.0 {
         return;
     }
 
-    for (mut transform, position, transform_offset, parent) in query.iter_mut() {
+    for (mut transform, position, translation_offset, parent) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || position.is_changed() {
             transform.translation = position
                 .as_world_position()
-                .add(transform_offset.map_or(Vec3::ZERO, |offset| offset.0));
+                .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
 
             // If entity has a parent container, check for sibling labels and update their position.
             if let Some(parent) = parent {
                 label_query.iter_mut().for_each(
-                    |(mut label_transform, transform_offset, label_parent)| {
+                    |(mut label_transform, translation_offset, label_parent)| {
                         if label_parent == parent {
                             label_transform.translation = position
                                 .as_world_position()
-                                .add(transform_offset.map_or(Vec3::ZERO, |offset| offset.0));
+                                .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
                         }
                     },
                 );

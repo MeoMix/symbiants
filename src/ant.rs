@@ -26,7 +26,7 @@ pub struct AntSaveState {
 #[derive(Bundle)]
 struct AntBundle {
     position: Position,
-    transform_offset: TransformOffset,
+    translation_offset: TranslationOffset,
     orientation: AntOrientation,
     behavior: AntBehavior,
     timer: AntTimer,
@@ -45,11 +45,11 @@ impl AntBundle {
         asset_server: &Res<AssetServer>,
         mut rng: &mut StdRng,
     ) -> Self {
-        let transform_offset = TransformOffset(Vec3::new(0.5, -0.5, 0.0));
+        let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 0.0));
 
         Self {
             position,
-            transform_offset,
+            translation_offset,
             orientation,
             behavior,
             timer: AntTimer::new(&behavior, &mut rng),
@@ -63,7 +63,7 @@ impl AntBundle {
                     ..default()
                 },
                 transform: Transform {
-                    translation: position.as_world_position().add(transform_offset.0),
+                    translation: position.as_world_position().add(translation_offset.0),
                     rotation: orientation.as_world_rotation(),
                     scale: orientation.as_world_scale(),
                     ..default()
@@ -77,18 +77,18 @@ impl AntBundle {
 #[derive(Bundle)]
 struct AntLabelBundle {
     label_bundle: Text2dBundle,
-    transform_offset: TransformOffset,
+    translation_offset: TranslationOffset,
     label: Label,
 }
 
 impl AntLabelBundle {
     pub fn new(position: Position, name: &str, asset_server: &Res<AssetServer>) -> Self {
-        let transform_offset = TransformOffset(Vec3::new(-ANT_SCALE / 4.0, -1.5, 1.0));
+        let translation_offset = TranslationOffset(Vec3::new(-ANT_SCALE / 4.0, -1.5, 1.0));
 
         Self {
             label_bundle: Text2dBundle {
                 transform: Transform {
-                    translation: position.as_world_position().add(transform_offset.0),
+                    translation: position.as_world_position().add(translation_offset.0),
                     scale: Vec3::new(0.05, 0.05, 0.0),
                     ..default()
                 },
@@ -103,7 +103,7 @@ impl AntLabelBundle {
                 ),
                 ..default()
             },
-            transform_offset,
+            translation_offset,
             label: Label,
         }
     }
@@ -113,7 +113,7 @@ impl AntLabelBundle {
 const ANT_SCALE: f32 = 1.2;
 
 #[derive(Component, Copy, Clone)]
-pub struct TransformOffset(pub Vec3);
+pub struct TranslationOffset(pub Vec3);
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct AntName(pub String);
