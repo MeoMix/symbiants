@@ -82,7 +82,12 @@ struct AntLabelBundle {
 }
 
 impl AntLabelBundle {
-    pub fn new(position: Position, name: &str, asset_server: &Res<AssetServer>) -> Self {
+    pub fn new(
+        ant: Entity,
+        position: Position,
+        name: &str,
+        asset_server: &Res<AssetServer>,
+    ) -> Self {
         let translation_offset = TranslationOffset(Vec3::new(-ANT_SCALE / 4.0, -1.5, 1.0));
 
         Self {
@@ -104,7 +109,7 @@ impl AntLabelBundle {
                 ..default()
             },
             translation_offset,
-            label: Label,
+            label: Label(ant),
         }
     }
 }
@@ -285,9 +290,8 @@ impl AntOrientation {
 }
 
 #[derive(Component)]
-pub struct Label;
+pub struct Label(pub Entity);
 
-// Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_ants(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -295,49 +299,30 @@ pub fn setup_ants(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let ant_bundles = world_map
-        .initial_state
-        .ants
-        .iter()
-        .map(|ant_save_state| {
-            (
-                AntBundle::new(
-                    ant_save_state.position,
-                    settings.ant_color,
-                    ant_save_state.orientation,
-                    ant_save_state.behavior,
-                    ant_save_state.name.0.as_str(),
-                    &asset_server,
-                    &mut world_rng.0,
-                ),
-                AntLabelBundle::new(
-                    ant_save_state.position,
-                    ant_save_state.name.0.as_str(),
-                    &asset_server,
-                ),
-            )
-        })
-        .collect::<Vec<_>>();
+    for ant_save_state in world_map.initial_state.ants.iter() {
+        let entity = commands
+            .spawn(AntBundle::new(
+                ant_save_state.position,
+                settings.ant_color,
+                ant_save_state.orientation,
+                ant_save_state.behavior,
+                ant_save_state.name.0.as_str(),
+                &asset_server,
+                &mut world_rng.0,
+            ))
+            .with_children(|parent| {
+                if let Some(bundle) = ant_save_state.behavior.get_carrying_bundle() {
+                    parent.spawn(bundle);
+                }
+            })
+            .id();
 
-    for (ant_bundle, ant_label_bundle) in ant_bundles {
-        commands
-            // Wrap label and ant with common parent to allow a system to easily associate their position.
-            // Don't mess with parent transform to avoid rotating label.
-            .spawn(SpatialBundle::default())
-            .with_children(|ant_label_container| {
-                let ant_behavior = ant_bundle.behavior.clone();
-
-                // Spawn a container for the ant sprite and sand so there's strong correlation between position and translation.
-                ant_label_container
-                    .spawn(ant_bundle)
-                    .with_children(|parent| {
-                        if let Some(bundle) = ant_behavior.get_carrying_bundle() {
-                            parent.spawn(bundle);
-                        }
-                    });
-
-                ant_label_container.spawn(ant_label_bundle);
-            });
+        commands.spawn(AntLabelBundle::new(
+            entity,
+            ant_save_state.position,
+            ant_save_state.name.0.as_str(),
+            &asset_server,
+        ));
     }
 }
 

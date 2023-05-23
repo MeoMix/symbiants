@@ -11,40 +11,30 @@ use std::ops::Add;
 // overhead in doing so. So, for now, just run the systems in sequence.
 
 pub fn render_translation(
-    mut query: Query<
-        (
-            &mut Transform,
-            Ref<Position>,
-            Option<&TranslationOffset>,
-            Option<&Parent>,
-        ),
-        Without<Label>,
-    >,
-    mut label_query: Query<(&mut Transform, Option<&TranslationOffset>, &Parent), With<Label>>,
+    mut query: Query<(Ref<Position>, &mut Transform, Option<&TranslationOffset>), Without<Label>>,
+    mut label_query: Query<(&mut Transform, Option<&TranslationOffset>, &Label), With<Label>>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
     if is_fast_forwarding.0 {
         return;
     }
 
-    for (mut transform, position, translation_offset, parent) in query.iter_mut() {
+    for (position, mut transform, translation_offset) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || position.is_changed() {
             transform.translation = position
                 .as_world_position()
                 .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
+        }
+    }
 
-            // If entity has a parent container, check for sibling labels and update their position.
-            if let Some(parent) = parent {
-                label_query.iter_mut().for_each(
-                    |(mut label_transform, translation_offset, label_parent)| {
-                        if label_parent == parent {
-                            label_transform.translation = position
-                                .as_world_position()
-                                .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
-                        }
-                    },
-                );
-            }
+    // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
+    for (mut transform, translation_offset, label) in label_query.iter_mut() {
+        let (position, _, _) = query.get(label.0).unwrap();
+
+        if is_fast_forwarding.is_changed() || position.is_changed() {
+            transform.translation = position
+                .as_world_position()
+                .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
         }
     }
 }
