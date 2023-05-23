@@ -1,6 +1,6 @@
 use super::map::Position;
 use crate::{
-    ant::{AntBehavior, AntOrientation, LabelContainer, TransformOffset},
+    ant::{AntBehavior, AntOrientation, Label, TransformOffset},
     IsFastForwarding,
 };
 use bevy::prelude::*;
@@ -18,9 +18,9 @@ pub fn render_translation(
             Option<&TransformOffset>,
             Option<&Parent>,
         ),
-        Without<LabelContainer>,
+        Without<Label>,
     >,
-    mut label_container_query: Query<(&mut Transform, &Parent), With<LabelContainer>>,
+    mut label_query: Query<(&mut Transform, Option<&TransformOffset>, &Parent), With<Label>>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
     if is_fast_forwarding.0 {
@@ -35,10 +35,12 @@ pub fn render_translation(
 
             // If entity has a parent container, check for sibling labels and update their position.
             if let Some(parent) = parent {
-                label_container_query.iter_mut().for_each(
-                    |(mut label_container_transform, label_container_parent)| {
-                        if label_container_parent == parent {
-                            label_container_transform.translation = transform.translation;
+                label_query.iter_mut().for_each(
+                    |(mut label_transform, transform_offset, label_parent)| {
+                        if label_parent == parent {
+                            label_transform.translation = position
+                                .as_world_position()
+                                .add(transform_offset.map_or(Vec3::ZERO, |offset| offset.0));
                         }
                     },
                 );

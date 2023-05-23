@@ -23,8 +23,8 @@ pub struct AntSaveState {
     pub name: AntName,
 }
 
-// TODO: This seems like an ANTi-pattern (heh heh heh), it's sort of like a bundle, but it needs parent/child relationships so it can't just be spawned as a bundle itself
-struct Ant {
+#[derive(Bundle)]
+struct AntBundle {
     position: Position,
     transform_offset: TransformOffset,
     orientation: AntOrientation,
@@ -33,10 +33,9 @@ struct Ant {
     name: AntName,
     color: AntColor,
     sprite_bundle: SpriteBundle,
-    label_bundle: Text2dBundle,
 }
 
-impl Ant {
+impl AntBundle {
     pub fn new(
         position: Position,
         color: Color,
@@ -71,9 +70,25 @@ impl Ant {
                 },
                 ..default()
             },
+        }
+    }
+}
+
+#[derive(Bundle)]
+struct AntLabelBundle {
+    label_bundle: Text2dBundle,
+    transform_offset: TransformOffset,
+    label: Label,
+}
+
+impl AntLabelBundle {
+    pub fn new(position: Position, name: &str, asset_server: &Res<AssetServer>) -> Self {
+        let transform_offset = TransformOffset(Vec3::new(-ANT_SCALE / 4.0, -1.5, 1.0));
+
+        Self {
             label_bundle: Text2dBundle {
                 transform: Transform {
-                    translation: Vec3::new(-ANT_SCALE / 4.0, -1.5, 1.0),
+                    translation: position.as_world_position().add(transform_offset.0),
                     scale: Vec3::new(0.05, 0.05, 0.0),
                     ..default()
                 },
@@ -88,6 +103,8 @@ impl Ant {
                 ),
                 ..default()
             },
+            transform_offset,
+            label: Label,
         }
     }
 }
@@ -268,7 +285,7 @@ impl AntOrientation {
 }
 
 #[derive(Component)]
-pub struct LabelContainer;
+pub struct Label;
 
 // Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_ants(
@@ -278,59 +295,48 @@ pub fn setup_ants(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    let ants = world_map
+    let ant_bundles = world_map
         .initial_state
         .ants
         .iter()
         .map(|ant_save_state| {
-            Ant::new(
-                ant_save_state.position,
-                settings.ant_color,
-                ant_save_state.orientation,
-                ant_save_state.behavior,
-                ant_save_state.name.0.as_str(),
-                &asset_server,
-                &mut world_rng.0,
+            (
+                AntBundle::new(
+                    ant_save_state.position,
+                    settings.ant_color,
+                    ant_save_state.orientation,
+                    ant_save_state.behavior,
+                    ant_save_state.name.0.as_str(),
+                    &asset_server,
+                    &mut world_rng.0,
+                ),
+                AntLabelBundle::new(
+                    ant_save_state.position,
+                    ant_save_state.name.0.as_str(),
+                    &asset_server,
+                ),
             )
         })
         .collect::<Vec<_>>();
 
-    for ant in ants {
+    for (ant_bundle, ant_label_bundle) in ant_bundles {
         commands
             // Wrap label and ant with common parent to allow a system to easily associate their position.
             // Don't mess with parent transform to avoid rotating label.
             .spawn(SpatialBundle::default())
             .with_children(|ant_label_container| {
+                let ant_behavior = ant_bundle.behavior.clone();
+
                 // Spawn a container for the ant sprite and sand so there's strong correlation between position and translation.
                 ant_label_container
-                    .spawn((
-                        ant.sprite_bundle,
-                        ant.position,
-                        ant.transform_offset,
-                        ant.orientation,
-                        ant.behavior,
-                        ant.timer,
-                        ant.name,
-                        ant.color,
-                    ))
+                    .spawn(ant_bundle)
                     .with_children(|parent| {
-                        if let Some(bundle) = ant.behavior.get_carrying_bundle() {
-                            // Make sand a child of ant so they share rotation.
+                        if let Some(bundle) = ant_behavior.get_carrying_bundle() {
                             parent.spawn(bundle);
                         }
                     });
 
-                // Put the label in its own container so offset on label itself isn't overwritten when updating position
-                ant_label_container
-                    .spawn((
-                        SpatialBundle::from_transform(Transform::from_translation(
-                            ant.position.as_world_position(),
-                        )),
-                        LabelContainer,
-                    ))
-                    .with_children(|label_container| {
-                        label_container.spawn(ant.label_bundle);
-                    });
+                ant_label_container.spawn(ant_label_bundle);
             });
     }
 }
