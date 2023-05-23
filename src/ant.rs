@@ -323,12 +323,9 @@ pub fn setup_ants(
                 // Put the label in its own container so offset on label itself isn't overwritten when updating position
                 ant_label_container
                     .spawn((
-                        SpatialBundle {
-                            transform: Transform::from_translation(
-                                ant.position.as_world_position(),
-                            ),
-                            ..default()
-                        },
+                        SpatialBundle::from_transform(Transform::from_translation(
+                            ant.position.as_world_position(),
+                        )),
                         LabelContainer,
                     ))
                     .with_children(|label_container| {
