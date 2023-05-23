@@ -45,7 +45,10 @@ impl AntBundle {
         asset_server: &Res<AssetServer>,
         mut rng: &mut StdRng,
     ) -> Self {
-        let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 0.0));
+        // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
+        // TODO: I don't remember why I want an x-offset here.
+        // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
+        let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
 
         Self {
             position,
@@ -88,21 +91,22 @@ impl AntLabelBundle {
         name: &str,
         asset_server: &Res<AssetServer>,
     ) -> Self {
-        let translation_offset = TranslationOffset(Vec3::new(-ANT_SCALE / 4.0, -1.5, 1.0));
+        // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise. This isn't a good way of achieving this.
+        let translation_offset = TranslationOffset(Vec3::new(0.5, -1.5, 1.0));
 
         Self {
             label_bundle: Text2dBundle {
                 transform: Transform {
                     translation: position.as_world_position().add(translation_offset.0),
-                    scale: Vec3::new(0.05, 0.05, 0.0),
+                    scale: Vec3::new(0.01, 0.01, 0.0),
                     ..default()
                 },
                 text: Text::from_section(
                     name,
                     TextStyle {
                         font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        color: Color::rgb(0.0, 0.0, 0.0),
-                        font_size: 12.0,
+                        color: Color::BLACK,
+                        font_size: 60.0,
                         ..default()
                     },
                 ),
@@ -703,6 +707,8 @@ pub fn update_ant_timer_system(
     mut world_rng: ResMut<WorldRng>,
 ) {
     for (behavior, mut timer) in ants_query.iter_mut() {
+        // TODO: this isn't working properly because in scenarios where the ant enacts its behavior, but its behavior did not change,
+        // the ant doesn't reset its timer.
         if behavior.is_changed() {
             *timer = AntTimer::new(&behavior, &mut world_rng.0);
         } else if timer.0 > 0 {
