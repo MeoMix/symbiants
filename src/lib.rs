@@ -4,6 +4,7 @@ mod camera;
 mod elements;
 mod gravity;
 mod map;
+mod mouse;
 mod name_list;
 mod pancam;
 mod render;

@@ -105,11 +105,42 @@ impl SandElementBundle {
     }
 }
 
+#[derive(Bundle)]
+pub struct FoodElementBundle {
+    sprite_bundle: SpriteBundle,
+    element: Element,
+    position: Position,
+    unstable: Unstable,
+}
+
+impl FoodElementBundle {
+    pub fn new(position: Position) -> Self {
+        Self {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation: position.as_world_position(),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: Color::rgb(0.388, 0.584, 0.294),
+                    anchor: Anchor::TopLeft,
+                    ..default()
+                },
+                ..default()
+            },
+            element: Element::Food,
+            position,
+            unstable: Unstable,
+        }
+    }
+}
+
 #[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum Element {
     Air,
     Dirt,
     Sand,
+    Food,
 }
 
 // Returns true if every element in `positions` matches the provided Element type.
@@ -141,6 +172,7 @@ pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
                 Element::Dirt => commands.spawn(DirtElementBundle::new(position)).id(),
                 // TODO: not all sand is unstable just because it was recently loaded from save state.
                 Element::Sand => commands.spawn(SandElementBundle::new(position)).id(),
+                Element::Food => commands.spawn(FoodElementBundle::new(position)).id(),
             };
 
             (position, id)

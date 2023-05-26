@@ -8,6 +8,7 @@ use crate::{
         ant_gravity_system, element_gravity_system, gravity_crush_system, gravity_stability_system,
     },
     map::{periodic_save_world_state_system, setup_window_onunload_save_world_state},
+    mouse::handle_mouse_clicks,
     render::{render_carrying, render_orientation, render_translation},
     time::{play_time_system, setup_fast_forward_time_system},
 };
@@ -26,6 +27,9 @@ impl Plugin for SimulationPlugin {
             )
                 .chain(),
         );
+
+        app.add_system(handle_mouse_clicks);
+
         // TODO: need to be more aggressive in reusing state between update render and initial draw
         // currently if I turn off render systems there are minor graphical differences between initial draw and update render
         app.add_systems(

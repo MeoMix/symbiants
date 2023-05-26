@@ -9,6 +9,9 @@ use bevy::{
 struct MainCamera;
 pub struct CameraPlugin;
 
+#[derive(Resource)]
+pub struct WorldScale(pub f32);
+
 // Determine a scaling factor so world fills available screen space.
 // NOTE: resize event is sent on load so this functions as an initializer, too.
 fn window_resize(
@@ -16,6 +19,7 @@ fn window_resize(
     mut resize_events: EventReader<WindowResized>,
     mut query: Query<(&mut Transform, &mut OrthographicProjection), With<MainCamera>>,
     world_map: Res<WorldMap>,
+    mut world_scale: ResMut<WorldScale>,
 ) {
     for resize_event in resize_events.iter() {
         let Ok(entity) = primary_window_query.get_single() else { continue };
@@ -23,12 +27,13 @@ fn window_resize(
         if resize_event.window == entity {
             let (mut transform, mut projection) = query.single_mut();
 
-            let world_scale = (resize_event.width / *world_map.width() as f32)
+            let scale = (resize_event.width / *world_map.width() as f32)
                 .max(resize_event.height / *world_map.height() as f32);
 
-            transform.translation.x = resize_event.width / world_scale / 2.0;
-            transform.translation.y = -resize_event.height / world_scale / 2.0;
-            projection.scale = 1.0 / world_scale;
+            transform.translation.x = resize_event.width / scale / 2.0;
+            transform.translation.y = -resize_event.height / scale / 2.0;
+            projection.scale = 1.0 / scale;
+            world_scale.0 = scale;
         }
     }
 }
@@ -48,6 +53,8 @@ fn setup(mut commands: Commands, world_map: Res<WorldMap>) {
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
+        // TODO: no idea if this is a good default
+        app.insert_resource(WorldScale(1.0));
         app.add_plugin(PanCamPlugin::default());
         app.add_startup_system(setup).add_system(window_resize);
     }
