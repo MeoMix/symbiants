@@ -102,11 +102,7 @@ pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
 impl FromWorld for WorldMap {
     fn from_world(world: &mut World) -> Self {
-        // TODO: this feels like a hack?
-        let mut settings = Settings::default();
-        world.resource_scope(|_, settings_mut: Mut<Settings>| {
-            settings = settings_mut.clone();
-        });
+        let settings = Settings::default();
 
         let surface_level = (settings.world_height as f32
             - (settings.world_height as f32 * settings.initial_dirt_percent))
