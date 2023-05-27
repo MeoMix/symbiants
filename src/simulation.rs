@@ -30,8 +30,6 @@ impl Plugin for SimulationPlugin {
 
         app.add_system(handle_mouse_clicks);
 
-        // TODO: need to be more aggressive in reusing state between update render and initial draw
-        // currently if I turn off render systems there are minor graphical differences between initial draw and update render
         app.add_systems(
             (
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
