@@ -303,7 +303,7 @@ pub fn setup_ants(
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    for ant_save_state in world_map.initial_state.ants.iter() {
+    for ant_save_state in world_map.initial_state().ants.iter() {
         let entity = commands
             .spawn(AntBundle::new(
                 ant_save_state.position,

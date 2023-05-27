@@ -163,7 +163,7 @@ pub fn is_all_element(
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
 pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
     let elements_data = world_map
-        .initial_state
+        .initial_state()
         .elements
         .iter()
         .map(|&ElementSaveState { element, position }| {

@@ -88,14 +88,12 @@ pub struct WorldSaveState {
 
 #[derive(Resource)]
 pub struct WorldMap {
-    // TODO: consider making width/height here `usize` since never expect them to be negative
     width: isize,
     height: isize,
     surface_level: isize,
-    // TODO: Should not have this be public
-    pub initial_state: WorldSaveState,
+    initial_state: WorldSaveState,
     // TODO: refactor code such that Option isn't needed here - always instantiate with properly populated elements
-    pub elements: Vec<Vec<Option<Entity>>>,
+    elements: Vec<Vec<Option<Entity>>>,
 }
 
 pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
@@ -253,6 +251,10 @@ impl FromWorld for WorldMap {
 }
 
 impl WorldMap {
+    pub fn initial_state(&self) -> &WorldSaveState {
+        &self.initial_state
+    }
+
     pub fn width(&self) -> &isize {
         &self.width
     }
