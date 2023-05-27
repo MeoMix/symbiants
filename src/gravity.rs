@@ -131,9 +131,6 @@ pub fn ant_gravity_system(
         // Figure out foot direction
         let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
 
-        // TODO: There's a bug here - ant that rotates such that its feet are on the side of the world
-        // and then has soil dug out from underneath it - hovers in the air. This could be fine,
-        // but ants don't climb the walls right now, so there's a mismatch in behavior.
         let is_air_beneath_feet = is_all_element(
             &world_map,
             &elements_query,
@@ -141,7 +138,9 @@ pub fn ant_gravity_system(
             &Element::Air,
         );
 
-        if is_air_beneath_feet {
+        let is_out_of_bounds = !world_map.is_within_bounds(&below_feet_position);
+
+        if is_air_beneath_feet || is_out_of_bounds {
             let below_position = *position + Position::Y;
             let is_air_below = is_all_element(
                 &world_map,
