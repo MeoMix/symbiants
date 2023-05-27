@@ -92,8 +92,7 @@ pub struct WorldMap {
     height: isize,
     surface_level: isize,
     initial_state: WorldSaveState,
-    // TODO: refactor code such that Option isn't needed here - always instantiate with properly populated elements
-    elements: Vec<Vec<Option<Entity>>>,
+    elements_cache: Option<Vec<Vec<Entity>>>,
 }
 
 pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
@@ -112,7 +111,6 @@ impl FromWorld for WorldMap {
                 settings.world_height,
                 surface_level,
                 saved_state,
-                None,
             );
         }
 
@@ -245,7 +243,6 @@ impl FromWorld for WorldMap {
                 elements: air.chain(dirt).collect(),
                 ants: ants.collect(),
             },
-            None,
         )
     }
 }
@@ -272,19 +269,13 @@ impl WorldMap {
         height: isize,
         surface_level: isize,
         initial_state: WorldSaveState,
-        elements: Option<Vec<Vec<Option<Entity>>>>,
     ) -> Self {
-        let elements = match elements {
-            Some(elements) => elements,
-            None => vec![vec![None; width as usize]; height as usize],
-        };
-
         WorldMap {
             width,
             height,
             surface_level,
             initial_state,
-            elements,
+            elements_cache: None,
         }
     }
 
@@ -293,19 +284,30 @@ impl WorldMap {
     }
 
     pub fn get_element(&self, position: Position) -> Option<&Entity> {
-        match self
-            .elements
+        self.elements_cache
+            .as_ref()?
             .get(position.y as usize)
             .and_then(|row| row.get(position.x as usize))
-        {
-            Some(Some(entity)) => Some(entity),
-            _ => None,
+    }
+
+    pub fn set_element(&mut self, position: Position, entity: Entity) {
+        if let Some(cache) = &mut self.elements_cache {
+            if let Some(row) = cache.get_mut(position.y as usize) {
+                if let Some(cell) = row.get_mut(position.x as usize) {
+                    *cell = entity;
+                } else {
+                    panic!("Invalid x position");
+                }
+            } else {
+                panic!("Invalid y position");
+            }
+        } else {
+            panic!("set_element called before cache initialization");
         }
     }
 
-    // TODO: Could consider returning something to prevent panic on misuse
-    pub fn set_element(&mut self, position: Position, entity: Entity) {
-        self.elements[position.y as usize][position.x as usize] = Some(entity);
+    pub fn set_elements(&mut self, elements: Vec<Vec<Entity>>) {
+        self.elements_cache = Some(elements);
     }
 }
 

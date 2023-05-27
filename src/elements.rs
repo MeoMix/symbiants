@@ -162,25 +162,25 @@ pub fn is_all_element(
 
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
 pub fn setup_elements(mut commands: Commands, mut world_map: ResMut<WorldMap>) {
-    let elements_data = world_map
-        .initial_state()
-        .elements
-        .iter()
-        .map(|&ElementSaveState { element, position }| {
-            let id = match element {
-                Element::Air => commands.spawn(AirElementBundle::new(position)).id(),
-                Element::Dirt => commands.spawn(DirtElementBundle::new(position)).id(),
-                // TODO: not all sand is unstable just because it was recently loaded from save state.
-                Element::Sand => commands.spawn(SandElementBundle::new(position)).id(),
-                Element::Food => commands.spawn(FoodElementBundle::new(position)).id(),
-            };
+    let mut new_elements =
+        vec![vec![None; *world_map.width() as usize]; *world_map.height() as usize];
 
-            (position, id)
-        })
-        .collect::<Vec<_>>();
+    for &ElementSaveState { element, position } in world_map.initial_state().elements.iter() {
+        let id = match element {
+            Element::Air => commands.spawn(AirElementBundle::new(position)).id(),
+            Element::Dirt => commands.spawn(DirtElementBundle::new(position)).id(),
+            // TODO: not all sand is unstable just because it was recently loaded from save state.
+            Element::Sand => commands.spawn(SandElementBundle::new(position)).id(),
+            Element::Food => commands.spawn(FoodElementBundle::new(position)).id(),
+        };
 
-    // TODO: might be able to do this quicker now that it's 2D vector
-    for (position, id) in elements_data {
-        world_map.set_element(position, id);
+        new_elements[position.y as usize][position.x as usize] = Some(id);
     }
+
+    let new_elements_non_optional: Vec<Vec<Entity>> = new_elements
+        .into_iter()
+        .map(|row| row.into_iter().filter_map(|x| x).collect())
+        .collect();
+
+    world_map.set_elements(new_elements_non_optional);
 }
