@@ -33,8 +33,8 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             (
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
-                move_ants_system,
-                update_ant_timer_system,
+                // move_ants_system,
+                // update_ant_timer_system,
                 element_gravity_system,
                 gravity_crush_system,
                 gravity_stability_system,

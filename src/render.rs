@@ -1,6 +1,7 @@
 use super::map::Position;
 use crate::{
     ant::{AntBehavior, AntOrientation, Label, TranslationOffset},
+    elements::Element,
     IsFastForwarding,
 };
 use bevy::prelude::*;
@@ -58,6 +59,7 @@ pub fn render_orientation(
 pub fn render_carrying(
     mut commands: Commands,
     mut query: Query<(Entity, Ref<AntBehavior>, Option<&Children>)>,
+    elements_query: Query<&Element>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
     if is_fast_forwarding.0 {
@@ -75,8 +77,12 @@ pub fn render_carrying(
                         ant.spawn(bundle);
                     });
             } else {
-                // If children exists, remove them.
+                // If ant was carrying child sand, but has stopped, then remove sand UI element.
                 if let Some(children) = children {
+                    if !elements_query.contains(entity) {
+                        return;
+                    }
+
                     commands.entity(entity).remove_children(children);
                     for child in children {
                         commands.entity(*child).despawn();

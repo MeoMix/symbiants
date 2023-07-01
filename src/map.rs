@@ -9,7 +9,10 @@ use std::{
 use wasm_bindgen::{prelude::Closure, JsCast};
 
 use crate::{
-    ant::{Angle, AntBehavior, AntColor, AntName, AntOrientation, AntSaveState, AntTimer, Facing},
+    ant::{
+        Angle, AntBehavior, AntColor, AntName, AntOrientation, AntRole, AntSaveState, AntTimer,
+        Facing,
+    },
     elements::{Element, ElementSaveState},
     name_list::NAMES,
     settings::Settings,
@@ -105,14 +108,14 @@ impl FromWorld for WorldMap {
             - (settings.world_height as f32 * settings.initial_dirt_percent))
             as isize;
 
-        if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
-            return WorldMap::new(
-                settings.world_width,
-                settings.world_height,
-                surface_level,
-                saved_state,
-            );
-        }
+        // if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
+        //     return WorldMap::new(
+        //         settings.world_width,
+        //         settings.world_height,
+        //         surface_level,
+        //         saved_state,
+        //     );
+        // }
 
         let air = (0..(surface_level + 1)).flat_map(|row_index| {
             (0..settings.world_width).map(move |column_index| ElementSaveState {
@@ -135,7 +138,29 @@ impl FromWorld for WorldMap {
         });
 
         let mut world_rng = world.get_resource_mut::<WorldRng>().unwrap();
-        let ants = (0..settings.initial_ant_count).map(|_| {
+        // Put the ant at a random location along the x-axis that fits within the bounds of the world.
+        let x = world_rng.0.gen_range(0..1000) % settings.world_width;
+        // Put the ant on the dirt.
+        let y = surface_level;
+
+        // Randomly position ant facing left or right.
+        let facing = if world_rng.0.gen_bool(0.5) {
+            Facing::Left
+        } else {
+            Facing::Right
+        };
+
+        let queen_ant = AntSaveState {
+            position: Position::new(x, y),
+            color: AntColor(settings.ant_color),
+            orientation: AntOrientation::new(facing, Angle::Zero),
+            behavior: AntBehavior::Wandering,
+            role: AntRole::Queen,
+            timer: AntTimer::new(&AntBehavior::Wandering, &mut world_rng.0),
+            name: AntName("Queen".to_string()),
+        };
+
+        let worker_ants = (0..settings.initial_ant_worker_count).map(|_| {
             // Put the ant at a random location along the x-axis that fits within the bounds of the world.
             let x = world_rng.0.gen_range(0..1000) % settings.world_width;
             // Put the ant on the dirt.
@@ -155,10 +180,13 @@ impl FromWorld for WorldMap {
                 color: AntColor(settings.ant_color),
                 orientation: AntOrientation::new(facing, Angle::Zero),
                 behavior: AntBehavior::Wandering,
+                role: AntRole::Worker,
                 timer: AntTimer::new(&AntBehavior::Wandering, &mut world_rng.0),
                 name: AntName(name.to_string()),
             }
         });
+
+        let ants = vec![queen_ant].into_iter().chain(worker_ants);
 
         // let ants = [
         //     AntSaveState {
@@ -274,6 +302,7 @@ impl WorldMap {
             width,
             height,
             surface_level,
+            // TODO: prefer new object not related to save state / no timestamp
             initial_state,
             elements_cache: None,
         }
@@ -338,6 +367,7 @@ fn get_world_save_state(
     ants_query: &mut Query<(
         &AntOrientation,
         &AntBehavior,
+        &AntRole,
         &AntTimer,
         &AntName,
         &AntColor,
@@ -355,9 +385,10 @@ fn get_world_save_state(
     let ants_save_state = ants_query
         .iter_mut()
         .map(
-            |(orientation, behavior, timer, name, color, position)| AntSaveState {
+            |(orientation, behavior, role, timer, name, color, position)| AntSaveState {
                 orientation: orientation.clone(),
                 behavior: behavior.clone(),
+                role: role.clone(),
                 timer: timer.clone(),
                 name: name.clone(),
                 color: color.clone(),
@@ -378,6 +409,7 @@ pub fn periodic_save_world_state_system(
     mut ants_query: Query<(
         &AntOrientation,
         &AntBehavior,
+        &AntRole,
         &AntTimer,
         &AntName,
         &AntColor,

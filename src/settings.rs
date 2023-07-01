@@ -17,7 +17,7 @@ pub struct Settings {
     // sand turns to dirt when stacked this high
     pub compact_sand_depth: isize,
     pub initial_dirt_percent: f32,
-    pub initial_ant_count: isize,
+    pub initial_ant_worker_count: isize,
     pub ant_color: Color,
     pub probabilities: Probabilities,
 }
@@ -31,7 +31,7 @@ impl Default for Settings {
             world_height: 81,
             compact_sand_depth: 15,
             initial_dirt_percent: 3.0 / 4.0,
-            initial_ant_count: 20,
+            initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
             probabilities: Probabilities {
                 random_dig: 0.003,

@@ -19,6 +19,7 @@ pub struct AntSaveState {
     pub color: AntColor,
     pub orientation: AntOrientation,
     pub behavior: AntBehavior,
+    pub role: AntRole,
     pub timer: AntTimer,
     pub name: AntName,
 }
@@ -29,6 +30,7 @@ struct AntBundle {
     translation_offset: TranslationOffset,
     orientation: AntOrientation,
     behavior: AntBehavior,
+    role: AntRole,
     timer: AntTimer,
     name: AntName,
     color: AntColor,
@@ -41,6 +43,7 @@ impl AntBundle {
         color: Color,
         orientation: AntOrientation,
         behavior: AntBehavior,
+        role: AntRole,
         name: &str,
         asset_server: &Res<AssetServer>,
         mut rng: &mut StdRng,
@@ -55,6 +58,7 @@ impl AntBundle {
             translation_offset,
             orientation,
             behavior,
+            role,
             timer: AntTimer::new(&behavior, &mut rng),
             name: AntName(name.to_string()),
             color: AntColor(color),
@@ -134,6 +138,12 @@ pub struct AntColor(pub Color);
 pub enum AntBehavior {
     Wandering,
     Carrying,
+}
+
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub enum AntRole {
+    Worker,
+    Queen,
 }
 
 #[derive(Bundle)]
@@ -310,6 +320,7 @@ pub fn setup_ants(
                 settings.ant_color,
                 ant_save_state.orientation,
                 ant_save_state.behavior,
+                ant_save_state.role,
                 ant_save_state.name.0.as_str(),
                 &asset_server,
                 &mut world_rng.0,
@@ -317,6 +328,21 @@ pub fn setup_ants(
             .with_children(|parent| {
                 if let Some(bundle) = ant_save_state.behavior.get_carrying_bundle() {
                     parent.spawn(bundle);
+                }
+
+                if ant_save_state.role == AntRole::Queen {
+                    parent.spawn(SpriteBundle {
+                        texture: asset_server.load("images/crown.png"),
+                        transform: Transform {
+                            translation: Vec3::new(0.25, 0.5, 1.0),
+                            ..default()
+                        },
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::new(0.5, 0.5)),
+                            ..default()
+                        },
+                        ..default()
+                    });
                 }
             })
             .id();
