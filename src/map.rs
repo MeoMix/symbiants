@@ -10,7 +10,7 @@ use wasm_bindgen::{prelude::Closure, JsCast};
 
 use crate::{
     ant::{
-        Angle, AntBehavior, AntColor, AntName, AntOrientation, AntRole, AntSaveState, AntTimer,
+        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, AntSaveState, AntTimer,
         Facing,
     },
     elements::{Element, ElementSaveState},
@@ -154,9 +154,9 @@ impl FromWorld for WorldMap {
             position: Position::new(x, y),
             color: AntColor(settings.ant_color),
             orientation: AntOrientation::new(facing, Angle::Zero),
-            behavior: AntBehavior::Wandering,
+            inventory: AntInventory(None),
             role: AntRole::Queen,
-            timer: AntTimer::new(&AntBehavior::Wandering, &mut world_rng.0),
+            timer: AntTimer::new(&mut world_rng.0),
             name: AntName("Queen".to_string()),
         };
 
@@ -179,9 +179,9 @@ impl FromWorld for WorldMap {
                 position: Position::new(x, y),
                 color: AntColor(settings.ant_color),
                 orientation: AntOrientation::new(facing, Angle::Zero),
-                behavior: AntBehavior::Wandering,
+                inventory: AntInventory(None),
                 role: AntRole::Worker,
-                timer: AntTimer::new(&AntBehavior::Wandering, &mut world_rng.0),
+                timer: AntTimer::new(&mut world_rng.0),
                 name: AntName(name.to_string()),
             }
         });
@@ -194,7 +194,7 @@ impl FromWorld for WorldMap {
         //         color: settings.ant_color,
         //         facing: Facing::Left,
         //         angle: Angle::Zero,
-        //         behavior: AntBehavior::Carrying,
+        //         inventory: AntInventory(Some(Element::Sand)),
         //         name: "ant1".to_string(),
         //     },
         //     Ant::new(
@@ -202,7 +202,7 @@ impl FromWorld for WorldMap {
         //         settings.ant_color,
         //         Facing::Left,
         //         Angle::Ninety,
-        //         AntBehavior::Carrying,
+        //         AntInventory(Some(Element::Sand)),
         //         "ant2".to_string(),
         //         &asset_server,
         //     ),
@@ -211,7 +211,7 @@ impl FromWorld for WorldMap {
         //         settings.ant_color,
         //         Facing::Left,
         //         Angle::OneHundredEighty,
-        //         AntBehavior::Carrying,
+        //         AntInventory(Some(Element::Sand)),
         //         "ant3".to_string(),
         //         &asset_server,
         //     ),
@@ -220,7 +220,7 @@ impl FromWorld for WorldMap {
         //         settings.ant_color,
         //         Facing::Left,
         //         Angle::TwoHundredSeventy,
-        //         AntBehavior::Carrying,
+        //         AntInventory(Some(Element::Sand)),
         //         "ant4".to_string(),
         //         &asset_server,
         //     ),
@@ -229,7 +229,7 @@ impl FromWorld for WorldMap {
         //         settings.ant_color,
         //         Facing::Right,
         //         Angle::Zero,
-        //         AntBehavior::Carrying,
+        //         AntInventory(Some(Element::Sand)),
         //         "ant5".to_string(),
         //         &asset_server,
         //     ),
@@ -238,7 +238,7 @@ impl FromWorld for WorldMap {
         //         settings.ant_color,
         //         Facing::Right,
         //         Angle::Ninety,
-        //         AntBehavior::Carrying,
+        //         AntInventory(Some(Element::Sand)),
         //         "ant6".to_string(),
         //         &asset_server,
         //     ),
@@ -247,7 +247,7 @@ impl FromWorld for WorldMap {
         //         settings.ant_color,
         //         Facing::Right,
         //         Angle::OneHundredEighty,
-        //         AntBehavior::Carrying,
+        //         AntInventory(Some(Element::Sand)),
         //         "ant7".to_string(),
         //         &asset_server,
         //     ),
@@ -256,7 +256,7 @@ impl FromWorld for WorldMap {
         //         settings.ant_color,
         //         Facing::Right,
         //         Angle::TwoHundredSeventy,
-        //         AntBehavior::Carrying,
+        //         AntInventory(Some(Element::Sand)),
         //         "ant8".to_string(),
         //         &asset_server,
         //     ),
@@ -366,7 +366,7 @@ fn get_world_save_state(
     elements_query: &mut Query<(&Element, &Position)>,
     ants_query: &mut Query<(
         &AntOrientation,
-        &AntBehavior,
+        &AntInventory,
         &AntRole,
         &AntTimer,
         &AntName,
@@ -385,9 +385,9 @@ fn get_world_save_state(
     let ants_save_state = ants_query
         .iter_mut()
         .map(
-            |(orientation, behavior, role, timer, name, color, position)| AntSaveState {
+            |(orientation, inventory, role, timer, name, color, position)| AntSaveState {
                 orientation: orientation.clone(),
-                behavior: behavior.clone(),
+                inventory: inventory.clone(),
                 role: role.clone(),
                 timer: timer.clone(),
                 name: name.clone(),
@@ -408,7 +408,7 @@ pub fn periodic_save_world_state_system(
     mut elements_query: Query<(&Element, &Position)>,
     mut ants_query: Query<(
         &AntOrientation,
-        &AntBehavior,
+        &AntInventory,
         &AntRole,
         &AntTimer,
         &AntName,

@@ -1,6 +1,6 @@
 use super::map::Position;
 use crate::{
-    ant::{AntBehavior, AntOrientation, Label, TranslationOffset},
+    ant::{AntInventory, AntOrientation, Label, TranslationOffset},
     elements::Element,
     IsFastForwarding,
 };
@@ -56,9 +56,10 @@ pub fn render_orientation(
     }
 }
 
+// TODO: Instead of render_carrying, should call spawn/despawn and place the entity into inventory
 pub fn render_carrying(
     mut commands: Commands,
-    mut query: Query<(Entity, Ref<AntBehavior>, Option<&Children>)>,
+    mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
     elements_query: Query<&Element>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
@@ -66,22 +67,27 @@ pub fn render_carrying(
         return;
     }
 
-    for (entity, behavior, children) in query.iter_mut() {
-        if is_fast_forwarding.is_changed() || behavior.is_changed() {
+    for (entity, inventory, children) in query.iter_mut() {
+        if is_fast_forwarding.is_changed() || inventory.is_changed() {
+            info!("inventory changed");
             // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
             // TODO: might *need* to know previous state to avoid unintentionally carrying twice
-            if let Some(bundle) = behavior.get_carrying_bundle() {
+            if let Some(bundle) = inventory.get_carrying_bundle() {
                 commands
                     .entity(entity)
                     .with_children(|ant: &mut ChildBuilder| {
                         ant.spawn(bundle);
                     });
             } else {
-                // If ant was carrying child sand, but has stopped, then remove sand UI element.
+                info!("no carrying bundle");
+                // If ant was carrying food/sand, but has stopped, then remove associated UI element.
                 if let Some(children) = children {
-                    if !elements_query.contains(entity) {
-                        return;
-                    }
+                    // if !elements_query.contains(entity) {
+                    //     info!("failed to find element");
+                    //     return;
+                    // }
+
+                    info!("despawning sand");
 
                     commands.entity(entity).remove_children(children);
                     for child in children {

@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::{f32::consts::PI, ops::Add};
 
 use crate::{
-    elements::{is_all_element, is_element, AirElementBundle, SandElementBundle},
-    gravity::loosen_neighboring_sand,
+    elements::{
+        is_all_element, is_element, AirElementBundle, FoodElementBundle, SandElementBundle,
+    },
+    gravity::loosen_neighboring_sand_and_food,
     map::{Position, WorldMap},
     world_rng::WorldRng,
 };
@@ -18,7 +20,7 @@ pub struct AntSaveState {
     pub position: Position,
     pub color: AntColor,
     pub orientation: AntOrientation,
-    pub behavior: AntBehavior,
+    pub inventory: AntInventory,
     pub role: AntRole,
     pub timer: AntTimer,
     pub name: AntName,
@@ -29,13 +31,13 @@ struct AntBundle {
     position: Position,
     translation_offset: TranslationOffset,
     orientation: AntOrientation,
-    behavior: AntBehavior,
     role: AntRole,
     timer: AntTimer,
     name: AntName,
     color: AntColor,
     hunger: Hunger,
     alive: Alive,
+    inventory: AntInventory,
     sprite_bundle: SpriteBundle,
 }
 
@@ -44,7 +46,7 @@ impl AntBundle {
         position: Position,
         color: Color,
         orientation: AntOrientation,
-        behavior: AntBehavior,
+        inventory: AntInventory,
         role: AntRole,
         name: &str,
         asset_server: &Res<AssetServer>,
@@ -58,9 +60,9 @@ impl AntBundle {
             position,
             translation_offset,
             orientation,
-            behavior,
+            inventory,
             role,
-            timer: AntTimer::new(&behavior, &mut rng),
+            timer: AntTimer::new(&mut rng),
             name: AntName(name.to_string()),
             color: AntColor(color),
             hunger: Hunger::default(),
@@ -138,6 +140,49 @@ pub struct AntName(pub String);
 pub struct AntColor(pub Color);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct AntInventory(pub Option<Element>);
+
+impl AntInventory {
+    pub fn get_carrying_bundle(&self) -> Option<CarryingBundle> {
+        if self.0 == Some(Element::Sand) {
+            return Some(CarryingBundle {
+                sprite_bundle: SpriteBundle {
+                    transform: Transform {
+                        translation: Vec3::new(0.5, 0.5, 1.0),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        color: Color::rgb(0.761, 0.698, 0.502),
+                        anchor: Anchor::TopLeft,
+                        ..default()
+                    },
+                    ..default()
+                },
+                element: Element::Sand,
+            });
+        } else if self.0 == Some(Element::Food) {
+            return Some(CarryingBundle {
+                sprite_bundle: SpriteBundle {
+                    transform: Transform {
+                        translation: Vec3::new(0.5, 0.5, 1.0),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        color: Color::rgb(0.388, 0.584, 0.294),
+                        anchor: Anchor::TopLeft,
+                        ..default()
+                    },
+                    ..default()
+                },
+                element: Element::Food,
+            });
+        }
+
+        None
+    }
+}
+
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Alive;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -179,12 +224,6 @@ impl Hunger {
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub enum AntBehavior {
-    Wandering,
-    Carrying,
-}
-
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum AntRole {
     Worker,
     Queen,
@@ -196,41 +235,12 @@ pub struct CarryingBundle {
     element: Element,
 }
 
-impl AntBehavior {
-    pub fn get_carrying_bundle(&self) -> Option<CarryingBundle> {
-        if self == &AntBehavior::Carrying {
-            return Some(CarryingBundle {
-                sprite_bundle: SpriteBundle {
-                    transform: Transform {
-                        translation: Vec3::new(0.5, 0.5, 1.0),
-                        ..default()
-                    },
-                    sprite: Sprite {
-                        color: Color::rgb(0.761, 0.698, 0.502),
-                        anchor: Anchor::TopLeft,
-                        ..default()
-                    },
-                    ..default()
-                },
-                element: Element::Sand,
-            });
-        }
-
-        None
-    }
-}
-
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntTimer(pub isize);
 
 impl AntTimer {
-    pub fn new(behavior: &AntBehavior, rng: &mut StdRng) -> Self {
-        let timing_factor = match behavior {
-            AntBehavior::Wandering => 3,
-            AntBehavior::Carrying => 4,
-        };
-
-        Self(timing_factor + rng.gen_range(0..3))
+    pub fn new(rng: &mut StdRng) -> Self {
+        Self(rng.gen_range(5..7))
     }
 }
 
@@ -367,31 +377,31 @@ pub fn setup_ants(
                 ant_save_state.position,
                 settings.ant_color,
                 ant_save_state.orientation,
-                ant_save_state.behavior,
+                ant_save_state.inventory,
                 ant_save_state.role,
                 ant_save_state.name.0.as_str(),
                 &asset_server,
                 &mut world_rng.0,
             ))
             .with_children(|parent| {
-                if let Some(bundle) = ant_save_state.behavior.get_carrying_bundle() {
+                if let Some(bundle) = ant_save_state.inventory.get_carrying_bundle() {
                     parent.spawn(bundle);
                 }
 
-                if ant_save_state.role == AntRole::Queen {
-                    parent.spawn(SpriteBundle {
-                        texture: asset_server.load("images/crown.png"),
-                        transform: Transform {
-                            translation: Vec3::new(0.25, 0.5, 1.0),
-                            ..default()
-                        },
-                        sprite: Sprite {
-                            custom_size: Some(Vec2::new(0.5, 0.5)),
-                            ..default()
-                        },
-                        ..default()
-                    });
-                }
+                // if ant_save_state.role == AntRole::Queen {
+                //     parent.spawn(SpriteBundle {
+                //         texture: asset_server.load("images/crown.png"),
+                //         transform: Transform {
+                //             translation: Vec3::new(0.25, 0.5, 1.0),
+                //             ..default()
+                //         },
+                //         sprite: Sprite {
+                //             custom_size: Some(Vec2::new(0.5, 0.5)),
+                //             ..default()
+                //         },
+                //         ..default()
+                //     });
+                // }
             })
             .id();
 
@@ -434,7 +444,7 @@ fn is_valid_location(
 }
 
 fn do_drop(
-    mut behavior: Mut<AntBehavior>,
+    mut inventory: Mut<AntInventory>,
     position: Position,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
@@ -447,17 +457,22 @@ fn do_drop(
     if *element == Element::Air {
         commands.entity(*entity).despawn();
 
-        // Drop sand on air
-        let sand_entity = commands.spawn(SandElementBundle::new(position)).id();
-        world_map.set_element(position, sand_entity);
+        // Drop inventory
+        if inventory.0 == Some(Element::Food) {
+            let food_entity = commands.spawn(FoodElementBundle::new(position)).id();
+            world_map.set_element(position, food_entity);
+        } else if inventory.0 == Some(Element::Sand) {
+            let sand_entity = commands.spawn(SandElementBundle::new(position)).id();
+            world_map.set_element(position, sand_entity);
+        }
 
-        *behavior = AntBehavior::Wandering;
+        *inventory = AntInventory(None);
     }
 }
 
 fn do_turn(
     mut orientation: Mut<AntOrientation>,
-    behavior: Mut<AntBehavior>,
+    inventory: Mut<AntInventory>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
@@ -515,14 +530,14 @@ fn do_turn(
         return;
     }
 
-    // No legal direction? Trapped! Drop sand and turn randomly in an attempt to dig out.
-    if *behavior == AntBehavior::Carrying {
+    // No legal direction? Trapped! Drop if carrying and turn randomly in an attempt to dig out.
+    if inventory.0 != None {
         if let Some(entity) = world_map.get_element(*position) {
             // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
             // NOTE: this can occur due to `spawn` not affecting query on current frame
             if let Ok(element) = elements_query.get(*entity) {
                 if *element == Element::Air {
-                    do_drop(behavior, *position, elements_query, world_map, commands);
+                    do_drop(inventory, *position, elements_query, world_map, commands);
                 }
             }
         }
@@ -535,7 +550,7 @@ fn do_turn(
 
 fn do_dig(
     is_forced_forward: bool,
-    mut behavior: Mut<AntBehavior>,
+    mut inventory: Mut<AntInventory>,
     orientation: Mut<AntOrientation>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
@@ -552,21 +567,27 @@ fn do_dig(
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
 
-    if *element == Element::Dirt || *element == Element::Sand {
+    if *element == Element::Dirt || *element == Element::Sand || *element == Element::Food {
         commands.entity(*entity).despawn();
 
-        // Dig up dirt/sand and replace with air
+        // Dig up dirt/sand/food and replace with air
         let air_entity = commands.spawn(AirElementBundle::new(dig_position)).id();
         world_map.set_element(dig_position, air_entity);
 
-        loosen_neighboring_sand(dig_position, world_map, elements_query, commands);
-        *behavior = AntBehavior::Carrying;
+        loosen_neighboring_sand_and_food(dig_position, world_map, elements_query, commands);
+
+        if *element == Element::Food {
+            *inventory = AntInventory(Some(Element::Food));
+        } else {
+            // NOTE: the act of digging up dirt converts it to sand (intentionally)
+            *inventory = AntInventory(Some(Element::Sand));
+        }
     }
 }
 
 fn do_move(
     mut orientation: Mut<AntOrientation>,
-    behavior: Mut<AntBehavior>,
+    inventory: Mut<AntInventory>,
     mut position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
@@ -580,7 +601,7 @@ fn do_move(
         // Hit an edge - need to turn.
         do_turn(
             orientation,
-            behavior,
+            inventory,
             position,
             elements_query,
             world_map,
@@ -595,16 +616,17 @@ fn do_move(
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
 
-    if *element == Element::Dirt || *element == Element::Sand {
+    // NOTE: this is more like "for all elements that have mass - i.e. not air" which holds for now but is a baked-in assumption
+    if *element != Element::Air {
         // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-        if *behavior == AntBehavior::Wandering
+        if inventory.0 == None
             && position.y > *world_map.surface_level()
             && (*element == Element::Sand
                 || world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dig)
         {
             do_dig(
                 true,
-                behavior,
+                inventory,
                 orientation,
                 position,
                 &elements_query,
@@ -615,7 +637,7 @@ fn do_move(
         } else {
             do_turn(
                 orientation,
-                behavior,
+                inventory,
                 position,
                 elements_query,
                 world_map,
@@ -638,12 +660,12 @@ fn do_move(
         if *foot_element == Element::Air {
             // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
             // Ant will try to fill the gap with sand if possible.
-            let should_drop_sand = *behavior == AntBehavior::Carrying
+            let should_drop_sand = inventory.0 == Some(Element::Sand)
                 && position.y <= *world_map.surface_level()
                 && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_drop;
 
             if should_drop_sand {
-                do_drop(behavior, *position, &elements_query, world_map, commands);
+                do_drop(inventory, *position, &elements_query, world_map, commands);
             } else {
                 // Update position and angle
                 *position = foot_position;
@@ -665,7 +687,7 @@ pub fn ants_hunger_system(
             &mut Handle<Image>,
             &mut AntOrientation,
             &Position,
-            &AntBehavior,
+            &AntInventory,
         ),
         With<Alive>,
     >,
@@ -674,14 +696,14 @@ pub fn ants_hunger_system(
     asset_server: Res<AssetServer>,
     mut world_map: ResMut<WorldMap>,
 ) {
-    for (entity, mut hunger, mut handle, mut orientation, position, behavior) in
+    for (entity, mut hunger, mut handle, mut orientation, position, inventory) in
         ants_hunger_query.iter_mut()
     {
         hunger.try_increment();
 
         // If ant is holding or adjacent to food then eat the food and reset hunger.
         if hunger.is_hungry() {
-            if *behavior == AntBehavior::Wandering {
+            if inventory.0 == None {
                 // Check position in front of ant for food
                 let food_position = *position + orientation.get_forward_delta();
                 if is_element(&world_map, &elements_query, &food_position, &Element::Food) {
@@ -715,8 +737,8 @@ pub fn move_ants_system(
     mut ants_query: Query<
         (
             &mut AntOrientation,
-            &mut AntBehavior,
-            &AntTimer,
+            &mut AntInventory,
+            &mut AntTimer,
             &mut Position,
         ),
         With<Alive>,
@@ -727,10 +749,13 @@ pub fn move_ants_system(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
-    for (orientation, behavior, timer, position) in ants_query.iter_mut() {
+    for (orientation, inventory, mut timer, position) in ants_query.iter_mut() {
         if timer.0 > 0 {
+            timer.0 -= 1;
             continue;
         }
+
+        *timer = AntTimer::new(&mut world_rng.0);
 
         let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
 
@@ -759,7 +784,7 @@ pub fn move_ants_system(
             // Not falling? Try turning
             do_turn(
                 orientation,
-                behavior,
+                inventory,
                 position,
                 &elements_query,
                 &mut world_map,
@@ -770,78 +795,60 @@ pub fn move_ants_system(
             continue;
         }
 
-        match *behavior {
-            AntBehavior::Wandering => {
-                if world_rng.0.gen::<f32>() < settings.probabilities.random_dig {
-                    do_dig(
-                        false,
-                        behavior,
-                        orientation,
-                        position,
-                        &elements_query,
-                        &mut world_map,
-                        &mut commands,
-                    )
-                } else if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
-                    do_turn(
-                        orientation,
-                        behavior,
-                        position,
-                        &elements_query,
-                        &mut world_map,
-                        &mut world_rng,
-                        &mut commands,
-                    );
-                } else {
-                    do_move(
-                        orientation,
-                        behavior,
-                        position,
-                        &elements_query,
-                        &mut world_map,
-                        &mut world_rng,
-                        &settings,
-                        &mut commands,
-                    );
-                }
+        if inventory.0 == None {
+            if world_rng.0.gen::<f32>() < settings.probabilities.random_dig {
+                do_dig(
+                    false,
+                    inventory,
+                    orientation,
+                    position,
+                    &elements_query,
+                    &mut world_map,
+                    &mut commands,
+                )
+            } else if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
+                do_turn(
+                    orientation,
+                    inventory,
+                    position,
+                    &elements_query,
+                    &mut world_map,
+                    &mut world_rng,
+                    &mut commands,
+                );
+            } else {
+                do_move(
+                    orientation,
+                    inventory,
+                    position,
+                    &elements_query,
+                    &mut world_map,
+                    &mut world_rng,
+                    &settings,
+                    &mut commands,
+                );
             }
-            AntBehavior::Carrying => {
-                if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
-                    do_drop(
-                        behavior,
-                        *position,
-                        &elements_query,
-                        &mut world_map,
-                        &mut commands,
-                    );
-                } else {
-                    do_move(
-                        orientation,
-                        behavior,
-                        position,
-                        &elements_query,
-                        &mut world_map,
-                        &mut world_rng,
-                        &settings,
-                        &mut commands,
-                    );
-                }
+        } else {
+            if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
+                do_drop(
+                    inventory,
+                    *position,
+                    &elements_query,
+                    &mut world_map,
+                    &mut commands,
+                );
+            } else {
+                do_move(
+                    orientation,
+                    inventory,
+                    position,
+                    &elements_query,
+                    &mut world_map,
+                    &mut world_rng,
+                    &settings,
+                    &mut commands,
+                );
             }
-        }
-    }
-}
-
-pub fn update_ant_timer_system(
-    mut ants_query: Query<(Ref<AntBehavior>, &mut AntTimer), With<Alive>>,
-    mut world_rng: ResMut<WorldRng>,
-) {
-    for (behavior, mut timer) in ants_query.iter_mut() {
-        // TODO: this isn't working properly because in scenarios where the ant enacts its behavior, but its behavior did not change,
-        // the ant doesn't reset its timer.
-        if behavior.is_changed() {
-            *timer = AntTimer::new(&behavior, &mut world_rng.0);
-        } else if timer.0 > 0 {
-            timer.0 -= 1;
         }
     }
 }

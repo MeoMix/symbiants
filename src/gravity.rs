@@ -199,7 +199,7 @@ pub fn gravity_crush_system(
     }
 }
 
-pub fn loosen_neighboring_sand(
+pub fn loosen_neighboring_sand_and_food(
     location: Position,
     world_map: &WorldMap,
     elements_query: &Query<&Element>,
@@ -221,7 +221,7 @@ pub fn loosen_neighboring_sand(
     for position in adjacent_positions.iter() {
         if let Some(entity) = world_map.get_element(*position) {
             if let Ok(element) = elements_query.get(*entity) {
-                if *element == Element::Sand {
+                if *element == Element::Sand || *element == Element::Food {
                     commands.entity(*entity).insert(Unstable);
                 }
             }
@@ -247,7 +247,7 @@ pub fn gravity_stability_system(
         // Sand which fell in the current frame is still unstable and has potentially loosened its neighbors
         // So, mark all neighboring sand as unstable
         if position.is_changed() {
-            loosen_neighboring_sand(*position, &world_map, &elements_query, &mut commands);
+            loosen_neighboring_sand_and_food(*position, &world_map, &elements_query, &mut commands);
         } else {
             // Sand which has stopped falling is no longer unstable.
             commands.entity(entity).remove::<Unstable>();
