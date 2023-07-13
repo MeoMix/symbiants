@@ -143,6 +143,19 @@ pub enum Element {
     Food,
 }
 
+pub fn is_element(
+    world_map: &WorldMap,
+    elements_query: &Query<&Element>,
+    position: &Position,
+    search_element: &Element,
+) -> bool {
+    world_map.get_element(*position).map_or(false, |&element| {
+        elements_query
+            .get(element)
+            .map_or(false, |queried_element| *queried_element == *search_element)
+    })
+}
+
 // Returns true if every element in `positions` matches the provided Element type.
 // NOTE: This returns true if given 0 positions.
 pub fn is_all_element(
@@ -151,13 +164,9 @@ pub fn is_all_element(
     positions: &[Position],
     search_element: &Element,
 ) -> bool {
-    positions.iter().all(|position| {
-        world_map.get_element(*position).map_or(false, |&element| {
-            elements_query
-                .get(element)
-                .map_or(false, |queried_element| *queried_element == *search_element)
-        })
-    })
+    positions
+        .iter()
+        .all(|position| is_element(world_map, elements_query, position, search_element))
 }
 
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.

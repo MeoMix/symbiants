@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::{f32::consts::PI, ops::Add};
 
 use crate::{
-    elements::{is_all_element, AirElementBundle, SandElementBundle},
+    elements::{is_all_element, is_element, AirElementBundle, SandElementBundle},
     gravity::loosen_neighboring_sand,
     map::{Position, WorldMap},
     world_rng::WorldRng,
@@ -34,6 +34,8 @@ struct AntBundle {
     timer: AntTimer,
     name: AntName,
     color: AntColor,
+    hunger: Hunger,
+    alive: Alive,
     sprite_bundle: SpriteBundle,
 }
 
@@ -49,7 +51,6 @@ impl AntBundle {
         mut rng: &mut StdRng,
     ) -> Self {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
-        // TODO: I don't remember why I want an x-offset here.
         // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
         let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
 
@@ -62,6 +63,8 @@ impl AntBundle {
             timer: AntTimer::new(&behavior, &mut rng),
             name: AntName(name.to_string()),
             color: AntColor(color),
+            hunger: Hunger::default(),
+            alive: Alive,
             sprite_bundle: SpriteBundle {
                 texture: asset_server.load("images/ant.png"),
                 sprite: Sprite {
@@ -133,6 +136,47 @@ pub struct AntName(pub String);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntColor(pub Color);
+
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct Alive;
+
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct Hunger {
+    value: usize,
+    max: usize,
+}
+
+impl Hunger {
+    pub fn default() -> Self {
+        Self {
+            value: 0,
+            // TODO: this is 6 * 60 * 60 * 24 which is 1 day expressed in frame ticks
+            max: 518400,
+        }
+    }
+
+    pub fn try_increment(&mut self) {
+        if self.value < self.max {
+            self.value += 1;
+        }
+    }
+
+    pub fn as_percent(&self) -> usize {
+        self.value / self.max
+    }
+
+    pub fn is_hungry(&self) -> bool {
+        self.value >= self.max / 2
+    }
+
+    pub fn is_starving(&self) -> bool {
+        self.value >= self.max
+    }
+
+    pub fn reset(&mut self) {
+        self.value = 0;
+    }
+}
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum AntBehavior {
@@ -273,6 +317,10 @@ impl AntOrientation {
         };
 
         Self::new(facing, self.angle)
+    }
+
+    pub fn flip_onto_back(self) -> Self {
+        self.rotate_towards_back().rotate_towards_back()
     }
 
     pub fn rotate_towards_feet(self) -> Self {
@@ -609,15 +657,70 @@ fn do_move(
     }
 }
 
+pub fn ants_hunger_system(
+    mut ants_hunger_query: Query<
+        (
+            Entity,
+            &mut Hunger,
+            &mut Handle<Image>,
+            &mut AntOrientation,
+            &Position,
+            &AntBehavior,
+        ),
+        With<Alive>,
+    >,
+    elements_query: Query<&Element>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut world_map: ResMut<WorldMap>,
+) {
+    for (entity, mut hunger, mut handle, mut orientation, position, behavior) in
+        ants_hunger_query.iter_mut()
+    {
+        hunger.try_increment();
+
+        // If ant is holding or adjacent to food then eat the food and reset hunger.
+        if hunger.is_hungry() {
+            if *behavior == AntBehavior::Wandering {
+                // Check position in front of ant for food
+                let food_position = *position + orientation.get_forward_delta();
+                if is_element(&world_map, &elements_query, &food_position, &Element::Food) {
+                    // Eat the food
+                    let food_entity = world_map.get_element(food_position).unwrap();
+
+                    commands.entity(*food_entity).despawn();
+                    world_map.set_element(
+                        food_position,
+                        commands.spawn(AirElementBundle::new(food_position)).id(),
+                    );
+
+                    hunger.reset();
+                }
+            }
+        }
+
+        if hunger.is_starving() {
+            commands.entity(entity).remove::<Alive>();
+
+            // TODO: prefer respond to Alive removal and/or responding to addition of Dead instead of inline code here
+            *handle = asset_server.load("images/ant_dead.png");
+            *orientation = orientation.flip_onto_back();
+        }
+    }
+}
+
 // TODO: untangle mutability, many functions accept mutable but do not mutate which seems wrong
 // TODO: first pass is going to be just dumping all code into one system, but suspect want multiple systems
 pub fn move_ants_system(
-    mut ants_query: Query<(
-        &mut AntOrientation,
-        &mut AntBehavior,
-        &AntTimer,
-        &mut Position,
-    )>,
+    mut ants_query: Query<
+        (
+            &mut AntOrientation,
+            &mut AntBehavior,
+            &AntTimer,
+            &mut Position,
+        ),
+        With<Alive>,
+    >,
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
     settings: Res<Settings>,
@@ -729,7 +832,7 @@ pub fn move_ants_system(
 }
 
 pub fn update_ant_timer_system(
-    mut ants_query: Query<(Ref<AntBehavior>, &mut AntTimer)>,
+    mut ants_query: Query<(Ref<AntBehavior>, &mut AntTimer), With<Alive>>,
     mut world_rng: ResMut<WorldRng>,
 ) {
     for (behavior, mut timer) in ants_query.iter_mut() {

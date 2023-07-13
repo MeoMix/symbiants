@@ -2,13 +2,14 @@ use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
     camera::WorldScale,
-    elements::FoodElementBundle,
+    elements::{is_element, Element, FoodElementBundle},
     map::{Position, WorldMap},
 };
 
 pub fn handle_mouse_clicks(
     mouse_input: Res<Input<MouseButton>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
+    elements_query: Query<&Element>,
     mut commands: Commands,
     world_scale: Res<WorldScale>,
     mut world_map: ResMut<WorldMap>,
@@ -26,7 +27,9 @@ pub fn handle_mouse_clicks(
 
         info!("grid_position {:?}", grid_position);
 
-        // let food_entity = commands.spawn(FoodElementBundle::new(grid_position)).id();
-        // world_map.set_element(grid_position, food_entity);
+        if is_element(&world_map, &elements_query, &grid_position, &Element::Air) {
+            let food_entity = commands.spawn(FoodElementBundle::new(grid_position)).id();
+            world_map.set_element(grid_position, food_entity);
+        }
     }
 }

@@ -23,7 +23,10 @@ use map::WorldMap;
 use settings::Settings;
 use simulation::SimulationPlugin;
 use time::{IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE};
-use ui::{loading_text_update_system, setup_loading_text_system};
+use ui::{
+    loading_text_update_system, setup_info_panel, setup_loading_text_system,
+    update_info_panel_system,
+};
 use world_rng::WorldRng;
 pub struct AntfarmPlugin;
 
@@ -52,6 +55,8 @@ impl Plugin for AntfarmPlugin {
         })
         .add_startup_system(setup_loading_text_system)
         .add_system(loading_text_update_system)
+        .add_startup_system(setup_info_panel)
+        .add_system(update_info_panel_system)
         .add_plugin(CameraPlugin)
         .add_plugin(SimulationPlugin);
     }
