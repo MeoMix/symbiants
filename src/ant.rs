@@ -240,7 +240,7 @@ pub struct AntTimer(pub isize);
 
 impl AntTimer {
     pub fn new(rng: &mut StdRng) -> Self {
-        Self(rng.gen_range(5..7))
+        Self(rng.gen_range(3..5))
     }
 }
 
@@ -388,20 +388,20 @@ pub fn setup_ants(
                     parent.spawn(bundle);
                 }
 
-                // if ant_save_state.role == AntRole::Queen {
-                //     parent.spawn(SpriteBundle {
-                //         texture: asset_server.load("images/crown.png"),
-                //         transform: Transform {
-                //             translation: Vec3::new(0.25, 0.5, 1.0),
-                //             ..default()
-                //         },
-                //         sprite: Sprite {
-                //             custom_size: Some(Vec2::new(0.5, 0.5)),
-                //             ..default()
-                //         },
-                //         ..default()
-                //     });
-                // }
+                if ant_save_state.role == AntRole::Queen {
+                    parent.spawn(SpriteBundle {
+                        texture: asset_server.load("images/crown.png"),
+                        transform: Transform {
+                            translation: Vec3::new(0.25, 0.5, 1.0),
+                            ..default()
+                        },
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::new(0.5, 0.5)),
+                            ..default()
+                        },
+                        ..default()
+                    });
+                }
             })
             .id();
 

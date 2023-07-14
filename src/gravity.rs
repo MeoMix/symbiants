@@ -47,7 +47,7 @@ fn get_element_fall_position(
         &elements_query,
         &[left_position, left_below_position],
         &Element::Air,
-    ) && world_rng.gen_bool(0.1);
+    ) && world_rng.gen_bool(0.33);
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
@@ -56,7 +56,7 @@ fn get_element_fall_position(
         &elements_query,
         &[right_position, right_below_position],
         &Element::Air,
-    ) && world_rng.gen_bool(0.1);
+    ) && world_rng.gen_bool(0.33);
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
     if go_left && go_right {
@@ -228,23 +228,17 @@ pub fn loosen_neighboring_sand_and_food(
 // and then there's a gap of air, one of the sands can become stuck in the air?
 
 pub fn gravity_stability_system(
-    sand_query: Query<(&Element, Ref<Position>, Entity), With<Unstable>>,
+    sand_query: Query<(Ref<Position>, Entity), With<Unstable>>,
     elements_query: Query<&Element>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
-    for (element, position, entity) in sand_query.iter() {
-        // TODO: technically sand is the only unstable element right now but keeping this as a safeguard
-        if *element != Element::Sand {
-            continue;
-        }
-
-        // Sand which fell in the current frame is still unstable and has potentially loosened its neighbors
-        // So, mark all neighboring sand as unstable
+    for (position, entity) in sand_query.iter() {
+        // Sand/Food which fell in the current frame is still unstable and has potentially loosened its neighbors
         if position.is_changed() {
             loosen_neighboring_sand_and_food(*position, &world_map, &elements_query, &mut commands);
         } else {
-            // Sand which has stopped falling is no longer unstable.
+            // Unstable entities which have stopped falling are no longer unstable.
             commands.entity(entity).remove::<Unstable>();
         }
     }

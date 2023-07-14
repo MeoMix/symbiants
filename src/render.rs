@@ -82,16 +82,17 @@ pub fn render_carrying(
                 info!("no carrying bundle");
                 // If ant was carrying food/sand, but has stopped, then remove associated UI element.
                 if let Some(children) = children {
-                    // if !elements_query.contains(entity) {
-                    //     info!("failed to find element");
-                    //     return;
-                    // }
+                    let element_children = children
+                        .iter()
+                        .filter(|child| elements_query.get(**child).is_ok())
+                        .cloned()
+                        .collect::<Vec<_>>();
 
-                    info!("despawning sand");
-
-                    commands.entity(entity).remove_children(children);
-                    for child in children {
-                        commands.entity(*child).despawn();
+                    commands
+                        .entity(entity)
+                        .remove_children(&element_children[..]);
+                    for child in element_children {
+                        commands.entity(child).despawn();
                     }
                 }
             }
