@@ -17,7 +17,8 @@ pub fn setup_loading_text_system(mut commands: Commands, asset_server: Res<Asset
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     ..default()
@@ -31,8 +32,10 @@ pub fn setup_loading_text_system(mut commands: Commands, asset_server: Res<Asset
             dialog_container
                 .spawn(NodeBundle {
                     style: Style {
-                        size: Size::new(Val::Percent(25.0), Val::Percent(50.0)),
-                        max_size: Size::new(Val::Percent(25.0), Val::Percent(50.0)),
+                        width: Val::Percent(25.0),
+                        height: Val::Percent(50.0),
+                        max_width: Val::Percent(25.0),
+                        max_height: Val::Percent(50.0),
                         ..default()
                     },
                     background_color: Color::BLACK.into(),
@@ -59,10 +62,7 @@ pub fn setup_loading_text_system(mut commands: Commands, asset_server: Res<Asset
                             ..default()
                         }
                         .with_style(Style {
-                            max_size: Size {
-                                width: Val::Px(400.),
-                                height: Val::Undefined,
-                            },
+                            max_width: Val::Px(400.),
                             ..default()
                         }),
                         LoadingDialogText,
@@ -98,7 +98,8 @@ pub fn setup_info_panel(mut commands: Commands, asset_server: Res<AssetServer>) 
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Px(200.0), Val::Px(200.0)),
+                    width: Val::Px(200.0),
+                    height: Val::Px(200.0),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
                     ..default()
@@ -129,10 +130,7 @@ pub fn setup_info_panel(mut commands: Commands, asset_server: Res<AssetServer>) 
                     ..default()
                 }
                 .with_style(Style {
-                    max_size: Size {
-                        width: Val::Px(400.),
-                        height: Val::Undefined,
-                    },
+                    max_width: Val::Px(400.),
                     ..default()
                 }),
                 InfoPanelText,

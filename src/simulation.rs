@@ -17,7 +17,7 @@ pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_systems(
+        app.add_systems(Startup,
             (
                 setup_fast_forward_time_system,
                 setup_background,
@@ -28,9 +28,9 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
-        app.add_system(handle_mouse_clicks);
+        app.add_systems(Update, handle_mouse_clicks);
 
-        app.add_systems(
+        app.add_systems(FixedUpdate, 
             (
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
                 move_ants_system,
@@ -48,8 +48,7 @@ impl Plugin for SimulationPlugin {
                 render_carrying,
                 play_time_system,
             )
-                .chain()
-                .in_schedule(CoreSchedule::FixedUpdate),
+                .chain(),
         );
     }
 }

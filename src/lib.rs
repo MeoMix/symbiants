@@ -47,17 +47,17 @@ impl Plugin for AntfarmPlugin {
         .init_resource::<WorldRng>()
         .init_resource::<WorldMap>()
         // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
-        .edit_schedule(CoreSchedule::FixedUpdate, |schedule| {
+        .edit_schedule(FixedUpdate, |schedule| {
             schedule.set_build_settings(ScheduleBuildSettings {
                 ambiguity_detection: LogLevel::Error,
                 ..default()
             });
         })
-        .add_startup_system(setup_loading_text_system)
-        .add_system(loading_text_update_system)
-        .add_startup_system(setup_info_panel)
-        .add_system(update_info_panel_system)
-        .add_plugin(CameraPlugin)
-        .add_plugin(SimulationPlugin);
+        .add_systems(Startup, setup_loading_text_system)
+        .add_systems(Update, loading_text_update_system)
+        .add_systems(Startup, setup_info_panel)
+        .add_systems(Update, update_info_panel_system)
+        .add_plugins(CameraPlugin)
+        .add_plugins(SimulationPlugin);
     }
 }

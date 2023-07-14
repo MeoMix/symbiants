@@ -49,7 +49,8 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(PanCamPlugin::default());
-        app.add_startup_system(setup).add_system(window_resize);
+        app.add_plugins(PanCamPlugin::default());
+        app.add_systems(Startup, setup);
+        app.add_systems(Update, window_resize);
     }
 }

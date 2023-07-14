@@ -17,7 +17,7 @@ pub struct PanCamSystemSet;
 
 impl Plugin for PanCamPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems((camera_movement, camera_zoom).in_set(PanCamSystemSet))
+        app.add_systems(Update, (camera_movement, camera_zoom).in_set(PanCamSystemSet))
             .register_type::<PanCam>();
 
         #[cfg(feature = "bevy_egui")]
