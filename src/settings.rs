@@ -2,11 +2,12 @@ use bevy::prelude::{Color, Resource};
 
 #[derive(Clone)]
 pub struct Probabilities {
-    pub random_dig: f32,         // dig down while wandering
-    pub random_drop: f32,        // drop while wandering
-    pub random_turn: f32,        // turn while wandering
-    pub below_surface_dig: f32,  // chance to dig dirt when below surface level
-    pub above_surface_drop: f32, // chance to randomly drop sand when at-or-above surface level
+    pub random_dig: f32,              // dig down while wandering
+    pub random_drop: f32,             // drop while wandering
+    pub random_turn: f32,             // turn while wandering
+    pub below_surface_dirt_dig: f32,  // chance to dig dirt when below surface level
+    pub above_surface_sand_drop: f32, // chance to randomly drop sand when at-or-above surface level
+    pub below_surface_food_drop: f32, // chance to randomly drop food when below surface level
 }
 
 #[derive(Resource, Clone)]
@@ -31,14 +32,15 @@ impl Default for Settings {
             world_height: 81,
             compact_sand_depth: 15,
             initial_dirt_percent: 3.0 / 4.0,
-            initial_ant_worker_count: 0,
+            initial_ant_worker_count: 20,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
             probabilities: Probabilities {
                 random_dig: 0.003,
                 random_drop: 0.003,
                 random_turn: 0.005,
-                below_surface_dig: 0.10,
-                above_surface_drop: 0.10,
+                below_surface_dirt_dig: 0.10,
+                above_surface_sand_drop: 0.10,
+                below_surface_food_drop: 0.10,
             },
         }
     }

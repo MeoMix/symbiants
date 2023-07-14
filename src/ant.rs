@@ -148,7 +148,7 @@ impl AntInventory {
             return Some(CarryingBundle {
                 sprite_bundle: SpriteBundle {
                     transform: Transform {
-                        translation: Vec3::new(0.5, 0.5, 1.0),
+                        translation: Vec3::new(0.5, 0.75, 1.0),
                         ..default()
                     },
                     sprite: Sprite {
@@ -164,7 +164,7 @@ impl AntInventory {
             return Some(CarryingBundle {
                 sprite_bundle: SpriteBundle {
                     transform: Transform {
-                        translation: Vec3::new(0.5, 0.5, 1.0),
+                        translation: Vec3::new(0.5, 0.75, 1.0),
                         ..default()
                     },
                     sprite: Sprite {
@@ -443,7 +443,7 @@ fn is_valid_location(
     true
 }
 
-fn do_drop(
+fn drop(
     mut inventory: Mut<AntInventory>,
     position: Position,
     elements_query: &Query<&Element>,
@@ -470,7 +470,7 @@ fn do_drop(
     }
 }
 
-fn do_turn(
+fn turn(
     mut orientation: Mut<AntOrientation>,
     inventory: Mut<AntInventory>,
     position: Mut<Position>,
@@ -537,7 +537,7 @@ fn do_turn(
             // NOTE: this can occur due to `spawn` not affecting query on current frame
             if let Ok(element) = elements_query.get(*entity) {
                 if *element == Element::Air {
-                    do_drop(inventory, *position, elements_query, world_map, commands);
+                    drop(inventory, *position, elements_query, world_map, commands);
                 }
             }
         }
@@ -548,7 +548,7 @@ fn do_turn(
     *orientation = random_facing_orientation;
 }
 
-fn do_dig(
+fn dig(
     is_forced_forward: bool,
     mut inventory: Mut<AntInventory>,
     orientation: Mut<AntOrientation>,
@@ -585,7 +585,7 @@ fn do_dig(
     }
 }
 
-fn do_move(
+fn act(
     mut orientation: Mut<AntOrientation>,
     inventory: Mut<AntInventory>,
     mut position: Mut<Position>,
@@ -595,11 +595,12 @@ fn do_move(
     settings: &Res<Settings>,
     commands: &mut Commands,
 ) {
+    // Propose taking a step forward, but check validity and alternative actions before stepping forward.
     let new_position = *position + orientation.get_forward_delta();
 
     if !world_map.is_within_bounds(&new_position) {
         // Hit an edge - need to turn.
-        do_turn(
+        turn(
             orientation,
             inventory,
             position,
@@ -611,45 +612,69 @@ fn do_move(
         return;
     }
 
-    // Check if hitting dirt or sand and, if so, consider digging through it.
+    // Check if hitting a solid element and, if so, consider digging through it.
     let entity = world_map.get_element(new_position).unwrap();
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
 
-    // NOTE: this is more like "for all elements that have mass - i.e. not air" which holds for now but is a baked-in assumption
     if *element != Element::Air {
-        // If ant is wandering *below ground level* and bumps into sand or has a chance to dig, dig.
-        if inventory.0 == None
-            && position.y > *world_map.surface_level()
-            && (*element == Element::Sand
-                || world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dig)
-        {
-            do_dig(
-                true,
-                inventory,
-                orientation,
-                position,
-                &elements_query,
-                world_map,
-                commands,
-            );
-            return;
-        } else {
-            do_turn(
-                orientation,
-                inventory,
-                position,
-                elements_query,
-                world_map,
-                world_rng,
-                commands,
-            );
+        // Consider digging / picking up the element under various circumstances.
+        if inventory.0 == None {
+            // When above ground, prioritize picking up food
+            let dig_food = *element == Element::Food && !world_map.is_below_surface(&position);
+            // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
+            let dig_sand = *element == Element::Sand && world_map.is_below_surface(&position);
+            let dig_dirt = *element == Element::Dirt
+                && world_map.is_below_surface(&position)
+                && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dirt_dig;
+
+            if dig_food || dig_sand || dig_dirt {
+                dig(
+                    true,
+                    inventory,
+                    orientation,
+                    position,
+                    &elements_query,
+                    world_map,
+                    commands,
+                );
+                return;
+            }
         }
+
+        // Decided to not dig through and can't walk through, so just turn.
+        turn(
+            orientation,
+            inventory,
+            position,
+            elements_query,
+            world_map,
+            world_rng,
+            commands,
+        );
 
         return;
     }
 
-    // We can move forward.  But first, check footing.
+    // There is an air gap directly ahead of the ant. Consider dropping inventory.
+    if inventory.0 != None {
+        // Prioritize dropping sand above ground and food below ground.
+        let drop_sand = inventory.0 == Some(Element::Sand)
+            && !world_map.is_below_surface(&position)
+            && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_sand_drop;
+
+        let drop_food = inventory.0 == Some(Element::Food)
+            && world_map.is_below_surface(&position)
+            && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_food_drop;
+
+        if drop_sand || drop_food {
+            drop(inventory, *position, &elements_query, world_map, commands);
+
+            return;
+        }
+    }
+
+    // Decided to not drop inventory. Check footing and move forward if possible.
     let foot_orientation = orientation.rotate_towards_feet();
     let foot_position = new_position + foot_orientation.get_forward_delta();
 
@@ -659,23 +684,12 @@ fn do_move(
 
         if *foot_element == Element::Air {
             // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
-            // Ant will try to fill the gap with sand if possible.
-            let should_drop_sand = inventory.0 == Some(Element::Sand)
-                && position.y <= *world_map.surface_level()
-                && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_drop;
-
-            if should_drop_sand {
-                do_drop(inventory, *position, &elements_query, world_map, commands);
-            } else {
-                // Update position and angle
-                *position = foot_position;
-                *orientation = foot_orientation;
-            }
-            return;
+            *position = foot_position;
+            *orientation = foot_orientation;
+        } else {
+            // Just move forward
+            *position = new_position;
         }
-
-        // Just move forward
-        *position = new_position;
     }
 }
 
@@ -758,23 +772,18 @@ pub fn move_ants_system(
         *timer = AntTimer::new(&mut world_rng.0);
 
         let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
-
-        let is_air_beneath_feet = is_all_element(
+        let is_air_beneath_feet = is_element(
             &world_map,
             &elements_query,
-            &[below_feet_position],
+            &below_feet_position,
             &Element::Air,
         );
 
         if is_air_beneath_feet {
             // Whoops, whatever we were walking on disappeared.
             let below_position = *position + Position::Y;
-            let is_air_below = is_all_element(
-                &world_map,
-                &elements_query,
-                &[below_position],
-                &Element::Air,
-            );
+            let is_air_below =
+                is_element(&world_map, &elements_query, &below_position, &Element::Air);
 
             // Gravity system will handle things if going to fall
             if is_air_below {
@@ -782,7 +791,21 @@ pub fn move_ants_system(
             }
 
             // Not falling? Try turning
-            do_turn(
+            turn(
+                orientation,
+                inventory,
+                position,
+                &elements_query,
+                &mut world_map,
+                &mut world_rng,
+                &mut commands,
+            );
+
+            continue;
+        }
+
+        if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
+            turn(
                 orientation,
                 inventory,
                 position,
@@ -797,7 +820,7 @@ pub fn move_ants_system(
 
         if inventory.0 == None {
             if world_rng.0.gen::<f32>() < settings.probabilities.random_dig {
-                do_dig(
+                dig(
                     false,
                     inventory,
                     orientation,
@@ -805,51 +828,34 @@ pub fn move_ants_system(
                     &elements_query,
                     &mut world_map,
                     &mut commands,
-                )
-            } else if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
-                do_turn(
-                    orientation,
-                    inventory,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut world_rng,
-                    &mut commands,
                 );
-            } else {
-                do_move(
-                    orientation,
-                    inventory,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut world_rng,
-                    &settings,
-                    &mut commands,
-                );
+
+                continue;
             }
         } else {
             if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
-                do_drop(
+                drop(
                     inventory,
                     *position,
                     &elements_query,
                     &mut world_map,
                     &mut commands,
                 );
-            } else {
-                do_move(
-                    orientation,
-                    inventory,
-                    position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut world_rng,
-                    &settings,
-                    &mut commands,
-                );
+
+                continue;
             }
         }
+
+        act(
+            orientation,
+            inventory,
+            position,
+            &elements_query,
+            &mut world_map,
+            &mut world_rng,
+            &settings,
+            &mut commands,
+        );
     }
 }
 

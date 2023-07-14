@@ -1,6 +1,6 @@
 use crate::{
     ant::AntOrientation,
-    elements::{is_all_element, Crushable, DirtElementBundle},
+    elements::{is_all_element, is_element, Crushable, DirtElementBundle},
     time::IsFastForwarding,
     world_rng::WorldRng,
 };
@@ -33,12 +33,7 @@ fn get_element_fall_position(
 ) -> Option<Position> {
     // If there is air below then continue falling down.
     let below_position = position + Position::Y;
-    if is_all_element(
-        &world_map,
-        &elements_query,
-        &[below_position],
-        &Element::Air,
-    ) {
+    if is_element(&world_map, &elements_query, &below_position, &Element::Air) {
         return Some(below_position);
     }
 
@@ -52,7 +47,7 @@ fn get_element_fall_position(
         &elements_query,
         &[left_position, left_below_position],
         &Element::Air,
-    );
+    ) && world_rng.gen_bool(0.1);
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
@@ -61,7 +56,7 @@ fn get_element_fall_position(
         &elements_query,
         &[right_position, right_below_position],
         &Element::Air,
-    );
+    ) && world_rng.gen_bool(0.1);
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
     if go_left && go_right {

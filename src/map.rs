@@ -292,6 +292,10 @@ impl WorldMap {
         &self.surface_level
     }
 
+    pub fn is_below_surface(&self, position: &Position) -> bool {
+        position.y > self.surface_level
+    }
+
     pub fn new(
         width: isize,
         height: isize,
