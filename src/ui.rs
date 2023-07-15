@@ -93,7 +93,7 @@ pub struct InfoPanel;
 #[derive(Component)]
 pub struct InfoPanelText;
 
-pub fn setup_info_panel(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_info_panel(mut commands: Commands) {
     commands
         .spawn((
             NodeBundle {
@@ -116,15 +116,15 @@ pub fn setup_info_panel(mut commands: Commands, asset_server: Res<AssetServer>) 
                         TextSection::new(
                             "Ants:",
                             TextStyle {
-                                font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                                 font_size: 64.0,
                                 color: Color::RED,
+                                ..default()
                             },
                         ),
                         TextSection::from_style(TextStyle {
-                            font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                             font_size: 64.0,
                             color: Color::RED,
+                            ..default()
                         }),
                     ]),
                     ..default()

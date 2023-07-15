@@ -3,7 +3,7 @@ use std::{f32::consts::PI, ops::Add};
 
 use crate::{
     elements::{
-        is_all_element, is_element, AirElementBundle, FoodElementBundle, SandElementBundle,
+        is_element, AirElementBundle, FoodElementBundle, SandElementBundle,
     },
     gravity::loosen_neighboring_sand_and_food,
     map::{Position, WorldMap},
@@ -113,7 +113,6 @@ impl AntLabelBundle {
                 text: Text::from_section(
                     name,
                     TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                         color: Color::BLACK,
                         font_size: 60.0,
                         ..default()
