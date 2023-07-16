@@ -16,7 +16,7 @@ pub fn handle_mouse_clicks(
 ) {
     let Ok(window) = primary_window_query.get_single() else { return };
 
-    if mouse_input.just_pressed(MouseButton::Left) {
+    if mouse_input.just_released(MouseButton::Left) {
         let (camera, camera_transform) = query.single_mut();
 
         let cursor_position = window.cursor_position().unwrap();

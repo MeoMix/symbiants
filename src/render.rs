@@ -57,8 +57,10 @@ pub fn render_orientation(
 }
 
 // TODO: Instead of render_carrying, should call spawn/despawn and place the entity into inventory
+// TODO: Consider using #[derive(WorldQuery)]
 pub fn render_carrying(
     mut commands: Commands,
+    // TODO: consider `iter_descendants` instead of Option<&Children>
     mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
     elements_query: Query<&Element>,
     is_fast_forwarding: Res<IsFastForwarding>,

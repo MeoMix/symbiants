@@ -1,3 +1,4 @@
+// TODO: Pretty sure we want custom commands for mutating WorldMap
 use serde::{Deserialize, Serialize};
 use std::{f32::consts::PI, ops::Add};
 
@@ -98,7 +99,6 @@ impl AntLabelBundle {
         ant: Entity,
         position: Position,
         name: &str,
-        asset_server: &Res<AssetServer>,
     ) -> Self {
         // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise. This isn't a good way of achieving this.
         let translation_offset = TranslationOffset(Vec3::new(0.5, -1.5, 1.0));
@@ -205,8 +205,8 @@ impl Hunger {
         }
     }
 
-    pub fn as_percent(&self) -> usize {
-        self.value / self.max
+    pub fn as_percent(&self) -> f64 {
+        ((self.value as f64) / (self.max as f64) * 100.0).round()
     }
 
     pub fn is_hungry(&self) -> bool {
@@ -408,7 +408,6 @@ pub fn setup_ants(
             entity,
             ant_save_state.position,
             ant_save_state.name.0.as_str(),
-            &asset_server,
         ));
     }
 }
