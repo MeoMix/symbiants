@@ -8,15 +8,19 @@ use crate::{
         ant_gravity_system, element_gravity_system, gravity_crush_system, gravity_stability_system,
     },
     map::{periodic_save_world_state_system, setup_window_onunload_save_world_state},
-    mouse::handle_mouse_clicks,
+    mouse::{handle_mouse_clicks, is_pointer_captured_system, IsPointerCaptured},
     render::{render_carrying, render_orientation, render_translation},
     time::{play_time_system, setup_fast_forward_time_system},
+    food::FoodCount,
 };
 
 pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<FoodCount>();
+        app.insert_resource(IsPointerCaptured(false));
+
         app.add_systems(Startup,
             (
                 setup_fast_forward_time_system,
@@ -28,7 +32,7 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
-        app.add_systems(Update, handle_mouse_clicks);
+        app.add_systems(Update, (is_pointer_captured_system, handle_mouse_clicks).chain());
 
         app.add_systems(FixedUpdate, 
             (

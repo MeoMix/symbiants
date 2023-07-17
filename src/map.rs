@@ -95,6 +95,7 @@ pub struct WorldMap {
     height: isize,
     surface_level: isize,
     initial_state: WorldSaveState,
+    created_at: DateTime<Utc>,
     elements_cache: Option<Vec<Vec<Entity>>>,
 }
 
@@ -292,6 +293,13 @@ impl WorldMap {
         &self.surface_level
     }
 
+    // round up so start at 1
+    pub fn days_old(&self) -> i64 {
+        let now = Utc::now();
+        let duration = now - self.created_at;
+        duration.num_days().add(1)
+    }
+
     pub fn is_below_surface(&self, position: &Position) -> bool {
         position.y > self.surface_level
     }
@@ -309,6 +317,7 @@ impl WorldMap {
             // TODO: prefer new object not related to save state / no timestamp
             initial_state,
             elements_cache: None,
+            created_at: Utc::now(),
         }
     }
 

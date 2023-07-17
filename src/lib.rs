@@ -13,6 +13,7 @@ mod simulation;
 mod time;
 mod ui;
 mod world_rng;
+mod food;
 
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
