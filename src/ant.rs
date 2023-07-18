@@ -547,21 +547,13 @@ fn turn(
 }
 
 fn dig(
-    is_forced_forward: bool,
+    position: Position,
     mut inventory: Mut<AntInventory>,
-    orientation: Mut<AntOrientation>,
-    position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
     commands: &mut Commands,
 ) {
-    let dig_position = if is_forced_forward {
-        orientation.get_forward_delta() + *position
-    } else {
-        orientation.rotate_towards_feet().get_forward_delta() + *position
-    };
-
-    let Some(entity) = world_map.get_element(dig_position) else { return };
+    let Some(entity) = world_map.get_element(position) else { return };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
 
@@ -569,10 +561,10 @@ fn dig(
         commands.entity(*entity).despawn();
 
         // Dig up dirt/sand/food and replace with air
-        let air_entity = commands.spawn(AirElementBundle::new(dig_position)).id();
-        world_map.set_element(dig_position, air_entity);
+        let air_entity = commands.spawn(AirElementBundle::new(position)).id();
+        world_map.set_element(position, air_entity);
 
-        loosen_neighboring_sand_and_food(dig_position, world_map, elements_query, commands);
+        loosen_neighboring_sand_and_food(position, world_map, elements_query, commands);
 
         if *element == Element::Food {
             *inventory = AntInventory(Some(Element::Food));
@@ -628,10 +620,8 @@ fn act(
 
             if dig_food || dig_sand || dig_dirt {
                 dig(
-                    true,
+                    *position + orientation.get_forward_delta(),
                     inventory,
-                    orientation,
-                    position,
                     &elements_query,
                     world_map,
                     commands,
@@ -819,10 +809,8 @@ pub fn move_ants_system(
         if inventory.0 == None {
             if world_rng.0.gen::<f32>() < settings.probabilities.random_dig {
                 dig(
-                    false,
+                    *position + orientation.rotate_towards_feet().get_forward_delta(),
                     inventory,
-                    orientation,
-                    position,
                     &elements_query,
                     &mut world_map,
                     &mut commands,
