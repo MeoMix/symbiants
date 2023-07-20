@@ -8,6 +8,9 @@ pub struct Probabilities {
     pub below_surface_dirt_dig: f32,  // chance to dig dirt when below surface level
     pub above_surface_sand_drop: f32, // chance to randomly drop sand when at-or-above surface level
     pub below_surface_food_drop: f32, // chance to randomly drop food when below surface level
+
+    pub above_surface_queen_nest_dig: f32,
+    pub below_surface_queen_nest_dig: f32,
 }
 
 #[derive(Resource, Clone)]
@@ -41,6 +44,9 @@ impl Default for Settings {
                 below_surface_dirt_dig: 0.10,
                 above_surface_sand_drop: 0.10,
                 below_surface_food_drop: 0.10,
+
+                above_surface_queen_nest_dig: 0.10,
+                below_surface_queen_nest_dig: 0.50,
             },
         }
     }

@@ -4,11 +4,11 @@ use std::{f32::consts::PI, ops::Add};
 
 use crate::{
     elements::{
-        is_element, AirElementBundle, FoodElementBundle, SandElementBundle,
+        is_element, AirElementBundle, FoodElementBundle, SandElementBundle, is_all_element,
     },
     gravity::loosen_neighboring_sand_and_food,
     map::{Position, WorldMap},
-    world_rng::WorldRng,
+    world_rng::WorldRng, name_list::NAMES,
 };
 
 use super::{elements::Element, settings::Settings};
@@ -27,8 +27,10 @@ pub struct AntSaveState {
     pub name: AntName,
 }
 
+
 #[derive(Bundle)]
 struct AntBundle {
+    ant: Ant,
     position: Position,
     translation_offset: TranslationOffset,
     orientation: AntOrientation,
@@ -39,7 +41,6 @@ struct AntBundle {
     hunger: Hunger,
     alive: Alive,
     inventory: AntInventory,
-    sprite_bundle: SpriteBundle,
 }
 
 impl AntBundle {
@@ -50,7 +51,6 @@ impl AntBundle {
         inventory: AntInventory,
         role: AntRole,
         name: &str,
-        asset_server: &Res<AssetServer>,
         mut rng: &mut StdRng,
     ) -> Self {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
@@ -58,6 +58,7 @@ impl AntBundle {
         let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
 
         Self {
+            ant: Ant,
             position,
             translation_offset,
             orientation,
@@ -68,21 +69,6 @@ impl AntBundle {
             color: AntColor(color),
             hunger: Hunger::default(),
             alive: Alive,
-            sprite_bundle: SpriteBundle {
-                texture: asset_server.load("images/ant.png"),
-                sprite: Sprite {
-                    color,
-                    custom_size: Some(Vec2::new(ANT_SCALE, ANT_SCALE)),
-                    ..default()
-                },
-                transform: Transform {
-                    translation: position.as_world_position().add(translation_offset.0),
-                    rotation: orientation.as_world_rotation(),
-                    scale: orientation.as_world_scale(),
-                    ..default()
-                },
-                ..default()
-            },
         }
     }
 }
@@ -185,6 +171,40 @@ impl AntInventory {
 pub struct Alive;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct Birthing {
+    value: usize,
+    max: usize,
+}
+
+impl Birthing {
+    pub fn default() -> Self {
+        Self {
+            value: 0,
+            // TODO: 30 minutes expressed in frame ticks
+            max: 6 * 60 * 30,
+        }
+    }
+
+    pub fn try_increment(&mut self) {
+        if self.value < self.max {
+            self.value += 1;
+        }
+    }
+
+    pub fn as_percent(&self) -> f64 {
+        ((self.value as f64) / (self.max as f64) * 100.0).round()
+    }
+
+    pub fn is_ready(&self) -> bool {
+        self.value >= self.max
+    }
+
+    pub fn reset(&mut self) {
+        self.value = 0;
+    }
+}
+
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Hunger {
     value: usize,
     max: usize,
@@ -221,6 +241,9 @@ impl Hunger {
         self.value = 0;
     }
 }
+
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct Ant;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub enum AntRole {
@@ -318,6 +341,10 @@ impl AntOrientation {
         self.angle
     }
 
+    pub fn is_horizontal(self) -> bool {
+        self.angle == Angle::Zero || self.angle == Angle::OneHundredEighty
+    }
+
     pub fn turn_around(self) -> Self {
         let facing = if self.facing == Facing::Left {
             Facing::Right
@@ -371,7 +398,7 @@ pub fn setup_ants(
     mut world_rng: ResMut<WorldRng>,
 ) {
     for ant_save_state in world_map.initial_state().ants.iter() {
-        let entity = commands
+        commands
             .spawn(AntBundle::new(
                 ant_save_state.position,
                 settings.ant_color,
@@ -379,36 +406,8 @@ pub fn setup_ants(
                 ant_save_state.inventory,
                 ant_save_state.role,
                 ant_save_state.name.0.as_str(),
-                &asset_server,
                 &mut world_rng.0,
-            ))
-            .with_children(|parent| {
-                if let Some(bundle) = ant_save_state.inventory.get_carrying_bundle() {
-                    parent.spawn(bundle);
-                }
-
-                if ant_save_state.role == AntRole::Queen {
-                    parent.spawn(SpriteBundle {
-                        texture: asset_server.load("images/crown.png"),
-                        transform: Transform {
-                            translation: Vec3::new(0.25, 0.5, 1.0),
-                            ..default()
-                        },
-                        sprite: Sprite {
-                            custom_size: Some(Vec2::new(0.5, 0.5)),
-                            ..default()
-                        },
-                        ..default()
-                    });
-                }
-            })
-            .id();
-
-        commands.spawn(AntLabelBundle::new(
-            entity,
-            ant_save_state.position,
-            ant_save_state.name.0.as_str(),
-        ));
+            ));
     }
 }
 
@@ -470,12 +469,12 @@ fn drop(
 
 fn turn(
     mut orientation: Mut<AntOrientation>,
-    inventory: Mut<AntInventory>,
+    // inventory: Mut<AntInventory>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
     world_rng: &mut ResMut<WorldRng>,
-    commands: &mut Commands,
+    // commands: &mut Commands,
 ) {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
     let back_orientation = orientation.rotate_towards_back();
@@ -528,18 +527,21 @@ fn turn(
         return;
     }
 
+    info!("TRAPPED");
+    // panic!();
+
     // No legal direction? Trapped! Drop if carrying and turn randomly in an attempt to dig out.
-    if inventory.0 != None {
-        if let Some(entity) = world_map.get_element(*position) {
-            // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
-            // NOTE: this can occur due to `spawn` not affecting query on current frame
-            if let Ok(element) = elements_query.get(*entity) {
-                if *element == Element::Air {
-                    drop(inventory, *position, elements_query, world_map, commands);
-                }
-            }
-        }
-    }
+    // if inventory.0 != None {
+    //     if let Some(entity) = world_map.get_element(*position) {
+    //         // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
+    //         // NOTE: this can occur due to `spawn` not affecting query on current frame
+    //         if let Ok(element) = elements_query.get(*entity) {
+    //             if *element == Element::Air {
+    //                 drop(inventory, *position, elements_query, world_map, commands);
+    //             }
+    //         }
+    //     }
+    // }
 
     let random_facing_orientation =
         facing_orientations[world_rng.0.gen_range(0..facing_orientations.len())];
@@ -553,6 +555,7 @@ fn dig(
     world_map: &mut ResMut<WorldMap>,
     commands: &mut Commands,
 ) {
+    // TODO: add safeguard so this only works if called with empty inventory?
     let Some(entity) = world_map.get_element(position) else { return };
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
@@ -572,6 +575,7 @@ fn dig(
             // NOTE: the act of digging up dirt converts it to sand (intentionally)
             *inventory = AntInventory(Some(Element::Sand));
         }
+
     }
 }
 
@@ -579,6 +583,7 @@ fn act(
     mut orientation: Mut<AntOrientation>,
     inventory: Mut<AntInventory>,
     mut position: Mut<Position>,
+    role: &AntRole,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
     world_rng: &mut ResMut<WorldRng>,
@@ -592,12 +597,12 @@ fn act(
         // Hit an edge - need to turn.
         turn(
             orientation,
-            inventory,
+            // inventory,
             position,
             elements_query,
             world_map,
             world_rng,
-            commands,
+            // commands,
         );
         return;
     }
@@ -618,7 +623,23 @@ fn act(
                 && world_map.is_below_surface(&position)
                 && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dirt_dig;
 
-            if dig_food || dig_sand || dig_dirt {
+
+            // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
+            let mut queen_dig = *element == Element::Dirt && world_map.is_below_surface(&position) && *role == AntRole::Queen;
+
+            if position.y - world_map.surface_level() > 8 {
+                if world_rng.0.gen::<f32>() > settings.probabilities.below_surface_queen_nest_dig {
+                    queen_dig = false;
+                }
+
+                // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
+            } 
+
+                // if *role == AntRole::Queen {
+                //     if inventory.0 == None {
+                //         if world_map.is_below_surface(&position) &&  {
+
+            if dig_food || dig_sand || dig_dirt || queen_dig {
                 dig(
                     *position + orientation.get_forward_delta(),
                     inventory,
@@ -633,30 +654,44 @@ fn act(
         // Decided to not dig through and can't walk through, so just turn.
         turn(
             orientation,
-            inventory,
+            // inventory,
             position,
             elements_query,
             world_map,
             world_rng,
-            commands,
+            // commands,
         );
 
         return;
     }
 
     // There is an air gap directly ahead of the ant. Consider dropping inventory.
-    if inventory.0 != None {
+    // Avoid dropping inventory when facing upwards since it'll fall on the ant.
+    if inventory.0 != None && orientation.is_horizontal()  {
         // Prioritize dropping sand above ground and food below ground.
         let drop_sand = inventory.0 == Some(Element::Sand)
-            && !world_map.is_below_surface(&position)
+            && !world_map.is_below_surface(&new_position)
             && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_sand_drop;
 
         let drop_food = inventory.0 == Some(Element::Food)
-            && world_map.is_below_surface(&position)
+            && world_map.is_below_surface(&new_position)
             && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_food_drop;
 
         if drop_sand || drop_food {
-            drop(inventory, *position, &elements_query, world_map, commands);
+            // Drop inventory in front of ant
+            drop(inventory, new_position, &elements_query, world_map, commands);
+   
+            if *role == AntRole::Queen {
+                turn(
+                    orientation,
+                    // inventory,
+                    position,
+                    elements_query,
+                    world_map,
+                    world_rng,
+                    // commands,
+                );
+            }
 
             return;
         }
@@ -677,6 +712,54 @@ fn act(
         } else {
             // Just move forward
             *position = new_position;
+        }
+    }
+}
+
+pub fn ants_birthing_system(
+    mut ants_birthing_query: Query<
+        (
+            &mut Birthing,
+            &Position,
+            &AntColor,
+            &AntOrientation,
+        ),
+        With<Alive>,
+    >,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut world_rng: ResMut<WorldRng>,
+) {
+    for (mut birthing, position, color, orientation) in ants_birthing_query.iter_mut()
+    {
+        birthing.try_increment();
+
+        if birthing.is_ready() {
+            // Randomly position ant facing left or right.
+            let facing = if world_rng.0.gen_bool(0.5) {
+                Facing::Left
+            } else {
+                Facing::Right
+            };
+
+            
+            let name: &str = NAMES[world_rng.0.gen_range(0..NAMES.len())].clone();
+
+            let behind_position = *position + orientation.turn_around().get_forward_delta();
+
+            // Spawn worker ant (TODO: egg instead)
+            commands.spawn(AntBundle::new(
+                // TODO: prefer behind/infront queen
+                behind_position,
+                color.0,
+                AntOrientation::new(facing, Angle::Zero),
+                AntInventory(None),
+                AntRole::Worker,
+                name,
+                &mut world_rng.0,
+            ));
+
+            birthing.reset();
         }
     }
 }
@@ -742,6 +825,8 @@ pub fn move_ants_system(
             &mut AntInventory,
             &mut AntTimer,
             &mut Position,
+            &AntRole,
+            Entity,
         ),
         With<Alive>,
     >,
@@ -751,13 +836,14 @@ pub fn move_ants_system(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
-    for (orientation, inventory, mut timer, position) in ants_query.iter_mut() {
+    for (orientation, inventory, mut timer, position, role, entity) in ants_query.iter_mut() {
         if timer.0 > 0 {
             timer.0 -= 1;
             continue;
         }
 
         *timer = AntTimer::new(&mut world_rng.0);
+
 
         let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
         let is_air_beneath_feet = is_element(
@@ -781,54 +867,133 @@ pub fn move_ants_system(
             // Not falling? Try turning
             turn(
                 orientation,
-                inventory,
+                // inventory,
                 position,
                 &elements_query,
                 &mut world_map,
                 &mut world_rng,
-                &mut commands,
+                // &mut commands,
             );
 
             continue;
         }
 
+        // TODO: queen specific logic
+        if *role == AntRole::Queen {
+            if !world_map.is_below_surface(&position) && !world_map.has_started_nest() {
+                if inventory.0 == None {
+                    if world_rng.0.gen::<f32>() < settings.probabilities.above_surface_queen_nest_dig {
+    
+                        dig(
+                            *position + orientation.rotate_towards_feet().get_forward_delta(),
+                            inventory,
+                            &elements_query,
+                            &mut world_map,
+                            &mut commands,
+                        );
+
+                        // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
+                        // enforcing nest generation probabilistically
+                        world_map.start_nest();
+        
+                        continue;
+                    } 
+                }
+            }
+
+            if position.y - world_map.surface_level() > 8 && !world_map.is_nested() {
+                // Check if the queen is sufficiently surounded by space while being deep underground and, if so, decide to start nesting.
+
+                let left_position = *position + Position::NEG_X;
+                //let left_above_position = *position + Position::new(-1, -1);
+                let above_position = *position + Position::new(0, -1);
+                let right_position = *position + Position::X;
+                //let right_above_position = *position + Position::new(1, -1);
+
+                let has_valid_air_nest = is_all_element(
+                    &world_map,
+                    &elements_query,
+                    &[left_position, *position, above_position, right_position],
+                    &Element::Air,
+                );
+
+                //let left_below_position = *position + Position::new(-1, 1);
+                let below_position = *position + Position::new(0, 1);
+                //let right_below_position = *position + Position::new(1, 1);
+                // Make sure there's stable place for ant child to be born
+                let behind_position = *position + orientation.turn_around().get_forward_delta();
+                let behind_below_position = behind_position + Position::new(0, 1);
+
+                let has_valid_dirt_nest = is_all_element(
+                    &world_map,
+                    &elements_query,
+                    &[below_position, behind_below_position],
+                    &Element::Dirt,
+                );
+
+                if has_valid_air_nest && has_valid_dirt_nest {
+                    info!("NESTED");
+                    world_map.mark_nested();
+
+                    // Spawn birthing component on QueenAnt
+                    commands.entity(entity).insert(Birthing::default());
+
+                    if inventory.0 != None {
+                        let new_position = *position + orientation.get_forward_delta();
+                        drop(inventory, new_position, &elements_query, &mut world_map, &mut commands);
+                    }
+
+                    continue;
+                }
+            }
+
+            if world_map.is_nested() { 
+                continue;
+            }
+        }
+        
         if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
             turn(
                 orientation,
-                inventory,
+                // inventory,
                 position,
                 &elements_query,
                 &mut world_map,
                 &mut world_rng,
-                &mut commands,
+                // &mut commands,
             );
 
             continue;
         }
 
-        if inventory.0 == None {
-            if world_rng.0.gen::<f32>() < settings.probabilities.random_dig {
-                dig(
-                    *position + orientation.rotate_towards_feet().get_forward_delta(),
-                    inventory,
-                    &elements_query,
-                    &mut world_map,
-                    &mut commands,
-                );
-
-                continue;
-            }
-        } else {
-            if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
-                drop(
-                    inventory,
-                    *position,
-                    &elements_query,
-                    &mut world_map,
-                    &mut commands,
-                );
-
-                continue;
+        // Add some randomness to worker behavior to make more lively, need to avoid applying this to queen because
+        // too much randomness can kill her before she can nest
+        if *role == AntRole::Worker {
+            if inventory.0 == None {
+                // Randomly dig downwards / perpendicular to current orientation
+                if world_rng.0.gen::<f32>() < settings.probabilities.random_dig && world_map.is_below_surface(&position) {
+                    dig(
+                        *position + orientation.rotate_towards_feet().get_forward_delta(),
+                        inventory,
+                        &elements_query,
+                        &mut world_map,
+                        &mut commands,
+                    );
+    
+                    continue;
+                }
+            } else {
+                if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
+                    drop(
+                        inventory,
+                        *position,
+                        &elements_query,
+                        &mut world_map,
+                        &mut commands,
+                    );
+    
+                    continue;
+                }
             }
         }
 
@@ -836,6 +1001,7 @@ pub fn move_ants_system(
             orientation,
             inventory,
             position,
+            role,
             &elements_query,
             &mut world_map,
             &mut world_rng,
@@ -846,3 +1012,60 @@ pub fn move_ants_system(
 }
 
 // TODO: tests
+
+// TODO: despawning ants?
+pub fn on_spawn_ant(
+    mut commands: Commands,
+    ants: Query<(Entity, &Position, &TranslationOffset, &AntColor, &AntOrientation, &AntName, &AntInventory, &AntRole), Added<Ant>>,
+    asset_server: Res<AssetServer>,
+) {
+    for (entity, position, translation_offset, color, orientation, name, inventory, role) in &ants {
+        // TODO: instead of using insert, consider spawning this as a child? unsure if there's benefit there but follows Cart's example here:
+        // https://github.com/cart/card_combinator/blob/main/src/game/tile.rs
+        commands.entity(entity).insert(SpriteBundle {
+            texture: asset_server.load("images/ant.png"),
+            sprite: Sprite {
+                color: color.0,
+                custom_size: Some(Vec2::new(ANT_SCALE, ANT_SCALE)),
+                ..default()
+            },
+            transform: Transform {
+                translation: position.as_world_position().add(translation_offset.0),
+                rotation: orientation.as_world_rotation(),
+                scale: orientation.as_world_scale(),
+                ..default()
+            },
+            ..default()
+        })
+        .with_children(|parent| {
+            if let Some(bundle) = inventory.get_carrying_bundle() {
+                parent.spawn(bundle);
+            }
+
+            if *role == AntRole::Queen {
+                parent.spawn(SpriteBundle {
+                    texture: asset_server.load("images/crown.png"),
+                    transform: Transform {
+                        translation: Vec3::new(0.25, 0.5, 1.0),
+                        ..default()
+                    },
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::new(0.5, 0.5)),
+                        ..default()
+                    },
+                    ..default()
+                });
+            }
+        });
+
+        // TODO: Is this still the right approach?
+        commands.spawn(AntLabelBundle::new(
+            entity,
+            *position,
+            name.0.as_str(),
+        ));
+
+        // *label = AntLabelBundle spawn etc
+    }
+
+}

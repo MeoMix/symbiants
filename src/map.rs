@@ -94,6 +94,8 @@ pub struct WorldMap {
     width: isize,
     height: isize,
     surface_level: isize,
+    has_started_nest: bool,
+    is_nested: bool,
     initial_state: WorldSaveState,
     created_at: DateTime<Utc>,
     elements_cache: Option<Vec<Vec<Entity>>>,
@@ -293,6 +295,22 @@ impl WorldMap {
         &self.surface_level
     }
 
+    pub fn has_started_nest(&self) -> &bool {
+        &self.has_started_nest
+    }
+
+    pub fn start_nest(&mut self) {
+        self.has_started_nest = true;
+    }
+
+    pub fn is_nested(&self) -> bool {
+        self.is_nested
+    }
+
+    pub fn mark_nested(&mut self) {
+        self.is_nested = true;
+    }
+
     // round up so start at 1
     pub fn days_old(&self) -> i64 {
         let now = Utc::now();
@@ -314,6 +332,8 @@ impl WorldMap {
             width,
             height,
             surface_level,
+            has_started_nest: false,
+            is_nested: false,
             // TODO: prefer new object not related to save state / no timestamp
             initial_state,
             elements_cache: None,

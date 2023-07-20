@@ -71,7 +71,6 @@ pub fn render_carrying(
 
     for (entity, inventory, children) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || inventory.is_changed() {
-            info!("inventory changed");
             // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
             // TODO: might *need* to know previous state to avoid unintentionally carrying twice
             if let Some(bundle) = inventory.get_carrying_bundle() {
@@ -81,7 +80,6 @@ pub fn render_carrying(
                         ant.spawn(bundle);
                     });
             } else {
-                info!("no carrying bundle");
                 // If ant was carrying food/sand, but has stopped, then remove associated UI element.
                 if let Some(children) = children {
                     let element_children = children
