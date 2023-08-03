@@ -4,15 +4,14 @@ use std::{f32::consts::PI, ops::Add};
 
 use crate::{
     elements::{
-        is_element, AirElementBundle, FoodElementBundle, SandElementBundle, is_all_element,
+        is_element, is_all_element, ElementCommandsExt, AirElementBundle,
     },
-    gravity::loosen_neighboring_sand_and_food,
     map::{Position, WorldMap},
     world_rng::WorldRng, name_list::NAMES,
 };
 
 use super::{elements::Element, settings::Settings};
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{prelude::*, sprite::Anchor, ecs::system::Command};
 use rand::{rngs::StdRng, Rng};
 
 // This is what is persisted as JSON.
@@ -32,7 +31,6 @@ pub struct AntSaveState {
 struct AntBundle {
     ant: Ant,
     position: Position,
-    translation_offset: TranslationOffset,
     orientation: AntOrientation,
     role: AntRole,
     timer: AntTimer,
@@ -53,14 +51,9 @@ impl AntBundle {
         name: &str,
         mut rng: &mut StdRng,
     ) -> Self {
-        // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
-        // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
-        let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
-
-        Self {
+        AntBundle {
             ant: Ant,
             position,
-            translation_offset,
             orientation,
             inventory,
             role,
@@ -69,45 +62,6 @@ impl AntBundle {
             color: AntColor(color),
             hunger: Hunger::default(),
             alive: Alive,
-        }
-    }
-}
-
-#[derive(Bundle)]
-struct AntLabelBundle {
-    label_bundle: Text2dBundle,
-    translation_offset: TranslationOffset,
-    label: Label,
-}
-
-impl AntLabelBundle {
-    pub fn new(
-        ant: Entity,
-        position: Position,
-        name: &str,
-    ) -> Self {
-        // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise. This isn't a good way of achieving this.
-        let translation_offset = TranslationOffset(Vec3::new(0.5, -1.5, 1.0));
-
-        Self {
-            label_bundle: Text2dBundle {
-                transform: Transform {
-                    translation: position.as_world_position().add(translation_offset.0),
-                    scale: Vec3::new(0.01, 0.01, 0.0),
-                    ..default()
-                },
-                text: Text::from_section(
-                    name,
-                    TextStyle {
-                        color: Color::BLACK,
-                        font_size: 60.0,
-                        ..default()
-                    },
-                ),
-                ..default()
-            },
-            translation_offset,
-            label: Label(ant),
         }
     }
 }
@@ -189,10 +143,6 @@ impl Birthing {
         if self.value < self.max {
             self.value += 1;
         }
-    }
-
-    pub fn as_percent(&self) -> f64 {
-        ((self.value as f64) / (self.max as f64) * 100.0).round()
     }
 
     pub fn is_ready(&self) -> bool {
@@ -392,7 +342,6 @@ pub struct Label(pub Entity);
 
 pub fn setup_ants(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     settings: Res<Settings>,
     world_map: ResMut<WorldMap>,
     mut world_rng: ResMut<WorldRng>,
@@ -452,15 +401,13 @@ fn drop(
     let Ok(element) = elements_query.get(*entity) else { return; };
 
     if *element == Element::Air {
-        commands.entity(*entity).despawn();
-
         // Drop inventory
         if inventory.0 == Some(Element::Food) {
-            let food_entity = commands.spawn(FoodElementBundle::new(position)).id();
-            world_map.set_element(position, food_entity);
+            info!("replace_element1: {:?}", position);
+            commands.replace_element(position, *entity, Element::Food);
         } else if inventory.0 == Some(Element::Sand) {
-            let sand_entity = commands.spawn(SandElementBundle::new(position)).id();
-            world_map.set_element(position, sand_entity);
+            info!("replace_element2: {:?}", position);
+            commands.replace_element(position, *entity, Element::Sand);
         }
 
         *inventory = AntInventory(None);
@@ -549,6 +496,7 @@ fn turn(
 }
 
 fn dig(
+    ant_entity: Entity,
     position: Position,
     mut inventory: Mut<AntInventory>,
     elements_query: &Query<&Element>,
@@ -557,25 +505,12 @@ fn dig(
 ) {
     // TODO: add safeguard so this only works if called with empty inventory?
     let Some(entity) = world_map.get_element(position) else { return };
+    // TODO: this isn't true
     // NOTE: this can occur due to `spawn` not affecting query on current frame
     let Ok(element) = elements_query.get(*entity) else { return };
 
     if *element == Element::Dirt || *element == Element::Sand || *element == Element::Food {
-        commands.entity(*entity).despawn();
-
-        // Dig up dirt/sand/food and replace with air
-        let air_entity = commands.spawn(AirElementBundle::new(position)).id();
-        world_map.set_element(position, air_entity);
-
-        loosen_neighboring_sand_and_food(position, world_map, elements_query, commands);
-
-        if *element == Element::Food {
-            *inventory = AntInventory(Some(Element::Food));
-        } else {
-            // NOTE: the act of digging up dirt converts it to sand (intentionally)
-            *inventory = AntInventory(Some(Element::Sand));
-        }
-
+        commands.dig_element(ant_entity, position, *entity);
     }
 }
 
@@ -584,6 +519,7 @@ fn act(
     inventory: Mut<AntInventory>,
     mut position: Mut<Position>,
     role: &AntRole,
+    ant_entity: Entity,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
     world_rng: &mut ResMut<WorldRng>,
@@ -641,6 +577,7 @@ fn act(
 
             if dig_food || dig_sand || dig_dirt || queen_dig {
                 dig(
+                    ant_entity,
                     *position + orientation.get_forward_delta(),
                     inventory,
                     &elements_query,
@@ -727,7 +664,6 @@ pub fn ants_birthing_system(
         With<Alive>,
     >,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut world_rng: ResMut<WorldRng>,
 ) {
     for (mut birthing, position, color, orientation) in ants_birthing_query.iter_mut()
@@ -749,7 +685,6 @@ pub fn ants_birthing_system(
 
             // Spawn worker ant (TODO: egg instead)
             commands.spawn(AntBundle::new(
-                // TODO: prefer behind/infront queen
                 behind_position,
                 color.0,
                 AntOrientation::new(facing, Angle::Zero),
@@ -779,7 +714,7 @@ pub fn ants_hunger_system(
     elements_query: Query<&Element>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut world_map: ResMut<WorldMap>,
+    world_map: Res<WorldMap>,
 ) {
     for (entity, mut hunger, mut handle, mut orientation, position, inventory) in
         ants_hunger_query.iter_mut()
@@ -794,12 +729,8 @@ pub fn ants_hunger_system(
                 if is_element(&world_map, &elements_query, &food_position, &Element::Food) {
                     // Eat the food
                     let food_entity = world_map.get_element(food_position).unwrap();
-
-                    commands.entity(*food_entity).despawn();
-                    world_map.set_element(
-                        food_position,
-                        commands.spawn(AirElementBundle::new(food_position)).id(),
-                    );
+                    info!("replace_element4: {:?}", position);
+                    commands.replace_element(food_position, *food_entity, Element::Air);
 
                     hunger.reset();
                 }
@@ -836,14 +767,16 @@ pub fn move_ants_system(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
-    for (orientation, inventory, mut timer, position, role, entity) in ants_query.iter_mut() {
+    // TODO: Check if ant position has changed already and, if so, skip it - ant is only allowed to be moved on its own if another system didn't move it this frame.
+    // This will allow for systems to run not in parallel, but in a non-deterministic order while exhibiting desirable behavior.
+
+    for (orientation, inventory, mut timer, position, role, ant_entity) in ants_query.iter_mut() {
         if timer.0 > 0 {
             timer.0 -= 1;
             continue;
         }
 
         *timer = AntTimer::new(&mut world_rng.0);
-
 
         let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
         let is_air_beneath_feet = is_element(
@@ -885,6 +818,7 @@ pub fn move_ants_system(
                     if world_rng.0.gen::<f32>() < settings.probabilities.above_surface_queen_nest_dig {
     
                         dig(
+                            ant_entity,
                             *position + orientation.rotate_towards_feet().get_forward_delta(),
                             inventory,
                             &elements_query,
@@ -936,7 +870,7 @@ pub fn move_ants_system(
                     world_map.mark_nested();
 
                     // Spawn birthing component on QueenAnt
-                    commands.entity(entity).insert(Birthing::default());
+                    commands.entity(ant_entity).insert(Birthing::default());
 
                     if inventory.0 != None {
                         let new_position = *position + orientation.get_forward_delta();
@@ -973,6 +907,7 @@ pub fn move_ants_system(
                 // Randomly dig downwards / perpendicular to current orientation
                 if world_rng.0.gen::<f32>() < settings.probabilities.random_dig && world_map.is_below_surface(&position) {
                     dig(
+                        ant_entity,
                         *position + orientation.rotate_towards_feet().get_forward_delta(),
                         inventory,
                         &elements_query,
@@ -1002,6 +937,7 @@ pub fn move_ants_system(
             inventory,
             position,
             role,
+            ant_entity,
             &elements_query,
             &mut world_map,
             &mut world_rng,
@@ -1014,15 +950,21 @@ pub fn move_ants_system(
 // TODO: tests
 
 // TODO: despawning ants?
+// Handle rendering / display details for ants spawned in the simulation logic.
+// This involves showing the ant sprite, anything the ant might be carrying, and its name.
 pub fn on_spawn_ant(
     mut commands: Commands,
-    ants: Query<(Entity, &Position, &TranslationOffset, &AntColor, &AntOrientation, &AntName, &AntInventory, &AntRole), Added<Ant>>,
+    ants: Query<(Entity, &Position, &AntColor, &AntOrientation, &AntName, &AntInventory, &AntRole), Added<Ant>>,
     asset_server: Res<AssetServer>,
 ) {
-    for (entity, position, translation_offset, color, orientation, name, inventory, role) in &ants {
+    for (entity, position, color, orientation, name, inventory, role) in &ants {
+        // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
+        // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
+        let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
+
         // TODO: instead of using insert, consider spawning this as a child? unsure if there's benefit there but follows Cart's example here:
         // https://github.com/cart/card_combinator/blob/main/src/game/tile.rs
-        commands.entity(entity).insert(SpriteBundle {
+        commands.entity(entity).insert((translation_offset, SpriteBundle {
             texture: asset_server.load("images/ant.png"),
             sprite: Sprite {
                 color: color.0,
@@ -1036,7 +978,7 @@ pub fn on_spawn_ant(
                 ..default()
             },
             ..default()
-        })
+        }))
         .with_children(|parent| {
             if let Some(bundle) = inventory.get_carrying_bundle() {
                 parent.spawn(bundle);
@@ -1058,14 +1000,106 @@ pub fn on_spawn_ant(
             }
         });
 
-        // TODO: Is this still the right approach?
-        commands.spawn(AntLabelBundle::new(
-            entity,
-            *position,
-            name.0.as_str(),
-        ));
+        // TODO: Is this still the right approach?        
+        // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise. This isn't a good way of achieving this.
+        let translation_offset = TranslationOffset(Vec3::new(0.5, -1.5, 1.0));
 
-        // *label = AntLabelBundle spawn etc
+        commands.spawn((translation_offset, Text2dBundle {
+            transform: Transform {
+                translation: position.as_world_position().add(translation_offset.0),
+                scale: Vec3::new(0.01, 0.01, 0.0),
+                ..default()
+            },
+            text: Text::from_section(
+                name.0.as_str(),
+                TextStyle {
+                    color: Color::BLACK,
+                    font_size: 60.0,
+                    ..default()
+                },
+            ),
+            ..default()
+        },
+        Label(entity)
+    ));
     }
 
+}
+
+
+pub trait AntCommandsExt {
+    fn dig_element(&mut self, ant: Entity, position: Position, target_element: Entity);
+}
+
+impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
+    fn dig_element(&mut self, ant: Entity, position: Position, target_element: Entity) {
+        self.add(DigElementCommand {
+            ant,
+            position,
+            target_element,
+        })
+    }
+}
+
+struct DigElementCommand {
+    // The entity issuing the command.
+    ant: Entity,
+    // The entity expected to be affected by the command.
+    target_element: Entity,
+    // The location of the target element.
+    position: Position,
+}
+
+
+impl Command for DigElementCommand {
+    fn apply(self, world: &mut World) {
+        let (element_entity, element) = {
+            let world_map = world.resource::<WorldMap>();
+            let element_entity = match world_map.get_element(self.position) {
+                Some(entity) => *entity,
+                None => {
+                    info!("No entity found at position {:?}", self.position);
+                    return;
+                }
+            };
+
+            let element = match world.get::<Element>(element_entity) {
+                Some(element) => *element,
+                None => return,
+            };
+
+            (element_entity, element)
+        };
+
+        if element_entity != self.target_element {
+            info!("Existing element entity doesn't match the target element entity.");
+            return;
+        }
+
+        if element == Element::Dirt || element == Element::Sand || element == Element::Food {  
+            info!("Despawning entity {:?} at position {:?}", element_entity, self.position);
+            world.entity_mut(element_entity).despawn();
+            
+            let air_entity = world.spawn(AirElementBundle::new(self.position)).id();
+            let mut world_map = world.resource_mut::<WorldMap>();
+
+            world_map.set_element(self.position, air_entity);
+
+            let mut inventory = match world.get_mut::<AntInventory>(self.ant) {
+                Some(inventory) => inventory,
+                None => {
+                    info!("Failed to get inventory for ant {:?}", self.ant);
+                    return;
+                },
+            };
+            
+            if element == Element::Food {
+                *inventory = AntInventory(Some(Element::Food));
+            } else {
+                *inventory = AntInventory(Some(Element::Sand));
+
+                info!("updated inventory to be sand");
+            }
+        }
+    }
 }

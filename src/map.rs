@@ -352,24 +352,25 @@ impl WorldMap {
             .and_then(|row| row.get(position.x as usize))
     }
 
+    // NOTE: although this logic supports expanding the 2D vector - this should only occur during initialization
+    // Afterward, vector should always be the same size as the world. Decided resizing vector was better than implying entries
+    // in the vector might be None while maintaing a fixed length vector.
     pub fn set_element(&mut self, position: Position, entity: Entity) {
-        if let Some(cache) = &mut self.elements_cache {
-            if let Some(row) = cache.get_mut(position.y as usize) {
-                if let Some(cell) = row.get_mut(position.x as usize) {
-                    *cell = entity;
-                } else {
-                    panic!("Invalid x position");
-                }
-            } else {
-                panic!("Invalid y position");
-            }
-        } else {
-            panic!("set_element called before cache initialization");
+        if self.elements_cache.is_none() {
+            self.elements_cache = Some(vec![vec![entity.clone(); position.x as usize + 1]; position.y as usize + 1]);
         }
-    }
-
-    pub fn set_elements(&mut self, elements: Vec<Vec<Entity>>) {
-        self.elements_cache = Some(elements);
+    
+        let cache = self.elements_cache.as_mut().unwrap();
+        if position.y as usize >= cache.len() {
+            cache.resize(position.y as usize + 1, vec![entity.clone(); position.x as usize + 1]);
+        }
+    
+        let row = &mut cache[position.y as usize];
+        if position.x as usize >= row.len() {
+            row.resize(position.x as usize + 1, entity.clone());
+        }
+    
+        row[position.x as usize] = entity;
     }
 }
 

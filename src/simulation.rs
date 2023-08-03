@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     ant::{ants_hunger_system, move_ants_system, setup_ants, ants_birthing_system, on_spawn_ant},
     background::setup_background,
-    elements::setup_elements,
+    elements::{setup_elements, on_spawn_element},
     gravity::{
         ant_gravity_system, element_gravity_system, gravity_crush_system, gravity_stability_system,
     },
@@ -32,6 +32,7 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
+        // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken
         app.add_systems(Update, (is_pointer_captured_system, handle_mouse_clicks).chain());
 
         app.add_systems(FixedUpdate, 
@@ -48,14 +49,19 @@ impl Plugin for SimulationPlugin {
                 periodic_save_world_state_system,
                 // Render world state after updating world state.
                 // NOTE: all render methods can run in parallel but don't due to conflicting mutable Transform access
-                render_translation,
-                render_orientation,
-                render_carrying,
+                (render_translation, render_orientation, render_carrying).chain(),
+                // NOTE: apply deferred fixes a bug where ant drops dirt infront of itself, then digs that dirt immediately and despawns it,
+                // and this races the on_spawn_element logic which wanted to draw the dropped dirt.
+                apply_deferred,
+                // IMPORTANT: `on_spawn` systems must run at the end of `FixedUpdate` because `PostUpdate` does not guaranteee 1:1 runs with `FixedUpdate`
+                // As such, while it's OK for rendering to become de-synced, it's not OK for underlying caches to become de-synced.
+                (on_spawn_ant, on_spawn_element).chain(),
                 play_time_system,
             )
                 .chain(),
         );
 
-        app.add_systems(PostUpdate, on_spawn_ant);
+        // NOTE: maybe turn this on if need to handle user input events?
+        // app.add_systems(PostUpdate, (on_spawn_ant, on_spawn_element));
     }
 }

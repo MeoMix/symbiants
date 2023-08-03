@@ -1,6 +1,6 @@
 use crate::{
     ant::AntOrientation,
-    elements::{is_all_element, is_element, Crushable, DirtElementBundle},
+    elements::{is_all_element, is_element, Crushable, ElementCommandsExt, Air},
     time::IsFastForwarding,
     world_rng::WorldRng,
 };
@@ -109,6 +109,8 @@ pub fn element_gravity_system(
         (element_position.x, air_position.x) = (air_position.x, element_position.x);
         (element_position.y, air_position.y) = (air_position.y, element_position.y);
 
+        // TODO: It seems wrong that when swapping two existing elements I need to manually update the world map
+        // but that when spawning new elements the on_spawn_element system does it for me.
         // Update indices since they're indexed by position and track where elements are at.
         world_map.set_element(*element_position, element_entity);
         world_map.set_element(*air_position, air_entity);
@@ -155,7 +157,7 @@ pub fn ant_gravity_system(
 pub fn gravity_crush_system(
     element_position_query: Query<(&Element, Ref<Position>, Entity), With<Crushable>>,
     elements_query: Query<&Element>,
-    mut world_map: ResMut<WorldMap>,
+    world_map: Res<WorldMap>,
     mut commands: Commands,
     settings: Res<Settings>,
     is_fast_forwarding: Res<IsFastForwarding>,
@@ -185,64 +187,48 @@ pub fn gravity_crush_system(
             &Element::Sand,
         ) {
             // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
-            commands.entity(entity).despawn();
-            world_map.set_element(
-                *position,
-                commands.spawn(DirtElementBundle::new(*position)).id(),
-            );
+            info!("replace_element5: {:?}", position);
+            commands.replace_element(*position, entity, Element::Dirt);
         }
     }
 }
 
-pub fn loosen_neighboring_sand_and_food(
-    location: Position,
-    world_map: &WorldMap,
-    elements_query: &Query<&Element>,
-    commands: &mut Commands,
-) {
-    // For a given position, get all positions adjacent with a radius of two.
-    let mut adjacent_positions = Vec::new();
-    for x in -2..=2 {
-        for y in -2..=2 {
-            if x == 0 && y == 0 {
-                continue;
-            }
 
-            adjacent_positions.push(location + Position::new(x, y));
-        }
-    }
-
-    // For each adjacent position, if the element at that position is sand, mark it as unstable.
-    for position in adjacent_positions.iter() {
-        if let Some(entity) = world_map.get_element(*position) {
-            if let Ok(element) = elements_query.get(*entity) {
-                if *element == Element::Sand || *element == Element::Food {
-                    commands.entity(*entity).insert(Unstable);
-                }
-            }
-        }
-    }
-}
-
-// TODO: I think there's a bug in this still where if there's two sand stacked ontop of one another
-// and then there's a gap of air, one of the sands can become stuck in the air?
-
+// FIXME: There are bugs in the sand fall logic because gravity isn't processed from the bottom row up.
+// A column of sand, floating in the air, may have some sand be marked stable while floating in the air due to having sand directly beneath.
 pub fn gravity_stability_system(
-    sand_query: Query<(Ref<Position>, Entity), With<Unstable>>,
+    air_query: Query<Ref<Position>, (With<Air>, With<Element>)>,
+    unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>)>,
     elements_query: Query<&Element>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
-    for (position, entity) in sand_query.iter() {
-        // Sand/Food which fell in the current frame is still unstable and has potentially loosened its neighbors
-        if position.is_changed() {
-            loosen_neighboring_sand_and_food(*position, &world_map, &elements_query, &mut commands);
-        } else {
-            // Unstable entities which have stopped falling are no longer unstable.
-            commands.entity(entity).remove::<Unstable>();
+    // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
+    for position in air_query.iter().filter(|p| p.is_added() || p.is_changed())  {
+        // Calculate the positions of the elements above the current air element
+        let adjacent_positions = (-1..=1)
+            .map(|x_offset| *position + Position::new(x_offset, -1))
+            .collect::<Vec<_>>();
+
+        // Iterate over all the calculated positions
+        for &adjacent_position in &adjacent_positions {
+            // If the current position contains a sand or food element, mark it as unstable
+            if let Some(entity) = world_map.get_element(adjacent_position) {
+                if let Ok(element) = elements_query.get(*entity) {
+                    if matches!(*element, Element::Sand | Element::Food) {
+                        commands.toggle_element_unstable(*entity, adjacent_position, true);
+                    }
+                }
+            }
         }
     }
+
+    // Iterate over all unstable elements that have not changed position
+    for (position, entity) in unstable_element_query.iter().filter(|(p, _)| !p.is_changed()) {
+        commands.toggle_element_unstable(entity, *position, false);
+    }
 }
+
 // #[cfg(test)]
 // pub mod ant_gravity_system_tests {
 //     use crate::save::WorldSaveState;
