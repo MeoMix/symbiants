@@ -368,9 +368,8 @@ fn is_valid_location(
 ) -> bool {
     // Need air at the ants' body for it to be a legal ant location.
     let Some(entity) = world_map.get_element(position) else { return false };
-
-    // NOTE: this can occur due to `spawn` not affecting query on current frame
-    let Ok(element) = elements_query.get(*entity) else { return false; };
+    let Ok(element) = elements_query.get(*entity) else { panic!("is_valid_location - expected entity to exist") };
+    
 
     if *element != Element::Air {
         return false;
@@ -379,8 +378,7 @@ fn is_valid_location(
     // Get the location beneath the ants' feet and check for air
     let foot_position = position + orientation.rotate_towards_feet().get_forward_delta();
     let Some(entity) = world_map.get_element(foot_position) else { return false };
-    // NOTE: this can occur due to `spawn` not affecting query on current frame
-    let Ok(element) = elements_query.get(*entity) else { return false; };
+    let Ok(element) = elements_query.get(*entity) else { panic!("is_valid_location - expected entity to exist") };
 
     if *element == Element::Air {
         return false;
@@ -397,8 +395,7 @@ fn drop(
     commands: &mut Commands,
 ) {
     let Some(entity) = world_map.get_element(position) else { return; };
-    // NOTE: this can occur due to `spawn` not affecting query on current frame
-    let Ok(element) = elements_query.get(*entity) else { return; };
+    let Ok(element) = elements_query.get(*entity) else { panic!("drop - expected entity to exist") };
 
     if *element == Element::Air {
         // Drop inventory
@@ -481,11 +478,9 @@ fn turn(
     // if inventory.0 != None {
     //     if let Some(entity) = world_map.get_element(*position) {
     //         // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
-    //         // NOTE: this can occur due to `spawn` not affecting query on current frame
-    //         if let Ok(element) = elements_query.get(*entity) {
-    //             if *element == Element::Air {
-    //                 drop(inventory, *position, elements_query, world_map, commands);
-    //             }
+    //         let Ok(element) = elements_query.get(*entity) else { panic!("turn - expected entity to exist") };
+    //         if *element == Element::Air {
+    //             drop(inventory, *position, elements_query, world_map, commands);
     //         }
     //     }
     // }
@@ -505,9 +500,7 @@ fn dig(
 ) {
     // TODO: add safeguard so this only works if called with empty inventory?
     let Some(entity) = world_map.get_element(position) else { return };
-    // TODO: this isn't true
-    // NOTE: this can occur due to `spawn` not affecting query on current frame
-    let Ok(element) = elements_query.get(*entity) else { return };
+    let Ok(element) = elements_query.get(*entity) else { panic!("Dig - expected entity to exist") };
 
     if *element == Element::Dirt || *element == Element::Sand || *element == Element::Food {
         commands.dig_element(ant_entity, position, *entity);
@@ -545,8 +538,7 @@ fn act(
 
     // Check if hitting a solid element and, if so, consider digging through it.
     let entity = world_map.get_element(new_position).unwrap();
-    // NOTE: this can occur due to `spawn` not affecting query on current frame
-    let Ok(element) = elements_query.get(*entity) else { return };
+    let Ok(element) = elements_query.get(*entity) else { panic!("act - expected entity to exist") };
 
     if *element != Element::Air {
         // Consider digging / picking up the element under various circumstances.
@@ -639,8 +631,7 @@ fn act(
     let foot_position = new_position + foot_orientation.get_forward_delta();
 
     if let Some(foot_entity) = world_map.get_element(foot_position) {
-        // NOTE: this can occur due to `spawn` not affecting query on current frame
-        let Ok(foot_element) = elements_query.get(*foot_entity) else { return };
+        let Ok(foot_element) = elements_query.get(*foot_entity) else { panic!("act - expected entity to exist") };
 
         if *foot_element == Element::Air {
             // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
