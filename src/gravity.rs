@@ -1,6 +1,6 @@
 use crate::{
     ant::AntOrientation,
-    element::{is_all_element, is_element, Crushable, ElementCommandsExt, Air},
+    element::{is_all_element, is_element, Crushable, Air, commands::ElementCommandsExt},
     time::IsFastForwarding,
     world_rng::WorldRng,
 };

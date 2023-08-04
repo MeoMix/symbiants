@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 
 use crate::{
     element::{
-        is_element, is_all_element, ElementCommandsExt,
+        is_element, is_all_element, commands::ElementCommandsExt
     },
     map::{Position, WorldMap},
     world_rng::WorldRng, name_list::NAMES,
@@ -715,6 +715,8 @@ pub fn ants_hunger_system(
                     // Eat the food
                     let food_entity = world_map.get_element(food_position).unwrap();
                     info!("replace_element4: {:?}", position);
+
+                    // TODO: command for eating food
                     commands.replace_element(food_position, *food_entity, Element::Air);
 
                     hunger.reset();

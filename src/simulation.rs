@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     ant::{ants_hunger_system, move_ants_system, setup_ants, ants_birthing_system, ui::on_spawn_ant},
     background::setup_background,
-    element::{setup_elements, on_spawn_element},
+    element::{setup_elements, ui::on_spawn_element},
     gravity::{
         ant_gravity_system, element_gravity_system, gravity_crush_system, gravity_stability_system,
     },
