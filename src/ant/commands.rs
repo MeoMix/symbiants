@@ -1,6 +1,8 @@
+use core::panic;
+
 use bevy::{prelude::*, ecs::system::Command};
 
-use crate::{map::{Position, WorldMap}, element::{Element, AirElementBundle, FoodElementBundle, SandElementBundle}, ant::AntInventory};
+use crate::{map::{Position, WorldMap}, element::{Element, AirElementBundle, commands::spawn_element}, ant::AntInventory};
 
 pub trait AntCommandsExt {
     fn dig_element(&mut self, ant: Entity, position: Position, target_element: Entity);
@@ -26,6 +28,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
 }
 
 struct DigElementCommand {
+    // TODO: I'm not sure if it would be nice/good, but having this depend on AntInventory rather than Entity might express its public dependencies more clearly?
     // The entity issuing the command.
     ant: Entity,
     // The entity expected to be affected by the command.
@@ -34,25 +37,15 @@ struct DigElementCommand {
     position: Position,
 }
 
-
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
-        let (element_entity, element) = {
-            let world_map = world.resource::<WorldMap>();
-            let element_entity = match world_map.get_element(self.position) {
-                Some(entity) => *entity,
-                None => {
-                    info!("No entity found at position {:?}", self.position);
-                    return;
-                }
-            };
-
-            let element = match world.get::<Element>(element_entity) {
-                Some(element) => *element,
-                None => return,
-            };
-
-            (element_entity, element)
+        let world_map = world.resource::<WorldMap>();
+        let element_entity = match world_map.get_element(self.position) {
+            Some(entity) => *entity,
+            None => {
+                info!("No entity found at position {:?}", self.position);
+                return;
+            }
         };
 
         if element_entity != self.target_element {
@@ -60,33 +53,32 @@ impl Command for DigElementCommand {
             return;
         }
 
-        // TODO: Does it make sense for this element check to be here?
-        if element == Element::Dirt || element == Element::Sand || element == Element::Food {  
-            info!("Despawning entity {:?} at position {:?}", element_entity, self.position);
-            world.entity_mut(element_entity).despawn();
+        let element = match world.get::<Element>(element_entity) {
+            Some(element) => *element,
+            None => {
+                info!("Failed to get Element component for element entitity {:?}.", element_entity);
+                return;
+            },
+        };
+        
+        world.entity_mut(element_entity).despawn();
             
-            let air_entity = world.spawn(AirElementBundle::new(self.position)).id();
-            let mut world_map = world.resource_mut::<WorldMap>();
+        let air_entity = world.spawn(AirElementBundle::new(self.position)).id();
+        world.resource_mut::<WorldMap>().set_element(self.position, air_entity);
 
-            world_map.set_element(self.position, air_entity);
-
-            let mut inventory = match world.get_mut::<AntInventory>(self.ant) {
-                Some(inventory) => inventory,
-                None => {
-                    // TODO: uhh, I can't return here because I already despawned - need full transaction guarantees.
-                    info!("Failed to get inventory for ant {:?}", self.ant);
-                    return;
-                },
-            };
-            
-            if element == Element::Food {
-                *inventory = AntInventory(Some(Element::Food));
-            } else {
-                *inventory = AntInventory(Some(Element::Sand));
-
-                info!("updated inventory to be sand");
-            }
+        // TODO: There's probably a more elegant way to express this - "denseness" of sand rather than changing between dirt/sand.
+        let mut inventory_element = element;
+        if inventory_element == Element::Dirt {
+            inventory_element = Element::Sand;
         }
+
+        match world.get_mut::<AntInventory>(self.ant) {
+            Some(mut inventory) => {
+                *inventory = AntInventory(Some(inventory_element));
+                info!("Ant {:?} inventory: {:?}", self.ant, inventory);
+            },
+            None => panic!("Failed to get inventory for ant {:?}", self.ant),
+        };
     }
 }
 
@@ -101,22 +93,13 @@ struct DropElementCommand {
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
-        let (air_entity, element) = {
-            let world_map = world.resource::<WorldMap>();
-            let element_entity = match world_map.get_element(self.position) {
-                Some(entity) => *entity,
-                None => {
-                    info!("No entity found at position {:?}", self.position);
-                    return;
-                }
-            };
-
-            let element = match world.get::<Element>(element_entity) {
-                Some(element) => *element,
-                None => return,
-            };
-
-            (element_entity, element)
+        let world_map = world.resource::<WorldMap>();
+        let air_entity = match world_map.get_element(self.position) {
+            Some(entity) => *entity,
+            None => {
+                info!("No entity found at position {:?}", self.position);
+                return;
+            }
         };
 
         if air_entity != self.target_element {
@@ -124,42 +107,24 @@ impl Command for DropElementCommand {
             return;
         }
 
-        // TODO: Does it make sense for this element check to be here?
-        if element == Element::Air {  
-            info!("Despawning air {:?} at position {:?}", air_entity, self.position);
-            world.entity_mut(air_entity).despawn();
+        world.entity_mut(air_entity).despawn();
 
-            let inventory = match world.get::<AntInventory>(self.ant) {
-                Some(inventory) => inventory,
-                None => {
-                    // TODO: Can't return this late after mutations have occurred
-                    info!("Failed to get inventory for ant {:?}", self.ant);
-                    return;
-                },
-            };
+        let inventory = match world.get::<AntInventory>(self.ant) {
+            Some(inventory) => inventory,
+            None => panic!("Failed to get inventory for ant {:?}", self.ant),
+        };
 
-            // TODO: It's weird there's an invalid case here on the match
-            let element_entity = match inventory.0 {
-                Some(Element::Food) => world.spawn(FoodElementBundle::new(self.position)).id(),
-                Some(Element::Sand) => world.spawn(SandElementBundle::new(self.position)).id(),
-                _ => panic!("Invalid element {:?}", element),
-            };
+        let element_entity = match inventory.0 {
+            Some(element) => spawn_element(element, self.position, world),
+            None => panic!("Ant {:?} has no element in inventory", self.ant),
+        };
 
-            let mut world_map = world.resource_mut::<WorldMap>();
+        world.resource_mut::<WorldMap>().set_element(self.position, element_entity);
 
-            world_map.set_element(self.position, element_entity);
-
-            let mut inventory = match world.get_mut::<AntInventory>(self.ant) {
-                Some(inventory) => inventory,
-                None => {
-                    // TODO: Can't return this late after mutations have occurred
-                    info!("Failed to get inventory for ant {:?}", self.ant);
-                    return;
-                },
-            };
-
-            *inventory = AntInventory(None);
-        }
+        match world.get_mut::<AntInventory>(self.ant) {
+            Some(mut inventory) => *inventory = AntInventory(None),
+            None => panic!("Failed to get inventory for ant {:?}", self.ant),
+        };
     }
 }
 
