@@ -352,6 +352,10 @@ impl WorldMap {
             .and_then(|row| row.get(position.x as usize))
     }
 
+    pub fn get_element_expect(&self, position: Position) -> &Entity {
+        self.get_element(position).expect(&format!("Element entity not found at the position: {:?}", position))
+    }
+
     // NOTE: although this logic supports expanding the 2D vector - this should only occur during initialization
     // Afterward, vector should always be the same size as the world. Decided resizing vector was better than implying entries
     // in the vector might be None while maintaing a fixed length vector.

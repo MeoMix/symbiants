@@ -31,7 +31,6 @@ pub struct AntSaveState {
     pub name: AntName,
 }
 
-
 #[derive(Bundle)]
 struct AntBundle {
     ant: Ant,
@@ -389,22 +388,6 @@ fn is_valid_location(
     true
 }
 
-fn drop(
-    ant_entity: Entity,
-    mut inventory: Mut<AntInventory>,
-    position: Position,
-    elements_query: &Query<&Element>,
-    world_map: &mut ResMut<WorldMap>,
-    commands: &mut Commands,
-) {
-    let Some(entity) = world_map.get_element(position) else { return; };
-    let Ok(element) = elements_query.get(*entity) else { panic!("drop - expected entity to exist") };
-
-    if *element == Element::Air {
-        commands.drop(ant_entity, position, *entity);
-    }
-}
-
 fn turn(
     mut orientation: Mut<AntOrientation>,
     // inventory: Mut<AntInventory>,
@@ -474,7 +457,8 @@ fn turn(
     //         // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
     //         let Ok(element) = elements_query.get(*entity) else { panic!("turn - expected entity to exist") };
     //         if *element == Element::Air {
-    //             drop(inventory, *position, elements_query, world_map, commands);
+    //             let target_element_entity = world_map.get_element_expect(*position);
+    //             commands.drop(ant_entity, *position, *target_element_entity);
     //         }
     //     }
     // }
@@ -482,23 +466,6 @@ fn turn(
     let random_facing_orientation =
         facing_orientations[world_rng.0.gen_range(0..facing_orientations.len())];
     *orientation = random_facing_orientation;
-}
-
-fn dig(
-    ant_entity: Entity,
-    position: Position,
-    mut inventory: Mut<AntInventory>,
-    elements_query: &Query<&Element>,
-    world_map: &mut ResMut<WorldMap>,
-    commands: &mut Commands,
-) {
-    // TODO: add safeguard so this only works if called with empty inventory?
-    let Some(entity) = world_map.get_element(position) else { return };
-    let Ok(element) = elements_query.get(*entity) else { panic!("Dig - expected entity to exist") };
-
-    if *element == Element::Dirt || *element == Element::Sand || *element == Element::Food {
-        commands.dig(ant_entity, position, *entity);
-    }
 }
 
 fn act(
@@ -562,14 +529,9 @@ fn act(
                 //         if world_map.is_below_surface(&position) &&  {
 
             if dig_food || dig_sand || dig_dirt || queen_dig {
-                dig(
-                    ant_entity,
-                    *position + orientation.get_forward_delta(),
-                    inventory,
-                    &elements_query,
-                    world_map,
-                    commands,
-                );
+                let target_position = *position + orientation.get_forward_delta();
+                let target_element_entity = *world_map.get_element_expect(target_position);
+                commands.dig(ant_entity, target_position, target_element_entity);
                 return;
             }
         }
@@ -602,7 +564,8 @@ fn act(
 
         if drop_sand || drop_food {
             // Drop inventory in front of ant
-            drop(ant_entity, inventory, new_position, &elements_query, world_map, commands);
+            let target_element_entity = world_map.get_element_expect(new_position);
+            commands.drop(ant_entity, new_position, *target_element_entity);
    
             if *role == AntRole::Queen {
                 turn(
@@ -803,15 +766,10 @@ pub fn move_ants_system(
             if !world_map.is_below_surface(&position) && !world_map.has_started_nest() {
                 if inventory.0 == None {
                     if world_rng.0.gen::<f32>() < settings.probabilities.above_surface_queen_nest_dig {
-    
-                        dig(
-                            ant_entity,
-                            *position + orientation.rotate_towards_feet().get_forward_delta(),
-                            inventory,
-                            &elements_query,
-                            &mut world_map,
-                            &mut commands,
-                        );
+
+                        let target_position = *position + orientation.rotate_towards_feet().get_forward_delta();
+                        let target_element_entity = *world_map.get_element_expect(target_position);
+                        commands.dig(ant_entity, target_position, target_element_entity);
 
                         // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
                         // enforcing nest generation probabilistically
@@ -860,8 +818,9 @@ pub fn move_ants_system(
                     commands.entity(ant_entity).insert(Birthing::default());
 
                     if inventory.0 != None {
-                        let new_position = *position + orientation.get_forward_delta();
-                        drop(ant_entity, inventory, new_position, &elements_query, &mut world_map, &mut commands);
+                        let target_position = *position + orientation.get_forward_delta();
+                        let target_element_entity = world_map.get_element_expect(target_position);
+                        commands.drop(ant_entity, target_position, *target_element_entity);
                     }
 
                     continue;
@@ -893,27 +852,16 @@ pub fn move_ants_system(
             if inventory.0 == None {
                 // Randomly dig downwards / perpendicular to current orientation
                 if world_rng.0.gen::<f32>() < settings.probabilities.random_dig && world_map.is_below_surface(&position) {
-                    dig(
-                        ant_entity,
-                        *position + orientation.rotate_towards_feet().get_forward_delta(),
-                        inventory,
-                        &elements_query,
-                        &mut world_map,
-                        &mut commands,
-                    );
+                    let target_position = *position + orientation.rotate_towards_feet().get_forward_delta();
+                    let target_element_entity = *world_map.get_element_expect(target_position);
+                    commands.dig(ant_entity, target_position, target_element_entity);
     
                     continue;
                 }
             } else {
                 if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
-                    drop(
-                        ant_entity, 
-                        inventory,
-                        *position,
-                        &elements_query,
-                        &mut world_map,
-                        &mut commands,
-                    );
+                    let target_element_entity = world_map.get_element_expect(*position);
+                    commands.drop(ant_entity, *position, *target_element_entity);
     
                     continue;
                 }
