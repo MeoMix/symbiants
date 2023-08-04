@@ -24,7 +24,7 @@ impl PendingTicks {
 }
 
 // When the app first loads - determine how long user has been away and fast-forward time accordingly.
-pub fn setup_fast_forward_time_system(mut fixed_time: ResMut<FixedTime>) {
+pub fn setup_fast_forward_time(mut fixed_time: ResMut<FixedTime>) {
     if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
         let delta_seconds = Utc::now()
             .signed_duration_since(saved_state.time_stamp)
@@ -41,7 +41,7 @@ pub fn setup_fast_forward_time_system(mut fixed_time: ResMut<FixedTime>) {
 // Determine the conversation rate between simulation ticks and fast forward time.
 // Update tick rate to fast forward time.
 // When sufficient number of ticks have occurred, revert back to default tick rate.
-pub fn play_time_system(
+pub fn play_time(
     mut fixed_time: ResMut<FixedTime>,
     mut is_fast_forwarding: ResMut<IsFastForwarding>,
     mut pending_ticks: ResMut<PendingTicks>,

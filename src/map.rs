@@ -442,7 +442,7 @@ fn get_world_save_state(
     }
 }
 
-pub fn periodic_save_world_state_system(
+pub fn periodic_save_world_state(
     mut elements_query: Query<(&Element, &Position)>,
     mut ants_query: Query<(
         &AntOrientation,

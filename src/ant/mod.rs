@@ -2,11 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
 use crate::{
-    element::{
-        is_element, is_all_element, commands::ElementCommandsExt
-    },
+    element::{is_all_element, is_element},
     map::{Position, WorldMap},
-    world_rng::WorldRng, name_list::NAMES,
+    name_list::NAMES,
+    world_rng::WorldRng,
 };
 
 use self::commands::AntCommandsExt;
@@ -16,6 +15,7 @@ use bevy::{prelude::*, sprite::Anchor};
 use rand::{rngs::StdRng, Rng};
 
 mod commands;
+pub mod hunger;
 // TODO: maybe don't want this public?
 pub mod ui;
 
@@ -348,16 +348,15 @@ pub fn setup_ants(
     mut world_rng: ResMut<WorldRng>,
 ) {
     for ant_save_state in world_map.initial_state().ants.iter() {
-        commands
-            .spawn(AntBundle::new(
-                ant_save_state.position,
-                settings.ant_color,
-                ant_save_state.orientation,
-                ant_save_state.inventory,
-                ant_save_state.role,
-                ant_save_state.name.0.as_str(),
-                &mut world_rng.0,
-            ));
+        commands.spawn(AntBundle::new(
+            ant_save_state.position,
+            settings.ant_color,
+            ant_save_state.orientation,
+            ant_save_state.inventory,
+            ant_save_state.role,
+            ant_save_state.name.0.as_str(),
+            &mut world_rng.0,
+        ));
     }
 }
 
@@ -368,9 +367,12 @@ fn is_valid_location(
     world_map: &ResMut<WorldMap>,
 ) -> bool {
     // Need air at the ants' body for it to be a legal ant location.
-    let Some(entity) = world_map.get_element(position) else { return false };
-    let Ok(element) = elements_query.get(*entity) else { panic!("is_valid_location - expected entity to exist") };
-    
+    let Some(entity) = world_map.get_element(position) else {
+        return false;
+    };
+    let Ok(element) = elements_query.get(*entity) else {
+        panic!("is_valid_location - expected entity to exist")
+    };
 
     if *element != Element::Air {
         return false;
@@ -378,8 +380,12 @@ fn is_valid_location(
 
     // Get the location beneath the ants' feet and check for air
     let foot_position = position + orientation.rotate_towards_feet().get_forward_delta();
-    let Some(entity) = world_map.get_element(foot_position) else { return false };
-    let Ok(element) = elements_query.get(*entity) else { panic!("is_valid_location - expected entity to exist") };
+    let Some(entity) = world_map.get_element(foot_position) else {
+        return false;
+    };
+    let Ok(element) = elements_query.get(*entity) else {
+        panic!("is_valid_location - expected entity to exist")
+    };
 
     if *element == Element::Air {
         return false;
@@ -499,7 +505,9 @@ fn act(
 
     // Check if hitting a solid element and, if so, consider digging through it.
     let entity = world_map.get_element(new_position).unwrap();
-    let Ok(element) = elements_query.get(*entity) else { panic!("act - expected entity to exist") };
+    let Ok(element) = elements_query.get(*entity) else {
+        panic!("act - expected entity to exist")
+    };
 
     if *element != Element::Air {
         // Consider digging / picking up the element under various circumstances.
@@ -512,9 +520,10 @@ fn act(
                 && world_map.is_below_surface(&position)
                 && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dirt_dig;
 
-
             // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
-            let mut queen_dig = *element == Element::Dirt && world_map.is_below_surface(&position) && *role == AntRole::Queen;
+            let mut queen_dig = *element == Element::Dirt
+                && world_map.is_below_surface(&position)
+                && *role == AntRole::Queen;
 
             if position.y - world_map.surface_level() > 8 {
                 if world_rng.0.gen::<f32>() > settings.probabilities.below_surface_queen_nest_dig {
@@ -522,11 +531,11 @@ fn act(
                 }
 
                 // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
-            } 
+            }
 
-                // if *role == AntRole::Queen {
-                //     if inventory.0 == None {
-                //         if world_map.is_below_surface(&position) &&  {
+            // if *role == AntRole::Queen {
+            //     if inventory.0 == None {
+            //         if world_map.is_below_surface(&position) &&  {
 
             if dig_food || dig_sand || dig_dirt || queen_dig {
                 let target_position = *position + orientation.get_forward_delta();
@@ -552,7 +561,7 @@ fn act(
 
     // There is an air gap directly ahead of the ant. Consider dropping inventory.
     // Avoid dropping inventory when facing upwards since it'll fall on the ant.
-    if inventory.0 != None && orientation.is_horizontal()  {
+    if inventory.0 != None && orientation.is_horizontal() {
         // Prioritize dropping sand above ground and food below ground.
         let drop_sand = inventory.0 == Some(Element::Sand)
             && !world_map.is_below_surface(&new_position)
@@ -566,7 +575,7 @@ fn act(
             // Drop inventory in front of ant
             let target_element_entity = world_map.get_element_expect(new_position);
             commands.drop(ant_entity, new_position, *target_element_entity);
-   
+
             if *role == AntRole::Queen {
                 turn(
                     orientation,
@@ -588,7 +597,9 @@ fn act(
     let foot_position = new_position + foot_orientation.get_forward_delta();
 
     if let Some(foot_entity) = world_map.get_element(foot_position) {
-        let Ok(foot_element) = elements_query.get(*foot_entity) else { panic!("act - expected entity to exist") };
+        let Ok(foot_element) = elements_query.get(*foot_entity) else {
+            panic!("act - expected entity to exist")
+        };
 
         if *foot_element == Element::Air {
             // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
@@ -601,21 +612,15 @@ fn act(
     }
 }
 
-pub fn ants_birthing_system(
+pub fn ants_birthing(
     mut ants_birthing_query: Query<
-        (
-            &mut Birthing,
-            &Position,
-            &AntColor,
-            &AntOrientation,
-        ),
+        (&mut Birthing, &Position, &AntColor, &AntOrientation),
         With<Alive>,
     >,
     mut commands: Commands,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    for (mut birthing, position, color, orientation) in ants_birthing_query.iter_mut()
-    {
+    for (mut birthing, position, color, orientation) in ants_birthing_query.iter_mut() {
         birthing.try_increment();
 
         if birthing.is_ready() {
@@ -626,7 +631,6 @@ pub fn ants_birthing_system(
                 Facing::Right
             };
 
-            
             let name: &str = NAMES[world_rng.0.gen_range(0..NAMES.len())].clone();
 
             let behind_position = *position + orientation.turn_around().get_forward_delta();
@@ -647,59 +651,9 @@ pub fn ants_birthing_system(
     }
 }
 
-pub fn ants_hunger_system(
-    mut ants_hunger_query: Query<
-        (
-            Entity,
-            &mut Hunger,
-            &mut Handle<Image>,
-            &mut AntOrientation,
-            &Position,
-            &AntInventory,
-        ),
-        With<Alive>,
-    >,
-    elements_query: Query<&Element>,
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    world_map: Res<WorldMap>,
-) {
-    for (entity, mut hunger, mut handle, mut orientation, position, inventory) in
-        ants_hunger_query.iter_mut()
-    {
-        hunger.try_increment();
-
-        // If ant is holding or adjacent to food then eat the food and reset hunger.
-        if hunger.is_hungry() {
-            if inventory.0 == None {
-                // Check position in front of ant for food
-                let food_position = *position + orientation.get_forward_delta();
-                if is_element(&world_map, &elements_query, &food_position, &Element::Food) {
-                    // Eat the food
-                    let food_entity = world_map.get_element(food_position).unwrap();
-                    info!("replace_element4: {:?}", position);
-
-                    // TODO: command for eating food
-                    commands.replace_element(food_position, *food_entity, Element::Air);
-
-                    hunger.reset();
-                }
-            }
-        }
-
-        if hunger.is_starving() {
-            commands.entity(entity).remove::<Alive>();
-
-            // TODO: prefer respond to Alive removal and/or responding to addition of Dead instead of inline code here
-            *handle = asset_server.load("images/ant_dead.png");
-            *orientation = orientation.flip_onto_back();
-        }
-    }
-}
-
 // TODO: untangle mutability, many functions accept mutable but do not mutate which seems wrong
 // TODO: first pass is going to be just dumping all code into one system, but suspect want multiple systems
-pub fn move_ants_system(
+pub fn move_ants(
     mut ants_query: Query<
         (
             &mut AntOrientation,
@@ -765,18 +719,20 @@ pub fn move_ants_system(
         if *role == AntRole::Queen {
             if !world_map.is_below_surface(&position) && !world_map.has_started_nest() {
                 if inventory.0 == None {
-                    if world_rng.0.gen::<f32>() < settings.probabilities.above_surface_queen_nest_dig {
-
-                        let target_position = *position + orientation.rotate_towards_feet().get_forward_delta();
+                    if world_rng.0.gen::<f32>()
+                        < settings.probabilities.above_surface_queen_nest_dig
+                    {
+                        let target_position =
+                            *position + orientation.rotate_towards_feet().get_forward_delta();
                         let target_element_entity = *world_map.get_element_expect(target_position);
                         commands.dig(ant_entity, target_position, target_element_entity);
 
                         // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
                         // enforcing nest generation probabilistically
                         world_map.start_nest();
-        
+
                         continue;
-                    } 
+                    }
                 }
             }
 
@@ -827,11 +783,11 @@ pub fn move_ants_system(
                 }
             }
 
-            if world_map.is_nested() { 
+            if world_map.is_nested() {
                 continue;
             }
         }
-        
+
         if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
             turn(
                 orientation,
@@ -851,18 +807,21 @@ pub fn move_ants_system(
         if *role == AntRole::Worker {
             if inventory.0 == None {
                 // Randomly dig downwards / perpendicular to current orientation
-                if world_rng.0.gen::<f32>() < settings.probabilities.random_dig && world_map.is_below_surface(&position) {
-                    let target_position = *position + orientation.rotate_towards_feet().get_forward_delta();
+                if world_rng.0.gen::<f32>() < settings.probabilities.random_dig
+                    && world_map.is_below_surface(&position)
+                {
+                    let target_position =
+                        *position + orientation.rotate_towards_feet().get_forward_delta();
                     let target_element_entity = *world_map.get_element_expect(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
-    
+
                     continue;
                 }
             } else {
                 if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
                     let target_element_entity = world_map.get_element_expect(*position);
                     commands.drop(ant_entity, *position, *target_element_entity);
-    
+
                     continue;
                 }
             }

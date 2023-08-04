@@ -93,7 +93,7 @@ pub struct IsPointerCaptured(pub bool);
 #[derive(Component)]
 pub struct NoPointerCapture;
 
-pub fn is_pointer_captured_system(
+pub fn is_pointer_captured(
     mut is_pointer_captured: ResMut<IsPointerCaptured>,
     interaction_query: Query<
         &Interaction,

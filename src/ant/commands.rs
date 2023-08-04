@@ -37,6 +37,7 @@ struct DigElementCommand {
     target_position: Position,
 }
 
+// TODO: Confirm that ant and element are adjacent to one another at time action is taken.
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
         let world_map = world.resource::<WorldMap>();

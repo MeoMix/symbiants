@@ -73,7 +73,7 @@ fn get_element_fall_position(
     }
 }
 
-pub fn element_gravity_system(
+pub fn element_gravity(
     mut element_position_queries: ParamSet<(
         Query<&Position, (With<Element>, With<Unstable>)>,
         Query<&mut Position, With<Element>>,
@@ -119,7 +119,7 @@ pub fn element_gravity_system(
 
 // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
-pub fn ant_gravity_system(
+pub fn ant_gravity(
     mut ants_query: Query<(&AntOrientation, &mut Position)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
@@ -154,7 +154,7 @@ pub fn ant_gravity_system(
 }
 
 // TODO: wire up tests properly
-pub fn gravity_crush_system(
+pub fn gravity_crush(
     element_position_query: Query<(&Element, Ref<Position>, Entity), With<Crushable>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
@@ -196,7 +196,7 @@ pub fn gravity_crush_system(
 
 // FIXME: There are bugs in the sand fall logic because gravity isn't processed from the bottom row up.
 // A column of sand, floating in the air, may have some sand be marked stable while floating in the air due to having sand directly beneath.
-pub fn gravity_stability_system(
+pub fn gravity_stability(
     air_query: Query<Ref<Position>, (With<Air>, With<Element>)>,
     unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>)>,
     elements_query: Query<&Element>,
@@ -230,7 +230,7 @@ pub fn gravity_stability_system(
 }
 
 // #[cfg(test)]
-// pub mod ant_gravity_system_tests {
+// pub mod ant_gravity_tests {
 //     use crate::save::WorldSaveState;
 
 //     use super::*;
@@ -243,7 +243,7 @@ pub fn gravity_stability_system(
 //     fn setup(element_grid: Vec<Vec<Element>>) -> App {
 //         let mut app = App::new();
 //         app.add_plugin(LogPlugin::default());
-//         app.add_system(ant_gravity_system);
+//         app.add_systems(ant_gravity);
 
 //         let seed = 42069; // ayy lmao
 //         let world_rng = WorldRng {
@@ -316,7 +316,7 @@ pub fn gravity_stability_system(
 
 // TODO: confirm elements are despawned not just that grid is correct
 // #[cfg(test)]
-// pub mod sand_gravity_system_tests {
+// pub mod sand_gravity_tests {
 //     use crate::{
 //         element::{AirElementBundle, SandElementBundle},
 //         map::WorldSaveState,
@@ -334,7 +334,7 @@ pub fn gravity_stability_system(
 //     fn setup(element_grid: Vec<Vec<Element>>, seed: Option<u64>) -> App {
 //         let mut app = App::new();
 //         app.add_plugin(LogPlugin::default());
-//         app.add_system(sand_gravity_system);
+//         app.add_systems(sand_gravity);
 
 //         let seed = seed.unwrap_or(42069); // ayy lmao
 //         let world_rng = WorldRng(StdRng::seed_from_u64(seed));
