@@ -1,13 +1,50 @@
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 use crate::{
     element::{
         is_element, commands::ElementCommandsExt, Element
     },
     map::{Position, WorldMap},
 };
+use super::{AntOrientation, AntInventory, Alive};
 
-use bevy::prelude::*;
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct Hunger {
+    value: usize,
+    max: usize,
+}
 
-use super::{Hunger, AntOrientation, AntInventory, Alive};
+impl Hunger {
+    pub fn default() -> Self {
+        Self {
+            value: 0,
+            // TODO: this is 6 * 60 * 60 * 24 which is 1 day expressed in frame ticks
+            max: 518400,
+        }
+    }
+
+    pub fn try_increment(&mut self) {
+        if self.value < self.max {
+            self.value += 1;
+        }
+    }
+
+    pub fn as_percent(&self) -> f64 {
+        ((self.value as f64) / (self.max as f64) * 100.0).round()
+    }
+
+    pub fn is_hungry(&self) -> bool {
+        self.value >= self.max / 2
+    }
+
+    pub fn is_starving(&self) -> bool {
+        self.value >= self.max
+    }
+
+    pub fn reset(&mut self) {
+        self.value = 0;
+    }
+}
 
 pub fn ants_hunger(
     mut ants_hunger_query: Query<

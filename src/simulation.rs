@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    ant::{hunger::ants_hunger, move_ants, setup_ants, ants_birthing, ui::on_spawn_ant},
+    ant::{hunger::ants_hunger, move_ants, setup_ants, birthing::ants_birthing, ui::on_spawn_ant},
     background::setup_background,
     element::{setup_elements, ui::on_spawn_element},
     gravity::{

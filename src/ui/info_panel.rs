@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{ant::{Hunger, AntRole}, food::FoodCount, map::WorldMap};
+use crate::{ant::{hunger::Hunger, AntRole}, food::FoodCount, map::WorldMap};
 
 #[derive(Component)]
 pub struct InfoPanel;
