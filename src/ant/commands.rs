@@ -138,6 +138,7 @@ impl Command for DropElementCommand {
                 },
             };
 
+            // TODO: It's weird there's an invalid case here on the match
             let element_entity = match inventory.0 {
                 Some(Element::Food) => world.spawn(FoodElementBundle::new(self.position)).id(),
                 Some(Element::Sand) => world.spawn(SandElementBundle::new(self.position)).id(),
