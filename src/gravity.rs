@@ -1,12 +1,12 @@
 use crate::{
     ant::AntOrientation,
-    elements::{is_all_element, is_element, Crushable, ElementCommandsExt, Air},
+    element::{is_all_element, is_element, Crushable, ElementCommandsExt, Air},
     time::IsFastForwarding,
     world_rng::WorldRng,
 };
 
 use super::{
-    elements::Element,
+    element::Element,
     map::{Position, WorldMap},
     settings::Settings,
 };
@@ -318,7 +318,7 @@ pub fn gravity_stability_system(
 // #[cfg(test)]
 // pub mod sand_gravity_system_tests {
 //     use crate::{
-//         elements::{AirElementBundle, SandElementBundle},
+//         element::{AirElementBundle, SandElementBundle},
 //         map::WorldSaveState,
 //     };
 

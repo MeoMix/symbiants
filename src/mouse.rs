@@ -2,7 +2,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
     camera::MainCamera,
-    elements::{is_element, Element, ElementCommandsExt},
+    element::{is_element, Element, ElementCommandsExt},
     map::{Position, WorldMap}, food::FoodCount,
 };
 

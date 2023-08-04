@@ -1,7 +1,7 @@
 use super::map::Position;
 use crate::{
     ant::{AntInventory, AntOrientation, Label, TranslationOffset},
-    elements::Element,
+    element::Element,
     IsFastForwarding,
 };
 use bevy::prelude::*;

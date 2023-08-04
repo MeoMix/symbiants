@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
 use crate::{
-    elements::{
+    element::{
         is_element, is_all_element, ElementCommandsExt,
     },
     map::{Position, WorldMap},
@@ -11,7 +11,7 @@ use crate::{
 
 use self::commands::AntCommandsExt;
 
-use super::{elements::Element, settings::Settings};
+use super::{element::Element, settings::Settings};
 use bevy::{prelude::*, sprite::Anchor};
 use rand::{rngs::StdRng, Rng};
 

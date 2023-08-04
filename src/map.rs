@@ -13,7 +13,7 @@ use crate::{
         Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, AntSaveState, AntTimer,
         Facing,
     },
-    elements::{Element, ElementSaveState},
+    element::{Element, ElementSaveState},
     name_list::NAMES,
     settings::Settings,
     time::IsFastForwarding,

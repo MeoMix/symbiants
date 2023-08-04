@@ -1,6 +1,6 @@
 use bevy::{prelude::*, ecs::system::Command};
 
-use crate::{map::{Position, WorldMap}, elements::{Element, AirElementBundle, FoodElementBundle, SandElementBundle}, ant::AntInventory};
+use crate::{map::{Position, WorldMap}, element::{Element, AirElementBundle, FoodElementBundle, SandElementBundle}, ant::AntInventory};
 
 pub trait AntCommandsExt {
     fn dig_element(&mut self, ant: Entity, position: Position, target_element: Entity);
