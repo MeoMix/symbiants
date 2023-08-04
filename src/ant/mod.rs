@@ -4,15 +4,19 @@ use std::{f32::consts::PI, ops::Add};
 
 use crate::{
     elements::{
-        is_element, is_all_element, ElementCommandsExt, AirElementBundle,
+        is_element, is_all_element, ElementCommandsExt,
     },
     map::{Position, WorldMap},
     world_rng::WorldRng, name_list::NAMES,
 };
 
+use self::commands::AntCommandsExt;
+
 use super::{elements::Element, settings::Settings};
-use bevy::{prelude::*, sprite::Anchor, ecs::system::Command};
+use bevy::{prelude::*, sprite::Anchor};
 use rand::{rngs::StdRng, Rng};
+
+mod commands;
 
 // This is what is persisted as JSON.
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -388,6 +392,7 @@ fn is_valid_location(
 }
 
 fn drop(
+    ant_entity: Entity,
     mut inventory: Mut<AntInventory>,
     position: Position,
     elements_query: &Query<&Element>,
@@ -398,16 +403,7 @@ fn drop(
     let Ok(element) = elements_query.get(*entity) else { panic!("drop - expected entity to exist") };
 
     if *element == Element::Air {
-        // Drop inventory
-        if inventory.0 == Some(Element::Food) {
-            info!("replace_element1: {:?}", position);
-            commands.replace_element(position, *entity, Element::Food);
-        } else if inventory.0 == Some(Element::Sand) {
-            info!("replace_element2: {:?}", position);
-            commands.replace_element(position, *entity, Element::Sand);
-        }
-
-        *inventory = AntInventory(None);
+        commands.drop_element(ant_entity, position, *entity);
     }
 }
 
@@ -608,7 +604,7 @@ fn act(
 
         if drop_sand || drop_food {
             // Drop inventory in front of ant
-            drop(inventory, new_position, &elements_query, world_map, commands);
+            drop(ant_entity, inventory, new_position, &elements_query, world_map, commands);
    
             if *role == AntRole::Queen {
                 turn(
@@ -865,7 +861,7 @@ pub fn move_ants_system(
 
                     if inventory.0 != None {
                         let new_position = *position + orientation.get_forward_delta();
-                        drop(inventory, new_position, &elements_query, &mut world_map, &mut commands);
+                        drop(ant_entity, inventory, new_position, &elements_query, &mut world_map, &mut commands);
                     }
 
                     continue;
@@ -911,6 +907,7 @@ pub fn move_ants_system(
             } else {
                 if world_rng.0.gen::<f32>() < settings.probabilities.random_drop {
                     drop(
+                        ant_entity, 
                         inventory,
                         *position,
                         &elements_query,
@@ -1015,82 +1012,4 @@ pub fn on_spawn_ant(
     ));
     }
 
-}
-
-
-pub trait AntCommandsExt {
-    fn dig_element(&mut self, ant: Entity, position: Position, target_element: Entity);
-}
-
-impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
-    fn dig_element(&mut self, ant: Entity, position: Position, target_element: Entity) {
-        self.add(DigElementCommand {
-            ant,
-            position,
-            target_element,
-        })
-    }
-}
-
-struct DigElementCommand {
-    // The entity issuing the command.
-    ant: Entity,
-    // The entity expected to be affected by the command.
-    target_element: Entity,
-    // The location of the target element.
-    position: Position,
-}
-
-
-impl Command for DigElementCommand {
-    fn apply(self, world: &mut World) {
-        let (element_entity, element) = {
-            let world_map = world.resource::<WorldMap>();
-            let element_entity = match world_map.get_element(self.position) {
-                Some(entity) => *entity,
-                None => {
-                    info!("No entity found at position {:?}", self.position);
-                    return;
-                }
-            };
-
-            let element = match world.get::<Element>(element_entity) {
-                Some(element) => *element,
-                None => return,
-            };
-
-            (element_entity, element)
-        };
-
-        if element_entity != self.target_element {
-            info!("Existing element entity doesn't match the target element entity.");
-            return;
-        }
-
-        if element == Element::Dirt || element == Element::Sand || element == Element::Food {  
-            info!("Despawning entity {:?} at position {:?}", element_entity, self.position);
-            world.entity_mut(element_entity).despawn();
-            
-            let air_entity = world.spawn(AirElementBundle::new(self.position)).id();
-            let mut world_map = world.resource_mut::<WorldMap>();
-
-            world_map.set_element(self.position, air_entity);
-
-            let mut inventory = match world.get_mut::<AntInventory>(self.ant) {
-                Some(inventory) => inventory,
-                None => {
-                    info!("Failed to get inventory for ant {:?}", self.ant);
-                    return;
-                },
-            };
-            
-            if element == Element::Food {
-                *inventory = AntInventory(Some(Element::Food));
-            } else {
-                *inventory = AntInventory(Some(Element::Sand));
-
-                info!("updated inventory to be sand");
-            }
-        }
-    }
 }
