@@ -401,7 +401,7 @@ fn drop(
     let Ok(element) = elements_query.get(*entity) else { panic!("drop - expected entity to exist") };
 
     if *element == Element::Air {
-        commands.drop_element(ant_entity, position, *entity);
+        commands.drop(ant_entity, position, *entity);
     }
 }
 
@@ -497,7 +497,7 @@ fn dig(
     let Ok(element) = elements_query.get(*entity) else { panic!("Dig - expected entity to exist") };
 
     if *element == Element::Dirt || *element == Element::Sand || *element == Element::Food {
-        commands.dig_element(ant_entity, position, *entity);
+        commands.dig(ant_entity, position, *entity);
     }
 }
 
