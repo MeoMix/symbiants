@@ -73,16 +73,6 @@ pub fn handle_mouse_clicks(
         
         let Some(entity) = world_map.get_element(grid_position) else { return };
         commands.replace_element(grid_position, *entity, Element::Air);
-
-        // if is_element(&world_map, &elements_query, &grid_position, &Element::Air) {
-        //     if food_count.0 > 0 {
-        //         let Some(entity) = world_map.get_element(grid_position) else { return };
-        //         info!("replace_element6: {:?}", grid_position);
-        //         commands.replace_element(grid_position, *entity, Element::Food);
-
-        //         food_count.0 -= 1;
-        //     }
-        // }
     }
 }
 

@@ -1,12 +1,10 @@
-use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
+use super::{commands::AntCommandsExt, Alive, AntInventory, AntOrientation};
 use crate::{
-    element::{
-        is_element, commands::ElementCommandsExt, Element
-    },
+    element::{is_element, Element},
     map::{Position, WorldMap},
 };
-use super::{AntOrientation, AntInventory, Alive};
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Hunger {
@@ -54,7 +52,7 @@ pub fn ants_hunger(
             &mut Handle<Image>,
             &mut AntOrientation,
             &Position,
-            &AntInventory,
+            &mut AntInventory,
         ),
         With<Alive>,
     >,
@@ -63,28 +61,10 @@ pub fn ants_hunger(
     asset_server: Res<AssetServer>,
     world_map: Res<WorldMap>,
 ) {
-    for (entity, mut hunger, mut handle, mut orientation, position, inventory) in
+    for (entity, mut hunger, mut handle, mut orientation, position, mut inventory) in
         ants_hunger_query.iter_mut()
     {
         hunger.try_increment();
-
-        // If ant is holding or adjacent to food then eat the food and reset hunger.
-        if hunger.is_hungry() {
-            if inventory.0 == None {
-                // Check position in front of ant for food
-                let food_position = *position + orientation.get_forward_delta();
-                if is_element(&world_map, &elements_query, &food_position, &Element::Food) {
-                    // Eat the food
-                    let food_entity = world_map.get_element(food_position).unwrap();
-                    info!("replace_element4: {:?}", position);
-
-                    // TODO: command for eating food
-                    commands.replace_element(food_position, *food_entity, Element::Air);
-
-                    hunger.reset();
-                }
-            }
-        }
 
         if hunger.is_starving() {
             commands.entity(entity).remove::<Alive>();
@@ -92,6 +72,18 @@ pub fn ants_hunger(
             // TODO: prefer respond to Alive removal and/or responding to addition of Dead instead of inline code here
             *handle = asset_server.load("images/ant_dead.png");
             *orientation = orientation.flip_onto_back();
+        } else if hunger.is_hungry() {
+            // If there is food near the hungry ant then pick it up and if the ant is holding food then eat it.
+            if inventory.0 == None {
+                let food_position = *position + orientation.get_forward_delta();
+                if is_element(&world_map, &elements_query, &food_position, &Element::Food) {
+                    let food_entity = world_map.get_element(food_position).unwrap();
+                    commands.dig(entity, food_position, *food_entity);
+                }
+            } else if inventory.0 == Some(Element::Food) {
+                *inventory = AntInventory(Some(Element::Air));
+                hunger.reset();
+            }
         }
     }
 }

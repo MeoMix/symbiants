@@ -134,5 +134,3 @@ impl Command for DropElementCommand {
         };
     }
 }
-
-// TODO: command for eating food
