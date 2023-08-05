@@ -1,6 +1,6 @@
-use crate::gravity::Unstable;
 use self::commands::ElementCommandsExt;
 use super::map::{Position, WorldMap};
+use crate::gravity::Unstable;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 

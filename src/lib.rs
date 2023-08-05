@@ -1,19 +1,19 @@
 mod ant;
 mod background;
 mod camera;
+mod common;
 mod element;
+mod food;
 mod gravity;
 mod map;
 mod mouse;
 mod name_list;
 mod pancam;
-mod common;
 mod settings;
 mod simulation;
 mod time;
 mod ui;
 mod world_rng;
-mod food;
 
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},

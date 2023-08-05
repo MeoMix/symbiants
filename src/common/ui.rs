@@ -1,11 +1,9 @@
 use bevy::prelude::*;
 use std::ops::Add;
 
-use crate::{
-    IsFastForwarding, map::Position,
-};
+use crate::{map::Position, IsFastForwarding};
 
-use super::{TranslationOffset, Label};
+use super::{Label, TranslationOffset};
 
 // Manages rerendering entities when their positions are updated. Applies to ants, labels, and elements.
 // TODO: it might make more sense to split this into ant-specific and element-specific functions because ants have labels and offsets

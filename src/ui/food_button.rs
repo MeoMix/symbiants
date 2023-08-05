@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 
 use crate::food::FoodCount;
@@ -36,17 +35,12 @@ pub fn setup_food_button(mut commands: Commands) {
 
 pub fn update_food_button(
     mut interaction_query: Query<
-        (
-            &Interaction,
-            &mut BackgroundColor,
-            &mut BorderColor,
-        ),
+        (&Interaction, &mut BackgroundColor, &mut BorderColor),
         (Changed<Interaction>, With<Button>),
     >,
     mut food_count: ResMut<FoodCount>,
 ) {
     for (interaction, mut color, mut border_color) in &mut interaction_query {
-
         match *interaction {
             Interaction::Pressed => {
                 *color = PRESSED_BUTTON.into();

@@ -1,17 +1,20 @@
 use bevy::prelude::*;
 
 use crate::{
-    ant::{hunger::ants_hunger, move_ants, setup_ants, birthing::ants_birthing, ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation}},
-    background::setup_background,
-    element::{setup_elements, ui::on_spawn_element},
-    gravity::{
-        ant_gravity, element_gravity, gravity_crush, gravity_stability,
+    ant::{
+        birthing::ants_birthing,
+        hunger::ants_hunger,
+        move_ants, setup_ants,
+        ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation},
     },
+    background::setup_background,
+    common::ui::on_update_position,
+    element::{setup_elements, ui::on_spawn_element},
+    food::FoodCount,
+    gravity::{ant_gravity, element_gravity, gravity_crush, gravity_stability},
     map::{periodic_save_world_state, setup_window_onunload_save_world_state},
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
-    common::ui::on_update_position,
     time::{play_time, setup_fast_forward_time},
-    food::FoodCount,
 };
 
 pub struct SimulationPlugin;
@@ -21,7 +24,8 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<FoodCount>();
         app.insert_resource(IsPointerCaptured(false));
 
-        app.add_systems(Startup,
+        app.add_systems(
+            Startup,
             (
                 setup_fast_forward_time,
                 setup_background,
@@ -35,7 +39,8 @@ impl Plugin for SimulationPlugin {
         // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken
         app.add_systems(Update, (is_pointer_captured, handle_mouse_clicks).chain());
 
-        app.add_systems(FixedUpdate, 
+        app.add_systems(
+            FixedUpdate,
             (
                 // TODO: revisit this idea - I want all simulation systems to be able to run in parallel.
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
@@ -54,12 +59,17 @@ impl Plugin for SimulationPlugin {
                 // This would result in a panic due to missing Element entity unless the render command was rewritten manually
                 // to safeguard against missing entity at time of command application.
                 apply_deferred,
-                // Provide an opportunity to write world state to disk. 
+                // Provide an opportunity to write world state to disk.
                 // This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
-                // to avoid losing too much state in the event of a crash. 
+                // to avoid losing too much state in the event of a crash.
                 periodic_save_world_state,
                 // Ensure render state reflects simulation state after having applied movements and command updates.
-                (on_update_position, on_update_ant_orientation, on_update_ant_inventory).chain(),
+                (
+                    on_update_position,
+                    on_update_ant_orientation,
+                    on_update_ant_inventory,
+                )
+                    .chain(),
                 (on_spawn_ant, on_spawn_element).chain(),
                 play_time,
             )

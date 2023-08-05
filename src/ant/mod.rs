@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
 use crate::{
+    ant::birthing::Birthing,
     element::{is_all_element, is_element},
     map::{Position, WorldMap},
-    world_rng::WorldRng, ant::birthing::Birthing,
+    world_rng::WorldRng,
 };
 
 use self::{commands::AntCommandsExt, hunger::Hunger};
@@ -13,9 +14,9 @@ use super::{element::Element, settings::Settings};
 use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng};
 
+pub mod birthing;
 mod commands;
 pub mod hunger;
-pub mod birthing;
 // TODO: maybe don't want this public?
 pub mod ui;
 
@@ -81,7 +82,6 @@ pub struct AntInventory(pub Option<Element>);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Alive;
-
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Ant;
@@ -174,19 +174,19 @@ impl AntOrientation {
         Quat::from_rotation_z(self.get_angle().as_radians())
     }
 
-    pub fn get_facing(self) -> Facing {
+    pub fn get_facing(&self) -> Facing {
         self.facing
     }
 
-    pub fn get_angle(self) -> Angle {
+    pub fn get_angle(&self) -> Angle {
         self.angle
     }
 
-    pub fn is_horizontal(self) -> bool {
+    pub fn is_horizontal(&self) -> bool {
         self.angle == Angle::Zero || self.angle == Angle::OneHundredEighty
     }
 
-    pub fn turn_around(self) -> Self {
+    pub fn turn_around(&self) -> Self {
         let facing = if self.facing == Facing::Left {
             Facing::Right
         } else {
@@ -196,23 +196,23 @@ impl AntOrientation {
         Self::new(facing, self.angle)
     }
 
-    pub fn flip_onto_back(self) -> Self {
-        self.rotate_towards_back().rotate_towards_back()
+    pub fn flip_onto_back(&self) -> Self {
+        self.rotate_backward().rotate_backward()
     }
 
-    pub fn rotate_towards_feet(self) -> Self {
+    pub fn rotate_forward(&self) -> Self {
         let rotation = if self.facing == Facing::Left { -1 } else { 1 };
 
         Self::new(self.facing, self.angle.rotate(rotation))
     }
 
-    pub fn rotate_towards_back(self) -> Self {
+    pub fn rotate_backward(&self) -> Self {
         let rotation = if self.facing == Facing::Left { 1 } else { -1 };
 
         Self::new(self.facing, self.angle.rotate(rotation))
     }
 
-    pub fn get_forward_delta(self) -> Position {
+    pub fn get_forward_delta(&self) -> Position {
         let delta = match self.angle {
             Angle::Zero => Position::X,
             Angle::Ninety => Position::NEG_Y,
@@ -266,7 +266,7 @@ fn is_valid_location(
     }
 
     // Get the location beneath the ants' feet and check for air
-    let foot_position = position + orientation.rotate_towards_feet().get_forward_delta();
+    let foot_position = position + orientation.rotate_forward().get_forward_delta();
     let Some(entity) = world_map.get_element(foot_position) else {
         return false;
     };
@@ -291,7 +291,7 @@ fn turn(
     // commands: &mut Commands,
 ) {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
-    let back_orientation = orientation.rotate_towards_back();
+    let back_orientation = orientation.rotate_backward();
     if is_valid_location(back_orientation, *position, elements_query, world_map) {
         *orientation = back_orientation;
         return;
@@ -407,6 +407,7 @@ fn act(
                 && world_map.is_below_surface(&position)
                 && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dirt_dig;
 
+            // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
             // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
             let mut queen_dig = *element == Element::Dirt
                 && world_map.is_below_surface(&position)
@@ -416,13 +417,7 @@ fn act(
                 if world_rng.0.gen::<f32>() > settings.probabilities.below_surface_queen_nest_dig {
                     queen_dig = false;
                 }
-
-                // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
             }
-
-            // if *role == AntRole::Queen {
-            //     if inventory.0 == None {
-            //         if world_map.is_below_surface(&position) &&  {
 
             if dig_food || dig_sand || dig_dirt || queen_dig {
                 let target_position = *position + orientation.get_forward_delta();
@@ -480,7 +475,7 @@ fn act(
     }
 
     // Decided to not drop inventory. Check footing and move forward if possible.
-    let foot_orientation = orientation.rotate_towards_feet();
+    let foot_orientation = orientation.rotate_forward();
     let foot_position = new_position + foot_orientation.get_forward_delta();
 
     if let Some(foot_entity) = world_map.get_element(foot_position) {
@@ -530,7 +525,7 @@ pub fn move_ants(
 
         *timer = AntTimer::new(&mut world_rng.0);
 
-        let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
+        let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
         let is_air_beneath_feet = is_element(
             &world_map,
             &elements_query,
@@ -571,7 +566,7 @@ pub fn move_ants(
                         < settings.probabilities.above_surface_queen_nest_dig
                     {
                         let target_position =
-                            *position + orientation.rotate_towards_feet().get_forward_delta();
+                            *position + orientation.rotate_forward().get_forward_delta();
                         let target_element_entity = *world_map.get_element_expect(target_position);
                         commands.dig(ant_entity, target_position, target_element_entity);
 
@@ -586,12 +581,9 @@ pub fn move_ants(
 
             if position.y - world_map.surface_level() > 8 && !world_map.is_nested() {
                 // Check if the queen is sufficiently surounded by space while being deep underground and, if so, decide to start nesting.
-
                 let left_position = *position + Position::NEG_X;
-                //let left_above_position = *position + Position::new(-1, -1);
                 let above_position = *position + Position::new(0, -1);
                 let right_position = *position + Position::X;
-                //let right_above_position = *position + Position::new(1, -1);
 
                 let has_valid_air_nest = is_all_element(
                     &world_map,
@@ -659,7 +651,7 @@ pub fn move_ants(
                     && world_map.is_below_surface(&position)
                 {
                     let target_position =
-                        *position + orientation.rotate_towards_feet().get_forward_delta();
+                        *position + orientation.rotate_forward().get_forward_delta();
                     let target_element_entity = *world_map.get_element_expect(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
 

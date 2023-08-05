@@ -10,11 +10,21 @@ use crate::{
 
 pub trait AntCommandsExt {
     fn dig(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity);
-    fn drop(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity);
+    fn drop(
+        &mut self,
+        ant_entity: Entity,
+        target_position: Position,
+        target_element_entity: Entity,
+    );
 }
 
 impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
-    fn dig(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity) {
+    fn dig(
+        &mut self,
+        ant_entity: Entity,
+        target_position: Position,
+        target_element_entity: Entity,
+    ) {
         self.add(DigElementCommand {
             ant_entity,
             target_position,
@@ -22,7 +32,12 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         });
     }
 
-    fn drop(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity) {
+    fn drop(
+        &mut self,
+        ant_entity: Entity,
+        target_position: Position,
+        target_element_entity: Entity,
+    ) {
         self.add(DropElementCommand {
             ant_entity,
             target_position,

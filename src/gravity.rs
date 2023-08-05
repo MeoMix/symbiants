@@ -1,6 +1,6 @@
 use crate::{
     ant::AntOrientation,
-    element::{is_all_element, is_element, Crushable, Air, commands::ElementCommandsExt},
+    element::{commands::ElementCommandsExt, is_all_element, is_element, Air, Crushable},
     time::IsFastForwarding,
     world_rng::WorldRng,
 };
@@ -100,10 +100,11 @@ pub fn element_gravity(
     for &(element_entity, air_entity) in element_air_swaps.iter() {
         let mut element_position_query = element_position_queries.p1();
 
-        let Ok([
-            mut air_position,
-            mut element_position
-        ]) = element_position_query.get_many_mut([air_entity, element_entity]) else { continue };
+        let Ok([mut air_position, mut element_position]) =
+            element_position_query.get_many_mut([air_entity, element_entity])
+        else {
+            continue;
+        };
 
         // Swap element positions internally.
         (element_position.x, air_position.x) = (air_position.x, element_position.x);
@@ -126,7 +127,7 @@ pub fn ant_gravity(
 ) {
     for (orientation, mut position) in ants_query.iter_mut() {
         // Figure out foot direction
-        let below_feet_position = *position + orientation.rotate_towards_feet().get_forward_delta();
+        let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
 
         let is_air_beneath_feet = is_all_element(
             &world_map,
@@ -193,7 +194,6 @@ pub fn gravity_crush(
     }
 }
 
-
 // FIXME: There are bugs in the sand fall logic because gravity isn't processed from the bottom row up.
 // A column of sand, floating in the air, may have some sand be marked stable while floating in the air due to having sand directly beneath.
 pub fn gravity_stability(
@@ -204,7 +204,7 @@ pub fn gravity_stability(
     world_map: Res<WorldMap>,
 ) {
     // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
-    for position in air_query.iter().filter(|p| p.is_added() || p.is_changed())  {
+    for position in air_query.iter().filter(|p| p.is_added() || p.is_changed()) {
         // Calculate the positions of the elements above the current air element
         let adjacent_positions = (-1..=1)
             .map(|x_offset| *position + Position::new(x_offset, -1))
@@ -224,7 +224,10 @@ pub fn gravity_stability(
     }
 
     // Iterate over all unstable elements that have not changed position
-    for (position, entity) in unstable_element_query.iter().filter(|(p, _)| !p.is_changed()) {
+    for (position, entity) in unstable_element_query
+        .iter()
+        .filter(|(p, _)| !p.is_changed())
+    {
         commands.toggle_element_unstable(entity, *position, false);
     }
 }

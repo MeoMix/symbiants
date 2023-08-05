@@ -1,8 +1,8 @@
+use super::{Alive, Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Facing};
+use crate::{map::Position, name_list::NAMES, world_rng::WorldRng};
 use bevy::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use crate::{map::Position, world_rng::WorldRng, name_list::NAMES};
-use super::{AntColor, AntOrientation, Alive, Facing, AntBundle, AntInventory, Angle, AntRole};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Birthing {

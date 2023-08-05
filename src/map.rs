@@ -353,7 +353,10 @@ impl WorldMap {
     }
 
     pub fn get_element_expect(&self, position: Position) -> &Entity {
-        self.get_element(position).expect(&format!("Element entity not found at the position: {:?}", position))
+        self.get_element(position).expect(&format!(
+            "Element entity not found at the position: {:?}",
+            position
+        ))
     }
 
     // NOTE: although this logic supports expanding the 2D vector - this should only occur during initialization
@@ -361,19 +364,25 @@ impl WorldMap {
     // in the vector might be None while maintaing a fixed length vector.
     pub fn set_element(&mut self, position: Position, entity: Entity) {
         if self.elements_cache.is_none() {
-            self.elements_cache = Some(vec![vec![entity.clone(); position.x as usize + 1]; position.y as usize + 1]);
+            self.elements_cache = Some(vec![
+                vec![entity.clone(); position.x as usize + 1];
+                position.y as usize + 1
+            ]);
         }
-    
+
         let cache = self.elements_cache.as_mut().unwrap();
         if position.y as usize >= cache.len() {
-            cache.resize(position.y as usize + 1, vec![entity.clone(); position.x as usize + 1]);
+            cache.resize(
+                position.y as usize + 1,
+                vec![entity.clone(); position.x as usize + 1],
+            );
         }
-    
+
         let row = &mut cache[position.y as usize];
         if position.x as usize >= row.len() {
             row.resize(position.x as usize + 1, entity.clone());
         }
-    
+
         row[position.x as usize] = entity;
     }
 }

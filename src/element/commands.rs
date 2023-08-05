@@ -1,11 +1,19 @@
+use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
+use crate::{
+    gravity::Unstable,
+    map::{Position, WorldMap},
+};
 use bevy::{ecs::system::Command, prelude::*};
-use crate::{map::{Position, WorldMap}, gravity::Unstable};
-use super::{Element, FoodElementBundle, SandElementBundle, DirtElementBundle, AirElementBundle};
 
 pub trait ElementCommandsExt {
     fn replace_element(&mut self, position: Position, target_element: Entity, element: Element);
     fn spawn_element(&mut self, element: Element, position: Position);
-    fn toggle_element_unstable(&mut self, target_element_entity: Entity, position: Position, toggle: bool);
+    fn toggle_element_unstable(
+        &mut self,
+        target_element_entity: Entity,
+        position: Position,
+        toggle: bool,
+    );
 }
 
 impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
@@ -21,9 +29,17 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         self.add(SpawnElementCommand { element, position })
     }
 
-    
-    fn toggle_element_unstable(&mut self, target_element_entity: Entity, position: Position, toggle: bool) {
-        self.add(MarkElementUnstableCommand { target_element_entity, position, toggle })
+    fn toggle_element_unstable(
+        &mut self,
+        target_element_entity: Entity,
+        position: Position,
+        toggle: bool,
+    ) {
+        self.add(MarkElementUnstableCommand {
+            target_element_entity,
+            position,
+            toggle,
+        })
     }
 }
 
@@ -54,7 +70,10 @@ impl Command for ReplaceElementCommand {
             return;
         }
 
-        info!("Despawning entity {:?} at position {:?}", existing_entity, self.position);
+        info!(
+            "Despawning entity {:?} at position {:?}",
+            existing_entity, self.position
+        );
 
         world.entity_mut(*existing_entity).despawn();
 

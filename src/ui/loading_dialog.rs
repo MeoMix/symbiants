@@ -28,7 +28,7 @@ pub fn update_loading_text(
         ..default()
     };
 
-    if is_fast_forwarding.is_changed() { 
+    if is_fast_forwarding.is_changed() {
         if is_fast_forwarding.0 && pending_ticks.0 > MIN_PENDING_TICKS {
             commands
             .spawn((

@@ -17,7 +17,9 @@ fn window_resize(
     world_map: Res<WorldMap>,
 ) {
     for resize_event in resize_events.iter() {
-        let Ok(entity) = primary_window_query.get_single() else { continue };
+        let Ok(entity) = primary_window_query.get_single() else {
+            continue;
+        };
 
         if resize_event.window == entity {
             let (mut transform, mut projection) = query.single_mut();

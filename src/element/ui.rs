@@ -1,6 +1,6 @@
-use bevy::{prelude::*, sprite::Anchor};
-use crate::map::Position;
 use super::Element;
+use crate::map::Position;
+use bevy::{prelude::*, sprite::Anchor};
 
 pub fn on_spawn_element(
     mut commands: Commands,

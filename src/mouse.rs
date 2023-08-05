@@ -2,8 +2,9 @@ use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
     camera::MainCamera,
-    element::{is_element, Element, commands::ElementCommandsExt},
-    map::{Position, WorldMap}, food::FoodCount,
+    element::{commands::ElementCommandsExt, is_element, Element},
+    food::FoodCount,
+    map::{Position, WorldMap},
 };
 
 pub fn handle_mouse_clicks(
@@ -16,13 +17,15 @@ pub fn handle_mouse_clicks(
     mut food_count: ResMut<FoodCount>,
     is_pointer_captured: Res<IsPointerCaptured>,
 ) {
-    let Ok(window) = primary_window_query.get_single() else { return };
+    let Ok(window) = primary_window_query.get_single() else {
+        return;
+    };
 
     if mouse_input.just_pressed(MouseButton::Left) {
         if is_pointer_captured.0 {
             return;
         }
-    
+
         let (camera, camera_transform) = query.single_mut();
 
         let cursor_position = match window.cursor_position() {
@@ -41,7 +44,9 @@ pub fn handle_mouse_clicks(
 
         if is_element(&world_map, &elements_query, &grid_position, &Element::Air) {
             if food_count.0 > 0 {
-                let Some(entity) = world_map.get_element(grid_position) else { return };
+                let Some(entity) = world_map.get_element(grid_position) else {
+                    return;
+                };
                 info!("replace_element6: {:?}", grid_position);
                 commands.replace_element(grid_position, *entity, Element::Food);
 
@@ -54,7 +59,7 @@ pub fn handle_mouse_clicks(
         if is_pointer_captured.0 {
             return;
         }
-    
+
         let (camera, camera_transform) = query.single_mut();
 
         let cursor_position = match window.cursor_position() {
@@ -70,12 +75,13 @@ pub fn handle_mouse_clicks(
             x: world_position.x.abs().floor() as isize,
             y: world_position.y.abs().floor() as isize,
         };
-        
-        let Some(entity) = world_map.get_element(grid_position) else { return };
+
+        let Some(entity) = world_map.get_element(grid_position) else {
+            return;
+        };
         commands.replace_element(grid_position, *entity, Element::Air);
     }
 }
-
 
 #[derive(Resource)]
 pub struct IsPointerCaptured(pub bool);
@@ -91,6 +97,6 @@ pub fn is_pointer_captured(
     >,
 ) {
     is_pointer_captured.0 = interaction_query
-    .iter()
-    .any(|i| matches!(i, Interaction::Pressed | Interaction::Hovered));
+        .iter()
+        .any(|i| matches!(i, Interaction::Pressed | Interaction::Hovered));
 }
