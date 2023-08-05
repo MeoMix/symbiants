@@ -10,7 +10,7 @@ use crate::{
 use self::{commands::AntCommandsExt, hunger::Hunger};
 
 use super::{element::Element, settings::Settings};
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng};
 
 mod commands;
@@ -70,9 +70,6 @@ impl AntBundle {
     }
 }
 
-#[derive(Component, Copy, Clone)]
-pub struct TranslationOffset(pub Vec3);
-
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct AntName(pub String);
 
@@ -81,47 +78,6 @@ pub struct AntColor(pub Color);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct AntInventory(pub Option<Element>);
-
-impl AntInventory {
-    // TODO: Not a big fan of referencing SpriteBundle here.
-    pub fn get_carrying_bundle(&self) -> Option<CarryingBundle> {
-        if self.0 == Some(Element::Sand) {
-            return Some(CarryingBundle {
-                sprite_bundle: SpriteBundle {
-                    transform: Transform {
-                        translation: Vec3::new(0.5, 0.75, 1.0),
-                        ..default()
-                    },
-                    sprite: Sprite {
-                        color: Color::rgb(0.761, 0.698, 0.502),
-                        anchor: Anchor::TopLeft,
-                        ..default()
-                    },
-                    ..default()
-                },
-                element: Element::Sand,
-            });
-        } else if self.0 == Some(Element::Food) {
-            return Some(CarryingBundle {
-                sprite_bundle: SpriteBundle {
-                    transform: Transform {
-                        translation: Vec3::new(0.5, 0.75, 1.0),
-                        ..default()
-                    },
-                    sprite: Sprite {
-                        color: Color::rgb(0.388, 0.584, 0.294),
-                        anchor: Anchor::TopLeft,
-                        ..default()
-                    },
-                    ..default()
-                },
-                element: Element::Food,
-            });
-        }
-
-        None
-    }
-}
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Alive;
@@ -271,9 +227,6 @@ impl AntOrientation {
         }
     }
 }
-
-#[derive(Component)]
-pub struct Label(pub Entity);
 
 pub fn setup_ants(
     mut commands: Commands,

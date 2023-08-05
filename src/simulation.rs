@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    ant::{hunger::ants_hunger, move_ants, setup_ants, birthing::ants_birthing, ui::on_spawn_ant},
+    ant::{hunger::ants_hunger, move_ants, setup_ants, birthing::ants_birthing, ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation}},
     background::setup_background,
     element::{setup_elements, ui::on_spawn_element},
     gravity::{
@@ -9,7 +9,7 @@ use crate::{
     },
     map::{periodic_save_world_state, setup_window_onunload_save_world_state},
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
-    render::{render_carrying, render_orientation, render_translation},
+    common::ui::on_update_position,
     time::{play_time, setup_fast_forward_time},
     food::FoodCount,
 };
@@ -37,6 +37,7 @@ impl Plugin for SimulationPlugin {
 
         app.add_systems(FixedUpdate, 
             (
+                // TODO: revisit this idea - I want all simulation systems to be able to run in parallel.
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
                 move_ants,
                 ants_hunger,
@@ -45,16 +46,20 @@ impl Plugin for SimulationPlugin {
                 gravity_crush,
                 gravity_stability,
                 ant_gravity,
-                // Try to save world state periodically after updating world state.
-                periodic_save_world_state,
-                // Render world state after updating world state.
-                // NOTE: all render methods can run in parallel but don't due to conflicting mutable Transform access
-                (render_translation, render_orientation, render_carrying).chain(),
-                // NOTE: apply deferred fixes a bug where ant drops dirt infront of itself, then digs that dirt immediately and despawns it,
-                // and this races the on_spawn_element logic which wanted to draw the dropped dirt.
+                // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
+                // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
+                // when moving out of the Update stage and into the PostUpdate stage.
+                // This is an important action which prevents panics while maintaining simpler code.
+                // Without this, an Element might be spawned, and then despawned, with its initial render command still enqueued.
+                // This would result in a panic due to missing Element entity unless the render command was rewritten manually
+                // to safeguard against missing entity at time of command application.
                 apply_deferred,
-                // IMPORTANT: `on_spawn` systems must run at the end of `FixedUpdate` because `PostUpdate` does not guaranteee 1:1 runs with `FixedUpdate`
-                // As such, while it's OK for rendering to become de-synced, it's not OK for underlying caches to become de-synced.
+                // Provide an opportunity to write world state to disk. 
+                // This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
+                // to avoid losing too much state in the event of a crash. 
+                periodic_save_world_state,
+                // Ensure render state reflects simulation state after having applied movements and command updates.
+                (on_update_position, on_update_ant_orientation, on_update_ant_inventory).chain(),
                 (on_spawn_ant, on_spawn_element).chain(),
                 play_time,
             )

@@ -7,7 +7,7 @@ mod map;
 mod mouse;
 mod name_list;
 mod pancam;
-mod render;
+mod common;
 mod settings;
 mod simulation;
 mod time;

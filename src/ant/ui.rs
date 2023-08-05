@@ -1,8 +1,8 @@
 
 use std::ops::Add;
-use bevy::prelude::*;
-use crate::map::Position;
-use super::{AntColor, AntOrientation, AntName, AntInventory, AntRole, Ant, TranslationOffset, Label};
+use bevy::{prelude::*, sprite::Anchor};
+use crate::{map::Position, element::Element, time::IsFastForwarding, common::{TranslationOffset, Label}};
+use super::{AntColor, AntOrientation, AntName, AntInventory, AntRole, Ant, CarryingBundle};
 
 // 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
 const ANT_SCALE: f32 = 1.2;
@@ -37,8 +37,8 @@ pub fn on_spawn_ant(
             },
             ..default()
         }))
-        .with_children(|parent| {
-            if let Some(bundle) = inventory.get_carrying_bundle() {
+        .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
+            if let Some(bundle) = get_carrying_bundle(inventory) {
                 parent.spawn(bundle);
             }
 
@@ -82,4 +82,100 @@ pub fn on_spawn_ant(
     ));
     }
 
+}
+
+pub fn on_update_ant_inventory(
+    mut commands: Commands,
+    // TODO: consider `iter_descendants` instead of Option<&Children>
+    mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
+    elements_query: Query<&Element>,
+    is_fast_forwarding: Res<IsFastForwarding>,
+) {
+    if is_fast_forwarding.0 {
+        return;
+    }
+
+    for (entity, inventory, children) in query.iter_mut() {
+        if is_fast_forwarding.is_changed() || inventory.is_changed() {
+            // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
+            // TODO: might *need* to know previous state to avoid unintentionally carrying twice
+            if let Some(bundle) = get_carrying_bundle(&inventory) {
+                commands
+                    .entity(entity)
+                    .with_children(|ant: &mut ChildBuilder| {
+                        ant.spawn(bundle);
+                    });
+            } else {
+                // If ant was carrying food/sand, but has stopped, then remove associated UI element.
+                if let Some(children) = children {
+                    let element_children = children
+                        .iter()
+                        .filter(|child| elements_query.get(**child).is_ok())
+                        .cloned()
+                        .collect::<Vec<_>>();
+
+                    commands
+                        .entity(entity)
+                        .remove_children(&element_children[..]);
+                    for child in element_children {
+                        commands.entity(child).despawn();
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn get_carrying_bundle(inventory: &AntInventory) -> Option<CarryingBundle> {
+    if inventory.0 == Some(Element::Sand) {
+        return Some(CarryingBundle {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation: Vec3::new(0.5, 0.75, 1.0),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: Color::rgb(0.761, 0.698, 0.502),
+                    anchor: Anchor::TopLeft,
+                    ..default()
+                },
+                ..default()
+            },
+            element: Element::Sand,
+        });
+    } else if inventory.0 == Some(Element::Food) {
+        return Some(CarryingBundle {
+            sprite_bundle: SpriteBundle {
+                transform: Transform {
+                    translation: Vec3::new(0.5, 0.75, 1.0),
+                    ..default()
+                },
+                sprite: Sprite {
+                    color: Color::rgb(0.388, 0.584, 0.294),
+                    anchor: Anchor::TopLeft,
+                    ..default()
+                },
+                ..default()
+            },
+            element: Element::Food,
+        });
+    }
+
+    None
+}
+
+pub fn on_update_ant_orientation(
+    mut query: Query<(&mut Transform, Ref<AntOrientation>)>,
+    is_fast_forwarding: Res<IsFastForwarding>,
+) {
+    if is_fast_forwarding.0 {
+        return;
+    }
+
+    for (mut transform, orientation) in query.iter_mut() {
+        if is_fast_forwarding.is_changed() || orientation.is_changed() {
+            transform.scale = orientation.as_world_scale();
+            transform.rotation = orientation.as_world_rotation();
+        }
+    }
 }
