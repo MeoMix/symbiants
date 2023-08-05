@@ -34,7 +34,6 @@ impl Birthing {
     }
 }
 
-
 pub fn ants_birthing(
     mut ants_birthing_query: Query<
         (&mut Birthing, &Position, &AntColor, &AntOrientation),
@@ -58,6 +57,10 @@ pub fn ants_birthing(
 
             let behind_position = *position + orientation.turn_around().get_forward_delta();
 
+            // NOTE: As written, this could spawn directly into a piece of dirt/food/etc.
+            // This isn't going to cause the application to panic, but isn't visually appealing, either.
+            // Could introduce a custom command and prevent spawning if the tile is occupied and/or find nearest open tile
+            // but since ants can get covered by sand already (when it falls on them) its low priority.
             // Spawn worker ant (TODO: egg instead)
             commands.spawn(AntBundle::new(
                 behind_position,
