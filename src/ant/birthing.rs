@@ -1,28 +1,35 @@
 use super::{Alive, Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Facing};
-use crate::{map::Position, name_list::NAMES, world_rng::WorldRng};
+use crate::{
+    map::Position,
+    name_list::NAMES,
+    time::{DEFAULT_TICK_RATE, SECONDS_PER_HOUR},
+    world_rng::WorldRng,
+};
 use bevy::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Birthing {
-    value: usize,
-    max: usize,
+    value: f32,
+    max: f32,
+    rate_of_birthing: f32,
 }
 
 impl Birthing {
     pub fn default() -> Self {
+        let max = 100.0;
+        let rate_of_birthing = max / (SECONDS_PER_HOUR as f32 * DEFAULT_TICK_RATE);
+
         Self {
-            value: 0,
-            // TODO: 30 minutes expressed in frame ticks
-            max: 6 * 60 * 30,
+            value: 0.0,
+            max,
+            rate_of_birthing,
         }
     }
 
-    pub fn try_increment(&mut self) {
-        if self.value < self.max {
-            self.value += 1;
-        }
+    pub fn tick(&mut self) {
+        self.value = (self.value + self.rate_of_birthing).min(self.max);
     }
 
     pub fn is_ready(&self) -> bool {
@@ -30,7 +37,7 @@ impl Birthing {
     }
 
     pub fn reset(&mut self) {
-        self.value = 0;
+        self.value = 0.0;
     }
 }
 
@@ -43,7 +50,7 @@ pub fn ants_birthing(
     mut world_rng: ResMut<WorldRng>,
 ) {
     for (mut birthing, position, color, orientation) in ants_birthing_query.iter_mut() {
-        birthing.try_increment();
+        birthing.tick();
 
         if birthing.is_ready() {
             // Randomly position ant facing left or right.

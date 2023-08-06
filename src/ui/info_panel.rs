@@ -99,11 +99,11 @@ pub fn update_info_panel_ant_hunger(
     ant_query: Query<&Hunger, With<AntRole>>,
 ) {
     for mut text in &mut text_query {
-        let hunger_sum: f64 = ant_query
+        let hunger_sum: f32 = ant_query
             .iter()
-            .map(|hunger: &Hunger| hunger.as_percent())
+            .map(|hunger: &Hunger| hunger.value())
             .sum();
-        let hunger_avg = hunger_sum / ant_query.iter().count() as f64;
+        let hunger_avg = hunger_sum / ant_query.iter().count() as f32;
 
         text.sections[1].value = format!("{:.0}", hunger_avg);
     }

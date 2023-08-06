@@ -2,37 +2,40 @@ use super::{commands::AntCommandsExt, Alive, AntInventory, AntOrientation};
 use crate::{
     element::{is_element, Element},
     map::{Position, WorldMap},
+    time::{DEFAULT_TICK_RATE, SECONDS_PER_DAY},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Hunger {
-    value: usize,
-    max: usize,
+    value: f32,
+    max: f32,
+    rate_of_hunger: f32,
 }
 
 impl Hunger {
     pub fn default() -> Self {
+        let max = 100.0;
+        let rate_of_hunger = max / (SECONDS_PER_DAY as f32 * DEFAULT_TICK_RATE);
+
         Self {
-            value: 0,
-            // TODO: this is 6 * 60 * 60 * 24 which is 1 day expressed in frame ticks
-            max: 518400,
+            value: 0.0,
+            max,
+            rate_of_hunger,
         }
     }
 
-    pub fn try_increment(&mut self) {
-        if self.value < self.max {
-            self.value += 1;
-        }
+    pub fn value(&self) -> f32 {
+        self.value
     }
 
-    pub fn as_percent(&self) -> f64 {
-        ((self.value as f64) / (self.max as f64) * 100.0).round()
+    pub fn tick(&mut self) {
+        self.value = (self.value + self.rate_of_hunger).min(self.max);
     }
 
     pub fn is_hungry(&self) -> bool {
-        self.value >= self.max / 2
+        self.value >= self.max / 2.0
     }
 
     pub fn is_starving(&self) -> bool {
@@ -40,7 +43,7 @@ impl Hunger {
     }
 
     pub fn reset(&mut self) {
-        self.value = 0;
+        self.value = 0.0;
     }
 }
 
@@ -64,7 +67,7 @@ pub fn ants_hunger(
     for (entity, mut hunger, mut handle, mut orientation, position, mut inventory) in
         ants_hunger_query.iter_mut()
     {
-        hunger.try_increment();
+        hunger.tick();
 
         if hunger.is_starving() {
             commands.entity(entity).remove::<Alive>();
