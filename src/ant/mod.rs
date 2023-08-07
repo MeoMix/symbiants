@@ -226,6 +226,24 @@ impl AntOrientation {
             delta
         }
     }
+
+    pub fn all_orientations() -> Vec<Self> {
+        let facings = [Facing::Left, Facing::Right];
+        let angles = [
+            Angle::Zero,
+            Angle::Ninety,
+            Angle::OneHundredEighty,
+            Angle::TwoHundredSeventy,
+        ];
+        facings
+            .iter()
+            .flat_map(|facing| {
+                angles
+                    .iter()
+                    .map(move |angle| Self::new(*facing, *angle))
+            })
+            .collect::<Vec<_>>()
+    }
 }
 
 pub fn setup_ants(
@@ -302,61 +320,20 @@ fn turn(
     }
 
     // Randomly turn in a valid different when unable to simply turn around.
-    let facings = [Facing::Left, Facing::Right];
-    let angles = [
-        Angle::Zero,
-        Angle::Ninety,
-        Angle::OneHundredEighty,
-        Angle::TwoHundredSeventy,
-    ];
-    let facing_orientations = facings
+    let all_orientations = AntOrientation::all_orientations();
+    let valid_orientations = all_orientations
         .iter()
-        .flat_map(|facing| {
-            angles
-                .iter()
-                .map(move |angle| AntOrientation::new(*facing, *angle))
-        })
+        .filter(|&&inner_orientation| inner_orientation != *orientation)
+        .filter(|&&inner_orientation| is_valid_location(inner_orientation, *position, elements_query, world_map))
         .collect::<Vec<_>>();
 
-    let valid_facing_orientations = facing_orientations
-        .iter()
-        .filter(|&inner_orientation| {
-            if inner_orientation.facing == orientation.facing
-                && inner_orientation.angle == orientation.angle
-            {
-                return false;
-            }
-
-            is_valid_location(*inner_orientation, *position, elements_query, world_map)
-        })
-        .collect::<Vec<_>>();
-
-    if valid_facing_orientations.len() > 0 {
-        let valid_facing_orientation =
-            valid_facing_orientations[world_rng.0.gen_range(0..valid_facing_orientations.len())];
-
-        *orientation = *valid_facing_orientation;
+    if !valid_orientations.is_empty() {
+        *orientation = *valid_orientations[world_rng.0.gen_range(0..valid_orientations.len())];
         return;
     }
 
     info!("TRAPPED");
-    // panic!();
-
-    // No legal direction? Trapped! Drop if carrying and turn randomly in an attempt to dig out.
-    // if inventory.0 != None {
-    //     if let Some(entity) = world_map.get_element(*position) {
-    //         // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
-    //         let Ok(element) = elements_query.get(*entity) else { panic!("turn - expected entity to exist") };
-    //         if *element == Element::Air {
-    //             let target_element_entity = world_map.get_element_expect(*position);
-    //             commands.drop(ant_entity, *position, *target_element_entity);
-    //         }
-    //     }
-    // }
-
-    let random_facing_orientation =
-        facing_orientations[world_rng.0.gen_range(0..facing_orientations.len())];
-    *orientation = random_facing_orientation;
+    *orientation = all_orientations[world_rng.0.gen_range(0..all_orientations.len())];
 }
 
 // Each ant maintains an internal timer that determines when it will act next.
@@ -473,11 +450,7 @@ pub fn ants_move(
             continue;
         }
 
-        // TODO: Why does this not work? :s 
-        if inventory.is_changed() {
-            info!("detected inventory changed");
-        }
-
+        // TODO: Change detection here seems broken
         // HACK: Simulate queen following pheromone back to dig site by forcing her to turn around when dropping dirt on surface.
         if *role == AntRole::Queen
             && inventory.0 == None
@@ -554,6 +527,19 @@ pub fn ants_act(
         if is_air_beneath_feet {
             continue;
         }
+
+        // TODO: Check if trapped and, if so, drop inventory instead of taking action.
+        // No legal direction? Trapped! Drop if carrying and turn randomly in an attempt to dig out.
+        // if inventory.0 != None {
+        //     if let Some(entity) = world_map.get_element(*position) {
+        //         // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
+        //         let Ok(element) = elements_query.get(*entity) else { panic!("turn - expected entity to exist") };
+        //         if *element == Element::Air {
+        //             let target_element_entity = world_map.get_element_expect(*position);
+        //             commands.drop(ant_entity, *position, *target_element_entity);
+        //         }
+        //     }
+        // }
 
         // TODO: queen specific logic
         if *role == AntRole::Queen {
