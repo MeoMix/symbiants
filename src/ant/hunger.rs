@@ -84,7 +84,7 @@ pub fn ants_hunger(
                     commands.dig(entity, food_position, *food_entity);
                 }
             } else if inventory.0 == Some(Element::Food) {
-                *inventory = AntInventory(Some(Element::Air));
+                inventory.0 = Some(Element::Air);
                 hunger.reset();
             }
         }

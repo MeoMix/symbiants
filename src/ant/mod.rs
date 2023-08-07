@@ -283,12 +283,10 @@ fn is_valid_location(
 
 fn turn(
     mut orientation: Mut<AntOrientation>,
-    // inventory: Mut<AntInventory>,
     position: Mut<Position>,
     elements_query: &Query<&Element>,
     world_map: &mut ResMut<WorldMap>,
     world_rng: &mut ResMut<WorldRng>,
-    // commands: &mut Commands,
 ) {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
     let back_orientation = orientation.rotate_backward();
@@ -361,150 +359,32 @@ fn turn(
     *orientation = random_facing_orientation;
 }
 
-fn act(
-    mut orientation: Mut<AntOrientation>,
-    inventory: Mut<AntInventory>,
-    mut position: Mut<Position>,
-    role: &AntRole,
-    ant_entity: Entity,
-    elements_query: &Query<&Element>,
-    world_map: &mut ResMut<WorldMap>,
-    world_rng: &mut ResMut<WorldRng>,
-    settings: &Res<Settings>,
-    commands: &mut Commands,
+// Each ant maintains an internal timer that determines when it will act next.
+// This adds a little realism by varying when movements occur and allows for flexibility
+// in the simulation run speed.
+pub fn ants_update_action_timer(
+    mut ants_query: Query<&mut AntTimer, With<Alive>>,
+    mut world_rng: ResMut<WorldRng>,
 ) {
-    // Propose taking a step forward, but check validity and alternative actions before stepping forward.
-    let new_position = *position + orientation.get_forward_delta();
-
-    if !world_map.is_within_bounds(&new_position) {
-        // Hit an edge - need to turn.
-        turn(
-            orientation,
-            // inventory,
-            position,
-            elements_query,
-            world_map,
-            world_rng,
-            // commands,
-        );
-        return;
-    }
-
-    // Check if hitting a solid element and, if so, consider digging through it.
-    let entity = world_map.get_element(new_position).unwrap();
-    let Ok(element) = elements_query.get(*entity) else {
-        panic!("act - expected entity to exist")
-    };
-
-    if *element != Element::Air {
-        // Consider digging / picking up the element under various circumstances.
-        if inventory.0 == None {
-            // When above ground, prioritize picking up food
-            let dig_food = *element == Element::Food && !world_map.is_below_surface(&position);
-            // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
-            let dig_sand = *element == Element::Sand && world_map.is_below_surface(&position);
-            let dig_dirt = *element == Element::Dirt
-                && world_map.is_below_surface(&position)
-                && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dirt_dig;
-
-            // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
-            // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
-            let mut queen_dig = *element == Element::Dirt
-                && world_map.is_below_surface(&position)
-                && *role == AntRole::Queen;
-
-            if position.y - world_map.surface_level() > 8 {
-                if world_rng.0.gen::<f32>() > settings.probabilities.below_surface_queen_nest_dig {
-                    queen_dig = false;
-                }
-            }
-
-            if dig_food || dig_sand || dig_dirt || queen_dig {
-                let target_position = *position + orientation.get_forward_delta();
-                let target_element_entity = *world_map.get_element_expect(target_position);
-                commands.dig(ant_entity, target_position, target_element_entity);
-                return;
-            }
+    for mut timer in ants_query.iter_mut() {
+        if timer.0 > 0 {
+            timer.0 -= 1;
+            continue;
         }
 
-        // Decided to not dig through and can't walk through, so just turn.
-        turn(
-            orientation,
-            // inventory,
-            position,
-            elements_query,
-            world_map,
-            world_rng,
-            // commands,
-        );
-
-        return;
-    }
-
-    // There is an air gap directly ahead of the ant. Consider dropping inventory.
-    // Avoid dropping inventory when facing upwards since it'll fall on the ant.
-    if inventory.0 != None && orientation.is_horizontal() {
-        // Prioritize dropping sand above ground and food below ground.
-        let drop_sand = inventory.0 == Some(Element::Sand)
-            && !world_map.is_below_surface(&new_position)
-            && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_sand_drop;
-
-        let drop_food = inventory.0 == Some(Element::Food)
-            && world_map.is_below_surface(&new_position)
-            && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_food_drop;
-
-        if drop_sand || drop_food {
-            // Drop inventory in front of ant
-            let target_element_entity = world_map.get_element_expect(new_position);
-            commands.drop(ant_entity, new_position, *target_element_entity);
-
-            if *role == AntRole::Queen {
-                turn(
-                    orientation,
-                    // inventory,
-                    position,
-                    elements_query,
-                    world_map,
-                    world_rng,
-                    // commands,
-                );
-            }
-
-            return;
-        }
-    }
-
-    // Decided to not drop inventory. Check footing and move forward if possible.
-    let foot_orientation = orientation.rotate_forward();
-    let foot_position = new_position + foot_orientation.get_forward_delta();
-
-    if let Some(foot_entity) = world_map.get_element(foot_position) {
-        let Ok(foot_element) = elements_query.get(*foot_entity) else {
-            panic!("act - expected entity to exist")
-        };
-
-        if *foot_element == Element::Air {
-            // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
-            *position = foot_position;
-            *orientation = foot_orientation;
-        } else {
-            // Just move forward
-            *position = new_position;
-        }
+        *timer = AntTimer::new(&mut world_rng.0);
     }
 }
 
-// TODO: untangle mutability, many functions accept mutable but do not mutate which seems wrong
-// TODO: first pass is going to be just dumping all code into one system, but suspect want multiple systems
-pub fn move_ants(
+// Update the position and orientation of all ants. Does not affect the external environment.
+pub fn ants_move(
     mut ants_query: Query<
         (
-            &mut AntOrientation,
-            &mut AntInventory,
-            &mut AntTimer,
             &mut Position,
+            &mut AntOrientation,
+            Ref<AntInventory>,
+            &AntTimer,
             &AntRole,
-            Entity,
         ),
         With<Alive>,
     >,
@@ -512,18 +392,11 @@ pub fn move_ants(
     mut world_map: ResMut<WorldMap>,
     settings: Res<Settings>,
     mut world_rng: ResMut<WorldRng>,
-    mut commands: Commands,
 ) {
-    // TODO: Check if ant position has changed already and, if so, skip it - ant is only allowed to be moved on its own if another system didn't move it this frame.
-    // This will allow for systems to run not in parallel, but in a non-deterministic order while exhibiting desirable behavior.
-
-    for (orientation, inventory, mut timer, position, role, ant_entity) in ants_query.iter_mut() {
+    for (mut position, mut orientation, inventory, timer, role) in ants_query.iter_mut() {
         if timer.0 > 0 {
-            timer.0 -= 1;
             continue;
         }
-
-        *timer = AntTimer::new(&mut world_rng.0);
 
         let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
         let is_air_beneath_feet = is_element(
@@ -547,14 +420,138 @@ pub fn move_ants(
             // Not falling? Try turning
             turn(
                 orientation,
-                // inventory,
                 position,
                 &elements_query,
                 &mut world_map,
                 &mut world_rng,
-                // &mut commands,
             );
 
+            continue;
+        }
+
+        if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
+            turn(
+                orientation,
+                position,
+                &elements_query,
+                &mut world_map,
+                &mut world_rng,
+            );
+            continue;
+        }
+
+        // Propose taking a step forward, but check validity and alternative actions before stepping forward.
+        let new_position = *position + orientation.get_forward_delta();
+
+        if !world_map.is_within_bounds(&new_position) {
+            // Hit an edge - need to turn.
+            turn(
+                orientation,
+                position,
+                &elements_query,
+                &mut world_map,
+                &mut world_rng,
+            );
+            continue;
+        }
+
+        // Check if hitting a solid element and, if so, consider digging through it.
+        let entity = world_map.get_element(new_position).unwrap();
+        let Ok(element) = elements_query.get(*entity) else {
+            panic!("act - expected entity to exist")
+        };
+
+        if *element != Element::Air {
+            // Decided to not dig through and can't walk through, so just turn.
+            turn(
+                orientation,
+                position,
+                &elements_query,
+                &mut world_map,
+                &mut world_rng,
+            );
+            continue;
+        }
+
+        // TODO: Why does this not work? :s 
+        if inventory.is_changed() {
+            info!("detected inventory changed");
+        }
+
+        // HACK: Simulate queen following pheromone back to dig site by forcing her to turn around when dropping dirt on surface.
+        if *role == AntRole::Queen
+            && inventory.0 == None
+            && inventory.is_changed()
+            && !world_map.is_below_surface(&new_position)
+        {
+            info!("HACK QUEEN ANT TURN AROUND");
+            turn(
+                orientation,
+                position,
+                &elements_query,
+                &mut world_map,
+                &mut world_rng,
+            );
+            continue;
+        }
+
+        // Check footing and move forward if possible.
+        let foot_orientation = orientation.rotate_forward();
+        let foot_position = new_position + foot_orientation.get_forward_delta();
+
+        if let Some(foot_entity) = world_map.get_element(foot_position) {
+            let Ok(foot_element) = elements_query.get(*foot_entity) else {
+                panic!("act - expected entity to exist")
+            };
+
+            if *foot_element == Element::Air {
+                // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
+                *position = foot_position;
+                *orientation = foot_orientation;
+            } else {
+                // Just move forward
+                *position = new_position;
+            }
+        }
+    }
+}
+
+// TODO: untangle mutability, many functions accept mutable but do not mutate which seems wrong
+// TODO: first pass is going to be just dumping all code into one system, but suspect want multiple systems
+pub fn ants_act(
+    mut ants_query: Query<
+        (
+            &AntOrientation,
+            &AntInventory,
+            &AntTimer,
+            &Position,
+            &AntRole,
+            Entity,
+        ),
+        With<Alive>,
+    >,
+    elements_query: Query<&Element>,
+    mut world_map: ResMut<WorldMap>,
+    settings: Res<Settings>,
+    mut world_rng: ResMut<WorldRng>,
+    mut commands: Commands,
+) {
+    // TODO: Check if ant position has changed already and, if so, skip it - ant is only allowed to be moved on its own if another system didn't move it this frame.
+    // This will allow for systems to run not in parallel, but in a non-deterministic order while exhibiting desirable behavior.
+    for (orientation, inventory, timer, position, role, ant_entity) in ants_query.iter_mut() {
+        if timer.0 > 0 {
+            continue;
+        }
+
+        let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
+        let is_air_beneath_feet = is_element(
+            &world_map,
+            &elements_query,
+            &below_feet_position,
+            &Element::Air,
+        );
+
+        if is_air_beneath_feet {
             continue;
         }
 
@@ -607,7 +604,6 @@ pub fn move_ants(
                 );
 
                 if has_valid_air_nest && has_valid_dirt_nest {
-                    info!("NESTED");
                     world_map.mark_nested();
 
                     // Spawn birthing component on QueenAnt
@@ -626,20 +622,6 @@ pub fn move_ants(
             if world_map.is_nested() {
                 continue;
             }
-        }
-
-        if world_rng.0.gen::<f32>() < settings.probabilities.random_turn {
-            turn(
-                orientation,
-                // inventory,
-                position,
-                &elements_query,
-                &mut world_map,
-                &mut world_rng,
-                // &mut commands,
-            );
-
-            continue;
         }
 
         // Add some randomness to worker behavior to make more lively, need to avoid applying this to queen because
@@ -667,18 +649,74 @@ pub fn move_ants(
             }
         }
 
-        act(
-            orientation,
-            inventory,
-            position,
-            role,
-            ant_entity,
-            &elements_query,
-            &mut world_map,
-            &mut world_rng,
-            &settings,
-            &mut commands,
-        );
+        // Propose taking a step forward, but check validity and alternative actions before stepping forward.
+        let new_position = *position + orientation.get_forward_delta();
+
+        if !world_map.is_within_bounds(&new_position) {
+            // Hit an edge - need to turn.
+            continue;
+        }
+
+        // Check if hitting a solid element and, if so, consider digging through it.
+        let entity = world_map.get_element(new_position).unwrap();
+        let Ok(element) = elements_query.get(*entity) else {
+            panic!("act - expected entity to exist")
+        };
+
+        if *element != Element::Air {
+            // Consider digging / picking up the element under various circumstances.
+            if inventory.0 == None {
+                // When above ground, prioritize picking up food
+                let dig_food = *element == Element::Food && !world_map.is_below_surface(&position);
+                // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
+                let dig_sand = *element == Element::Sand && world_map.is_below_surface(&position);
+                let dig_dirt = *element == Element::Dirt
+                    && world_map.is_below_surface(&position)
+                    && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_dirt_dig;
+
+                // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
+                // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
+                let mut queen_dig = *element == Element::Dirt
+                    && world_map.is_below_surface(&position)
+                    && *role == AntRole::Queen;
+
+                if position.y - world_map.surface_level() > 8 {
+                    if world_rng.0.gen::<f32>() > settings.probabilities.below_surface_queen_nest_dig {
+                        queen_dig = false;
+                    }
+                }
+
+                if dig_food || dig_sand || dig_dirt || queen_dig {
+                    let target_position = *position + orientation.get_forward_delta();
+                    let target_element_entity = *world_map.get_element_expect(target_position);
+                    commands.dig(ant_entity, target_position, target_element_entity);
+                    continue;
+                }
+            }
+
+            // Decided to not dig through and can't walk through
+            continue;
+        }
+
+        // There is an air gap directly ahead of the ant. Consider dropping inventory.
+        // Avoid dropping inventory when facing upwards since it'll fall on the ant.
+        if inventory.0 != None && orientation.is_horizontal() {
+            // Prioritize dropping sand above ground and food below ground.
+            let drop_sand = inventory.0 == Some(Element::Sand)
+                && !world_map.is_below_surface(&new_position)
+                && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_sand_drop;
+
+            let drop_food = inventory.0 == Some(Element::Food)
+                && world_map.is_below_surface(&new_position)
+                && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_food_drop;
+
+            if drop_sand || drop_food {
+                // Drop inventory in front of ant
+                let target_element_entity = world_map.get_element_expect(new_position);
+                commands.drop(ant_entity, new_position, *target_element_entity);
+                continue;
+            }
+        }
     }
 }
 

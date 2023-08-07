@@ -97,7 +97,7 @@ impl Command for DigElementCommand {
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => {
-                *inventory = AntInventory(Some(inventory_element));
+                inventory.0 = Some(inventory_element);
                 info!("Ant {:?} inventory: {:?}", self.ant_entity, inventory);
             }
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
@@ -144,7 +144,7 @@ impl Command for DropElementCommand {
             .set_element(self.target_position, element_entity);
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
-            Some(mut inventory) => *inventory = AntInventory(None),
+            Some(mut inventory) => inventory.0 = None,
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
         };
     }

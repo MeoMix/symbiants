@@ -4,8 +4,8 @@ use crate::{
     ant::{
         birthing::ants_birthing,
         hunger::ants_hunger,
-        move_ants, setup_ants,
-        ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation},
+        setup_ants,
+        ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation}, ants_act, ants_move, ants_update_action_timer,
     },
     background::setup_background,
     common::ui::on_update_position,
@@ -44,13 +44,21 @@ impl Plugin for SimulationPlugin {
             (
                 // TODO: revisit this idea - I want all simulation systems to be able to run in parallel.
                 // move_ants runs first to avoid scenario where ant falls due to gravity and then moves in the same visual tick
-                move_ants,
-                ants_hunger,
-                ants_birthing,
-                element_gravity,
-                gravity_crush,
-                gravity_stability,
-                ant_gravity,
+                (
+                    // Ants should move before committing to actions because movement occurs instantly where actions are enqueued.
+                    // So, if actions occur first, then ant would need to not walk away from where action is occurring.
+                    ants_move,
+                    ants_act,
+                    // TODO: these should probably be affected by action timer but also might want to be merged into ants_act?
+                    ants_hunger,
+                    ants_birthing,
+                    // Timer needs to run before or after all actions take place.
+                    ants_update_action_timer,
+                    element_gravity,
+                    gravity_crush,
+                    gravity_stability,
+                    ant_gravity,
+                ).chain(),
                 // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
                 // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
                 // when moving out of the Update stage and into the PostUpdate stage.

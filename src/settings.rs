@@ -35,7 +35,7 @@ impl Default for Settings {
             world_height: 81,
             compact_sand_depth: 15,
             initial_dirt_percent: 3.0 / 4.0,
-            initial_ant_worker_count: 200,
+            initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
             probabilities: Probabilities {
                 random_dig: 0.003,
