@@ -2,10 +2,13 @@ use bevy::prelude::*;
 
 use crate::{
     ant::{
+        setup_ants,
+        ants_update_action_timer,
         birthing::ants_birthing,
         hunger::ants_hunger,
-        setup_ants,
-        ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation}, ants_act, ants_move, ants_update_action_timer,
+        act::ants_act, 
+        walk::ants_walk,
+        ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation},
     },
     background::setup_background,
     common::ui::on_update_position,
@@ -47,7 +50,7 @@ impl Plugin for SimulationPlugin {
                 (
                     // Ants should move before committing to actions because movement occurs instantly where actions are enqueued.
                     // So, if actions occur first, then ant would need to not walk away from where action is occurring.
-                    ants_move,
+                    ants_walk,
                     ants_act,
                     // TODO: these should probably be affected by action timer but also might want to be merged into ants_act?
                     ants_hunger,
