@@ -28,7 +28,7 @@ pub struct AntSaveState {
     pub orientation: AntOrientation,
     pub inventory: AntInventory,
     pub role: AntRole,
-    pub timer: AntTimer,
+    pub initiative: Initiative,
     pub name: AntName,
 }
 
@@ -38,11 +38,10 @@ struct AntBundle {
     position: Position,
     orientation: AntOrientation,
     role: AntRole,
-    timer: AntTimer,
+    initiative: Initiative,
     name: AntName,
     color: AntColor,
     hunger: Hunger,
-    alive: Alive,
     inventory: AntInventory,
 }
 
@@ -62,11 +61,10 @@ impl AntBundle {
             orientation,
             inventory,
             role,
-            timer: AntTimer::new(&mut rng),
+            initiative: Initiative::new(&mut rng),
             name: AntName(name.to_string()),
             color: AntColor(color),
             hunger: Hunger::default(),
-            alive: Alive,
         }
     }
 }
@@ -81,7 +79,7 @@ pub struct AntColor(pub Color);
 pub struct AntInventory(pub Option<Element>);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub struct Alive;
+pub struct Dead;
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Ant;
@@ -99,11 +97,29 @@ pub struct CarryingBundle {
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub struct AntTimer(pub isize);
+pub struct Initiative {
+    has_action_available: bool,
+    timer: isize
+}
 
-impl AntTimer {
+impl Initiative {
     pub fn new(rng: &mut StdRng) -> Self {
-        Self(rng.gen_range(3..5))
+        Self {
+            has_action_available: true,
+            timer: rng.gen_range(3..5)
+        }
+    }
+
+    pub fn can_move(&self) -> bool {
+        self.timer == 0 
+    }
+
+    pub fn can_act(&self) -> bool {
+        self.timer == 0 && self.has_action_available
+    }
+
+    pub fn act(&mut self) {
+        self.has_action_available = false;
     }
 }
 
@@ -268,17 +284,17 @@ pub fn setup_ants(
 // Each ant maintains an internal timer that determines when it will act next.
 // This adds a little realism by varying when movements occur and allows for flexibility
 // in the simulation run speed.
-pub fn ants_update_action_timer(
-    mut ants_query: Query<&mut AntTimer, With<Alive>>,
+pub fn ants_initiative(
+    mut ants_query: Query<&mut Initiative, Without<Dead>>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    for mut timer in ants_query.iter_mut() {
-        if timer.0 > 0 {
-            timer.0 -= 1;
+    for mut initiative in ants_query.iter_mut() {
+        if initiative.timer > 0 {
+            initiative.timer -= 1;
             continue;
         }
 
-        *timer = AntTimer::new(&mut world_rng.0);
+        *initiative = Initiative::new(&mut world_rng.0);
     }
 }
 

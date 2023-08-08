@@ -6,7 +6,7 @@ use crate::{
     world_rng::WorldRng,
 };
 
-use super::{commands::AntCommandsExt, Alive, AntInventory, AntOrientation, AntRole, AntTimer};
+use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -15,12 +15,12 @@ pub fn ants_act(
         (
             &AntOrientation,
             &AntInventory,
-            &AntTimer,
+            &mut Initiative,
             &Position,
             &AntRole,
             Entity,
         ),
-        With<Alive>,
+        Without<Dead>,
     >,
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
@@ -30,8 +30,8 @@ pub fn ants_act(
 ) {
     // TODO: Check if ant position has changed already and, if so, skip it - ant is only allowed to be moved on its own if another system didn't move it this frame.
     // This will allow for systems to run not in parallel, but in a non-deterministic order while exhibiting desirable behavior.
-    for (orientation, inventory, timer, position, role, ant_entity) in ants_query.iter_mut() {
-        if timer.0 > 0 {
+    for (orientation, inventory, mut initiative, position, role, ant_entity) in ants_query.iter_mut() {
+        if !initiative.can_act() {
             continue;
         }
 
@@ -67,6 +67,8 @@ pub fn ants_act(
                             *position + orientation.rotate_forward().get_forward_delta();
                         let target_element_entity = *world_map.get_element_expect(target_position);
                         commands.dig(ant_entity, target_position, target_element_entity);
+
+                        initiative.act();
 
                         // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
                         // enforcing nest generation probabilistically
@@ -114,6 +116,7 @@ pub fn ants_act(
                         commands.drop(ant_entity, target_position, *target_element_entity);
                     }
 
+                    initiative.act();
                     continue;
                 }
             }
@@ -136,6 +139,8 @@ pub fn ants_act(
                     let target_element_entity = *world_map.get_element_expect(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
 
+                    initiative.act();
+
                     continue;
                 }
             } else {
@@ -143,21 +148,22 @@ pub fn ants_act(
                     let target_element_entity = world_map.get_element_expect(*position);
                     commands.drop(ant_entity, *position, *target_element_entity);
 
+                    initiative.act();
+
                     continue;
                 }
             }
         }
 
-        // Propose taking a step forward, but check validity and alternative actions before stepping forward.
-        let new_position = *position + orientation.get_forward_delta();
+        let forward_position = *position + orientation.get_forward_delta();
 
-        if !world_map.is_within_bounds(&new_position) {
+        if !world_map.is_within_bounds(&forward_position) {
             // Hit an edge - need to turn.
             continue;
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = world_map.get_element(new_position).unwrap();
+        let entity = world_map.get_element(forward_position).unwrap();
         let Ok(element) = elements_query.get(*entity) else {
             panic!("act - expected entity to exist")
         };
@@ -191,6 +197,8 @@ pub fn ants_act(
                     let target_position = *position + orientation.get_forward_delta();
                     let target_element_entity = *world_map.get_element_expect(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
+
+                    initiative.act();
                     continue;
                 }
             }
@@ -204,17 +212,19 @@ pub fn ants_act(
         if inventory.0 != None && orientation.is_horizontal() {
             // Prioritize dropping sand above ground and food below ground.
             let drop_sand = inventory.0 == Some(Element::Sand)
-                && !world_map.is_below_surface(&new_position)
+                && !world_map.is_below_surface(&forward_position)
                 && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_sand_drop;
 
             let drop_food = inventory.0 == Some(Element::Food)
-                && world_map.is_below_surface(&new_position)
+                && world_map.is_below_surface(&forward_position)
                 && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_food_drop;
 
             if drop_sand || drop_food {
                 // Drop inventory in front of ant
-                let target_element_entity = world_map.get_element_expect(new_position);
-                commands.drop(ant_entity, new_position, *target_element_entity);
+                let target_element_entity = world_map.get_element_expect(forward_position);
+                commands.drop(ant_entity, forward_position, *target_element_entity);
+                
+                initiative.act();
                 continue;
             }
         }

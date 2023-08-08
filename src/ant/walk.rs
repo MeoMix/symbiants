@@ -5,21 +5,20 @@ use crate::{
     world_rng::WorldRng,
 };
 
-use super::{Alive, AntOrientation, AntTimer};
+use super::{Dead, AntOrientation, Initiative};
 use bevy::prelude::*;
 use rand::Rng;
 
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
-    mut ants_query: Query<(&AntTimer, &mut Position, &mut AntOrientation), With<Alive>>,
+    mut ants_query: Query<(&Initiative, &mut Position, &mut AntOrientation), Without<Dead>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    for (timer, mut position, mut orientation) in ants_query.iter_mut() {
-        // Can't move - waiting for timer.
-        if timer.0 > 0 {
+    for (initiative, mut position, mut orientation) in ants_query.iter_mut() {
+        if !initiative.can_move() {
             continue;
         }
 

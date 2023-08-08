@@ -37,7 +37,6 @@ fn get_element_fall_position(
         return Some(below_position);
     }
 
-    // TODO: maybe don't always fall left/right even if possible to fall
     // Otherwise, likely at rest, but potential for tipping off a precarious ledge.
     // Look for a column of air two units tall to either side and consider going in one of those directions.
     let left_position = position + Position::NEG_X;

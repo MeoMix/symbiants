@@ -1,4 +1,4 @@
-use super::{Alive, Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Facing};
+use super::{Dead, Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Facing, Initiative};
 use crate::{
     map::Position,
     name_list::NAMES,
@@ -43,16 +43,16 @@ impl Birthing {
 
 pub fn ants_birthing(
     mut ants_birthing_query: Query<
-        (&mut Birthing, &Position, &AntColor, &AntOrientation),
-        With<Alive>,
+        (&mut Birthing, &Position, &AntColor, &AntOrientation, &mut Initiative),
+        Without<Dead>,
     >,
     mut commands: Commands,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    for (mut birthing, position, color, orientation) in ants_birthing_query.iter_mut() {
+    for (mut birthing, position, color, orientation, mut initiative) in ants_birthing_query.iter_mut() {
         birthing.tick();
 
-        if birthing.is_ready() {
+        if birthing.is_ready() && initiative.can_act() {
             // Randomly position ant facing left or right.
             let facing = if world_rng.0.gen_bool(0.5) {
                 Facing::Left
@@ -80,6 +80,7 @@ pub fn ants_birthing(
             ));
 
             birthing.reset();
+            initiative.act();
         }
     }
 }

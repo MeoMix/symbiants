@@ -35,7 +35,7 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         position: Position,
         toggle: bool,
     ) {
-        self.add(MarkElementUnstableCommand {
+        self.add(ToggleElementUnstableCommand {
             target_element_entity,
             position,
             toggle,
@@ -116,13 +116,13 @@ pub fn spawn_element(element: Element, position: Position, world: &mut World) ->
 }
 
 // TODO: Make this more generic so singular operations against elements can be generally safeguarded?
-struct MarkElementUnstableCommand {
+struct ToggleElementUnstableCommand {
     target_element_entity: Entity,
     position: Position,
     toggle: bool,
 }
 
-impl Command for MarkElementUnstableCommand {
+impl Command for ToggleElementUnstableCommand {
     fn apply(self, world: &mut World) {
         let world_map = world.resource::<WorldMap>();
         let element_entity = match world_map.get_element(self.position) {

@@ -1,4 +1,4 @@
-use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, CarryingBundle};
+use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, CarryingBundle, Dead};
 use crate::{
     common::{Label, TranslationOffset},
     element::Element,
@@ -198,5 +198,14 @@ pub fn on_update_ant_orientation(
             transform.scale = orientation.as_world_scale();
             transform.rotation = orientation.as_world_rotation();
         }
+    }
+}
+
+pub fn on_update_ant_dead(
+    mut query: Query<&mut Handle<Image>, Added<Dead>>,
+    asset_server: Res<AssetServer>,
+) {
+    for mut image_handle in query.iter_mut() {
+        *image_handle = asset_server.load("images/ant_dead.png");
     }
 }

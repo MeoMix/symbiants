@@ -1,4 +1,4 @@
-use super::{commands::AntCommandsExt, Alive, AntInventory, AntOrientation};
+use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, Initiative};
 use crate::{
     element::Element,
     map::{Position, WorldMap},
@@ -52,30 +52,30 @@ pub fn ants_hunger(
         (
             Entity,
             &mut Hunger,
-            &mut Handle<Image>,
             &mut AntOrientation,
             &Position,
             &mut AntInventory,
+            &mut Initiative,
         ),
-        With<Alive>,
+        Without<Dead>,
     >,
     elements_query: Query<&Element>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     world_map: Res<WorldMap>,
 ) {
-    for (entity, mut hunger, mut handle, mut orientation, position, mut inventory) in
+    for (entity, mut hunger, mut orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
         hunger.tick();
 
         if hunger.is_starving() {
-            commands.entity(entity).remove::<Alive>();
-
-            // TODO: prefer respond to Alive removal and/or responding to addition of Dead instead of inline code here
-            *handle = asset_server.load("images/ant_dead.png");
+            commands.entity(entity).insert(Dead);
             *orientation = orientation.flip_onto_back();
         } else if hunger.is_hungry() {
+            if !initiative.can_act() {
+                continue;
+            }
+
             // If there is food near the hungry ant then pick it up and if the ant is holding food then eat it.
             if inventory.0 == None {
                 let food_position = *position + orientation.get_forward_delta();
@@ -83,9 +83,11 @@ pub fn ants_hunger(
                     let food_entity = world_map.get_element(food_position).unwrap();
                     commands.dig(entity, food_position, *food_entity);
                 }
+                initiative.act();
             } else if inventory.0 == Some(Element::Food) {
                 inventory.0 = Some(Element::Air);
                 hunger.reset();
+                initiative.act();
             }
         }
     }

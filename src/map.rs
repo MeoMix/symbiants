@@ -10,7 +10,7 @@ use wasm_bindgen::{prelude::Closure, JsCast};
 
 use crate::{
     ant::{
-        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, AntSaveState, AntTimer,
+        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, AntSaveState, Initiative,
         Facing,
     },
     element::{Element, ElementSaveState},
@@ -159,7 +159,7 @@ impl FromWorld for WorldMap {
             orientation: AntOrientation::new(facing, Angle::Zero),
             inventory: AntInventory(None),
             role: AntRole::Queen,
-            timer: AntTimer::new(&mut world_rng.0),
+            initiative: Initiative::new(&mut world_rng.0),
             name: AntName("Queen".to_string()),
         };
 
@@ -184,7 +184,7 @@ impl FromWorld for WorldMap {
                 orientation: AntOrientation::new(facing, Angle::Zero),
                 inventory: AntInventory(None),
                 role: AntRole::Worker,
-                timer: AntTimer::new(&mut world_rng.0),
+                initiative: Initiative::new(&mut world_rng.0),
                 name: AntName(name.to_string()),
             }
         });
@@ -441,7 +441,7 @@ fn get_world_save_state(
         &AntOrientation,
         &AntInventory,
         &AntRole,
-        &AntTimer,
+        &Initiative,
         &AntName,
         &AntColor,
         &Position,
@@ -458,11 +458,11 @@ fn get_world_save_state(
     let ants_save_state = ants_query
         .iter_mut()
         .map(
-            |(orientation, inventory, role, timer, name, color, position)| AntSaveState {
+            |(orientation, inventory, role, initiative, name, color, position)| AntSaveState {
                 orientation: orientation.clone(),
                 inventory: inventory.clone(),
                 role: role.clone(),
-                timer: timer.clone(),
+                initiative: initiative.clone(),
                 name: name.clone(),
                 color: color.clone(),
                 position: position.clone(),
@@ -483,7 +483,7 @@ pub fn periodic_save_world_state(
         &AntOrientation,
         &AntInventory,
         &AntRole,
-        &AntTimer,
+        &Initiative,
         &AntName,
         &AntColor,
         &Position,
