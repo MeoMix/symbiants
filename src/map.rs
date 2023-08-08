@@ -385,6 +385,32 @@ impl WorldMap {
 
         row[position.x as usize] = entity;
     }
+
+    pub fn is_element(
+        &self,
+        elements_query: &Query<&Element>,
+        position: Position,
+        search_element: Element,
+    ) -> bool {
+        self.get_element(position).map_or(false, |&element| {
+            elements_query
+                .get(element)
+                .map_or(false, |queried_element| *queried_element == search_element)
+        })
+    }
+    
+    // Returns true if every element in `positions` matches the provided Element type.
+    // NOTE: This returns true if given 0 positions.
+    pub fn is_all_element(
+        &self,
+        elements_query: &Query<&Element>,
+        positions: &[Position],
+        search_element: Element,
+    ) -> bool {
+        positions
+            .iter()
+            .all(|&position| self.is_element(elements_query, position, search_element))
+    }
 }
 
 pub fn setup_window_onunload_save_world_state() {

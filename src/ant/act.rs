@@ -1,11 +1,12 @@
 use crate::{
     ant::birthing::Birthing,
-    element::{is_all_element, is_element, Element},
+    element::Element,
     map::{Position, WorldMap},
-    world_rng::WorldRng, settings::Settings,
+    settings::Settings,
+    world_rng::WorldRng,
 };
 
-use super::{Alive, AntRole, AntTimer, AntInventory, AntOrientation, commands::AntCommandsExt};
+use super::{commands::AntCommandsExt, Alive, AntInventory, AntOrientation, AntRole, AntTimer};
 use bevy::prelude::*;
 use rand::Rng;
 
@@ -35,12 +36,8 @@ pub fn ants_act(
         }
 
         let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
-        let is_air_beneath_feet = is_element(
-            &world_map,
-            &elements_query,
-            &below_feet_position,
-            &Element::Air,
-        );
+        let is_air_beneath_feet =
+            world_map.is_element(&elements_query, below_feet_position, Element::Air);
 
         if is_air_beneath_feet {
             continue;
@@ -86,11 +83,10 @@ pub fn ants_act(
                 let above_position = *position + Position::new(0, -1);
                 let right_position = *position + Position::X;
 
-                let has_valid_air_nest = is_all_element(
-                    &world_map,
+                let has_valid_air_nest = world_map.is_all_element(
                     &elements_query,
                     &[left_position, *position, above_position, right_position],
-                    &Element::Air,
+                    Element::Air,
                 );
 
                 //let left_below_position = *position + Position::new(-1, 1);
@@ -100,11 +96,10 @@ pub fn ants_act(
                 let behind_position = *position + orientation.turn_around().get_forward_delta();
                 let behind_below_position = behind_position + Position::new(0, 1);
 
-                let has_valid_dirt_nest = is_all_element(
-                    &world_map,
+                let has_valid_dirt_nest = world_map.is_all_element(
                     &elements_query,
                     &[below_position, behind_below_position],
-                    &Element::Dirt,
+                    Element::Dirt,
                 );
 
                 if has_valid_air_nest && has_valid_dirt_nest {
@@ -185,7 +180,9 @@ pub fn ants_act(
                     && *role == AntRole::Queen;
 
                 if position.y - world_map.surface_level() > 8 {
-                    if world_rng.0.gen::<f32>() > settings.probabilities.below_surface_queen_nest_dig {
+                    if world_rng.0.gen::<f32>()
+                        > settings.probabilities.below_surface_queen_nest_dig
+                    {
                         queen_dig = false;
                     }
                 }

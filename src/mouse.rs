@@ -2,7 +2,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
     camera::MainCamera,
-    element::{commands::ElementCommandsExt, is_element, Element},
+    element::{commands::ElementCommandsExt, Element},
     food::FoodCount,
     map::{Position, WorldMap},
 };
@@ -42,7 +42,7 @@ pub fn handle_mouse_clicks(
             y: world_position.y.abs().floor() as isize,
         };
 
-        if is_element(&world_map, &elements_query, &grid_position, &Element::Air) {
+        if world_map.is_element(&elements_query, grid_position, Element::Air) {
             if food_count.0 > 0 {
                 let Some(entity) = world_map.get_element(grid_position) else {
                     return;

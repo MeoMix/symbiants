@@ -1,6 +1,6 @@
 use super::{commands::AntCommandsExt, Alive, AntInventory, AntOrientation};
 use crate::{
-    element::{is_element, Element},
+    element::Element,
     map::{Position, WorldMap},
     time::{DEFAULT_TICK_RATE, SECONDS_PER_DAY},
 };
@@ -79,7 +79,7 @@ pub fn ants_hunger(
             // If there is food near the hungry ant then pick it up and if the ant is holding food then eat it.
             if inventory.0 == None {
                 let food_position = *position + orientation.get_forward_delta();
-                if is_element(&world_map, &elements_query, &food_position, &Element::Food) {
+                if world_map.is_element(&elements_query, food_position, Element::Food) {
                     let food_entity = world_map.get_element(food_position).unwrap();
                     commands.dig(entity, food_position, *food_entity);
                 }

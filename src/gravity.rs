@@ -1,6 +1,6 @@
 use crate::{
     ant::AntOrientation,
-    element::{commands::ElementCommandsExt, is_all_element, is_element, Air, Crushable},
+    element::{commands::ElementCommandsExt, Air, Crushable},
     time::IsFastForwarding,
     world_rng::WorldRng,
 };
@@ -33,7 +33,7 @@ fn get_element_fall_position(
 ) -> Option<Position> {
     // If there is air below then continue falling down.
     let below_position = position + Position::Y;
-    if is_element(&world_map, &elements_query, &below_position, &Element::Air) {
+    if world_map.is_element(&elements_query, below_position, Element::Air) {
         return Some(below_position);
     }
 
@@ -42,20 +42,18 @@ fn get_element_fall_position(
     // Look for a column of air two units tall to either side and consider going in one of those directions.
     let left_position = position + Position::NEG_X;
     let left_below_position = position + Position::new(-1, 1);
-    let mut go_left = is_all_element(
-        &world_map,
+    let mut go_left = world_map.is_all_element(
         &elements_query,
         &[left_position, left_below_position],
-        &Element::Air,
+        Element::Air,
     ) && world_rng.gen_bool(0.33);
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
-    let mut go_right = is_all_element(
-        &world_map,
+    let mut go_right = world_map.is_all_element(
         &elements_query,
         &[right_position, right_below_position],
-        &Element::Air,
+        Element::Air,
     ) && world_rng.gen_bool(0.33);
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
@@ -129,23 +127,15 @@ pub fn ant_gravity(
         // Figure out foot direction
         let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
 
-        let is_air_beneath_feet = is_all_element(
-            &world_map,
-            &elements_query,
-            &[below_feet_position],
-            &Element::Air,
-        );
+        let is_air_beneath_feet =
+            world_map.is_all_element(&elements_query, &[below_feet_position], Element::Air);
 
         let is_out_of_bounds = !world_map.is_within_bounds(&below_feet_position);
 
         if is_air_beneath_feet || is_out_of_bounds {
             let below_position = *position + Position::Y;
-            let is_air_below = is_all_element(
-                &world_map,
-                &elements_query,
-                &[below_position],
-                &Element::Air,
-            );
+            let is_air_below =
+                world_map.is_all_element(&elements_query, &[below_position], Element::Air);
 
             if is_air_below {
                 position.y = below_position.y;
@@ -181,12 +171,7 @@ pub fn gravity_crush(
             .map(|y| Position::new(position.x, position.y - y))
             .collect();
 
-        if is_all_element(
-            &world_map,
-            &elements_query,
-            &above_sand_positions,
-            &Element::Sand,
-        ) {
+        if world_map.is_all_element(&elements_query, &above_sand_positions, Element::Sand) {
             // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
             info!("replace_element5: {:?}", position);
             commands.replace_element(*position, entity, Element::Dirt);
