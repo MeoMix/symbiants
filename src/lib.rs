@@ -39,7 +39,7 @@ impl Plugin for AntfarmPlugin {
         }))
         // TODO: Move this into time plugin? idk
         // Defines the amount of time that should elapse between each physics step.
-        .insert_resource(FixedTime::new_from_secs(0.2 as f32 / 60.0 as f32))
+        .insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE))
         .insert_resource(IsFastForwarding(false))
         .insert_resource(PendingTicks(0))
         .init_resource::<Settings>()
