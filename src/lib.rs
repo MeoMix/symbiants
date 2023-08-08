@@ -20,12 +20,9 @@ use bevy::{
     prelude::*,
 };
 use camera::CameraPlugin;
-use map::WorldMap;
-use settings::Settings;
 use simulation::SimulationPlugin;
-use time::{IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE};
 use ui::UIPlugin;
-use world_rng::WorldRng;
+
 pub struct AntfarmPlugin;
 
 impl Plugin for AntfarmPlugin {
@@ -37,14 +34,6 @@ impl Plugin for AntfarmPlugin {
             }),
             ..default()
         }))
-        // TODO: Move this into time plugin? idk
-        // Defines the amount of time that should elapse between each physics step.
-        .insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE))
-        .insert_resource(IsFastForwarding(false))
-        .insert_resource(PendingTicks(0))
-        .init_resource::<Settings>()
-        .init_resource::<WorldRng>()
-        .init_resource::<WorldMap>()
         // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
         .edit_schedule(FixedUpdate, |schedule| {
             schedule.set_build_settings(ScheduleBuildSettings {

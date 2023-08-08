@@ -83,7 +83,7 @@ pub fn handle_mouse_clicks(
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct IsPointerCaptured(pub bool);
 
 #[derive(Component)]

@@ -12,10 +12,10 @@ pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
 pub const SECONDS_PER_HOUR: i64 = 3600;
 pub const SECONDS_PER_DAY: i64 = 86_400;
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct IsFastForwarding(pub bool);
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct PendingTicks(pub isize);
 
 impl PendingTicks {

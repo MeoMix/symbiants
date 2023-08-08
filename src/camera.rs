@@ -1,5 +1,4 @@
-use super::WorldMap;
-use crate::pancam::{PanCam, PanCamPlugin};
+use crate::{pancam::{PanCam, PanCamPlugin}, map::WorldMap};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
