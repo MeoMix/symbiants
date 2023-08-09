@@ -1,7 +1,7 @@
-use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, CarryingBundle, Dead};
+use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, InventoryItemBundle, Dead, InventoryItem};
 use crate::{
     common::{Label, TranslationOffset},
-    element::Element,
+    element::{Element, ui::get_element_color},
     map::Position,
     time::IsFastForwarding,
 };
@@ -58,7 +58,7 @@ pub fn on_spawn_ant(
                 },
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-                if let Some(bundle) = get_carrying_bundle(inventory) {
+                if let Some(bundle) = get_inventory_item_bundle(inventory) {
                     parent.spawn(bundle);
                 }
 
@@ -107,9 +107,8 @@ pub fn on_spawn_ant(
 
 pub fn on_update_ant_inventory(
     mut commands: Commands,
-    // TODO: consider `iter_descendants` instead of Option<&Children>
     mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
-    elements_query: Query<&Element>,
+    inventory_items_query: Query<&InventoryItem>,
     is_fast_forwarding: Res<IsFastForwarding>,
 ) {
     if is_fast_forwarding.0 {
@@ -118,28 +117,18 @@ pub fn on_update_ant_inventory(
 
     for (entity, inventory, children) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || inventory.is_changed() {
-            // TODO: could be nice to know previous state to only attempt despawn when changing away from carrying
-            // TODO: might *need* to know previous state to avoid unintentionally carrying twice
-            if let Some(bundle) = get_carrying_bundle(&inventory) {
+            if let Some(inventory_item_bundle) = get_inventory_item_bundle(&inventory) {
                 commands
                     .entity(entity)
                     .with_children(|ant: &mut ChildBuilder| {
-                        ant.spawn(bundle);
+                        ant.spawn(inventory_item_bundle);
                     });
             } else {
-                // If ant was carrying food/sand, but has stopped, then remove associated UI element.
                 if let Some(children) = children {
-                    let element_children = children
-                        .iter()
-                        .filter(|child| elements_query.get(**child).is_ok())
-                        .cloned()
-                        .collect::<Vec<_>>();
-
-                    commands
-                        .entity(entity)
-                        .remove_children(&element_children[..]);
-                    for child in element_children {
-                        commands.entity(child).despawn();
+                    for &child in children.iter() {
+                        if inventory_items_query.get_component::<InventoryItem>(child).is_ok() {
+                            commands.entity(child).despawn();
+                        }
                     }
                 }
             }
@@ -147,42 +136,27 @@ pub fn on_update_ant_inventory(
     }
 }
 
-fn get_carrying_bundle(inventory: &AntInventory) -> Option<CarryingBundle> {
-    if inventory.0 == Some(Element::Sand) {
-        return Some(CarryingBundle {
-            sprite_bundle: SpriteBundle {
-                transform: Transform {
-                    translation: Vec3::new(0.5, 0.75, 1.0),
-                    ..default()
-                },
-                sprite: Sprite {
-                    color: Color::rgb(0.761, 0.698, 0.502),
-                    anchor: Anchor::TopLeft,
-                    ..default()
-                },
-                ..default()
-            },
-            element: Element::Sand,
-        });
-    } else if inventory.0 == Some(Element::Food) {
-        return Some(CarryingBundle {
-            sprite_bundle: SpriteBundle {
-                transform: Transform {
-                    translation: Vec3::new(0.5, 0.75, 1.0),
-                    ..default()
-                },
-                sprite: Sprite {
-                    color: Color::rgb(0.388, 0.584, 0.294),
-                    anchor: Anchor::TopLeft,
-                    ..default()
-                },
-                ..default()
-            },
-            element: Element::Food,
-        });
-    }
+fn get_inventory_item_bundle(inventory: &AntInventory) -> Option<InventoryItemBundle> {
+    let element = match &inventory.0 {
+        Some(element) => *element,
+        None => return None,
+    };
 
-    None
+    let sprite_bundle = SpriteBundle {
+        transform: Transform::from_translation(Vec3::new(0.5, 0.75, 1.0)),
+        sprite: Sprite {
+            color: get_element_color(element),
+            anchor: Anchor::TopLeft,
+            ..default()
+        },
+        ..default()
+    };
+
+    Some(InventoryItemBundle {
+        sprite_bundle,
+        element,
+        inventory_item: InventoryItem,
+    })
 }
 
 pub fn on_update_ant_orientation(

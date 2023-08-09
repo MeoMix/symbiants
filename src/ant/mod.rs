@@ -89,10 +89,14 @@ pub enum AntRole {
     Queen,
 }
 
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+pub struct InventoryItem;
+
 #[derive(Bundle)]
-pub struct CarryingBundle {
+pub struct InventoryItemBundle {
     sprite_bundle: SpriteBundle,
     element: Element,
+    inventory_item: InventoryItem,
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
