@@ -17,7 +17,6 @@ mod commands;
 pub mod hunger;
 pub mod walk;
 pub mod act;
-// TODO: maybe don't want this public?
 pub mod ui;
 
 // This is what is persisted as JSON.
@@ -98,28 +97,34 @@ pub struct CarryingBundle {
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Initiative {
-    has_action_available: bool,
+    has_action: bool,
+    has_movement: bool,
     timer: isize
 }
 
 impl Initiative {
     pub fn new(rng: &mut StdRng) -> Self {
         Self {
-            has_action_available: true,
+            has_action: false,
+            has_movement: false,
             timer: rng.gen_range(3..5)
         }
     }
 
     pub fn can_move(&self) -> bool {
-        self.timer == 0 
+        self.timer == 0 && self.has_movement
     }
 
     pub fn can_act(&self) -> bool {
-        self.timer == 0 && self.has_action_available
+        self.timer == 0 && self.has_action
     }
 
-    pub fn act(&mut self) {
-        self.has_action_available = false;
+    pub fn consume_action(&mut self) {
+        self.has_action = false;
+    }
+
+    pub fn consume_movement(&mut self) {
+        self.has_movement = false;
     }
 }
 
@@ -291,6 +296,12 @@ pub fn ants_initiative(
     for mut initiative in ants_query.iter_mut() {
         if initiative.timer > 0 {
             initiative.timer -= 1;
+
+            if initiative.timer == 0 {
+                initiative.has_action = true;
+                initiative.has_movement = true;
+            }
+
             continue;
         }
 

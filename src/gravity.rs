@@ -1,5 +1,5 @@
 use crate::{
-    ant::AntOrientation,
+    ant::{AntOrientation, Initiative},
     element::{commands::ElementCommandsExt, Air, Crushable},
     time::IsFastForwarding,
     world_rng::WorldRng,
@@ -70,7 +70,7 @@ fn get_element_fall_position(
     }
 }
 
-pub fn element_gravity(
+pub fn gravity_elements(
     mut element_position_queries: ParamSet<(
         Query<&Position, (With<Element>, With<Unstable>)>,
         Query<&mut Position, With<Element>>,
@@ -117,12 +117,12 @@ pub fn element_gravity(
 
 // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
-pub fn ant_gravity(
-    mut ants_query: Query<(&AntOrientation, &mut Position)>,
+pub fn gravity_ants(
+    mut ants_query: Query<(&AntOrientation, &mut Position, &mut Initiative)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
 ) {
-    for (orientation, mut position) in ants_query.iter_mut() {
+    for (orientation, mut position, mut initiative) in ants_query.iter_mut() {
         // Figure out foot direction
         let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
 
@@ -138,6 +138,10 @@ pub fn ant_gravity(
 
             if is_air_below {
                 position.y = below_position.y;
+
+                // Ant falling through the air loses the ability to move or act.
+                initiative.consume_movement();
+                initiative.consume_action();
             }
         }
     }
@@ -172,7 +176,6 @@ pub fn gravity_crush(
 
         if world_map.is_all_element(&elements_query, &above_sand_positions, Element::Sand) {
             // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
-            info!("replace_element5: {:?}", position);
             commands.replace_element(*position, entity, Element::Dirt);
         }
     }

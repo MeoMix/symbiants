@@ -14,7 +14,7 @@ use crate::{
     common::ui::on_update_position,
     element::{setup_elements, ui::on_spawn_element},
     food::FoodCount,
-    gravity::{ant_gravity, element_gravity, gravity_crush, gravity_stability},
+    gravity::{gravity_ants, gravity_elements, gravity_crush, gravity_stability},
     map::{periodic_save_world_state, setup_window_onunload_save_world_state, WorldMap},
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     settings::Settings,
@@ -34,9 +34,8 @@ impl Plugin for SimulationPlugin {
             .init_resource::<IsFastForwarding>()
             .init_resource::<PendingTicks>();
 
-        // TODO: Move this into time plugin? idk
-        // Defines the amount of time that should elapse between each physics step.
-        // app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
+        // Control the speed of the simulation by defining how many simulation ticks occur per second.
+        //app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
         app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
 
         app.add_systems(
@@ -59,6 +58,13 @@ impl Plugin for SimulationPlugin {
             (
                 // TODO: revisit this idea - I want all simulation systems to be able to run in parallel.
                 (
+                    // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
+                    // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
+                    gravity_elements,
+                    gravity_ants,
+                    // Gravity side-effects can run whenever with little difference.
+                    gravity_crush,
+                    gravity_stability,
                     // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
                     // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
                     ants_walk,
@@ -69,12 +75,6 @@ impl Plugin for SimulationPlugin {
                     ants_act,
                     // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                     ants_initiative,
-                    // TODO: currently, element_gravity intentionally runs after ants_walk to ensure that if an ant is falling that it doesn't move
-                    // the same tick it falls, but this should be enforced via a component.
-                    element_gravity,
-                    gravity_crush,
-                    gravity_stability,
-                    ant_gravity,
                 )
                     .chain(),
                 // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.

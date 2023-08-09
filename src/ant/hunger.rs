@@ -83,11 +83,11 @@ pub fn ants_hunger(
                     let food_entity = world_map.get_element(food_position).unwrap();
                     commands.dig(entity, food_position, *food_entity);
                 }
-                initiative.act();
+                initiative.consume_action();
             } else if inventory.0 == Some(Element::Food) {
                 inventory.0 = Some(Element::Air);
                 hunger.reset();
-                initiative.act();
+                initiative.consume_action();
             }
         }
     }

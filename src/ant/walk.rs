@@ -11,31 +11,26 @@ use rand::Rng;
 
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
-    mut ants_query: Query<(&Initiative, &mut Position, &mut AntOrientation), Without<Dead>>,
+    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), Without<Dead>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
     mut world_rng: ResMut<WorldRng>,
 ) {
-    for (initiative, mut position, mut orientation) in ants_query.iter_mut() {
+    for (mut initiative, mut position, mut orientation) in ants_query.iter_mut() {
+        // If ant lost the ability to move (potentially due to falling through the air) then skip walking around.
         if !initiative.can_move() {
             continue;
         }
 
+        // An ant might not have stable footing even though it's not falling through the air. This can occur when an ant is
+        // standing perpendicular to the ground, with ground to the south of them, and the block they're walking on is dug up.
+        // An ant without stable footing will turn in an attempt to find stable footing.
         let under_feet_position = *position + orientation.rotate_forward().get_forward_delta();
         let has_air_under_feet =
             world_map.is_element(&elements_query, under_feet_position, Element::Air);
 
-        let under_body_position = *position + Position::Y;
-        let has_air_under_body =
-            world_map.is_element(&elements_query, under_body_position, Element::Air);
-
-        // Can't move - falling due to gravity.
-        if has_air_under_feet && has_air_under_body {
-            continue;
-        }
-
-        // Consider turning around instead of walking forward. Necessary when lacking space or firm footing, but also happens randomly.
+        // An ant might be attempting to walk forward into a solid block. If so, they'll turn and walk up the block.
         let forward_position = *position + orientation.get_forward_delta();
         let has_air_ahead = world_map
             .get_element(forward_position)
@@ -44,6 +39,8 @@ pub fn ants_walk(
                     .get(*entity)
                     .map_or(false, |element| *element == Element::Air)
             });
+
+        // An ant might turn randomly. This is to prevent ants from getting stuck in loops and add visual variety.
         let is_turning_randomly = world_rng.0.gen::<f32>() < settings.probabilities.random_turn;
 
         if has_air_under_feet || !has_air_ahead || is_turning_randomly {
@@ -54,6 +51,8 @@ pub fn ants_walk(
                 &world_map,
                 &mut world_rng,
             );
+
+            initiative.consume_movement();
             continue;
         }
 
@@ -72,6 +71,8 @@ pub fn ants_walk(
                 // Just move forward
                 *position = forward_position;
             }
+
+            initiative.consume_movement();
         }
     }
 }

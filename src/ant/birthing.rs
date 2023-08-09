@@ -80,7 +80,7 @@ pub fn ants_birthing(
             ));
 
             birthing.reset();
-            initiative.act();
+            initiative.consume_action();
         }
     }
 }

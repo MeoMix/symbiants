@@ -5,7 +5,7 @@ use crate::{
     settings::Settings,
     world_rng::WorldRng,
 };
-
+ 
 use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;
 use rand::Rng;
@@ -28,34 +28,11 @@ pub fn ants_act(
     mut world_rng: ResMut<WorldRng>,
     mut commands: Commands,
 ) {
-    // TODO: Check if ant position has changed already and, if so, skip it - ant is only allowed to be moved on its own if another system didn't move it this frame.
-    // This will allow for systems to run not in parallel, but in a non-deterministic order while exhibiting desirable behavior.
     for (orientation, inventory, mut initiative, position, role, ant_entity) in ants_query.iter_mut() {
         if !initiative.can_act() {
             continue;
         }
-
-        let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
-        let is_air_beneath_feet =
-            world_map.is_element(&elements_query, below_feet_position, Element::Air);
-
-        if is_air_beneath_feet {
-            continue;
-        }
-
-        // TODO: Check if trapped and, if so, drop inventory instead of taking action.
-        // No legal direction? Trapped! Drop if carrying and turn randomly in an attempt to dig out.
-        // if inventory.0 != None {
-        //     if let Some(entity) = world_map.get_element(*position) {
-        //         // TODO: maybe this should exit early rather than allowing for turning since relevant state has been mutated
-        //         let Ok(element) = elements_query.get(*entity) else { panic!("turn - expected entity to exist") };
-        //         if *element == Element::Air {
-        //             let target_element_entity = world_map.get_element_expect(*position);
-        //             commands.drop(ant_entity, *position, *target_element_entity);
-        //         }
-        //     }
-        // }
-
+        
         // TODO: queen specific logic
         if *role == AntRole::Queen {
             if !world_map.is_below_surface(&position) && !world_map.has_started_nest() {
@@ -68,7 +45,7 @@ pub fn ants_act(
                         let target_element_entity = *world_map.get_element_expect(target_position);
                         commands.dig(ant_entity, target_position, target_element_entity);
 
-                        initiative.act();
+                        initiative.consume_action();
 
                         // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
                         // enforcing nest generation probabilistically
@@ -91,9 +68,7 @@ pub fn ants_act(
                     Element::Air,
                 );
 
-                //let left_below_position = *position + Position::new(-1, 1);
                 let below_position = *position + Position::new(0, 1);
-                //let right_below_position = *position + Position::new(1, 1);
                 // Make sure there's stable place for ant child to be born
                 let behind_position = *position + orientation.turn_around().get_forward_delta();
                 let behind_below_position = behind_position + Position::new(0, 1);
@@ -116,7 +91,7 @@ pub fn ants_act(
                         commands.drop(ant_entity, target_position, *target_element_entity);
                     }
 
-                    initiative.act();
+                    initiative.consume_action();
                     continue;
                 }
             }
@@ -139,8 +114,7 @@ pub fn ants_act(
                     let target_element_entity = *world_map.get_element_expect(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
 
-                    initiative.act();
-
+                    initiative.consume_action();
                     continue;
                 }
             } else {
@@ -148,8 +122,7 @@ pub fn ants_act(
                     let target_element_entity = world_map.get_element_expect(*position);
                     commands.drop(ant_entity, *position, *target_element_entity);
 
-                    initiative.act();
-
+                    initiative.consume_action();
                     continue;
                 }
             }
@@ -198,7 +171,7 @@ pub fn ants_act(
                     let target_element_entity = *world_map.get_element_expect(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
 
-                    initiative.act();
+                    initiative.consume_action();
                     continue;
                 }
             }
@@ -224,7 +197,7 @@ pub fn ants_act(
                 let target_element_entity = world_map.get_element_expect(forward_position);
                 commands.drop(ant_entity, forward_position, *target_element_entity);
                 
-                initiative.act();
+                initiative.consume_action();
                 continue;
             }
         }

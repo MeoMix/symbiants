@@ -5,8 +5,6 @@ use std::time::Duration;
 
 use crate::map::{WorldSaveState, LOCAL_STORAGE_KEY};
 
-// TODO: Want to run at 60FPS but 6TPS (ticks per second) in the simulation. This would allow for animation effects.
-// Normally run at 6fps but fast forward at 6000fps
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
 pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
 pub const SECONDS_PER_HOUR: i64 = 3600;
