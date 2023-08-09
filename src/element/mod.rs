@@ -107,6 +107,6 @@ pub enum Element {
 // Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
 pub fn setup_elements(mut commands: Commands, world_map: Res<WorldMap>) {
     for &ElementSaveState { element, position } in world_map.initial_state().elements.iter() {
-        commands.spawn_element(element, position);
+        commands.spawn_element(position, element);
     }
 }

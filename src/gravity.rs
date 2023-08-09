@@ -176,7 +176,7 @@ pub fn gravity_crush(
 
         if world_map.is_all_element(&elements_query, &above_sand_positions, Element::Sand) {
             // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
-            commands.replace_element(*position, entity, Element::Dirt);
+            commands.replace_element(*position, Element::Dirt, entity);
         }
     }
 }
@@ -203,7 +203,7 @@ pub fn gravity_stability(
             if let Some(entity) = world_map.get_element(adjacent_position) {
                 if let Ok(element) = elements_query.get(*entity) {
                     if matches!(*element, Element::Sand | Element::Food) {
-                        commands.toggle_element_unstable(*entity, adjacent_position, true);
+                        commands.toggle_element_command(*entity, adjacent_position, true, Unstable);
                     }
                 }
             }
@@ -215,7 +215,7 @@ pub fn gravity_stability(
         .iter()
         .filter(|(p, _)| !p.is_changed())
     {
-        commands.toggle_element_unstable(entity, *position, false);
+        commands.toggle_element_command(entity, *position, false, Unstable);
     }
 }
 

@@ -1,23 +1,21 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
-use crate::{
-    gravity::Unstable,
-    map::{Position, WorldMap},
-};
+use crate::map::{Position, WorldMap};
 use bevy::{ecs::system::Command, prelude::*};
 
 pub trait ElementCommandsExt {
-    fn replace_element(&mut self, position: Position, target_element: Entity, element: Element);
-    fn spawn_element(&mut self, element: Element, position: Position);
-    fn toggle_element_unstable(
+    fn replace_element(&mut self, position: Position, element: Element, target_element: Entity);
+    fn spawn_element(&mut self,  position: Position, element: Element,);
+    fn toggle_element_command<C: Component + Send + Sync + 'static>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
         toggle: bool,
+        component: C,
     );
 }
 
 impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
-    fn replace_element(&mut self, position: Position, target_element: Entity, element: Element) {
+    fn replace_element(&mut self, position: Position, element: Element, target_element: Entity) {
         self.add(ReplaceElementCommand {
             position,
             target_element,
@@ -25,20 +23,22 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         })
     }
 
-    fn spawn_element(&mut self, element: Element, position: Position) {
+    fn spawn_element(&mut self, position: Position, element: Element) {
         self.add(SpawnElementCommand { element, position })
     }
 
-    fn toggle_element_unstable(
+    fn toggle_element_command<C: Component + Send + Sync + 'static>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
         toggle: bool,
+        component: C,
     ) {
-        self.add(ToggleElementUnstableCommand {
+        self.add(ToggleElementCommand::<C> {
             target_element_entity,
             position,
             toggle,
+            component,
         })
     }
 }
@@ -70,17 +70,12 @@ impl Command for ReplaceElementCommand {
             return;
         }
 
-        info!(
-            "Despawning entity {:?} at position {:?}",
-            existing_entity, self.position
-        );
-
         world.entity_mut(*existing_entity).despawn();
 
         let entity = spawn_element(self.element, self.position, world);
-        let mut world_map = world.resource_mut::<WorldMap>();
-
-        world_map.set_element(self.position, entity);
+        world
+            .resource_mut::<WorldMap>()
+            .set_element(self.position, entity);
     }
 }
 
@@ -115,14 +110,14 @@ pub fn spawn_element(element: Element, position: Position, world: &mut World) ->
     }
 }
 
-// TODO: Make this more generic so singular operations against elements can be generally safeguarded?
-struct ToggleElementUnstableCommand {
-    target_element_entity: Entity,
+struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
     position: Position,
+    target_element_entity: Entity,
     toggle: bool,
+    component: C,
 }
 
-impl Command for ToggleElementUnstableCommand {
+impl<C: Component + Send + Sync + 'static> Command for ToggleElementCommand<C> {
     fn apply(self, world: &mut World) {
         let world_map = world.resource::<WorldMap>();
         let element_entity = match world_map.get_element(self.position) {
@@ -139,9 +134,9 @@ impl Command for ToggleElementUnstableCommand {
         }
 
         if self.toggle {
-            world.entity_mut(element_entity).insert(Unstable);
+            world.entity_mut(element_entity).insert(self.component);
         } else {
-            world.entity_mut(element_entity).remove::<Unstable>();
+            world.entity_mut(element_entity).remove::<C>();
         }
     }
 }
