@@ -436,8 +436,8 @@ pub fn setup_window_onunload_save_world_state() {
 static SAVE_SNAPSHOT: Mutex<Option<WorldSaveState>> = Mutex::new(None);
 
 fn get_world_save_state(
-    elements_query: &mut Query<(&Element, &Position)>,
-    ants_query: &mut Query<(
+    elements_query: &Query<(&Element, &Position)>,
+    ants_query: &Query<(
         &AntOrientation,
         &AntInventory,
         &AntRole,
@@ -448,7 +448,7 @@ fn get_world_save_state(
     )>,
 ) -> WorldSaveState {
     let elements_save_state = elements_query
-        .iter_mut()
+        .iter()
         .map(|(element, position)| ElementSaveState {
             element: element.clone(),
             position: position.clone(),
@@ -456,7 +456,7 @@ fn get_world_save_state(
         .collect::<Vec<ElementSaveState>>();
 
     let ants_save_state = ants_query
-        .iter_mut()
+        .iter()
         .map(
             |(orientation, inventory, role, initiative, name, color, position)| AntSaveState {
                 orientation: orientation.clone(),
@@ -478,8 +478,8 @@ fn get_world_save_state(
 }
 
 pub fn periodic_save_world_state(
-    mut elements_query: Query<(&Element, &Position)>,
-    mut ants_query: Query<(
+    elements_query: Query<(&Element, &Position)>,
+    ants_query: Query<(
         &AntOrientation,
         &AntInventory,
         &AntRole,
@@ -501,7 +501,7 @@ pub fn periodic_save_world_state(
     // Limit the lifetime of the lock so that `write_save_snapshot` is able to re-acquire
     {
         let mut save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
-        *save_snapshot = Some(get_world_save_state(&mut elements_query, &mut ants_query));
+        *save_snapshot = Some(get_world_save_state(&elements_query, &ants_query));
     }
 
     if *last_save_time != 0.0
