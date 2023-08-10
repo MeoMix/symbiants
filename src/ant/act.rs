@@ -183,12 +183,14 @@ pub fn ants_act(
         // There is an air gap directly ahead of the ant. Consider dropping inventory.
         // Avoid dropping inventory when facing upwards since it'll fall on the ant.
         if inventory.0 != None && orientation.is_horizontal() {
+            let inventory_item_element = elements_query.get(inventory.0.unwrap()).unwrap();
+
             // Prioritize dropping sand above ground and food below ground.
-            let drop_sand = inventory.0 == Some(Element::Sand)
+            let drop_sand = *inventory_item_element == Element::Sand
                 && !world_map.is_below_surface(&forward_position)
                 && world_rng.0.gen::<f32>() < settings.probabilities.above_surface_sand_drop;
 
-            let drop_food = inventory.0 == Some(Element::Food)
+            let drop_food = *inventory_item_element == Element::Food
                 && world_map.is_below_surface(&forward_position)
                 && world_rng.0.gen::<f32>() < settings.probabilities.below_surface_food_drop;
 

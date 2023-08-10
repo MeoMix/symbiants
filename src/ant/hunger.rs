@@ -84,10 +84,14 @@ pub fn ants_hunger(
                     commands.dig(entity, food_position, *food_entity);
                 }
                 initiative.consume_action();
-            } else if inventory.0 == Some(Element::Food) {
-                inventory.0 = Some(Element::Air);
-                hunger.reset();
-                initiative.consume_action();
+            } else {
+                let element = elements_query.get(inventory.0.unwrap()).unwrap();
+
+                if *element == Element::Food {
+                    inventory.0 = None;
+                    hunger.reset();
+                    initiative.consume_action();
+                }
             }
         }
     }

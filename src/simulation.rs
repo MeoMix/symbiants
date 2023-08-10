@@ -7,14 +7,16 @@ use crate::{
         birthing::ants_birthing,
         hunger::ants_hunger,
         setup_ants,
-        ui::{on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation, on_update_ant_dead},
+        ui::{
+            on_spawn_ant, on_spawn_inventory_item, on_update_ant_dead, on_update_ant_orientation,
+        },
         walk::ants_walk,
     },
     background::setup_background,
     common::ui::on_update_position,
     element::{setup_elements, ui::on_spawn_element},
     food::FoodCount,
-    gravity::{gravity_ants, gravity_elements, gravity_crush, gravity_stability},
+    gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
     map::{periodic_save_world_state, setup_window_onunload_save_world_state, WorldMap},
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     settings::Settings,
@@ -35,8 +37,8 @@ impl Plugin for SimulationPlugin {
             .init_resource::<PendingTicks>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
-        // app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
+        //app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
+        app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
 
         app.add_systems(
             Startup,
@@ -93,11 +95,10 @@ impl Plugin for SimulationPlugin {
                 (
                     on_update_position,
                     on_update_ant_orientation,
-                    on_update_ant_inventory,
                     on_update_ant_dead,
                 )
                     .chain(),
-                (on_spawn_ant, on_spawn_element).chain(),
+                (on_spawn_ant, on_spawn_element, on_spawn_inventory_item).chain(),
                 play_time,
             )
                 .chain(),

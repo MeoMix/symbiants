@@ -12,12 +12,12 @@ use super::{element::Element, settings::Settings};
 use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng};
 
+pub mod act;
 pub mod birthing;
 mod commands;
 pub mod hunger;
-pub mod walk;
-pub mod act;
 pub mod ui;
+pub mod walk;
 
 // This is what is persisted as JSON.
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -75,7 +75,7 @@ pub struct AntName(pub String);
 pub struct AntColor(pub Color);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub struct AntInventory(pub Option<Element>);
+pub struct AntInventory(pub Option<Entity>);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Dead;
@@ -94,16 +94,24 @@ pub struct InventoryItem;
 
 #[derive(Bundle)]
 pub struct InventoryItemBundle {
-    sprite_bundle: SpriteBundle,
     element: Element,
     inventory_item: InventoryItem,
+}
+
+impl InventoryItemBundle {
+    pub fn new(element: Element) -> Self {
+        InventoryItemBundle {
+            element,
+            inventory_item: InventoryItem,
+        }
+    }
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
 pub struct Initiative {
     has_action: bool,
     has_movement: bool,
-    timer: isize
+    timer: isize,
 }
 
 impl Initiative {
@@ -111,7 +119,7 @@ impl Initiative {
         Self {
             has_action: false,
             has_movement: false,
-            timer: rng.gen_range(3..5)
+            timer: rng.gen_range(3..5),
         }
     }
 
@@ -262,11 +270,7 @@ impl AntOrientation {
         ];
         facings
             .iter()
-            .flat_map(|facing| {
-                angles
-                    .iter()
-                    .map(move |angle| Self::new(*facing, *angle))
-            })
+            .flat_map(|facing| angles.iter().map(move |angle| Self::new(*facing, *angle)))
             .collect::<Vec<_>>()
     }
 }

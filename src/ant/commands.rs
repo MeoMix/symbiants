@@ -8,6 +8,8 @@ use crate::{
     map::{Position, WorldMap},
 };
 
+use super::InventoryItemBundle;
+
 pub trait AntCommandsExt {
     fn dig(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity);
     fn drop(
@@ -95,10 +97,17 @@ impl Command for DigElementCommand {
             inventory_element = Element::Sand;
         }
 
+        let inventory_item_entity = world
+            .spawn(InventoryItemBundle::new(inventory_element))
+            .id();
+
+        world
+            .entity_mut(self.ant_entity)
+            .add_child(inventory_item_entity);
+
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => {
-                inventory.0 = Some(inventory_element);
-                info!("Ant {:?} inventory: {:?}", self.ant_entity, inventory);
+                inventory.0 = Some(inventory_item_entity);
             }
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
         };
@@ -127,6 +136,7 @@ impl Command for DropElementCommand {
             return;
         }
 
+        // Remove air element from world.
         world.entity_mut(air_entity).despawn();
 
         let inventory = match world.get::<AntInventory>(self.ant_entity) {
@@ -134,14 +144,22 @@ impl Command for DropElementCommand {
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
         };
 
-        let element_entity = match inventory.0 {
-            Some(element) => spawn_element(element, self.target_position, world),
+        let inventory_item_entity = match inventory.0 {
+            Some(element_entity) => element_entity,
             None => panic!("Ant {:?} has no element in inventory", self.ant_entity),
         };
+
+        let element = world.get::<Element>(inventory_item_entity).unwrap();
+
+        // Add element to world.
+        let element_entity = spawn_element(*element, self.target_position, world);
 
         world
             .resource_mut::<WorldMap>()
             .set_element(self.target_position, element_entity);
+
+        // Remove element from ant inventory.
+        world.entity_mut(inventory_item_entity).despawn();
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => inventory.0 = None,

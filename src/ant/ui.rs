@@ -1,19 +1,16 @@
-use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, InventoryItemBundle, Dead, InventoryItem};
+use super::{Ant, AntColor, AntName, AntOrientation, AntRole, Dead, InventoryItem};
 use crate::{
     common::{Label, TranslationOffset},
-    element::{Element, ui::get_element_color},
+    element::{ui::get_element_sprite, Element},
     map::Position,
     time::IsFastForwarding,
 };
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 use std::ops::Add;
 
 // 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
 const ANT_SCALE: f32 = 1.2;
 
-// TODO: despawning ants?
-// Handle rendering / display details for ants spawned in the simulation logic.
-// This involves showing the ant sprite, anything the ant might be carrying, and its name.
 pub fn on_spawn_ant(
     mut commands: Commands,
     ants: Query<
@@ -23,14 +20,13 @@ pub fn on_spawn_ant(
             &AntColor,
             &AntOrientation,
             &AntName,
-            &AntInventory,
             &AntRole,
         ),
         Added<Ant>,
     >,
     asset_server: Res<AssetServer>,
 ) {
-    for (entity, position, color, orientation, name, inventory, role) in &ants {
+    for (entity, position, color, orientation, name, role) in &ants {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
         // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
         let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
@@ -58,17 +54,10 @@ pub fn on_spawn_ant(
                 },
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-                if let Some(bundle) = get_inventory_item_bundle(inventory) {
-                    parent.spawn(bundle);
-                }
-
                 if *role == AntRole::Queen {
                     parent.spawn(SpriteBundle {
                         texture: asset_server.load("images/crown.png"),
-                        transform: Transform {
-                            translation: Vec3::new(0.25, 0.5, 1.0),
-                            ..default()
-                        },
+                        transform: Transform::from_translation(Vec3::new(0.25, 0.5, 1.0)),
                         sprite: Sprite {
                             custom_size: Some(Vec2::new(0.5, 0.5)),
                             ..default()
@@ -105,58 +94,20 @@ pub fn on_spawn_ant(
     }
 }
 
-pub fn on_update_ant_inventory(
+pub fn on_spawn_inventory_item(
     mut commands: Commands,
-    mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
-    inventory_items_query: Query<&InventoryItem>,
-    is_fast_forwarding: Res<IsFastForwarding>,
+    mut inventory_items: Query<Entity, Added<InventoryItem>>,
+    elements_query: Query<&Element>,
 ) {
-    if is_fast_forwarding.0 {
-        return;
-    }
+    for entity in inventory_items.iter_mut() {
+        let element = elements_query.get(entity).unwrap();
 
-    for (entity, inventory, children) in query.iter_mut() {
-        if is_fast_forwarding.is_changed() || inventory.is_changed() {
-            if let Some(inventory_item_bundle) = get_inventory_item_bundle(&inventory) {
-                commands
-                    .entity(entity)
-                    .with_children(|ant: &mut ChildBuilder| {
-                        ant.spawn(inventory_item_bundle);
-                    });
-            } else {
-                if let Some(children) = children {
-                    for &child in children.iter() {
-                        if inventory_items_query.get_component::<InventoryItem>(child).is_ok() {
-                            commands.entity(child).despawn();
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn get_inventory_item_bundle(inventory: &AntInventory) -> Option<InventoryItemBundle> {
-    let element = match &inventory.0 {
-        Some(element) => *element,
-        None => return None,
-    };
-
-    let sprite_bundle = SpriteBundle {
-        transform: Transform::from_translation(Vec3::new(0.5, 0.75, 1.0)),
-        sprite: Sprite {
-            color: get_element_color(element),
-            anchor: Anchor::TopLeft,
+        commands.entity(entity).insert(SpriteBundle {
+            transform: Transform::from_translation(Vec3::new(0.5, 0.75, 1.0)),
+            sprite: get_element_sprite(element),
             ..default()
-        },
-        ..default()
-    };
-
-    Some(InventoryItemBundle {
-        sprite_bundle,
-        element,
-        inventory_item: InventoryItem,
-    })
+        });
+    }
 }
 
 pub fn on_update_ant_orientation(
