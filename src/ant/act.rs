@@ -3,7 +3,7 @@ use crate::{
     element::Element,
     map::{Position, WorldMap},
     settings::Settings,
-    world_rng::WorldRng,
+    world_rng::WorldRng, common::{get_entity_from_id, Id},
 };
  
 use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, AntRole, Initiative};
@@ -23,6 +23,7 @@ pub fn ants_act(
         Without<Dead>,
     >,
     elements_query: Query<&Element>,
+    id_query: Query<(Entity, &Id)>,
     mut world_map: ResMut<WorldMap>,
     settings: Res<Settings>,
     mut world_rng: ResMut<WorldRng>,
@@ -183,7 +184,10 @@ pub fn ants_act(
         // There is an air gap directly ahead of the ant. Consider dropping inventory.
         // Avoid dropping inventory when facing upwards since it'll fall on the ant.
         if inventory.0 != None && orientation.is_horizontal() {
-            let inventory_item_element = elements_query.get(inventory.0.unwrap()).unwrap();
+            let inventory_item_element_id = inventory.0.clone().unwrap();
+            let inventory_item_element_entity = get_entity_from_id(inventory_item_element_id, &id_query).unwrap();
+
+            let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
 
             // Prioritize dropping sand above ground and food below ground.
             let drop_sand = *inventory_item_element == Element::Sand

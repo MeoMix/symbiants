@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bevy = { version = "0.11.0" }
+bevy_save = { path = "../bevy_save/" }
 console_error_panic_hook = { version = "0.1.7" }
 wasm-bindgen = { version = "0.2.87" }
 uuid = { version = "1.4.0" }
@@ -16,6 +17,7 @@ rand = { version = "0.8.5" }
 itertools = "0.11.0"
 gloo-storage = "0.2.2"
 serde = { version = "1.0.171", features = ["derive"] }
+serde_json = { version = "1.0.104" }
 js-sys = { version = "0.3.64", default-features = false }
 web-sys = { version = "0.3.64", features = [
   "EventTarget",

@@ -23,17 +23,22 @@ use camera::CameraPlugin;
 use simulation::SimulationPlugin;
 use ui::UIPlugin;
 
+use bevy_save::prelude::*;
+
 pub struct AntfarmPlugin;
 
 impl Plugin for AntfarmPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                fit_canvas_to_parent: true,
+        app.add_plugins(
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    fit_canvas_to_parent: true,
+                    ..default()
+                }),
                 ..default()
             }),
-            ..default()
-        }))
+         
+        )
         // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
         .edit_schedule(FixedUpdate, |schedule| {
             schedule.set_build_settings(ScheduleBuildSettings {
@@ -41,6 +46,6 @@ impl Plugin for AntfarmPlugin {
                 ..default()
             });
         })
-        .add_plugins((CameraPlugin, UIPlugin, SimulationPlugin));
+        .add_plugins((SavePlugins, CameraPlugin, UIPlugin, SimulationPlugin));
     }
 }

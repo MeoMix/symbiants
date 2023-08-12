@@ -1,18 +1,10 @@
-use self::commands::ElementCommandsExt;
-use super::map::{Position, WorldMap};
-use crate::gravity::Unstable;
+use super::map::Position;
+use crate::{gravity::Unstable, common::Id};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 pub mod commands;
 pub mod ui;
-
-// This is what's persisted as JSON.
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct ElementSaveState {
-    pub element: Element,
-    pub position: Position,
-}
 
 // TODO: I am a little suspicious about using MORE marker components to indicate more clearly the exact type of an element
 // rather than relying on properties of the element, but I am going with this for now for simplicity and performance.
@@ -22,11 +14,13 @@ pub struct ElementSaveState {
 // How do I find that air? Well, I could iterate over all elements (slow), I could iterate over all not-Unstable elements (air is never unstable, but same goes for dirt and sometimes sand/food) (also slow)
 // or I could tag air with a component that indicates it is air (fast).
 // Another option could be to emit an event when I move the dirt saying where it moved from.
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct Air;
 
 #[derive(Bundle)]
 pub struct AirElementBundle {
+    id: Id,
     element: Element,
     position: Position,
     air: Air,
@@ -35,6 +29,7 @@ pub struct AirElementBundle {
 impl AirElementBundle {
     pub fn new(position: Position) -> Self {
         Self {
+            id: Id::default(),
             element: Element::Air,
             air: Air,
             position,
@@ -44,6 +39,7 @@ impl AirElementBundle {
 
 #[derive(Bundle)]
 pub struct DirtElementBundle {
+    id: Id,
     element: Element,
     position: Position,
 }
@@ -51,17 +47,20 @@ pub struct DirtElementBundle {
 impl DirtElementBundle {
     pub fn new(position: Position) -> Self {
         Self {
+            id: Id::default(),
             element: Element::Dirt,
             position,
         }
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct Crushable;
 
 #[derive(Bundle)]
 pub struct SandElementBundle {
+    id: Id,
     element: Element,
     position: Position,
     crushable: Crushable,
@@ -71,6 +70,7 @@ pub struct SandElementBundle {
 impl SandElementBundle {
     pub fn new(position: Position) -> Self {
         Self {
+            id: Id::default(),
             element: Element::Sand,
             position,
             crushable: Crushable,
@@ -81,6 +81,7 @@ impl SandElementBundle {
 
 #[derive(Bundle)]
 pub struct FoodElementBundle {
+    id: Id,
     element: Element,
     position: Position,
     unstable: Unstable,
@@ -89,6 +90,7 @@ pub struct FoodElementBundle {
 impl FoodElementBundle {
     pub fn new(position: Position) -> Self {
         Self {
+            id: Id::default(),
             element: Element::Food,
             position,
             unstable: Unstable,
@@ -96,17 +98,12 @@ impl FoodElementBundle {
     }
 }
 
-#[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub enum Element {
-    Air,
+    // TODO: IDK, I needed a default for Reflect (IDK why) but I don't necessarily feel like Air is the perfect choice?
+    #[default] Air,
     Dirt,
     Sand,
     Food,
-}
-
-// Spawn interactive elements - air/dirt/sand. Air isn't visible, background is revealed in its place.
-pub fn setup_elements(mut commands: Commands, world_map: Res<WorldMap>) {
-    for &ElementSaveState { element, position } in world_map.initial_state().elements.iter() {
-        commands.spawn_element(position, element);
-    }
 }

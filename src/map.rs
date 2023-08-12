@@ -1,4 +1,5 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, reflect::TypeRegistration};
+use bevy_save::{Snapshot, SnapshotSerializer, WorldSaveableExt};
 use gloo_storage::{LocalStorage, Storage};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -9,21 +10,21 @@ use std::{
 use wasm_bindgen::{prelude::Closure, JsCast};
 
 use crate::{
-    ant::{
-        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, AntSaveState, Initiative,
-        Facing,
-    },
-    element::{Element, ElementSaveState},
+    ant::{Angle, AntBundle, AntInventory, AntOrientation, AntRole, Facing},
+    element::{AirElementBundle, DirtElementBundle, Element},
+    food::FoodCount,
     name_list::NAMES,
     settings::Settings,
     time::IsFastForwarding,
     world_rng::WorldRng,
 };
 
-use chrono::serde::ts_seconds;
 use chrono::{DateTime, Utc};
 
-#[derive(Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
+#[derive(
+    Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize, Reflect, Default,
+)]
+#[reflect(Component)]
 pub struct Position {
     pub x: isize,
     pub y: isize,
@@ -78,211 +79,158 @@ impl Mul for Position {
     }
 }
 
-// TODO: This should probably persist the settings it was generated with to prevent desync
-// TODO: *no* idea if this is an acceptable way to persist state. It seems very OOP-y, but
-// Bevy scenes did not seem like the right tool for the job, either.
-#[derive(Default, Debug, Serialize, Deserialize, Resource)]
-pub struct WorldSaveState {
-    #[serde(with = "ts_seconds")]
-    pub time_stamp: DateTime<Utc>,
-    pub elements: Vec<ElementSaveState>,
-    pub ants: Vec<AntSaveState>,
-}
-
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 pub struct WorldMap {
     width: isize,
     height: isize,
     surface_level: isize,
     has_started_nest: bool,
     is_nested: bool,
-    initial_state: WorldSaveState,
     created_at: DateTime<Utc>,
     elements_cache: Option<Vec<Vec<Entity>>>,
 }
 
 pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
-impl FromWorld for WorldMap {
-    fn from_world(world: &mut World) -> Self {
-        let settings = Settings::default();
+pub fn setup_load_state(world: &mut World) {
+    info!("setup_load_state");
 
-        let surface_level = (settings.world_height as f32
-            - (settings.world_height as f32 * settings.initial_dirt_percent))
-            as isize;
+    // Deserialize world state from local storage if possible otherwise initialize the world from scratch
+    if let Ok(saved_state) = LocalStorage::get::<String>(LOCAL_STORAGE_KEY) {
+        info!("Got state from local storage - deserializing");
+        let mut serde = serde_json::Deserializer::from_str(&saved_state);
 
-        // if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
-        //     return WorldMap::new(
-        //         settings.world_width,
-        //         settings.world_height,
-        //         surface_level,
-        //         saved_state,
-        //     );
-        // }
+        let deserialization_result = world.deserialize(&mut serde);
 
-        let air = (0..(surface_level + 1)).flat_map(|row_index| {
-            (0..settings.world_width).map(move |column_index| ElementSaveState {
-                element: Element::Air,
-                position: Position {
-                    x: column_index,
-                    y: row_index,
-                },
-            })
-        });
+        if deserialization_result.is_ok() {
+            info!("Loaded world from local storage");
 
-        let dirt = ((surface_level + 1)..settings.world_height).flat_map(|row_index| {
-            (0..settings.world_width).map(move |column_index| ElementSaveState {
-                element: Element::Dirt,
-                position: Position {
-                    x: column_index,
-                    y: row_index,
-                },
-            })
-        });
+            let settings = world.resource::<Settings>();
+            let surface_level = (settings.world_height as f32
+                - (settings.world_height as f32 * settings.initial_dirt_percent))
+                as isize;
 
-        let mut world_rng = world.get_resource_mut::<WorldRng>().unwrap();
-        // Put the ant at a random location along the x-axis that fits within the bounds of the world.
-        let x = world_rng.0.gen_range(0..1000) % settings.world_width;
-        // Put the ant on the dirt.
-        let y = surface_level;
+            let mut world_map =
+                WorldMap::new(settings.world_width, settings.world_height, surface_level);
 
-        // Randomly position ant facing left or right.
-        let facing = if world_rng.0.gen_bool(0.5) {
-            Facing::Left
+            let mut elements = world.query_filtered::<(&mut Position, Entity), With<Element>>();
+
+            info!(
+                "Deserialized element count: {}",
+                elements.iter(&world).count()
+            );
+
+            for (position, entity) in elements.iter(&world) {
+                world_map.set_element(*position, entity);
+            }
+
+            world.insert_resource(world_map);
+
+            return;
         } else {
-            Facing::Right
-        };
+            error!("Result: {:?}", deserialization_result);
+        }
+    }
 
-        let queen_ant = AntSaveState {
-            position: Position::new(x, y),
-            color: AntColor(settings.ant_color),
-            orientation: AntOrientation::new(facing, Angle::Zero),
-            inventory: AntInventory(None),
-            role: AntRole::Queen,
-            initiative: Initiative::new(&mut world_rng.0),
-            name: AntName("Queen".to_string()),
-        };
+    let settings = Settings::default();
 
-        let worker_ants = (0..settings.initial_ant_worker_count).map(|_| {
-            // Put the ant at a random location along the x-axis that fits within the bounds of the world.
+    let surface_level = (settings.world_height as f32
+        - (settings.world_height as f32 * settings.initial_dirt_percent))
+        as isize;
+
+    world.insert_resource(WorldMap::new(
+        settings.world_width,
+        settings.world_height,
+        surface_level,
+    ));
+
+    for row_index in 0..settings.world_height {
+        for column_index in 0..settings.world_width {
+            let position = Position {
+                x: column_index,
+                y: row_index,
+            };
+
+            // TODO: spawn_batch???
+            let entity = if row_index <= surface_level {
+                world.spawn(AirElementBundle::new(position)).id()
+            } else {
+                world.spawn(DirtElementBundle::new(position)).id()
+            };
+
+            world
+                .resource_mut::<WorldMap>()
+                .set_element(position, entity);
+        }
+    }
+
+    let ants = {
+        let mut world_rng = world.get_resource_mut::<WorldRng>().unwrap();
+        let queen_ant = create_queen_ant(&mut world_rng, surface_level, &settings);
+        let worker_ants = create_worker_ants(&mut world_rng, surface_level, &settings);
+        vec![queen_ant].into_iter().chain(worker_ants.into_iter())
+    };
+
+    for ant in ants {
+        world.spawn(ant);
+    }
+
+    world.init_resource::<Settings>();
+    world.init_resource::<FoodCount>();
+}
+
+fn create_queen_ant(
+    world_rng: &mut WorldRng,
+    surface_level: isize,
+    settings: &Settings,
+) -> AntBundle {
+    let x = world_rng.0.gen_range(0..1000) % settings.world_width;
+    let y = surface_level;
+    let facing = if world_rng.0.gen_bool(0.5) {
+        Facing::Left
+    } else {
+        Facing::Right
+    };
+    AntBundle::new(
+        Position::new(x, y),
+        settings.ant_color,
+        AntOrientation::new(facing, Angle::Zero),
+        AntInventory(None),
+        AntRole::Queen,
+        "Queen",
+        &mut world_rng.0,
+    )
+}
+
+fn create_worker_ants(
+    world_rng: &mut WorldRng,
+    surface_level: isize,
+    settings: &Settings,
+) -> Vec<AntBundle> {
+    (0..settings.initial_ant_worker_count)
+        .map(|_| {
             let x = world_rng.0.gen_range(0..1000) % settings.world_width;
-            // Put the ant on the dirt.
             let y = surface_level;
-
-            // Randomly position ant facing left or right.
             let facing = if world_rng.0.gen_bool(0.5) {
                 Facing::Left
             } else {
                 Facing::Right
             };
-
             let name: &str = NAMES[world_rng.0.gen_range(0..NAMES.len())].clone();
-
-            AntSaveState {
-                position: Position::new(x, y),
-                color: AntColor(settings.ant_color),
-                orientation: AntOrientation::new(facing, Angle::Zero),
-                inventory: AntInventory(None),
-                role: AntRole::Worker,
-                initiative: Initiative::new(&mut world_rng.0),
-                name: AntName(name.to_string()),
-            }
-        });
-
-        let ants = vec![queen_ant].into_iter().chain(worker_ants);
-
-        // let ants = [
-        //     AntSaveState {
-        //         position: Position::new(5, 5),
-        //         color: settings.ant_color,
-        //         facing: Facing::Left,
-        //         angle: Angle::Zero,
-        //         inventory: AntInventory(Some(Element::Sand)),
-        //         name: "ant1".to_string(),
-        //     },
-        //     Ant::new(
-        //         Position::new(10, 5),
-        //         settings.ant_color,
-        //         Facing::Left,
-        //         Angle::Ninety,
-        //         AntInventory(Some(Element::Sand)),
-        //         "ant2".to_string(),
-        //         &asset_server,
-        //     ),
-        //     Ant::new(
-        //         Position::new(15, 5),
-        //         settings.ant_color,
-        //         Facing::Left,
-        //         Angle::OneHundredEighty,
-        //         AntInventory(Some(Element::Sand)),
-        //         "ant3".to_string(),
-        //         &asset_server,
-        //     ),
-        //     Ant::new(
-        //         Position::new(20, 5),
-        //         settings.ant_color,
-        //         Facing::Left,
-        //         Angle::TwoHundredSeventy,
-        //         AntInventory(Some(Element::Sand)),
-        //         "ant4".to_string(),
-        //         &asset_server,
-        //     ),
-        //     Ant::new(
-        //         Position::new(25, 5),
-        //         settings.ant_color,
-        //         Facing::Right,
-        //         Angle::Zero,
-        //         AntInventory(Some(Element::Sand)),
-        //         "ant5".to_string(),
-        //         &asset_server,
-        //     ),
-        //     Ant::new(
-        //         Position::new(30, 5),
-        //         settings.ant_color,
-        //         Facing::Right,
-        //         Angle::Ninety,
-        //         AntInventory(Some(Element::Sand)),
-        //         "ant6".to_string(),
-        //         &asset_server,
-        //     ),
-        //     Ant::new(
-        //         Position::new(35, 5),
-        //         settings.ant_color,
-        //         Facing::Right,
-        //         Angle::OneHundredEighty,
-        //         AntInventory(Some(Element::Sand)),
-        //         "ant7".to_string(),
-        //         &asset_server,
-        //     ),
-        //     Ant::new(
-        //         Position::new(40, 5),
-        //         settings.ant_color,
-        //         Facing::Right,
-        //         Angle::TwoHundredSeventy,
-        //         AntInventory(Some(Element::Sand)),
-        //         "ant8".to_string(),
-        //         &asset_server,
-        //     ),
-        // ];
-
-        WorldMap::new(
-            settings.world_width,
-            settings.world_height,
-            surface_level,
-            WorldSaveState {
-                time_stamp: Utc::now(),
-                elements: air.chain(dirt).collect(),
-                ants: ants.collect(),
-            },
-        )
-    }
+            AntBundle::new(
+                Position::new(x, y),
+                settings.ant_color,
+                AntOrientation::new(facing, Angle::Zero),
+                AntInventory(None),
+                AntRole::Worker,
+                name,
+                &mut world_rng.0,
+            )
+        })
+        .collect()
 }
 
 impl WorldMap {
-    pub fn initial_state(&self) -> &WorldSaveState {
-        &self.initial_state
-    }
-
     pub fn width(&self) -> &isize {
         &self.width
     }
@@ -322,20 +270,13 @@ impl WorldMap {
         position.y > self.surface_level
     }
 
-    pub fn new(
-        width: isize,
-        height: isize,
-        surface_level: isize,
-        initial_state: WorldSaveState,
-    ) -> Self {
+    pub fn new(width: isize, height: isize, surface_level: isize) -> Self {
         WorldMap {
             width,
             height,
             surface_level,
             has_started_nest: false,
             is_nested: false,
-            // TODO: prefer new object not related to save state / no timestamp
-            initial_state,
             elements_cache: None,
             created_at: Utc::now(),
         }
@@ -398,7 +339,7 @@ impl WorldMap {
                 .map_or(false, |queried_element| *queried_element == search_element)
         })
     }
-    
+
     // Returns true if every element in `positions` matches the provided Element type.
     // NOTE: This returns true if given 0 positions.
     pub fn is_all_element(
@@ -433,75 +374,54 @@ pub fn setup_window_onunload_save_world_state() {
     on_beforeunload.forget();
 }
 
-static SAVE_SNAPSHOT: Mutex<Option<WorldSaveState>> = Mutex::new(None);
-
-fn get_world_save_state(
-    elements_query: &Query<(&Element, &Position)>,
-    ants_query: &Query<(
-        &AntOrientation,
-        &AntInventory,
-        &AntRole,
-        &Initiative,
-        &AntName,
-        &AntColor,
-        &Position,
-    )>,
-) -> WorldSaveState {
-    let elements_save_state = elements_query
-        .iter()
-        .map(|(element, position)| ElementSaveState {
-            element: element.clone(),
-            position: position.clone(),
-        })
-        .collect::<Vec<ElementSaveState>>();
-
-    let ants_save_state = ants_query
-        .iter()
-        .map(
-            |(orientation, inventory, role, initiative, name, color, position)| AntSaveState {
-                orientation: orientation.clone(),
-                inventory: inventory.clone(),
-                role: role.clone(),
-                initiative: initiative.clone(),
-                name: name.clone(),
-                color: color.clone(),
-                position: position.clone(),
-            },
-        )
-        .collect::<Vec<AntSaveState>>();
-
-    WorldSaveState {
-        time_stamp: Utc::now(),
-        elements: elements_save_state,
-        ants: ants_save_state,
-    }
-}
+static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
 
 pub fn periodic_save_world_state(
-    elements_query: Query<(&Element, &Position)>,
-    ants_query: Query<(
-        &AntOrientation,
-        &AntInventory,
-        &AntRole,
-        &Initiative,
-        &AntName,
-        &AntColor,
-        &Position,
-    )>,
+    world: &World,
+    mut last_snapshot_time: Local<f32>,
     mut last_save_time: Local<f32>,
-    time: Res<Time>,
-    settings: Res<Settings>,
-    is_fast_forwarding: Res<IsFastForwarding>,
 ) {
+    let is_fast_forwarding = world.resource::<IsFastForwarding>();
+
     // Don't save while state is fast forwarding because it will cause a lot of lag.
     if is_fast_forwarding.0 {
+        return;
+    }
+
+    let settings = world.resource::<Settings>();
+    let time = world.resource::<Time>();
+
+    if *last_snapshot_time != 0.0
+        && time.raw_elapsed_seconds() - *last_snapshot_time
+            < settings.auto_snapshot_interval_ms as f32 / 1000.0
+    {
         return;
     }
 
     // Limit the lifetime of the lock so that `write_save_snapshot` is able to re-acquire
     {
         let mut save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
-        *save_snapshot = Some(get_world_save_state(&elements_query, &ants_query));
+
+        let mut writer: Vec<u8> = Vec::new();
+        let mut serde = serde_json::Serializer::new(&mut writer);
+
+        // TODO: snapshot is muuuuch slower than Query for the same data.
+        let snapshot = Snapshot::from_world_with_filter(world, |type_registration| {
+            // Filter all view-related components from the snapshot. They'll get regenerated via ui systems' on_spawn_*
+            !type_registration.type_name().starts_with("bevy")
+        });
+
+        let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
+        let ser = SnapshotSerializer::new(&snapshot, registry);
+
+        let result = ser.serialize(&mut serde);
+
+        if result.is_ok() {
+            *save_snapshot = Some(String::from_utf8(writer).unwrap());
+            *last_snapshot_time = time.raw_elapsed_seconds();
+        } else {
+            error!("Failed to serialize snapshot: {:?}", result);
+        }
     }
 
     if *last_save_time != 0.0
@@ -513,6 +433,7 @@ pub fn periodic_save_world_state(
 
     if write_save_snapshot() {
         *last_save_time = time.raw_elapsed_seconds();
+        info!("saved");
     }
 }
 

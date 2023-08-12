@@ -15,7 +15,8 @@ use rand::{rngs::StdRng, Rng};
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
 pub struct Unstable;
 
 // TODO: How to do an exact match when running a test?

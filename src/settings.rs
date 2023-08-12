@@ -1,6 +1,6 @@
-use bevy::prelude::{Color, Resource};
+use bevy::{prelude::{Color, Resource, ReflectResource}, reflect::Reflect};
 
-#[derive(Clone)]
+#[derive(Clone, Reflect)]
 pub struct Probabilities {
     pub random_dig: f32,              // dig down while wandering
     pub random_drop: f32,             // drop while wandering
@@ -13,8 +13,10 @@ pub struct Probabilities {
     pub below_surface_queen_nest_dig: f32,
 }
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Reflect)]
+#[reflect(Resource)]
 pub struct Settings {
+    pub auto_snapshot_interval_ms: isize,
     pub auto_save_interval_ms: isize,
     pub world_width: isize,
     pub world_height: isize,
@@ -31,6 +33,9 @@ impl Default for Settings {
         Settings {
             // Save the world automatically because it's possible the browser could crash so saving on window unload isn't 100% reliable.
             auto_save_interval_ms: 60_000,
+            // Saving data to local storage is slow, but generating the snapshot of the world is also slow.
+            // Take snapshots aggressively because browser tab closes too quickly to JIT snapshot.
+            auto_snapshot_interval_ms: 1_000,
             world_width: 144,
             world_height: 81,
             compact_sand_depth: 15,

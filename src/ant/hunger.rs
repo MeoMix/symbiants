@@ -2,7 +2,7 @@ use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, Initia
 use crate::{
     element::Element,
     map::{Position, WorldMap},
-    time::{DEFAULT_TICK_RATE, SECONDS_PER_DAY},
+    time::{DEFAULT_TICK_RATE, SECONDS_PER_DAY}, common::{Id, get_entity_from_id},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -60,6 +60,7 @@ pub fn ants_hunger(
         Without<Dead>,
     >,
     elements_query: Query<&Element>,
+    id_query: Query<(Entity, &Id)>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
@@ -85,7 +86,9 @@ pub fn ants_hunger(
                 }
                 initiative.consume_action();
             } else {
-                let element = elements_query.get(inventory.0.unwrap()).unwrap();
+                let id = inventory.0.clone().unwrap();
+                let entity = get_entity_from_id(id, &id_query).unwrap();
+                let element = elements_query.get(entity).unwrap();
 
                 if *element == Element::Food {
                     inventory.0 = None;

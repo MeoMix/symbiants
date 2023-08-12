@@ -2,13 +2,13 @@ use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
 use crate::{
-    map::{Position, WorldMap},
-    world_rng::WorldRng,
+    map::Position,
+    world_rng::WorldRng, common::Id,
 };
 
 use self::hunger::Hunger;
 
-use super::{element::Element, settings::Settings};
+use super::element::Element;
 use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng};
 
@@ -19,20 +19,9 @@ pub mod hunger;
 pub mod ui;
 pub mod walk;
 
-// This is what is persisted as JSON.
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct AntSaveState {
-    pub position: Position,
-    pub color: AntColor,
-    pub orientation: AntOrientation,
-    pub inventory: AntInventory,
-    pub role: AntRole,
-    pub initiative: Initiative,
-    pub name: AntName,
-}
-
 #[derive(Bundle)]
-struct AntBundle {
+pub struct AntBundle {
+    id: Id,
     ant: Ant,
     position: Position,
     orientation: AntOrientation,
@@ -55,6 +44,7 @@ impl AntBundle {
         mut rng: &mut StdRng,
     ) -> Self {
         AntBundle {
+            id: Id::default(),
             ant: Ant,
             position,
             orientation,
@@ -68,46 +58,61 @@ impl AntBundle {
     }
 }
 
-#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct AntName(pub String);
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct AntColor(pub Color);
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub struct AntInventory(pub Option<Entity>);
+// TODO: GUID doesn't implement Copy so I've got .clone's() everywhere cuz I'm lazy
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
+pub struct AntInventory(pub Option<Id>);
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct Dead;
 
-#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct Ant;
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub enum AntRole {
-    Worker,
+    #[default] Worker,
     Queen,
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
-pub struct InventoryItem;
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
+pub struct InventoryItem { 
+    pub parent_id: Id,
+}
 
 #[derive(Bundle)]
 pub struct InventoryItemBundle {
+    id: Id,
     element: Element,
     inventory_item: InventoryItem,
 }
 
 impl InventoryItemBundle {
-    pub fn new(element: Element) -> Self {
+    pub fn new(element: Element, parent_id: Id) -> Self {
         InventoryItemBundle {
+            id: Id::default(),
             element,
-            inventory_item: InventoryItem,
+            inventory_item: InventoryItem {
+                parent_id
+            },
         }
     }
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct Initiative {
     has_action: bool,
     has_movement: bool,
@@ -140,15 +145,15 @@ impl Initiative {
     }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 pub enum Facing {
-    Left,
+    #[default] Left,
     Right,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 pub enum Angle {
-    Zero = 0,
+    #[default] Zero,
     Ninety = 90,
     OneHundredEighty = 180,
     TwoHundredSeventy = 270,
@@ -179,7 +184,8 @@ impl Angle {
     }
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct AntOrientation {
     facing: Facing,
     angle: Angle,
@@ -272,25 +278,6 @@ impl AntOrientation {
             .iter()
             .flat_map(|facing| angles.iter().map(move |angle| Self::new(*facing, *angle)))
             .collect::<Vec<_>>()
-    }
-}
-
-pub fn setup_ants(
-    mut commands: Commands,
-    settings: Res<Settings>,
-    world_map: ResMut<WorldMap>,
-    mut world_rng: ResMut<WorldRng>,
-) {
-    for ant_save_state in world_map.initial_state().ants.iter() {
-        commands.spawn(AntBundle::new(
-            ant_save_state.position,
-            settings.ant_color,
-            ant_save_state.orientation,
-            ant_save_state.inventory,
-            ant_save_state.role,
-            ant_save_state.name.0.as_str(),
-            &mut world_rng.0,
-        ));
     }
 }
 

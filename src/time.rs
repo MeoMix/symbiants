@@ -3,7 +3,7 @@ use chrono::Utc;
 use gloo_storage::{LocalStorage, Storage};
 use std::time::Duration;
 
-use crate::map::{WorldSaveState, LOCAL_STORAGE_KEY};
+use crate::map::LOCAL_STORAGE_KEY;
 
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
 pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
@@ -23,18 +23,18 @@ impl PendingTicks {
 }
 
 // When the app first loads - determine how long user has been away and fast-forward time accordingly.
-pub fn setup_fast_forward_time(mut fixed_time: ResMut<FixedTime>) {
-    if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
-        let delta_seconds = Utc::now()
-            .signed_duration_since(saved_state.time_stamp)
-            .num_seconds();
+// pub fn setup_fast_forward_time(mut fixed_time: ResMut<FixedTime>) {
+//     if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
+//         let delta_seconds = Utc::now()
+//             .signed_duration_since(saved_state.time_stamp)
+//             .num_seconds();
 
-        // Only one day of time is allowed to be fast-forwarded. If the user skips more time than this - they lose out on simulation.
-        let elapsed_seconds = std::cmp::min(delta_seconds, SECONDS_PER_DAY);
+//         // Only one day of time is allowed to be fast-forwarded. If the user skips more time than this - they lose out on simulation.
+//         let elapsed_seconds = std::cmp::min(delta_seconds, SECONDS_PER_DAY);
 
-        fixed_time.tick(Duration::from_secs(elapsed_seconds as u64));
-    }
-}
+//         fixed_time.tick(Duration::from_secs(elapsed_seconds as u64));
+//     }
+// }
 
 // Determine how many simulation ticks should occur based off of default tick rate.
 // Determine the conversation rate between simulation ticks and fast forward time.
@@ -63,7 +63,8 @@ pub fn play_time(
 
             fixed_time.period = Duration::from_secs_f32(FAST_FORWARD_TICK_RATE);
             is_fast_forwarding.0 = true;
-            pending_ticks.0 = ((60.0 * DEFAULT_TICK_RATE) * accumulated_time.as_secs() as f32) as isize;
+            pending_ticks.0 =
+                ((60.0 * DEFAULT_TICK_RATE) * accumulated_time.as_secs() as f32) as isize;
         }
     }
 }

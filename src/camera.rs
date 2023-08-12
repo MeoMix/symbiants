@@ -1,4 +1,4 @@
-use crate::{pancam::{PanCam, PanCamPlugin}, map::WorldMap};
+use crate::{pancam::{PanCam, PanCamPlugin}, map::{WorldMap, setup_load_state}};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -51,7 +51,7 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PanCamPlugin::default());
-        app.add_systems(Startup, setup);
+        app.add_systems(Startup, setup.after(setup_load_state));
         app.add_systems(Update, window_resize);
     }
 }

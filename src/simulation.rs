@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, sprite::Anchor, text::{Text2dBounds, TextLayoutInfo}};
+use bevy_save::AppSaveableExt;
+use js_sys::WebAssembly::Global;
+use uuid::Uuid;
 
 use crate::{
     ant::{
@@ -6,21 +9,20 @@ use crate::{
         ants_initiative,
         birthing::ants_birthing,
         hunger::ants_hunger,
-        setup_ants,
         ui::{
             on_spawn_ant, on_spawn_inventory_item, on_update_ant_dead, on_update_ant_orientation,
         },
-        walk::ants_walk,
+        walk::ants_walk, Ant, Initiative, AntName, AntColor, AntInventory, Dead, InventoryItem, AntOrientation, AntRole, Facing, Angle,
     },
     background::setup_background,
-    common::ui::on_update_position,
-    element::{setup_elements, ui::on_spawn_element},
+    common::{ui::on_update_position, TranslationOffset, Id},
+    element::{ui::on_spawn_element, Element, Air, Crushable},
     food::FoodCount,
-    gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
-    map::{periodic_save_world_state, setup_window_onunload_save_world_state, WorldMap},
+    gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability, Unstable},
+    map::{periodic_save_world_state, setup_window_onunload_save_world_state, Position, setup_load_state},
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
-    settings::Settings,
-    time::{play_time, setup_fast_forward_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE},
+    settings::{Settings, Probabilities},
+    time::{play_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE},
     world_rng::WorldRng,
 };
 
@@ -28,13 +30,48 @@ pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<FoodCount>()
-            .init_resource::<IsPointerCaptured>()
-            .init_resource::<Settings>()
-            .init_resource::<WorldRng>()
-            .init_resource::<WorldMap>()
-            .init_resource::<IsFastForwarding>()
-            .init_resource::<PendingTicks>();
+        info!("calling register saveable");
+
+        app.register_saveable::<Settings>();
+        app.register_saveable::<Probabilities>();
+
+        // User Resources:
+        app.register_saveable::<FoodCount>();
+
+        // Elements:
+        app.register_saveable::<Element>();
+        app.register_saveable::<Position>();
+        app.register_saveable::<Air>();
+        app.register_saveable::<Crushable>();
+        app.register_saveable::<Unstable>();
+
+        // Ants:
+        app.register_saveable::<Ant>();
+        app.register_saveable::<AntName>();
+        app.register_saveable::<AntColor>();
+        app.register_saveable::<Dead>();
+        app.register_saveable::<Initiative>();
+        app.register_saveable::<AntOrientation>();
+        app.register_saveable::<Facing>();
+        app.register_saveable::<Angle>();
+        app.register_saveable::<AntRole>();
+        app.register_saveable::<AntInventory>();
+        app.register_saveable::<InventoryItem>();
+        app.register_saveable::<Id>();
+        app.register_saveable::<Option<Id>>();
+        app.register_saveable::<Uuid>();
+
+        
+        app.register_saveable::<Parent>();
+        app.register_saveable::<Children>();
+
+        // UI:
+        app.init_resource::<IsPointerCaptured>();
+        app.init_resource::<IsFastForwarding>();
+        app.init_resource::<PendingTicks>();
+
+        // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
+        app.init_resource::<WorldRng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
         //app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
@@ -43,10 +80,9 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             Startup,
             (
-                setup_fast_forward_time,
+                // setup_fast_forward_time,
+                setup_load_state,
                 setup_background,
-                setup_elements,
-                setup_ants,
                 setup_window_onunload_save_world_state,
             )
                 .chain(),

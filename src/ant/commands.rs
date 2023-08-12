@@ -5,7 +5,7 @@ use bevy::{ecs::system::Command, prelude::*};
 use crate::{
     ant::AntInventory,
     element::{commands::spawn_element, AirElementBundle, Element},
-    map::{Position, WorldMap},
+    map::{Position, WorldMap}, common::{get_entity_from_id, Id},
 };
 
 use super::InventoryItemBundle;
@@ -97,8 +97,15 @@ impl Command for DigElementCommand {
             inventory_element = Element::Sand;
         }
 
+
+        let mut id_query = world.query::<(Entity, &Id)>();
+        let ant_id = id_query.iter(world).find(|(entity, _)| *entity == self.ant_entity).map(|(_, id)| id).unwrap();
+
+        let inventory_item_bundle = InventoryItemBundle::new(inventory_element, ant_id.clone());
+        let inventory_item_element_id = inventory_item_bundle.id.clone();
+
         let inventory_item_entity = world
-            .spawn(InventoryItemBundle::new(inventory_element))
+            .spawn(inventory_item_bundle)
             .id();
 
         world
@@ -107,7 +114,8 @@ impl Command for DigElementCommand {
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => {
-                inventory.0 = Some(inventory_item_entity);
+                info!("Adding inventory item {:?} to ant {:?}", inventory_item_entity, self.ant_entity);
+                inventory.0 = Some(inventory_item_element_id);
             }
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
         };
@@ -122,6 +130,7 @@ struct DropElementCommand {
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
+        return;
         let world_map = world.resource::<WorldMap>();
         let air_entity = match world_map.get_element(self.target_position) {
             Some(entity) => *entity,
@@ -144,10 +153,13 @@ impl Command for DropElementCommand {
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
         };
 
-        let inventory_item_entity = match inventory.0 {
-            Some(element_entity) => element_entity,
+        let inventory_item_id = match inventory.0.clone() {
+            Some(element_id) => element_id,
             None => panic!("Ant {:?} has no element in inventory", self.ant_entity),
         };
+
+        let mut id_query = world.query::<(Entity, &Id)>();
+        let inventory_item_entity = id_query.iter(world).find(|(_, id)| **id == inventory_item_id).map(|(entity, _)| entity).unwrap();
 
         let element = world.get::<Element>(inventory_item_entity).unwrap();
 

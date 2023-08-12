@@ -1,4 +1,5 @@
 use bevy::prelude::*;
 
-#[derive(Resource, Default)]
+#[derive(Resource, Reflect, Default)]
+#[reflect(Resource)]
 pub struct FoodCount(pub isize);

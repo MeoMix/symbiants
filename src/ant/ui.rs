@@ -1,6 +1,6 @@
 use super::{Ant, AntColor, AntName, AntOrientation, AntRole, Dead, InventoryItem};
 use crate::{
-    common::{Label, TranslationOffset},
+    common::{Label, TranslationOffset, Id, get_entity_from_id},
     element::{ui::get_element_sprite, Element},
     map::Position,
     time::IsFastForwarding,
@@ -27,6 +27,7 @@ pub fn on_spawn_ant(
     asset_server: Res<AssetServer>,
 ) {
     for (entity, position, color, orientation, name, role) in &ants {
+        info!("on_spawn_ant");
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
         // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
         let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
@@ -55,6 +56,7 @@ pub fn on_spawn_ant(
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
                 if *role == AntRole::Queen {
+                    info!("Spawning crown for queen");
                     parent.spawn(SpriteBundle {
                         texture: asset_server.load("images/crown.png"),
                         transform: Transform::from_translation(Vec3::new(0.25, 0.5, 1.0)),
@@ -96,11 +98,18 @@ pub fn on_spawn_ant(
 
 pub fn on_spawn_inventory_item(
     mut commands: Commands,
-    mut inventory_items: Query<Entity, Added<InventoryItem>>,
+    mut inventory_items: Query<(Entity, &InventoryItem), Added<InventoryItem>>,
     elements_query: Query<&Element>,
+    id_query: Query<(Entity, &Id)>,
 ) {
-    for entity in inventory_items.iter_mut() {
+    for (entity, inventory_item) in inventory_items.iter_mut() {
         let element = elements_query.get(entity).unwrap();
+
+        // TODO: HACK HACK HACK LOOOL
+        let parent_entity = get_entity_from_id(inventory_item.parent_id.clone(), &id_query).unwrap();
+        commands.entity(entity).set_parent(parent_entity);
+
+        info!("on_spawn_inventory_item: {:?}", element);
 
         commands.entity(entity).insert(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.5, 0.75, 1.0)),
