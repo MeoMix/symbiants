@@ -59,7 +59,6 @@ impl Plugin for SimulationPlugin {
         app.register_saveable::<Option<Id>>();
         app.register_saveable::<Uuid>();
 
-        
         app.register_saveable::<Parent>();
         app.register_saveable::<Children>();
 
@@ -72,8 +71,8 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<WorldRng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        app.insert_resource(FixedTime::new_from_secs(1.0 / 60.0));
-        //app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
+        // app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
+        app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
 
         app.add_systems(
             Startup,

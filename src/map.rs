@@ -1,4 +1,4 @@
-use bevy::{prelude::*, reflect::TypeRegistration};
+use bevy::prelude::*;
 use bevy_save::{Snapshot, SnapshotSerializer, WorldSaveableExt};
 use gloo_storage::{LocalStorage, Storage};
 use rand::Rng;
@@ -167,6 +167,7 @@ pub fn setup_load_state(world: &mut World) {
 
     world.init_resource::<Settings>();
     world.init_resource::<FoodCount>();
+    world.init_resource::<LastSaveTime>();
 }
 
 fn create_queen_ant(

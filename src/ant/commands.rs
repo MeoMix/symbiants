@@ -5,7 +5,7 @@ use bevy::{ecs::system::Command, prelude::*};
 use crate::{
     ant::AntInventory,
     element::{commands::spawn_element, AirElementBundle, Element},
-    map::{Position, WorldMap}, common::{get_entity_from_id, Id},
+    map::{Position, WorldMap}, common::Id,
 };
 
 use super::InventoryItemBundle;
@@ -106,10 +106,6 @@ impl Command for DigElementCommand {
         let inventory_item_entity = world
             .spawn(inventory_item_bundle)
             .id();
-
-        // world
-        //     .entity_mut(self.ant_entity)
-        //     .add_child(inventory_item_entity);
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => {
