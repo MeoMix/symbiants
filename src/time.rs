@@ -1,9 +1,9 @@
 use bevy::prelude::*;
-use chrono::Utc;
+use chrono::{Utc, TimeZone, LocalResult};
 use gloo_storage::{LocalStorage, Storage};
 use std::time::Duration;
 
-use crate::map::LOCAL_STORAGE_KEY;
+use crate::map::{LOCAL_STORAGE_KEY, LastSaveTime};
 
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
 pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
@@ -23,18 +23,33 @@ impl PendingTicks {
 }
 
 // When the app first loads - determine how long user has been away and fast-forward time accordingly.
-// pub fn setup_fast_forward_time(mut fixed_time: ResMut<FixedTime>) {
-//     if let Ok(saved_state) = LocalStorage::get::<WorldSaveState>(LOCAL_STORAGE_KEY) {
-//         let delta_seconds = Utc::now()
-//             .signed_duration_since(saved_state.time_stamp)
-//             .num_seconds();
+pub fn setup_fast_forward_time(last_save_time: Res<LastSaveTime>, mut fixed_time: ResMut<FixedTime>) {
+    if last_save_time.0 == 0 {
+        return;
+    }
 
-//         // Only one day of time is allowed to be fast-forwarded. If the user skips more time than this - they lose out on simulation.
-//         let elapsed_seconds = std::cmp::min(delta_seconds, SECONDS_PER_DAY);
+    // Recreate UTC from last_save_time timestamp
+    let last_save_time_utc =  match Utc.timestamp_opt(last_save_time.0, 0) {
+        LocalResult::Single(datetime) => datetime,
+        LocalResult::Ambiguous(a, b) => {
+            // Handle the case where two possible DateTime<Utc> values exist.
+            panic!("Ambiguous DateTime<Utc> values: {} and {}", a, b);
+        }
+        LocalResult::None => {
+            // Handle the case where the timestamp is out of range and cannot be represented as a DateTime<Utc>.
+            panic!("Invalid timestamp");
+        }
+    };
 
-//         fixed_time.tick(Duration::from_secs(elapsed_seconds as u64));
-//     }
-// }
+    let delta_seconds = Utc::now()
+        .signed_duration_since(last_save_time_utc)
+        .num_seconds();
+
+    // Only one day of time is allowed to be fast-forwarded. If the user skips more time than this - they lose out on simulation.
+    let elapsed_seconds = std::cmp::min(delta_seconds, SECONDS_PER_DAY);
+
+    fixed_time.tick(Duration::from_secs(elapsed_seconds as u64));
+}
 
 // Determine how many simulation ticks should occur based off of default tick rate.
 // Determine the conversation rate between simulation ticks and fast forward time.
