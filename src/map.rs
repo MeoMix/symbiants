@@ -366,9 +366,14 @@ pub fn setup_window_onunload_save_world_state() {
 
 static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
 
+// TODO: maybe try to save as DateTime<Utc> ?
+#[derive(Resource, Clone, Reflect, Default)]
+#[reflect(Resource)]
+pub struct LastSaveTime(pub i64);
+
 // TODO: This runs awfully slow after switching to bevy_save away from manual Query reading
 pub fn periodic_save_world_state(
-    world: &World,
+    world: &mut World,
     mut last_snapshot_time: Local<f32>,
     mut last_save_time: Local<f32>,
 ) {
@@ -423,6 +428,7 @@ pub fn periodic_save_world_state(
 
     if write_save_snapshot() {
         *last_save_time = time.raw_elapsed_seconds();
+        world.get_resource_mut::<LastSaveTime>().unwrap().0 = Utc::now().timestamp();
         info!("saved");
     }
 }
