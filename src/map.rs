@@ -93,18 +93,13 @@ pub struct WorldMap {
 pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
 pub fn setup_load_state(world: &mut World) {
-    info!("setup_load_state");
-
     // Deserialize world state from local storage if possible otherwise initialize the world from scratch
     if let Ok(saved_state) = LocalStorage::get::<String>(LOCAL_STORAGE_KEY) {
-        info!("Got state from local storage - deserializing");
         let mut serde = serde_json::Deserializer::from_str(&saved_state);
 
         let deserialization_result = world.deserialize(&mut serde);
 
         if deserialization_result.is_ok() {
-            info!("Loaded world from local storage");
-
             let settings = world.resource::<Settings>();
             let surface_level = (settings.world_height as f32
                 - (settings.world_height as f32 * settings.initial_dirt_percent))
@@ -114,11 +109,6 @@ pub fn setup_load_state(world: &mut World) {
                 WorldMap::new(settings.world_width, settings.world_height, surface_level);
 
             let mut elements = world.query_filtered::<(&mut Position, Entity), With<Element>>();
-
-            info!(
-                "Deserialized element count: {}",
-                elements.iter(&world).count()
-            );
 
             for (position, entity) in elements.iter(&world) {
                 world_map.set_element(*position, entity);
@@ -376,6 +366,7 @@ pub fn setup_window_onunload_save_world_state() {
 
 static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
 
+// TODO: This runs awfully slow after switching to bevy_save away from manual Query reading
 pub fn periodic_save_world_state(
     world: &World,
     mut last_snapshot_time: Local<f32>,
@@ -405,7 +396,6 @@ pub fn periodic_save_world_state(
         let mut writer: Vec<u8> = Vec::new();
         let mut serde = serde_json::Serializer::new(&mut writer);
 
-        // TODO: snapshot is muuuuch slower than Query for the same data.
         let snapshot = Snapshot::from_world_with_filter(world, |type_registration| {
             // Filter all view-related components from the snapshot. They'll get regenerated via ui systems' on_spawn_*
             !type_registration.type_name().starts_with("bevy")

@@ -30,15 +30,15 @@ fn create_tunnel_sprite(width: f32, height: f32, y_offset: f32) -> SpriteBundle 
 
 // Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_background(mut commands: Commands, world_map: Res<WorldMap>) {
-    // commands.spawn(create_air_sprite(
-    //     *world_map.width() as f32,
-    //     *world_map.surface_level() as f32 + 1.0,
-    //     0.0,
-    // ));
+    commands.spawn(create_air_sprite(
+        *world_map.width() as f32,
+        *world_map.surface_level() as f32 + 1.0,
+        0.0,
+    ));
 
-    // commands.spawn(create_tunnel_sprite(
-    //     *world_map.width() as f32,
-    //     *world_map.height() as f32 - (*world_map.surface_level() as f32 + 1.0),
-    //     -(*world_map.surface_level() as f32 + 1.0),
-    // ));
+    commands.spawn(create_tunnel_sprite(
+        *world_map.width() as f32,
+        *world_map.height() as f32 - (*world_map.surface_level() as f32 + 1.0),
+        -(*world_map.surface_level() as f32 + 1.0),
+    ));
 }

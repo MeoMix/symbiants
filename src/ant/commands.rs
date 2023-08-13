@@ -97,7 +97,6 @@ impl Command for DigElementCommand {
             inventory_element = Element::Sand;
         }
 
-
         let mut id_query = world.query::<(Entity, &Id)>();
         let ant_id = id_query.iter(world).find(|(entity, _)| *entity == self.ant_entity).map(|(_, id)| id).unwrap();
 
@@ -108,9 +107,9 @@ impl Command for DigElementCommand {
             .spawn(inventory_item_bundle)
             .id();
 
-        world
-            .entity_mut(self.ant_entity)
-            .add_child(inventory_item_entity);
+        // world
+        //     .entity_mut(self.ant_entity)
+        //     .add_child(inventory_item_entity);
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => {
@@ -130,7 +129,6 @@ struct DropElementCommand {
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
-        return;
         let world_map = world.resource::<WorldMap>();
         let air_entity = match world_map.get_element(self.target_position) {
             Some(entity) => *entity,

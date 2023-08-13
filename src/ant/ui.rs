@@ -1,6 +1,6 @@
-use super::{Ant, AntColor, AntName, AntOrientation, AntRole, Dead, InventoryItem};
+use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead};
 use crate::{
-    common::{Label, TranslationOffset, Id, get_entity_from_id},
+    common::{get_entity_from_id, Id, Label, TranslationOffset},
     element::{ui::get_element_sprite, Element},
     map::Position,
     time::IsFastForwarding,
@@ -13,7 +13,7 @@ const ANT_SCALE: f32 = 1.2;
 
 pub fn on_spawn_ant(
     mut commands: Commands,
-    ants: Query<
+    ants_query: Query<
         (
             Entity,
             &Position,
@@ -21,12 +21,15 @@ pub fn on_spawn_ant(
             &AntOrientation,
             &AntName,
             &AntRole,
+            &AntInventory,
         ),
         Added<Ant>,
     >,
     asset_server: Res<AssetServer>,
+    id_query: Query<(Entity, &Id)>,
+    elements_query: Query<&Element>,
 ) {
-    for (entity, position, color, orientation, name, role) in &ants {
+    for (entity, position, color, orientation, name, role, inventory) in &ants_query {
         info!("on_spawn_ant");
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
         // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
@@ -55,8 +58,11 @@ pub fn on_spawn_ant(
                 },
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
+                if let Some(bundle) = get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query) {
+                    parent.spawn(bundle);
+                }
+
                 if *role == AntRole::Queen {
-                    info!("Spawning crown for queen");
                     parent.spawn(SpriteBundle {
                         texture: asset_server.load("images/crown.png"),
                         transform: Transform::from_translation(Vec3::new(0.25, 0.5, 1.0)),
@@ -96,27 +102,78 @@ pub fn on_spawn_ant(
     }
 }
 
-pub fn on_spawn_inventory_item(
+pub fn on_update_ant_inventory(
     mut commands: Commands,
-    mut inventory_items: Query<(Entity, &InventoryItem), Added<InventoryItem>>,
+    mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
+    inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
+    is_fast_forwarding: Res<IsFastForwarding>,
 ) {
-    for (entity, inventory_item) in inventory_items.iter_mut() {
-        let element = elements_query.get(entity).unwrap();
-
-        // TODO: HACK HACK HACK LOOOL
-        let parent_entity = get_entity_from_id(inventory_item.parent_id.clone(), &id_query).unwrap();
-        commands.entity(entity).set_parent(parent_entity);
-
-        info!("on_spawn_inventory_item: {:?}", element);
-
-        commands.entity(entity).insert(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.5, 0.75, 1.0)),
-            sprite: get_element_sprite(element),
-            ..default()
-        });
+    if is_fast_forwarding.0 {
+        return;
     }
+
+    for (entity, inventory, children) in query.iter_mut() {
+        if is_fast_forwarding.is_changed() || inventory.is_changed() {
+            if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query) {
+                commands
+                    .entity(entity)
+                    .with_children(|ant: &mut ChildBuilder| {
+                        // TODO: store entity somewhere and despawn using it rather than searching
+                        ant.spawn(inventory_item_bundle);
+                    });
+            } else {
+                if let Some(children) = children {
+                    for &child in children.iter() {
+                        if inventory_item_sprite_query
+                            .get(child)
+                            .is_ok()
+                        {
+                            commands.entity(child).despawn();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct InventoryItemSprite;
+
+#[derive(Bundle)]
+pub struct AntHeldElementSpriteBundle {
+    sprite_bundle: SpriteBundle,
+    inventory_item_sprite: InventoryItemSprite,
+}
+
+fn get_inventory_item_sprite_bundle(
+    inventory: &AntInventory,
+    id_query: &Query<(Entity, &Id)>,
+    elements_query: &Query<&Element>,
+) -> Option<AntHeldElementSpriteBundle> {
+    let inventory_item_element_id = match &inventory.0 {
+        Some(inventory_item_element_id) => inventory_item_element_id,
+        None => return None,
+    };
+
+    // let inventory_item_element_id = inventory.0.clone().unwrap();
+    let inventory_item_element_entity =
+        get_entity_from_id(inventory_item_element_id.clone(), &id_query).unwrap();
+
+    let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
+
+    let sprite_bundle = SpriteBundle {
+        transform: Transform::from_translation(Vec3::new(0.5, 0.75, 1.0)),
+        sprite: get_element_sprite(inventory_item_element),
+        ..default()
+    };
+
+    Some(AntHeldElementSpriteBundle {
+        sprite_bundle,
+        inventory_item_sprite: InventoryItemSprite,
+    })
 }
 
 pub fn on_update_ant_orientation(

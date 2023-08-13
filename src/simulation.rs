@@ -1,6 +1,5 @@
-use bevy::{prelude::*, sprite::Anchor, text::{Text2dBounds, TextLayoutInfo}};
+use bevy::prelude::*;
 use bevy_save::AppSaveableExt;
-use js_sys::WebAssembly::Global;
 use uuid::Uuid;
 
 use crate::{
@@ -10,12 +9,12 @@ use crate::{
         birthing::ants_birthing,
         hunger::ants_hunger,
         ui::{
-            on_spawn_ant, on_spawn_inventory_item, on_update_ant_dead, on_update_ant_orientation,
+            on_spawn_ant, on_update_ant_dead, on_update_ant_orientation, on_update_ant_inventory,
         },
         walk::ants_walk, Ant, Initiative, AntName, AntColor, AntInventory, Dead, InventoryItem, AntOrientation, AntRole, Facing, Angle,
     },
     background::setup_background,
-    common::{ui::on_update_position, TranslationOffset, Id},
+    common::{ui::on_update_position, Id},
     element::{ui::on_spawn_element, Element, Air, Crushable},
     food::FoodCount,
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability, Unstable},
@@ -74,8 +73,8 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<WorldRng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        //app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
-        app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
+        app.insert_resource(FixedTime::new_from_secs(1.0 / 60.0));
+        //app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
 
         app.add_systems(
             Startup,
@@ -132,9 +131,10 @@ impl Plugin for SimulationPlugin {
                     on_update_position,
                     on_update_ant_orientation,
                     on_update_ant_dead,
+                    on_update_ant_inventory,
                 )
                     .chain(),
-                (on_spawn_ant, on_spawn_element, on_spawn_inventory_item).chain(),
+                (on_spawn_ant, on_spawn_element).chain(),
                 play_time,
             )
                 .chain(),
