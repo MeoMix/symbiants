@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 use chrono::{Utc, TimeZone, LocalResult};
-use gloo_storage::{LocalStorage, Storage};
 use std::time::Duration;
 
-use crate::map::{LOCAL_STORAGE_KEY, LastSaveTime};
+use crate::map::LastSaveTime;
 
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
 pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
