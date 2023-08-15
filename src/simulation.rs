@@ -22,7 +22,7 @@ use crate::{
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     settings::{Settings, Probabilities},
     time::{play_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE, setup_fast_forward_time},
-    world_rng::WorldRng,
+    world_rng::Rng,
 };
 
 pub struct SimulationPlugin;
@@ -68,7 +68,7 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<PendingTicks>();
 
         // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
-        app.init_resource::<WorldRng>();
+        app.init_resource::<Rng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
         // app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));

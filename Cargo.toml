@@ -15,7 +15,7 @@ wasm-bindgen = { version = "0.2.87" }
 uuid = { version = "1.4.0" }
 rand = { version = "0.8.5" }
 itertools = "0.11.0"
-gloo-storage = "0.2.2"
+gloo-storage = "0.3.0"
 serde = { version = "1.0.171", features = ["derive"] }
 serde_json = { version = "1.0.104" }
 js-sys = { version = "0.3.64", default-features = false }

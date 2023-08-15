@@ -1,6 +1,16 @@
 // Normally this would be a JSON file that's read and parsed at runtime, but since this code runs in a WASM environment,
 // it's non-trivial to do so. So, just hard-code the list here.
-pub const NAMES: [&'static str; 18239]= [
+
+use bevy::prelude::Mut;
+use rand::Rng as RandRng;
+
+use crate::world_rng::Rng;
+
+pub fn get_random_name(rng: &mut Mut<Rng>) -> String {
+  NAMES[rng.0.gen_range(0..NAMES.len())].to_string()
+}
+
+const NAMES: [&'static str; 18239]= [
   "Michael",
   "Christopher",
   "Jessica",

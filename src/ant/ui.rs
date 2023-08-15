@@ -30,13 +30,10 @@ pub fn on_spawn_ant(
     elements_query: Query<&Element>,
 ) {
     for (entity, position, color, orientation, name, role, inventory) in &ants_query {
-        info!("on_spawn_ant");
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
         // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
         let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
 
-        // TODO: instead of using insert, consider spawning this as a child? unsure if there's benefit there but follows Cart's example here:
-        // https://github.com/cart/card_combinator/blob/main/src/game/tile.rs
         commands
             .entity(entity)
             .insert((
@@ -75,7 +72,6 @@ pub fn on_spawn_ant(
                 }
             });
 
-        // TODO: Is this still the right approach?
         // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise. This isn't a good way of achieving this.
         let translation_offset = TranslationOffset(Vec3::new(0.5, -1.5, 1.0));
 
@@ -125,13 +121,8 @@ pub fn on_update_ant_inventory(
                     });
             } else {
                 if let Some(children) = children {
-                    for &child in children.iter() {
-                        if inventory_item_sprite_query
-                            .get(child)
-                            .is_ok()
-                        {
-                            commands.entity(child).despawn();
-                        }
+                    for &child in children.iter().filter(|&&child| inventory_item_sprite_query.get(child).is_ok()) {
+                        commands.entity(child).despawn();
                     }
                 }
             }
@@ -158,7 +149,6 @@ fn get_inventory_item_sprite_bundle(
         None => return None,
     };
 
-    // let inventory_item_element_id = inventory.0.clone().unwrap();
     let inventory_item_element_entity =
         get_entity_from_id(inventory_item_element_id.clone(), &id_query).unwrap();
 

@@ -1,12 +1,13 @@
-use super::{Dead, Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Facing, Initiative};
+use super::{
+    Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Dead, Facing, Initiative, AntName,
+};
 use crate::{
     map::Position,
-    name_list::NAMES,
+    name_list::get_random_name,
     time::{DEFAULT_TICK_RATE, SECONDS_PER_HOUR},
-    world_rng::WorldRng,
+    world_rng::Rng,
 };
 use bevy::prelude::*;
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -43,25 +44,24 @@ impl Birthing {
 
 pub fn ants_birthing(
     mut ants_birthing_query: Query<
-        (&mut Birthing, &Position, &AntColor, &AntOrientation, &mut Initiative),
+        (
+            &mut Birthing,
+            &Position,
+            &AntColor,
+            &AntOrientation,
+            &mut Initiative,
+        ),
         Without<Dead>,
     >,
     mut commands: Commands,
-    mut world_rng: ResMut<WorldRng>,
+    mut rng: ResMut<Rng>,
 ) {
-    for (mut birthing, position, color, orientation, mut initiative) in ants_birthing_query.iter_mut() {
+    for (mut birthing, position, color, orientation, mut initiative) in
+        ants_birthing_query.iter_mut()
+    {
         birthing.tick();
 
         if birthing.is_ready() && initiative.can_act() {
-            // Randomly position ant facing left or right.
-            let facing = if world_rng.0.gen_bool(0.5) {
-                Facing::Left
-            } else {
-                Facing::Right
-            };
-
-            let name: &str = NAMES[world_rng.0.gen_range(0..NAMES.len())].clone();
-
             let behind_position = *position + orientation.turn_around().get_forward_delta();
 
             // NOTE: As written, this could spawn directly into a piece of dirt/food/etc.
@@ -71,12 +71,12 @@ pub fn ants_birthing(
             // Spawn worker ant (TODO: egg instead)
             commands.spawn(AntBundle::new(
                 behind_position,
-                color.0,
-                AntOrientation::new(facing, Angle::Zero),
-                AntInventory(None),
+                AntColor(color.0),
+                AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
+                AntInventory::default(),
                 AntRole::Worker,
-                name,
-                &mut world_rng.0,
+                AntName(get_random_name(&mut rng.reborrow())),
+                Initiative::new(&mut rng.reborrow())
             ));
 
             birthing.reset();

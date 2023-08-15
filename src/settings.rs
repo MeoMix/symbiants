@@ -1,4 +1,10 @@
-use bevy::{prelude::{Color, Resource, ReflectResource}, reflect::Reflect};
+use bevy::{
+    prelude::{Color, Mut, ReflectResource, Resource},
+    reflect::Reflect,
+};
+use rand::Rng as RandRng;
+
+use crate::{map::Position, world_rng::Rng};
 
 #[derive(Clone, Reflect)]
 pub struct Probabilities {
@@ -26,6 +32,18 @@ pub struct Settings {
     pub initial_ant_worker_count: isize,
     pub ant_color: Color,
     pub probabilities: Probabilities,
+}
+
+// TODO: It feels weird to put these methods here rather than on WorldMap, but I need access to these
+// calculations when creating a new WorldMap instance.
+impl Settings {
+    pub fn get_surface_level(&self) -> isize {
+        (self.world_height as f32 - (self.world_height as f32 * self.initial_dirt_percent)) as isize
+    }
+
+    pub fn get_random_surface_position(&self, rng: &mut Mut<Rng>) -> Position {
+        Position::new(rng.0.gen_range(0..self.world_width), self.get_surface_level())
+    }
 }
 
 impl Default for Settings {

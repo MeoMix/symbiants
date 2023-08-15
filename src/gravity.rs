@@ -2,7 +2,7 @@ use crate::{
     ant::{AntOrientation, Initiative},
     element::{commands::ElementCommandsExt, Air, Crushable},
     time::IsFastForwarding,
-    world_rng::WorldRng,
+    world_rng::Rng,
 };
 
 use super::{
@@ -11,7 +11,7 @@ use super::{
     settings::Settings,
 };
 use bevy::prelude::*;
-use rand::{rngs::StdRng, Rng};
+use rand::Rng as RandRng;
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
@@ -30,7 +30,7 @@ fn get_element_fall_position(
     position: Position,
     world_map: &WorldMap,
     elements_query: &Query<&Element>,
-    world_rng: &mut StdRng,
+    rng: &mut Mut<Rng>,
 ) -> Option<Position> {
     // If there is air below then continue falling down.
     let below_position = position + Position::Y;
@@ -46,7 +46,7 @@ fn get_element_fall_position(
         &elements_query,
         &[left_position, left_below_position],
         Element::Air,
-    ) && world_rng.gen_bool(0.33);
+    ) && rng.0.gen_bool(0.33);
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
@@ -54,11 +54,11 @@ fn get_element_fall_position(
         &elements_query,
         &[right_position, right_below_position],
         Element::Air,
-    ) && world_rng.gen_bool(0.33);
+    ) && rng.0.gen_bool(0.33);
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
     if go_left && go_right {
-        go_left = world_rng.gen_bool(0.5);
+        go_left = rng.0.gen_bool(0.5);
         go_right = !go_left;
     }
 
@@ -78,13 +78,13 @@ pub fn gravity_elements(
     )>,
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
-    mut world_rng: ResMut<WorldRng>,
+    mut rng: ResMut<Rng>,
 ) {
     let element_air_swaps: Vec<_> = element_position_queries
         .p0()
         .iter()
         .filter_map(|&position| {
-            get_element_fall_position(position, &world_map, &elements_query, &mut world_rng.0)
+            get_element_fall_position(position, &world_map, &elements_query, &mut rng.reborrow())
                 .and_then(|air_position| {
                     Some((
                         *world_map.get_element(position)?,
@@ -237,7 +237,7 @@ pub fn gravity_stability(
 //         app.add_systems(ant_gravity);
 
 //         let seed = 42069; // ayy lmao
-//         let world_rng = WorldRng {
+//         let world_rng = Rng {
 //             rng: StdRng::seed_from_u64(seed),
 //         };
 
@@ -328,7 +328,7 @@ pub fn gravity_stability(
 //         app.add_systems(sand_gravity);
 
 //         let seed = seed.unwrap_or(42069); // ayy lmao
-//         let world_rng = WorldRng(StdRng::seed_from_u64(seed));
+//         let world_rng = Rng(StdRng::seed_from_u64(seed));
 
 //         app.insert_resource(world_rng);
 

@@ -3,14 +3,14 @@ use std::f32::consts::PI;
 
 use crate::{
     map::Position,
-    world_rng::WorldRng, common::Id,
+    world_rng::Rng, common::Id,
 };
 
 use self::hunger::Hunger;
 
 use super::element::Element;
 use bevy::prelude::*;
-use rand::{rngs::StdRng, Rng};
+use rand::Rng as RandRng;
 
 pub mod act;
 pub mod birthing;
@@ -36,12 +36,12 @@ pub struct AntBundle {
 impl AntBundle {
     pub fn new(
         position: Position,
-        color: Color,
+        color: AntColor,
         orientation: AntOrientation,
         inventory: AntInventory,
         role: AntRole,
-        name: &str,
-        mut rng: &mut StdRng,
+        name: AntName,
+        initiative: Initiative,
     ) -> Self {
         AntBundle {
             id: Id::default(),
@@ -50,9 +50,9 @@ impl AntBundle {
             orientation,
             inventory,
             role,
-            initiative: Initiative::new(&mut rng),
-            name: AntName(name.to_string()),
-            color: AntColor(color),
+            initiative,
+            name,
+            color,
             hunger: Hunger::default(),
         }
     }
@@ -120,11 +120,11 @@ pub struct Initiative {
 }
 
 impl Initiative {
-    pub fn new(rng: &mut StdRng) -> Self {
+    pub fn new(rng: &mut Mut<Rng>) -> Self {
         Self {
             has_action: false,
             has_movement: false,
-            timer: rng.gen_range(3..5),
+            timer: rng.0.gen_range(3..5),
         }
     }
 
@@ -149,6 +149,16 @@ impl Initiative {
 pub enum Facing {
     #[default] Left,
     Right,
+}
+
+impl Facing {
+    pub fn random(rng: &mut Mut<Rng>) -> Self {
+        if rng.0.gen_bool(0.5) {
+            Facing::Left
+        } else {
+            Facing::Right
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -286,7 +296,7 @@ impl AntOrientation {
 // in the simulation run speed.
 pub fn ants_initiative(
     mut ants_query: Query<&mut Initiative, Without<Dead>>,
-    mut world_rng: ResMut<WorldRng>,
+    mut rng: ResMut<Rng>,
 ) {
     for mut initiative in ants_query.iter_mut() {
         if initiative.timer > 0 {
@@ -300,7 +310,7 @@ pub fn ants_initiative(
             continue;
         }
 
-        *initiative = Initiative::new(&mut world_rng.0);
+        *initiative = Initiative::new(&mut rng.reborrow());
     }
 }
 
