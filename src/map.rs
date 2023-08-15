@@ -150,8 +150,8 @@ pub fn initialize_new_world(world: &mut World) {
     world.init_resource::<FoodCount>();
     world.init_resource::<LastSaveTime>();
 
-    for x in 0..settings.world_height {
-        for y in 0..settings.world_width {
+    for y in 0..settings.world_height {
+        for x in 0..settings.world_width {
             let position = Position::new(x, y);
 
             if y <= settings.get_surface_level() {
