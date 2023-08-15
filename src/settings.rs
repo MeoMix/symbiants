@@ -6,7 +6,7 @@ use rand::Rng as RandRng;
 
 use crate::{map::Position, world_rng::Rng};
 
-#[derive(Clone, Reflect)]
+#[derive(Clone, Copy, Reflect)]
 pub struct Probabilities {
     pub random_dig: f32,              // dig down while wandering
     pub random_drop: f32,             // drop while wandering
@@ -19,7 +19,7 @@ pub struct Probabilities {
     pub below_surface_queen_nest_dig: f32,
 }
 
-#[derive(Resource, Clone, Reflect)]
+#[derive(Resource, Copy, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct Settings {
     pub auto_snapshot_interval_ms: isize,

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_save::{Snapshot, SnapshotSerializer, WorldSaveableExt};
 use gloo_storage::{LocalStorage, Storage};
 use serde::{Deserialize, Serialize};
+use serde_json::Deserializer;
 use std::{
     ops::{Add, Deref, Mul},
     sync::Mutex,
@@ -94,77 +95,43 @@ pub struct WorldMap {
 
 pub const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
-pub fn setup_load_state(world: &mut World) {
-    // Deserialize world state from local storage if possible otherwise initialize the world from scratch
-    let mut is_loaded = false;
-
-    if let Ok(saved_state) = LocalStorage::get::<String>(LOCAL_STORAGE_KEY) {
-        let mut serde = serde_json::Deserializer::from_str(&saved_state);
-        let deserialization_result = world.deserialize(&mut serde);
-        is_loaded = deserialization_result.is_ok();
-
-        if deserialization_result.is_err() {
-            error!("Result: {:?}", deserialization_result);
-        }
+pub fn setup_world_map(world: &mut World) {
+    if !load_existing_world(world) {
+        initialize_new_world(world);
     }
 
-    let settings = Settings::default();
+    let (width, height, surface_level) = {
+        let settings = world.resource::<Settings>();
+        (
+            settings.world_width,
+            settings.world_height,
+            settings.get_surface_level(),
+        )
+    };
 
-    if !is_loaded {
-        world.init_resource::<Settings>();
-        world.init_resource::<FoodCount>();
-        world.init_resource::<LastSaveTime>();
+    let elements_cache = create_elements_cache(world, width as usize, height as usize);
+    world.insert_resource(WorldMap::new(width, height, surface_level, elements_cache));
+}
 
-        for x in 0..settings.world_height {
-            for y in 0..settings.world_width {
-                let position = Position::new(x, y);
+pub fn load_existing_world(world: &mut World) -> bool {
+    LocalStorage::get::<String>(LOCAL_STORAGE_KEY)
+        .map_err(|e| {
+            error!("Failed to load world state from local storage: {:?}", e);
+        })
+        .and_then(|saved_state| {
+            let mut serde = Deserializer::from_str(&saved_state);
+            world.deserialize(&mut serde).map_err(|e| {
+                error!("Deserialization error: {:?}", e);
+            })
+        })
+        .is_ok()
+}
 
-                if y <= settings.get_surface_level() {
-                    world.spawn(AirElementBundle::new(position));
-                } else {
-                    world.spawn(DirtElementBundle::new(position));
-                }
-            }
-        }
-
-        let ants = {
-            let mut rng = world.resource_mut::<Rng>();
-
-            let queen_ant = AntBundle::new(
-                settings.get_random_surface_position(&mut rng),
-                AntColor(settings.ant_color),
-                AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-                AntInventory::default(),
-                AntRole::Queen,
-                AntName(String::from("Queen")),
-                Initiative::new(&mut rng),
-            );
-
-            let worker_ants = (0..settings.initial_ant_worker_count)
-                .map(|_| {
-                    AntBundle::new(
-                        settings.get_random_surface_position(&mut rng),
-                        AntColor(settings.ant_color),
-                        AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-                        AntInventory::default(),
-                        AntRole::Worker,
-                        AntName(get_random_name(&mut rng)),
-                        Initiative::new(&mut rng),
-                    )
-                })
-                .collect::<Vec<_>>();
-
-            vec![queen_ant].into_iter().chain(worker_ants.into_iter())
-        };
-
-        world.spawn_batch(ants);
-    }
-
-    let mut elements_cache: Vec<Vec<Entity>> =
-        vec![
-            vec![Entity::PLACEHOLDER; settings.world_width as usize];
-            settings.world_height as usize
-        ];
+// Create a cache which allows for spatial querying of Elements. This is used to speed up
+// most logic because there's a consistent need throughout the application to know what elements are
+// at or near a given position.
+pub fn create_elements_cache(world: &mut World, width: usize, height: usize) -> Vec<Vec<Entity>> {
+    let mut elements_cache = vec![vec![Entity::PLACEHOLDER; width as usize]; height as usize];
 
     for (position, entity) in world
         .query_filtered::<(&mut Position, Entity), With<Element>>()
@@ -173,12 +140,59 @@ pub fn setup_load_state(world: &mut World) {
         elements_cache[position.y as usize][position.x as usize] = entity;
     }
 
-    world.insert_resource(WorldMap::new(
-        settings.world_width,
-        settings.world_height,
-        settings.get_surface_level(),
-        elements_cache,
-    ));
+    elements_cache
+}
+
+pub fn initialize_new_world(world: &mut World) {
+    let settings = Settings::default();
+
+    world.insert_resource(settings);
+    world.init_resource::<FoodCount>();
+    world.init_resource::<LastSaveTime>();
+
+    for x in 0..settings.world_height {
+        for y in 0..settings.world_width {
+            let position = Position::new(x, y);
+
+            if y <= settings.get_surface_level() {
+                world.spawn(AirElementBundle::new(position));
+            } else {
+                world.spawn(DirtElementBundle::new(position));
+            }
+        }
+    }
+
+    let ants = {
+        let mut rng = world.resource_mut::<Rng>();
+
+        let queen_ant = AntBundle::new(
+            settings.get_random_surface_position(&mut rng),
+            AntColor(settings.ant_color),
+            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+            AntInventory::default(),
+            AntRole::Queen,
+            AntName(String::from("Queen")),
+            Initiative::new(&mut rng),
+        );
+
+        let worker_ants = (0..settings.initial_ant_worker_count)
+            .map(|_| {
+                AntBundle::new(
+                    settings.get_random_surface_position(&mut rng),
+                    AntColor(settings.ant_color),
+                    AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+                    AntInventory::default(),
+                    AntRole::Worker,
+                    AntName(get_random_name(&mut rng)),
+                    Initiative::new(&mut rng),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        vec![queen_ant].into_iter().chain(worker_ants.into_iter())
+    };
+
+    world.spawn_batch(ants);
 }
 
 impl WorldMap {
