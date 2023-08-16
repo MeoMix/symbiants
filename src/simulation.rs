@@ -22,13 +22,17 @@ use crate::{
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability, Unstable},
     grid::{
         position::Position,
-        save::{periodic_save_world_state, setup_window_onunload_save_world_state, LastSaveTime},
+        save::{periodic_save_world_state, setup_window_onunload_save_world_state},
         setup_world_map,
     },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
+    nest::Nest,
     settings::{Probabilities, Settings},
-    time::{play_time, setup_fast_forward_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE},
-    world_rng::Rng, nest::Nest,
+    time::{
+        play_time, setup_fast_forward_time, update_game_time, GameTime, IsFastForwarding,
+        PendingTicks, DEFAULT_TICK_RATE,
+    },
+    world_rng::Rng,
 };
 
 pub struct SimulationPlugin;
@@ -37,7 +41,7 @@ impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
         app.register_saveable::<Settings>();
         app.register_saveable::<Probabilities>();
-        app.register_saveable::<LastSaveTime>();
+        app.register_saveable::<GameTime>();
 
         // User Resources:
         app.register_saveable::<FoodCount>();
@@ -138,6 +142,7 @@ impl Plugin for SimulationPlugin {
                 )
                     .chain(),
                 (on_spawn_ant, on_spawn_element).chain(),
+                update_game_time,
                 play_time,
             )
                 .chain(),

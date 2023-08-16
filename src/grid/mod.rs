@@ -9,8 +9,10 @@ use crate::{
     element::{AirElementBundle, DirtElementBundle, Element},
     food::FoodCount,
     name_list::get_random_name,
+    nest::Nest,
     settings::Settings,
-    world_rng::Rng, nest::Nest,
+    time::GameTime,
+    world_rng::Rng,
 };
 
 pub mod position;
@@ -18,10 +20,7 @@ pub mod save;
 
 use chrono::{DateTime, Utc};
 
-use self::{
-    position::Position,
-    save::{load_existing_world, LastSaveTime},
-};
+use self::{position::Position, save::load_existing_world};
 
 // TODO: Maybe parts of this should be reflected rather than regenerating from settings?
 #[derive(Resource, Debug)]
@@ -72,7 +71,7 @@ pub fn initialize_new_world(world: &mut World) {
 
     world.insert_resource(settings);
     world.init_resource::<FoodCount>();
-    world.init_resource::<LastSaveTime>();
+    world.init_resource::<GameTime>();
     world.init_resource::<Nest>();
 
     for y in 0..settings.world_height {

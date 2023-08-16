@@ -2,12 +2,21 @@ use bevy::prelude::*;
 use chrono::{Utc, TimeZone, LocalResult};
 use std::time::Duration;
 
-use crate::grid::save::LastSaveTime;
-
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
 pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
 pub const SECONDS_PER_HOUR: i64 = 3600;
 pub const SECONDS_PER_DAY: i64 = 86_400;
+
+// TODO: maybe try to express this as UTC while persisting as timestamp?
+#[derive(Resource, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct GameTime(pub i64);
+
+impl Default for GameTime {
+    fn default() -> Self {
+        GameTime(Utc::now().timestamp())
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct IsFastForwarding(pub bool);
@@ -22,13 +31,9 @@ impl PendingTicks {
 }
 
 // When the app first loads - determine how long user has been away and fast-forward time accordingly.
-pub fn setup_fast_forward_time(last_save_time: Res<LastSaveTime>, mut fixed_time: ResMut<FixedTime>) {
-    if last_save_time.0 == 0 {
-        return;
-    }
-
+pub fn setup_fast_forward_time(game_time: Res<GameTime>, mut fixed_time: ResMut<FixedTime>) {
     // Recreate UTC from last_save_time timestamp
-    let last_save_time_utc =  match Utc.timestamp_opt(last_save_time.0, 0) {
+    let game_time_utc =  match Utc.timestamp_opt(game_time.0, 0) {
         LocalResult::Single(datetime) => datetime,
         LocalResult::Ambiguous(a, b) => {
             // Handle the case where two possible DateTime<Utc> values exist.
@@ -41,7 +46,7 @@ pub fn setup_fast_forward_time(last_save_time: Res<LastSaveTime>, mut fixed_time
     };
 
     let delta_seconds = Utc::now()
-        .signed_duration_since(last_save_time_utc)
+        .signed_duration_since(game_time_utc)
         .num_seconds();
 
     // Only one day of time is allowed to be fast-forwarded. If the user skips more time than this - they lose out on simulation.
@@ -81,4 +86,9 @@ pub fn play_time(
                 ((60.0 * DEFAULT_TICK_RATE) * accumulated_time.as_secs() as f32) as isize;
         }
     }
+}
+
+pub fn update_game_time(mut game_time: ResMut<GameTime>,) {
+    // Each tick we need to update GameTime by an amount of real-world time equal to the tick rate.
+    game_time.0 += DEFAULT_TICK_RATE as i64;
 }
