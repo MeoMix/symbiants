@@ -14,49 +14,38 @@ static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
 
 // TODO: no way this should be here - it's like a separate module entirely?
 
-// TODO: This runs awfully slow after switching to bevy_save away from manual Query reading
 pub fn periodic_save_world_state(
     world: &mut World,
     mut last_snapshot_time: Local<f32>,
     mut last_save_time: Local<f32>,
 ) {
-    // TODO: This is sort of an odd way to express this. I feel like maybe I want to be saving in "real-world time elapsed" not "in-game time elapsed"
     // Don't save while state is fast forwarding because it will cause a lot of lag.
     if world.resource::<IsFastForwarding>().0 {
         return;
     }
 
-    if *last_snapshot_time != 0.0
-        && world.resource::<Time>().raw_elapsed_seconds() - *last_snapshot_time
-            < world.resource::<Settings>().auto_snapshot_interval_s as f32
-    {
+    let current_time = world.resource::<Time>().raw_elapsed_seconds();
+    let snapshot_interval = world.resource::<Settings>().snapshot_interval;
+    if *last_snapshot_time != 0.0 && current_time - *last_snapshot_time < snapshot_interval as f32 {
         return;
     }
 
-    // Limit the lifetime of the lock so that `write_save_snapshot` is able to re-acquire
-    {
-        let snapshot = create_save_snapshot(world);
-
-        if snapshot.is_some() {
-            *SAVE_SNAPSHOT.lock().unwrap() = snapshot;
-            *last_snapshot_time = world.resource::<Time>().raw_elapsed_seconds();
-        }
+    if let Some(snapshot) = create_save_snapshot(world) {
+        *SAVE_SNAPSHOT.lock().unwrap() = Some(snapshot);
+        *last_snapshot_time = current_time;
     }
 
-    if *last_save_time != 0.0
-        && world.resource::<Time>().raw_elapsed_seconds() - *last_save_time < world.resource::<Settings>().auto_save_interval_s as f32
-    {
+    let save_interval = world.resource::<Settings>().save_interval;
+    if *last_save_time != 0.0 && current_time - *last_save_time < save_interval as f32 {
         return;
     }
 
     if write_save_snapshot() {
-        *last_save_time = world.resource::<Time>().raw_elapsed_seconds();
-
-        info!("saved");
+        *last_save_time = current_time;
     }
 }
 
-fn create_save_snapshot(world: &mut World,) -> Option<String> {
+fn create_save_snapshot(world: &mut World) -> Option<String> {
     let mut writer: Vec<u8> = Vec::new();
     let mut serde = Serializer::new(&mut writer);
 
