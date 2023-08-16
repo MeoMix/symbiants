@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use chrono::{LocalResult, TimeZone, Utc};
+use chrono::{LocalResult, TimeZone, Utc, DateTime};
 use std::time::Duration;
 
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
@@ -7,7 +7,8 @@ pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
 pub const SECONDS_PER_HOUR: i64 = 3600;
 pub const SECONDS_PER_DAY: i64 = 86_400;
 
-// TODO: maybe try to express this as UTC while persisting as timestamp?
+// NOTE: `bevy_reflect` doesn't support DateTime<Utc> without manually implement Reflect (which is hard)
+// So, use a timestamp instead and convert to DateTime<Utc> when needed.
 #[derive(Resource, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct GameTime(pub i64);
@@ -15,6 +16,20 @@ pub struct GameTime(pub i64);
 impl Default for GameTime {
     fn default() -> Self {
         GameTime(Utc::now().timestamp_millis())
+    }
+}
+
+impl GameTime {
+    pub fn as_datetime(&self) -> DateTime<Utc> {
+        match Utc.timestamp_millis_opt(self.0) {
+            LocalResult::Single(datetime) => datetime,
+            LocalResult::Ambiguous(a, b) => {
+                panic!("Ambiguous DateTime<Utc> values: {} and {}", a, b);
+            }
+            LocalResult::None => {
+                panic!("Invalid timestamp");
+            }
+        }
     }
 }
 
@@ -32,21 +47,8 @@ impl PendingTicks {
 
 // When the app first loads - determine how long user has been away and fast-forward time accordingly.
 pub fn setup_fast_forward_time(game_time: Res<GameTime>, mut fixed_time: ResMut<FixedTime>) {
-    // Recreate UTC from last_save_time timestamp
-    let game_time_utc = match Utc.timestamp_millis_opt(game_time.0) {
-        LocalResult::Single(datetime) => datetime,
-        LocalResult::Ambiguous(a, b) => {
-            // Handle the case where two possible DateTime<Utc> values exist.
-            panic!("Ambiguous DateTime<Utc> values: {} and {}", a, b);
-        }
-        LocalResult::None => {
-            // Handle the case where the timestamp is out of range and cannot be represented as a DateTime<Utc>.
-            panic!("Invalid timestamp");
-        }
-    };
-
     let delta_seconds = Utc::now()
-        .signed_duration_since(game_time_utc)
+        .signed_duration_since(game_time.as_datetime())
         .num_seconds();
 
     // Only one day of time is allowed to be fast-forwarded. If the user skips more time than this - they lose out on simulation.
