@@ -4,7 +4,7 @@ use bevy::{
 };
 use rand::Rng as RandRng;
 
-use crate::{map::Position, world_rng::Rng};
+use crate::{grid::position::Position, world_rng::Rng};
 
 #[derive(Clone, Copy, Reflect)]
 pub struct Probabilities {

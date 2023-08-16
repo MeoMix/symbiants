@@ -18,7 +18,7 @@ use crate::{
     element::{ui::on_spawn_element, Element, Air, Crushable},
     food::FoodCount,
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability, Unstable},
-    map::{periodic_save_world_state, setup_window_onunload_save_world_state, Position, setup_world_map, LastSaveTime},
+    grid::{periodic_save_world_state, setup_window_onunload_save_world_state, setup_world_map, LastSaveTime, position::Position},
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     settings::{Settings, Probabilities},
     time::{play_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE, setup_fast_forward_time},

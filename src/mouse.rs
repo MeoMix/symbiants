@@ -4,7 +4,7 @@ use crate::{
     camera::MainCamera,
     element::{commands::ElementCommandsExt, Element},
     food::FoodCount,
-    map::{Position, WorldMap},
+    grid::{position::Position, WorldMap},
 };
 
 pub fn handle_mouse_clicks(

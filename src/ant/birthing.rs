@@ -2,7 +2,7 @@ use super::{
     Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Dead, Facing, Initiative, AntName,
 };
 use crate::{
-    map::Position,
+    grid::position::Position,
     name_list::get_random_name,
     time::{DEFAULT_TICK_RATE, SECONDS_PER_HOUR},
     world_rng::Rng,

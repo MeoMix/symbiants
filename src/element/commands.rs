@@ -1,10 +1,10 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
-use crate::map::{Position, WorldMap};
+use crate::grid::{position::Position, WorldMap};
 use bevy::{ecs::system::Command, prelude::*};
 
 pub trait ElementCommandsExt {
     fn replace_element(&mut self, position: Position, element: Element, target_element: Entity);
-    fn spawn_element(&mut self,  position: Position, element: Element,);
+    fn spawn_element(&mut self, position: Position, element: Element);
     fn toggle_element_command<C: Component + Send + Sync + 'static>(
         &mut self,
         target_element_entity: Entity,

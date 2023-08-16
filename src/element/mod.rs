@@ -1,4 +1,4 @@
-use super::map::Position;
+use super::grid::position::Position;
 use crate::{gravity::Unstable, common::Id};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

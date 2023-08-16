@@ -1,5 +1,5 @@
 use super::Element;
-use crate::map::Position;
+use crate::grid::position::Position;
 use bevy::{prelude::*, sprite::Anchor};
 
 pub fn get_element_sprite(element: &Element) -> Sprite {

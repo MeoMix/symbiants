@@ -1,4 +1,4 @@
-use crate::{pancam::{PanCam, PanCamPlugin}, map::{WorldMap, setup_world_map}};
+use crate::{pancam::{PanCam, PanCamPlugin}, grid::{WorldMap, setup_world_map}};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},

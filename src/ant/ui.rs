@@ -1,15 +1,13 @@
+use std::ops::Add;
+
 use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead};
 use crate::{
     common::{get_entity_from_id, Id, Label, TranslationOffset},
     element::{ui::get_element_sprite, Element},
-    map::Position,
+    grid::position::Position,
     time::IsFastForwarding,
 };
 use bevy::prelude::*;
-use std::ops::Add;
-
-// 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
-const ANT_SCALE: f32 = 1.2;
 
 pub fn on_spawn_ant(
     mut commands: Commands,
@@ -42,7 +40,8 @@ pub fn on_spawn_ant(
                     texture: asset_server.load("images/ant.png"),
                     sprite: Sprite {
                         color: color.0,
-                        custom_size: Some(Vec2::new(ANT_SCALE, ANT_SCALE)),
+                        // 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
+                        custom_size: Some(Vec2::splat(1.2)),
                         ..default()
                     },
                     transform: Transform {
@@ -55,7 +54,9 @@ pub fn on_spawn_ant(
                 },
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-                if let Some(bundle) = get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query) {
+                if let Some(bundle) =
+                    get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query)
+                {
                     parent.spawn(bundle);
                 }
 
@@ -64,7 +65,7 @@ pub fn on_spawn_ant(
                         texture: asset_server.load("images/crown.png"),
                         transform: Transform::from_translation(Vec3::new(0.25, 0.5, 1.0)),
                         sprite: Sprite {
-                            custom_size: Some(Vec2::new(0.5, 0.5)),
+                            custom_size: Some(Vec2::splat(0.5)),
                             ..default()
                         },
                         ..default()
@@ -80,6 +81,7 @@ pub fn on_spawn_ant(
             Text2dBundle {
                 transform: Transform {
                     translation: position.as_world_position().add(translation_offset.0),
+                    // TODO: This is an unreasonably small value for text, but is needed for crisp rendering. Does that mean I am doing something wrong?
                     scale: Vec3::new(0.01, 0.01, 0.0),
                     ..default()
                 },
@@ -112,7 +114,9 @@ pub fn on_update_ant_inventory(
 
     for (entity, inventory, children) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || inventory.is_changed() {
-            if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query) {
+            if let Some(inventory_item_bundle) =
+                get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query)
+            {
                 commands
                     .entity(entity)
                     .with_children(|ant: &mut ChildBuilder| {
@@ -121,7 +125,10 @@ pub fn on_update_ant_inventory(
                     });
             } else {
                 if let Some(children) = children {
-                    for &child in children.iter().filter(|&&child| inventory_item_sprite_query.get(child).is_ok()) {
+                    for &child in children
+                        .iter()
+                        .filter(|&&child| inventory_item_sprite_query.get(child).is_ok())
+                    {
                         commands.entity(child).despawn();
                     }
                 }

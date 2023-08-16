@@ -1,7 +1,8 @@
-use bevy::prelude::*;
 use std::ops::Add;
 
-use crate::{map::Position, time::IsFastForwarding};
+use bevy::prelude::*;
+
+use crate::{grid::position::Position, time::IsFastForwarding};
 
 use super::{Label, TranslationOffset};
 

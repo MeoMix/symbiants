@@ -1,6 +1,6 @@
 use crate::{
     element::Element,
-    map::{Position, WorldMap},
+    grid::{position::Position, WorldMap},
     settings::Settings,
     world_rng::Rng,
 };

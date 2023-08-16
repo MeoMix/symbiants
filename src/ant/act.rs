@@ -1,7 +1,7 @@
 use crate::{
     ant::birthing::Birthing,
     element::Element,
-    map::{Position, WorldMap},
+    grid::{position::Position, WorldMap},
     settings::Settings,
     world_rng::Rng, common::{get_entity_from_id, Id},
 };
@@ -59,7 +59,7 @@ pub fn ants_act(
             if position.y - world_map.surface_level() > 8 && !world_map.is_nested() {
                 // Check if the queen is sufficiently surounded by space while being deep underground and, if so, decide to start nesting.
                 let left_position = *position + Position::NEG_X;
-                let above_position = *position + Position::new(0, -1);
+                let above_position = *position + Position::NEG_Y;
                 let right_position = *position + Position::X;
 
                 let has_valid_air_nest = world_map.is_all_element(
@@ -68,10 +68,10 @@ pub fn ants_act(
                     Element::Air,
                 );
 
-                let below_position = *position + Position::new(0, 1);
+                let below_position = *position + Position::Y;
                 // Make sure there's stable place for ant child to be born
                 let behind_position = *position + orientation.turn_around().get_forward_delta();
-                let behind_below_position = behind_position + Position::new(0, 1);
+                let behind_below_position = behind_position + Position::Y;
 
                 let has_valid_dirt_nest = world_map.is_all_element(
                     &elements_query,

@@ -1,7 +1,7 @@
 use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, Initiative};
 use crate::{
     element::Element,
-    map::{Position, WorldMap},
+    grid::{position::Position, WorldMap},
     time::{DEFAULT_TICK_RATE, SECONDS_PER_DAY}, common::{Id, get_entity_from_id},
 };
 use bevy::prelude::*;

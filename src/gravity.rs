@@ -7,7 +7,7 @@ use crate::{
 
 use super::{
     element::Element,
-    map::{Position, WorldMap},
+    grid::{position::Position, WorldMap},
     settings::Settings,
 };
 use bevy::prelude::*;
@@ -310,7 +310,7 @@ pub fn gravity_stability(
 // pub mod sand_gravity_tests {
 //     use crate::{
 //         element::{AirElementBundle, SandElementBundle},
-//         map::WorldSaveState,
+//         grid::WorldSaveState,
 //     };
 
 //     use super::*;

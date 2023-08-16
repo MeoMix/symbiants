@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::map::WorldMap;
+use crate::grid::WorldMap;
 
 fn create_air_sprite(width: f32, height: f32, y_offset: f32) -> SpriteBundle {
     SpriteBundle {

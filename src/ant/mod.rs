@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
-use crate::{
-    map::Position,
-    world_rng::Rng, common::Id,
-};
+use crate::{common::Id, grid::position::Position, world_rng::Rng};
 
 use self::hunger::Hunger;
 
@@ -82,13 +79,14 @@ pub struct Ant;
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub enum AntRole {
-    #[default] Worker,
+    #[default]
+    Worker,
     Queen,
 }
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct InventoryItem { 
+pub struct InventoryItem {
     pub parent_id: Id,
 }
 
@@ -104,9 +102,7 @@ impl InventoryItemBundle {
         InventoryItemBundle {
             id: Id::default(),
             element,
-            inventory_item: InventoryItem {
-                parent_id
-            },
+            inventory_item: InventoryItem { parent_id },
         }
     }
 }
@@ -147,7 +143,8 @@ impl Initiative {
 
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 pub enum Facing {
-    #[default] Left,
+    #[default]
+    Left,
     Right,
 }
 
@@ -163,7 +160,8 @@ impl Facing {
 
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 pub enum Angle {
-    #[default] Zero,
+    #[default]
+    Zero,
     Ninety = 90,
     OneHundredEighty = 180,
     TwoHundredSeventy = 270,

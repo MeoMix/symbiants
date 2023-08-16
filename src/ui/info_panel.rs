@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     ant::{hunger::Hunger, AntRole},
     food::FoodCount,
-    map::WorldMap,
+    grid::WorldMap,
 };
 
 #[derive(Component)]
