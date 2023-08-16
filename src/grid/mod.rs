@@ -33,9 +33,9 @@ pub struct WorldMap {
 }
 
 pub fn setup_world_map(world: &mut World) {
-    //if !load_existing_world(world) {
+    if !load_existing_world(world) {
         initialize_new_world(world);
-    //}
+    }
 
     let (width, height, surface_level) = {
         let settings = world.resource::<Settings>();
