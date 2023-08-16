@@ -2,7 +2,6 @@ use crate::{
     ant::{AntOrientation, Initiative},
     element::{commands::ElementCommandsExt, Air, Crushable},
     time::IsFastForwarding,
-    world_rng::Rng,
 };
 
 use super::{
@@ -11,7 +10,7 @@ use super::{
     settings::Settings,
 };
 use bevy::prelude::*;
-use rand::Rng as RandRng;
+use bevy_turborand::{GlobalRng, DelegatedRng};
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
@@ -30,7 +29,7 @@ fn get_element_fall_position(
     position: Position,
     world_map: &WorldMap,
     elements_query: &Query<&Element>,
-    rng: &mut Mut<Rng>,
+    rng: &mut Mut<GlobalRng>,
 ) -> Option<Position> {
     // If there is air below then continue falling down.
     let below_position = position + Position::Y;
@@ -46,7 +45,7 @@ fn get_element_fall_position(
         &elements_query,
         &[left_position, left_below_position],
         Element::Air,
-    ) && rng.0.gen_bool(0.33);
+    ) && rng.chance(0.33);
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
@@ -54,11 +53,11 @@ fn get_element_fall_position(
         &elements_query,
         &[right_position, right_below_position],
         Element::Air,
-    ) && rng.0.gen_bool(0.33);
+    ) && rng.chance(0.33);
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
     if go_left && go_right {
-        go_left = rng.0.gen_bool(0.5);
+        go_left = rng.bool();
         go_right = !go_left;
     }
 
@@ -78,7 +77,7 @@ pub fn gravity_elements(
     )>,
     elements_query: Query<&Element>,
     mut world_map: ResMut<WorldMap>,
-    mut rng: ResMut<Rng>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     let element_air_swaps: Vec<_> = element_position_queries
         .p0()

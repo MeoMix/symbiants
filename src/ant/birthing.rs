@@ -5,9 +5,9 @@ use crate::{
     grid::position::Position,
     name_list::get_random_name,
     time::{DEFAULT_TICK_RATE, SECONDS_PER_HOUR},
-    world_rng::Rng,
 };
 use bevy::prelude::*;
+use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
@@ -54,7 +54,7 @@ pub fn ants_birthing(
         Without<Dead>,
     >,
     mut commands: Commands,
-    mut rng: ResMut<Rng>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()

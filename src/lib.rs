@@ -20,6 +20,7 @@ use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
+use bevy_turborand::prelude::*;
 use bevy_save::SavePlugin;
 use camera::CameraPlugin;
 use simulation::SimulationPlugin;
@@ -44,6 +45,7 @@ impl Plugin for AntfarmPlugin {
             });
         })
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
-        .add_plugins((SavePlugin, CameraPlugin, UIPlugin, SimulationPlugin));
+        .add_plugins((RngPlugin::default(), SavePlugin))
+        .add_plugins((CameraPlugin, UIPlugin, SimulationPlugin));
     }
 }

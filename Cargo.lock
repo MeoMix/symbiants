@@ -197,6 +197,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_save",
+ "bevy_turborand",
  "chrono",
  "console_error_panic_hook",
  "gloo-storage",
@@ -958,6 +959,17 @@ dependencies = [
  "bevy_hierarchy",
  "bevy_math",
  "bevy_reflect",
+]
+
+[[package]]
+name = "bevy_turborand"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d148d7fb5d2d4cda8f290174a837b4bab3b8ce9cfdf6f806c61d642ed5cf5bc5"
+dependencies = [
+ "bevy",
+ "serde",
+ "turborand",
 ]
 
 [[package]]
@@ -3314,6 +3326,17 @@ name = "ttf-parser"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44dcf002ae3b32cd25400d6df128c5babec3927cd1eb7ce813cfff20eb6c3746"
+
+[[package]]
+name = "turborand"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e28d61f1c96db8c016037a77961fa5da84fc3a57fe69a15283ace0ab1647bac0"
+dependencies = [
+ "getrandom",
+ "instant",
+ "serde",
+]
 
 [[package]]
 name = "twox-hash"

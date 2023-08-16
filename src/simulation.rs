@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_save::AppSaveableExt;
+use bevy_turborand::GlobalRng;
 use uuid::Uuid;
 
 use crate::{
@@ -32,7 +33,6 @@ use crate::{
         play_time, setup_fast_forward_time, update_game_time, GameTime, IsFastForwarding,
         PendingTicks, DEFAULT_TICK_RATE,
     },
-    world_rng::Rng,
 };
 
 pub struct SimulationPlugin;
@@ -77,11 +77,11 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<PendingTicks>();
 
         // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
-        app.init_resource::<Rng>();
+        app.init_resource::<GlobalRng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        // app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
-        app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
+        app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
+        // app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
 
         app.add_systems(
             Startup,

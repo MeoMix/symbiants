@@ -2,12 +2,11 @@ use crate::{
     element::Element,
     grid::{position::Position, WorldMap},
     settings::Settings,
-    world_rng::Rng,
 };
 
 use super::{Dead, AntOrientation, Initiative};
 use bevy::prelude::*;
-use rand::Rng as RandRng;
+use bevy_turborand::{GlobalRng, DelegatedRng};
 
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
@@ -15,7 +14,7 @@ pub fn ants_walk(
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
-    mut rng: ResMut<Rng>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     for (mut initiative, mut position, mut orientation) in ants_query.iter_mut() {
         // If ant lost the ability to move (potentially due to falling through the air) then skip walking around.
@@ -41,7 +40,7 @@ pub fn ants_walk(
             });
 
         // An ant might turn randomly. This is to prevent ants from getting stuck in loops and add visual variety.
-        let is_turning_randomly = rng.0.gen::<f32>() < settings.probabilities.random_turn;
+        let is_turning_randomly = rng.chance(settings.probabilities.random_turn.into());
 
         if has_air_under_feet || !has_air_ahead || is_turning_randomly {
             *orientation = get_turned_orientation(
@@ -82,7 +81,7 @@ fn get_turned_orientation(
     position: &Position,
     elements_query: &Query<&Element>,
     world_map: &Res<WorldMap>,
-    rng: &mut ResMut<Rng>,
+    rng: &mut ResMut<GlobalRng>,
 ) -> AntOrientation {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
     let back_orientation = orientation.rotate_backward();
@@ -106,11 +105,11 @@ fn get_turned_orientation(
         .collect::<Vec<_>>();
 
     if !valid_orientations.is_empty() {
-        return *valid_orientations[rng.0.gen_range(0..valid_orientations.len())];
+        return *valid_orientations[rng.usize(0..valid_orientations.len())];
     }
 
     // If no valid orientations, just pick a random orientation.
-    all_orientations[rng.0.gen_range(0..all_orientations.len())]
+    all_orientations[rng.usize(0..all_orientations.len())]
 }
 
 fn is_valid_location(

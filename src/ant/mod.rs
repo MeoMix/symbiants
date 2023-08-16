@@ -1,13 +1,13 @@
+use bevy_turborand::{GlobalRng, DelegatedRng};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
-use crate::{common::Id, grid::position::Position, world_rng::Rng};
+use crate::{common::Id, grid::position::Position};
 
 use self::hunger::Hunger;
 
 use super::element::Element;
 use bevy::prelude::*;
-use rand::Rng as RandRng;
 
 pub mod act;
 pub mod birthing;
@@ -116,11 +116,11 @@ pub struct Initiative {
 }
 
 impl Initiative {
-    pub fn new(rng: &mut Mut<Rng>) -> Self {
+    pub fn new(rng: &mut Mut<GlobalRng>) -> Self {
         Self {
             has_action: false,
             has_movement: false,
-            timer: rng.0.gen_range(3..5),
+            timer: rng.isize(3..5),
         }
     }
 
@@ -149,8 +149,8 @@ pub enum Facing {
 }
 
 impl Facing {
-    pub fn random(rng: &mut Mut<Rng>) -> Self {
-        if rng.0.gen_bool(0.5) {
+    pub fn random(rng: &mut Mut<GlobalRng>) -> Self {
+        if rng.bool() {
             Facing::Left
         } else {
             Facing::Right
@@ -294,7 +294,7 @@ impl AntOrientation {
 // in the simulation run speed.
 pub fn ants_initiative(
     mut ants_query: Query<&mut Initiative, Without<Dead>>,
-    mut rng: ResMut<Rng>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     for mut initiative in ants_query.iter_mut() {
         if initiative.timer > 0 {

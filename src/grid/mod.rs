@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_turborand::GlobalRng;
 use std::ops::Add;
 
 use crate::{
@@ -12,7 +13,6 @@ use crate::{
     nest::Nest,
     settings::Settings,
     time::GameTime,
-    world_rng::Rng,
 };
 
 pub mod position;
@@ -33,9 +33,9 @@ pub struct WorldMap {
 }
 
 pub fn setup_world_map(world: &mut World) {
-    if !load_existing_world(world) {
+    //if !load_existing_world(world) {
         initialize_new_world(world);
-    }
+    //}
 
     let (width, height, surface_level) = {
         let settings = world.resource::<Settings>();
@@ -87,7 +87,7 @@ pub fn initialize_new_world(world: &mut World) {
     }
 
     let ants = {
-        let mut rng = world.resource_mut::<Rng>();
+        let mut rng = world.resource_mut::<GlobalRng>();
 
         let queen_ant = AntBundle::new(
             settings.get_random_surface_position(&mut rng),

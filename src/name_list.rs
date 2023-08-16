@@ -2,12 +2,10 @@
 // it's non-trivial to do so. So, just hard-code the list here.
 
 use bevy::prelude::Mut;
-use rand::Rng as RandRng;
+use bevy_turborand::prelude::*;
 
-use crate::world_rng::Rng;
-
-pub fn get_random_name(rng: &mut Mut<Rng>) -> String {
-  NAMES[rng.0.gen_range(0..NAMES.len())].to_string()
+pub fn get_random_name(rng: &mut Mut<GlobalRng>) -> String {
+  rng.sample(&NAMES).unwrap().to_string()
 }
 
 const NAMES: [&'static str; 18239]= [

@@ -2,9 +2,9 @@ use bevy::{
     prelude::{Color, Mut, ReflectResource, Resource},
     reflect::Reflect,
 };
-use rand::Rng as RandRng;
+use bevy_turborand::{GlobalRng, DelegatedRng};
 
-use crate::{grid::position::Position, world_rng::Rng};
+use crate::grid::position::Position;
 
 #[derive(Clone, Copy, Reflect)]
 pub struct Probabilities {
@@ -41,8 +41,11 @@ impl Settings {
         (self.world_height as f32 - (self.world_height as f32 * self.initial_dirt_percent)) as isize
     }
 
-    pub fn get_random_surface_position(&self, rng: &mut Mut<Rng>) -> Position {
-        Position::new(rng.0.gen_range(0..self.world_width), self.get_surface_level())
+    pub fn get_random_surface_position(&self, rng: &mut Mut<GlobalRng>) -> Position {
+        Position::new(
+            rng.isize(0..self.world_width),
+            self.get_surface_level(),
+        )
     }
 }
 
@@ -58,7 +61,7 @@ impl Default for Settings {
             world_height: 81,
             compact_sand_depth: 15,
             initial_dirt_percent: 3.0 / 4.0,
-            initial_ant_worker_count: 0,
+            initial_ant_worker_count: 200,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
             probabilities: Probabilities {
                 random_dig: 0.003,

@@ -1,14 +1,15 @@
 use crate::{
     ant::birthing::Birthing,
+    common::{get_entity_from_id, Id},
     element::Element,
     grid::{position::Position, WorldMap},
+    nest::Nest,
     settings::Settings,
-    world_rng::Rng, common::{get_entity_from_id, Id}, nest::Nest,
 };
- 
-use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, AntRole, Initiative};
+
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
 use bevy::prelude::*;
-use rand::Rng as RandRng;
+use bevy_turborand::prelude::*;
 
 pub fn ants_act(
     mut ants_query: Query<
@@ -27,20 +28,21 @@ pub fn ants_act(
     world_map: Res<WorldMap>,
     mut nest: ResMut<Nest>,
     settings: Res<Settings>,
-    mut rng: ResMut<Rng>,
+    mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
-    for (orientation, inventory, mut initiative, position, role, ant_entity) in ants_query.iter_mut() {
+    for (orientation, inventory, mut initiative, position, role, ant_entity) in
+        ants_query.iter_mut()
+    {
         if !initiative.can_act() {
             continue;
         }
-        
+
         // TODO: queen specific logic
         if *role == AntRole::Queen {
             if !world_map.is_below_surface(&position) && !nest.is_started() {
                 if inventory.0 == None {
-                    if rng.0.gen::<f32>() < settings.probabilities.above_surface_queen_nest_dig
-                    {
+                    if rng.f32() < settings.probabilities.above_surface_queen_nest_dig {
                         let target_position =
                             *position + orientation.rotate_forward().get_forward_delta();
                         let target_element_entity = *world_map.element(target_position);
@@ -107,7 +109,7 @@ pub fn ants_act(
         if *role == AntRole::Worker {
             if inventory.0 == None {
                 // Randomly dig downwards / perpendicular to current orientation
-                if rng.0.gen::<f32>() < settings.probabilities.random_dig
+                if rng.f32() < settings.probabilities.random_dig
                     && world_map.is_below_surface(&position)
                 {
                     let target_position =
@@ -119,7 +121,7 @@ pub fn ants_act(
                     continue;
                 }
             } else {
-                if rng.0.gen::<f32>() < settings.probabilities.random_drop {
+                if rng.f32() < settings.probabilities.random_drop {
                     let target_element_entity = world_map.element(*position);
                     commands.drop(ant_entity, *position, *target_element_entity);
 
@@ -151,7 +153,7 @@ pub fn ants_act(
                 let dig_sand = *element == Element::Sand && world_map.is_below_surface(&position);
                 let dig_dirt = *element == Element::Dirt
                     && world_map.is_below_surface(&position)
-                    && rng.0.gen::<f32>() < settings.probabilities.below_surface_dirt_dig;
+                    && rng.f32() < settings.probabilities.below_surface_dirt_dig;
 
                 // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
                 // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
@@ -160,8 +162,7 @@ pub fn ants_act(
                     && *role == AntRole::Queen;
 
                 if position.y - world_map.surface_level() > 8 {
-                    if rng.0.gen::<f32>() > settings.probabilities.below_surface_queen_nest_dig
-                    {
+                    if rng.f32() > settings.probabilities.below_surface_queen_nest_dig {
                         queen_dig = false;
                     }
                 }
@@ -184,24 +185,25 @@ pub fn ants_act(
         // Avoid dropping inventory when facing upwards since it'll fall on the ant.
         if inventory.0 != None && orientation.is_horizontal() {
             let inventory_item_element_id = inventory.0.clone().unwrap();
-            let inventory_item_element_entity = get_entity_from_id(inventory_item_element_id, &id_query).unwrap();
+            let inventory_item_element_entity =
+                get_entity_from_id(inventory_item_element_id, &id_query).unwrap();
 
             let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
 
             // Prioritize dropping sand above ground and food below ground.
             let drop_sand = *inventory_item_element == Element::Sand
                 && !world_map.is_below_surface(&forward_position)
-                && rng.0.gen::<f32>() < settings.probabilities.above_surface_sand_drop;
+                && rng.f32() < settings.probabilities.above_surface_sand_drop;
 
             let drop_food = *inventory_item_element == Element::Food
                 && world_map.is_below_surface(&forward_position)
-                && rng.0.gen::<f32>() < settings.probabilities.below_surface_food_drop;
+                && rng.f32() < settings.probabilities.below_surface_food_drop;
 
             if drop_sand || drop_food {
                 // Drop inventory in front of ant
                 let target_element_entity = world_map.element(forward_position);
                 commands.drop(ant_entity, forward_position, *target_element_entity);
-                
+
                 initiative.consume_action();
                 continue;
             }
