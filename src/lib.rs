@@ -14,7 +14,6 @@ mod settings;
 mod simulation;
 mod time;
 mod ui;
-mod world_rng;
 
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
