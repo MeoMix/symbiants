@@ -103,6 +103,7 @@ pub fn update_info_panel_ant_hunger(
             .iter()
             .map(|hunger: &Hunger| hunger.value())
             .sum();
+
         let hunger_avg = hunger_sum / ant_query.iter().count() as f32;
 
         text.sections[1].value = format!("{:.0}", hunger_avg);

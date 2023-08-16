@@ -7,21 +7,27 @@ use crate::{
         act::ants_act,
         ants_initiative,
         birthing::ants_birthing,
-        hunger::ants_hunger,
+        hunger::{ants_hunger, Hunger},
         ui::{
-            on_spawn_ant, on_update_ant_dead, on_update_ant_orientation, on_update_ant_inventory,
+            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
         },
-        walk::ants_walk, Ant, Initiative, AntName, AntColor, AntInventory, Dead, InventoryItem, AntOrientation, AntRole, Facing, Angle,
+        walk::ants_walk,
+        Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
+        Initiative, InventoryItem,
     },
     background::setup_background,
     common::{ui::on_update_position, Id},
-    element::{ui::on_spawn_element, Element, Air, Crushable},
+    element::{ui::on_spawn_element, Air, Crushable, Element},
     food::FoodCount,
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability, Unstable},
-    grid::{periodic_save_world_state, setup_window_onunload_save_world_state, setup_world_map, LastSaveTime, position::Position},
+    grid::{
+        position::Position,
+        save::{periodic_save_world_state, setup_window_onunload_save_world_state, LastSaveTime},
+        setup_world_map,
+    },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
-    settings::{Settings, Probabilities},
-    time::{play_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE, setup_fast_forward_time},
+    settings::{Probabilities, Settings},
+    time::{play_time, setup_fast_forward_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE},
     world_rng::Rng,
 };
 
@@ -53,6 +59,7 @@ impl Plugin for SimulationPlugin {
         app.register_saveable::<Facing>();
         app.register_saveable::<Angle>();
         app.register_saveable::<AntRole>();
+        app.register_saveable::<Hunger>();
         app.register_saveable::<AntInventory>();
         app.register_saveable::<InventoryItem>();
         app.register_saveable::<Id>();

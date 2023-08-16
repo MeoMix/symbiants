@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use chrono::{Utc, TimeZone, LocalResult};
 use std::time::Duration;
 
-use crate::grid::LastSaveTime;
+use crate::grid::save::LastSaveTime;
 
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
 pub const FAST_FORWARD_TICK_RATE: f32 = 0.001 / 60.0;
