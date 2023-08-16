@@ -10,7 +10,7 @@ use crate::{
     food::FoodCount,
     name_list::get_random_name,
     settings::Settings,
-    world_rng::Rng,
+    world_rng::Rng, nest::Nest,
 };
 
 pub mod position;
@@ -23,13 +23,12 @@ use self::{
     save::{load_existing_world, LastSaveTime},
 };
 
+// TODO: Maybe parts of this should be reflected rather than regenerating from settings?
 #[derive(Resource, Debug)]
 pub struct WorldMap {
     width: isize,
     height: isize,
     surface_level: isize,
-    has_started_nest: bool,
-    is_nested: bool,
     created_at: DateTime<Utc>,
     elements_cache: Vec<Vec<Entity>>,
 }
@@ -74,6 +73,7 @@ pub fn initialize_new_world(world: &mut World) {
     world.insert_resource(settings);
     world.init_resource::<FoodCount>();
     world.init_resource::<LastSaveTime>();
+    world.init_resource::<Nest>();
 
     for y in 0..settings.world_height {
         for x in 0..settings.world_width {
@@ -131,8 +131,6 @@ impl WorldMap {
             width,
             height,
             surface_level,
-            has_started_nest: false,
-            is_nested: false,
             elements_cache,
             created_at: Utc::now(),
         }
@@ -148,22 +146,6 @@ impl WorldMap {
 
     pub fn surface_level(&self) -> &isize {
         &self.surface_level
-    }
-
-    pub fn has_started_nest(&self) -> &bool {
-        &self.has_started_nest
-    }
-
-    pub fn start_nest(&mut self) {
-        self.has_started_nest = true;
-    }
-
-    pub fn is_nested(&self) -> bool {
-        self.is_nested
-    }
-
-    pub fn mark_nested(&mut self) {
-        self.is_nested = true;
     }
 
     // round up so start at 1
@@ -187,7 +169,7 @@ impl WorldMap {
             .and_then(|row| row.get(position.x as usize))
     }
 
-    pub fn get_element_expect(&self, position: Position) -> &Entity {
+    pub fn element(&self, position: Position) -> &Entity {
         self.get_element(position).expect(&format!(
             "Element entity not found at the position: {:?}",
             position

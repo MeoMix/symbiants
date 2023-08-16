@@ -8,6 +8,7 @@ mod gravity;
 mod grid;
 mod mouse;
 mod name_list;
+mod nest;
 mod pancam;
 mod settings;
 mod simulation;

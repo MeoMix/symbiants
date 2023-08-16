@@ -28,7 +28,7 @@ use crate::{
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     settings::{Probabilities, Settings},
     time::{play_time, setup_fast_forward_time, IsFastForwarding, PendingTicks, DEFAULT_TICK_RATE},
-    world_rng::Rng,
+    world_rng::Rng, nest::Nest,
 };
 
 pub struct SimulationPlugin;
@@ -65,9 +65,7 @@ impl Plugin for SimulationPlugin {
         app.register_saveable::<Id>();
         app.register_saveable::<Option<Id>>();
         app.register_saveable::<Uuid>();
-
-        app.register_saveable::<Parent>();
-        app.register_saveable::<Children>();
+        app.register_saveable::<Nest>();
 
         // UI:
         app.init_resource::<IsPointerCaptured>();

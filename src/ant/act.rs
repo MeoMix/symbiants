@@ -3,7 +3,7 @@ use crate::{
     element::Element,
     grid::{position::Position, WorldMap},
     settings::Settings,
-    world_rng::Rng, common::{get_entity_from_id, Id},
+    world_rng::Rng, common::{get_entity_from_id, Id}, nest::Nest,
 };
  
 use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, AntRole, Initiative};
@@ -24,7 +24,8 @@ pub fn ants_act(
     >,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
-    mut world_map: ResMut<WorldMap>,
+    world_map: Res<WorldMap>,
+    mut nest: ResMut<Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<Rng>,
     mut commands: Commands,
@@ -36,27 +37,27 @@ pub fn ants_act(
         
         // TODO: queen specific logic
         if *role == AntRole::Queen {
-            if !world_map.is_below_surface(&position) && !world_map.has_started_nest() {
+            if !world_map.is_below_surface(&position) && !nest.is_started() {
                 if inventory.0 == None {
                     if rng.0.gen::<f32>() < settings.probabilities.above_surface_queen_nest_dig
                     {
                         let target_position =
                             *position + orientation.rotate_forward().get_forward_delta();
-                        let target_element_entity = *world_map.get_element_expect(target_position);
+                        let target_element_entity = *world_map.element(target_position);
                         commands.dig(ant_entity, target_position, target_element_entity);
 
                         initiative.consume_action();
 
                         // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
                         // enforcing nest generation probabilistically
-                        world_map.start_nest();
+                        nest.start();
 
                         continue;
                     }
                 }
             }
 
-            if position.y - world_map.surface_level() > 8 && !world_map.is_nested() {
+            if position.y - world_map.surface_level() > 8 && !nest.is_completed() {
                 // Check if the queen is sufficiently surounded by space while being deep underground and, if so, decide to start nesting.
                 let left_position = *position + Position::NEG_X;
                 let above_position = *position + Position::NEG_Y;
@@ -80,14 +81,14 @@ pub fn ants_act(
                 );
 
                 if has_valid_air_nest && has_valid_dirt_nest {
-                    world_map.mark_nested();
+                    nest.complete();
 
                     // Spawn birthing component on QueenAnt
                     commands.entity(ant_entity).insert(Birthing::default());
 
                     if inventory.0 != None {
                         let target_position = *position + orientation.get_forward_delta();
-                        let target_element_entity = world_map.get_element_expect(target_position);
+                        let target_element_entity = world_map.element(target_position);
                         commands.drop(ant_entity, target_position, *target_element_entity);
                     }
 
@@ -96,7 +97,7 @@ pub fn ants_act(
                 }
             }
 
-            if world_map.is_nested() {
+            if nest.is_completed() {
                 continue;
             }
         }
@@ -111,7 +112,7 @@ pub fn ants_act(
                 {
                     let target_position =
                         *position + orientation.rotate_forward().get_forward_delta();
-                    let target_element_entity = *world_map.get_element_expect(target_position);
+                    let target_element_entity = *world_map.element(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
 
                     initiative.consume_action();
@@ -119,7 +120,7 @@ pub fn ants_act(
                 }
             } else {
                 if rng.0.gen::<f32>() < settings.probabilities.random_drop {
-                    let target_element_entity = world_map.get_element_expect(*position);
+                    let target_element_entity = world_map.element(*position);
                     commands.drop(ant_entity, *position, *target_element_entity);
 
                     initiative.consume_action();
@@ -167,7 +168,7 @@ pub fn ants_act(
 
                 if dig_food || dig_sand || dig_dirt || queen_dig {
                     let target_position = *position + orientation.get_forward_delta();
-                    let target_element_entity = *world_map.get_element_expect(target_position);
+                    let target_element_entity = *world_map.element(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
 
                     initiative.consume_action();
@@ -198,7 +199,7 @@ pub fn ants_act(
 
             if drop_sand || drop_food {
                 // Drop inventory in front of ant
-                let target_element_entity = world_map.get_element_expect(forward_position);
+                let target_element_entity = world_map.element(forward_position);
                 commands.drop(ant_entity, forward_position, *target_element_entity);
                 
                 initiative.consume_action();
