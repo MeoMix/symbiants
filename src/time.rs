@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use chrono::{Utc, TimeZone, LocalResult};
+use chrono::{LocalResult, TimeZone, Utc};
 use std::time::Duration;
 
 pub const DEFAULT_TICK_RATE: f32 = 10.0 / 60.0;
@@ -14,7 +14,7 @@ pub struct GameTime(pub i64);
 
 impl Default for GameTime {
     fn default() -> Self {
-        GameTime(Utc::now().timestamp())
+        GameTime(Utc::now().timestamp_millis())
     }
 }
 
@@ -33,7 +33,7 @@ impl PendingTicks {
 // When the app first loads - determine how long user has been away and fast-forward time accordingly.
 pub fn setup_fast_forward_time(game_time: Res<GameTime>, mut fixed_time: ResMut<FixedTime>) {
     // Recreate UTC from last_save_time timestamp
-    let game_time_utc =  match Utc.timestamp_opt(game_time.0, 0) {
+    let game_time_utc = match Utc.timestamp_millis_opt(game_time.0) {
         LocalResult::Single(datetime) => datetime,
         LocalResult::Ambiguous(a, b) => {
             // Handle the case where two possible DateTime<Utc> values exist.
@@ -88,7 +88,7 @@ pub fn play_time(
     }
 }
 
-pub fn update_game_time(mut game_time: ResMut<GameTime>,) {
+pub fn update_game_time(mut game_time: ResMut<GameTime>) {
     // Each tick we need to update GameTime by an amount of real-world time equal to the tick rate.
-    game_time.0 += DEFAULT_TICK_RATE as i64;
+    game_time.0 += (DEFAULT_TICK_RATE * 1000.0) as i64;
 }
