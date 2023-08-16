@@ -22,8 +22,8 @@ pub struct Probabilities {
 #[derive(Resource, Copy, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct Settings {
-    pub auto_snapshot_interval_s: isize,
-    pub auto_save_interval_s: isize,
+    pub snapshot_interval: isize,
+    pub save_interval: isize,
     pub world_width: isize,
     pub world_height: isize,
     // sand turns to dirt when stacked this high
@@ -50,10 +50,10 @@ impl Default for Settings {
     fn default() -> Settings {
         Settings {
             // Save the world automatically because it's possible the browser could crash so saving on window unload isn't 100% reliable.
-            auto_save_interval_s: 60,
+            save_interval: 60,
             // Saving data to local storage is slow, but generating the snapshot of the world is also slow.
             // Take snapshots aggressively because browser tab closes too quickly to JIT snapshot.
-            auto_snapshot_interval_s: 1,
+            snapshot_interval: 1,
             world_width: 144,
             world_height: 81,
             compact_sand_depth: 15,

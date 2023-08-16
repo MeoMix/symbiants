@@ -108,14 +108,10 @@ impl Command for DigElementCommand {
         let inventory_item_bundle = InventoryItemBundle::new(inventory_element, ant_id.clone());
         let inventory_item_element_id = inventory_item_bundle.id.clone();
 
-        let inventory_item_entity = world.spawn(inventory_item_bundle).id();
+        world.spawn(inventory_item_bundle);
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => {
-                info!(
-                    "Adding inventory item {:?} to ant {:?}",
-                    inventory_item_entity, self.ant_entity
-                );
                 inventory.0 = Some(inventory_item_element_id);
             }
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
