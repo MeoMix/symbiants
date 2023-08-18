@@ -9,6 +9,7 @@ pub const SECONDS_PER_DAY: i64 = 86_400;
 
 // NOTE: `bevy_reflect` doesn't support DateTime<Utc> without manually implement Reflect (which is hard)
 // So, use a timestamp instead and convert to DateTime<Utc> when needed.
+// Also, Time/Instant/Duration aren't serializable.
 #[derive(Resource, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct GameTime(pub i64);
