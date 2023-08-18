@@ -52,7 +52,6 @@ pub fn handle_mouse_clicks(
                 let Some(entity) = world_map.get_element(grid_position) else {
                     return;
                 };
-                info!("replace_element: {:?}", grid_position);
                 commands.replace_element(grid_position, Element::Food, *entity);
 
                 food_count.0 -= 1;

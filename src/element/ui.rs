@@ -20,8 +20,6 @@ pub fn on_spawn_element(
     world_map: Res<WorldMap>,
 ) {
     for (entity, position, element) in &elements {
-        info!("on_spawn_element: {:?} {:?} {:?}", entity, position, element);
-
         commands.entity(entity).insert(SpriteBundle {
             transform: Transform::from_translation(position.as_world_position(&world_map)),
             sprite: get_element_sprite(element),
