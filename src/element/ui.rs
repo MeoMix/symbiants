@@ -1,6 +1,6 @@
 use super::Element;
-use crate::grid::position::Position;
-use bevy::{prelude::*, sprite::Anchor};
+use crate::grid::{position::Position, WorldMap};
+use bevy::prelude::*;
 
 pub fn get_element_sprite(element: &Element) -> Sprite {
     let color = match element {
@@ -11,20 +11,19 @@ pub fn get_element_sprite(element: &Element) -> Sprite {
         Element::Food => Color::rgb(0.388, 0.584, 0.294),
     };
 
-    Sprite {
-        color,
-        anchor: Anchor::TopLeft,
-        ..default()
-    }
+    Sprite { color, ..default() }
 }
 
 pub fn on_spawn_element(
     mut commands: Commands,
     elements: Query<(Entity, &Position, &Element), Added<Element>>,
+    world_map: Res<WorldMap>,
 ) {
     for (entity, position, element) in &elements {
+        info!("on_spawn_element: {:?} {:?} {:?}", entity, position, element);
+
         commands.entity(entity).insert(SpriteBundle {
-            transform: Transform::from_translation(position.as_world_position()),
+            transform: Transform::from_translation(position.as_world_position(&world_map)),
             sprite: get_element_sprite(element),
             ..default()
         });

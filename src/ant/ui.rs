@@ -4,7 +4,7 @@ use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead}
 use crate::{
     common::{get_entity_from_id, Id, Label, TranslationOffset},
     element::{ui::get_element_sprite, Element},
-    grid::position::Position,
+    grid::{position::Position, WorldMap},
     time::IsFastForwarding,
 };
 use bevy::prelude::*;
@@ -26,11 +26,11 @@ pub fn on_spawn_ant(
     asset_server: Res<AssetServer>,
     id_query: Query<(Entity, &Id)>,
     elements_query: Query<&Element>,
+    world_map: Res<WorldMap>,
 ) {
     for (entity, position, color, orientation, name, role, inventory) in &ants_query {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
-        // y-offset is to align ant with the ground, but then ant looks weird when rotated if x isn't adjusted.
-        let translation_offset = TranslationOffset(Vec3::new(0.5, -0.5, 1.0));
+        let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
 
         commands
             .entity(entity)
@@ -45,7 +45,9 @@ pub fn on_spawn_ant(
                         ..default()
                     },
                     transform: Transform {
-                        translation: position.as_world_position().add(translation_offset.0),
+                        translation: position
+                            .as_world_position(&world_map)
+                            .add(translation_offset.0),
                         rotation: orientation.as_world_rotation(),
                         scale: orientation.as_world_scale(),
                         ..default()
@@ -63,7 +65,7 @@ pub fn on_spawn_ant(
                 if *role == AntRole::Queen {
                     parent.spawn(SpriteBundle {
                         texture: asset_server.load("images/crown.png"),
-                        transform: Transform::from_translation(Vec3::new(0.25, 0.5, 1.0)),
+                        transform: Transform::from_xyz(0.25, 0.5, 1.0),
                         sprite: Sprite {
                             custom_size: Some(Vec2::splat(0.5)),
                             ..default()
@@ -74,13 +76,15 @@ pub fn on_spawn_ant(
             });
 
         // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise. This isn't a good way of achieving this.
-        let translation_offset = TranslationOffset(Vec3::new(0.5, -1.5, 1.0));
+        let translation_offset = TranslationOffset(Vec3::new(0.0, -1.0, 1.0));
 
         commands.spawn((
             translation_offset,
             Text2dBundle {
                 transform: Transform {
-                    translation: position.as_world_position().add(translation_offset.0),
+                    translation: position
+                        .as_world_position(&world_map)
+                        .add(translation_offset.0),
                     // TODO: This is an unreasonably small value for text, but is needed for crisp rendering. Does that mean I am doing something wrong?
                     scale: Vec3::new(0.01, 0.01, 0.0),
                     ..default()
@@ -162,7 +166,7 @@ fn get_inventory_item_sprite_bundle(
     let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
 
     let sprite_bundle = SpriteBundle {
-        transform: Transform::from_translation(Vec3::new(0.5, 0.75, 1.0)),
+        transform: Transform::from_xyz(1.0, 0.25, 1.0),
         sprite: get_element_sprite(inventory_item_element),
         ..default()
     };

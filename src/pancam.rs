@@ -57,7 +57,6 @@ fn clamp_translation(
     window_size: Vec2,
 ) {
     let proj_size = projection.area.size();
-
     let world_units_per_device_pixel = proj_size / window_size;
 
     // The proposed new camera position

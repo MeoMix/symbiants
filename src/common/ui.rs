@@ -2,7 +2,10 @@ use std::ops::Add;
 
 use bevy::prelude::*;
 
-use crate::{grid::position::Position, time::IsFastForwarding};
+use crate::{
+    grid::{position::Position, WorldMap},
+    time::IsFastForwarding,
+};
 
 use super::{Label, TranslationOffset};
 
@@ -14,6 +17,7 @@ pub fn on_update_position(
     mut query: Query<(Ref<Position>, &mut Transform, Option<&TranslationOffset>), Without<Label>>,
     mut label_query: Query<(&mut Transform, Option<&TranslationOffset>, &Label), With<Label>>,
     is_fast_forwarding: Res<IsFastForwarding>,
+    world_map: Res<WorldMap>,
 ) {
     if is_fast_forwarding.0 {
         return;
@@ -22,7 +26,7 @@ pub fn on_update_position(
     for (position, mut transform, translation_offset) in query.iter_mut() {
         if is_fast_forwarding.is_changed() || position.is_changed() {
             transform.translation = position
-                .as_world_position()
+                .as_world_position(&world_map)
                 .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
         }
     }
@@ -33,7 +37,7 @@ pub fn on_update_position(
 
         if is_fast_forwarding.is_changed() || position.is_changed() {
             transform.translation = position
-                .as_world_position()
+                .as_world_position(&world_map)
                 .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
         }
     }

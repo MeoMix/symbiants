@@ -1,4 +1,7 @@
-use crate::{pancam::{PanCam, PanCamPlugin}, grid::{WorldMap, setup_world_map}};
+use crate::{
+    grid::{setup_world_map, WorldMap},
+    pancam::{PanCam, PanCamPlugin},
+};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -8,11 +11,11 @@ use bevy::{
 pub struct MainCamera;
 
 // Determine a scaling factor so world fills available screen space.
-// NOTE: resize event is sent on load so this functions as an initializer, too.
+// NOTE: resize event is sent on load (due to fit_canvas_to_parent: true) so this functions as an initializer, too.
 fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
-    mut query: Query<(&mut Transform, &mut OrthographicProjection), With<MainCamera>>,
+    mut query: Query<&mut OrthographicProjection, With<MainCamera>>,
     world_map: Res<WorldMap>,
 ) {
     for resize_event in resize_events.iter() {
@@ -21,14 +24,10 @@ fn window_resize(
         };
 
         if resize_event.window == entity {
-            let (mut transform, mut projection) = query.single_mut();
-
-            let scale = (resize_event.width / *world_map.width() as f32)
+            let max_ratio = (resize_event.width / *world_map.width() as f32)
                 .max(resize_event.height / *world_map.height() as f32);
 
-            transform.translation.x = resize_event.width / scale / 2.0;
-            transform.translation.y = -resize_event.height / scale / 2.0;
-            projection.scale = 1.0 / scale;
+            query.single_mut().scale = 1.0 / max_ratio;
         }
     }
 }
@@ -37,10 +36,10 @@ fn setup(mut commands: Commands, world_map: Res<WorldMap>) {
     commands
         .spawn((Camera2dBundle::default(), MainCamera))
         .insert(PanCam {
-            min_x: Some(0.0),
-            min_y: Some(-world_map.height() as f32),
-            max_x: Some(*world_map.width() as f32),
-            max_y: Some(0.0),
+            min_x: Some(-world_map.width() as f32 / 2.0),
+            min_y: Some(-world_map.height() as f32 / 2.0),
+            max_x: Some(*world_map.width() as f32 / 2.0),
+            max_y: Some(*world_map.height() as f32 / 2.0),
             min_scale: 0.01,
             ..default()
         });
