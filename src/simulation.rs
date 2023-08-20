@@ -89,6 +89,7 @@ impl Plugin for SimulationPlugin {
                 setup_world_map,
                 setup_fast_forward_time,
                 setup_background,
+                #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
             )
                 .chain(),
@@ -132,6 +133,7 @@ impl Plugin for SimulationPlugin {
                 // Provide an opportunity to write world state to disk.
                 // This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
                 // to avoid losing too much state in the event of a crash.
+                #[cfg(target_arch = "wasm32")]
                 periodic_save_world_state,
                 // Ensure render state reflects simulation state after having applied movements and command updates.
                 (

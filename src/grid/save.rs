@@ -62,6 +62,7 @@ fn create_save_snapshot(world: &mut World) -> Option<String> {
     None
 }
 
+// TODO: Support saving on non-WASM targets.
 fn write_save_snapshot() -> bool {
     let save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
     let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, save_snapshot.deref().clone());
