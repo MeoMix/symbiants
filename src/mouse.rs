@@ -75,9 +75,14 @@ pub fn handle_mouse_clicks(
             .viewport_to_world_2d(camera_transform, cursor_position)
             .unwrap();
 
+        // Convert from world to local position
+        let x = world_position.x + (*world_map.width() as f32 / 2.0) - 0.5;
+        let y = -world_position.y + (*world_map.height() as f32 / 2.0) - 0.5;
+
+        // TODO: is abs + round the right way to do this? maybe round() will off-by-one?
         let grid_position = Position {
-            x: world_position.x.abs().floor() as isize,
-            y: world_position.y.abs().floor() as isize,
+            x: x.abs().round() as isize,
+            y: y.abs().round() as isize
         };
 
         let Some(entity) = world_map.get_element(grid_position) else {
