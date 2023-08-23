@@ -4,7 +4,7 @@ use super::{
 use crate::{
     grid::position::Position,
     name_list::get_random_name,
-    time::{DEFAULT_TICK_RATE, SECONDS_PER_HOUR},
+    time::{DEFAULT_SECONDS_PER_TICK, SECONDS_PER_HOUR},
 };
 use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
@@ -20,7 +20,7 @@ pub struct Birthing {
 impl Birthing {
     pub fn default() -> Self {
         let max = 100.0;
-        let rate_of_birthing = max / (SECONDS_PER_HOUR as f32 * DEFAULT_TICK_RATE);
+        let rate_of_birthing = max / (SECONDS_PER_HOUR as f32 * DEFAULT_SECONDS_PER_TICK);
 
         Self {
             value: 0.0,

@@ -2,7 +2,7 @@ use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, Initia
 use crate::{
     element::Element,
     grid::{position::Position, WorldMap},
-    time::{DEFAULT_TICK_RATE, SECONDS_PER_DAY}, common::{Id, get_entity_from_id},
+    time::{DEFAULT_SECONDS_PER_TICK, SECONDS_PER_DAY}, common::{Id, get_entity_from_id},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,7 @@ pub struct Hunger {
 impl Hunger {
     pub fn default() -> Self {
         let max = 100.0;
-        let rate_of_hunger = max / (SECONDS_PER_DAY as f32 * DEFAULT_TICK_RATE);
+        let rate_of_hunger = max / (SECONDS_PER_DAY as f32 * DEFAULT_SECONDS_PER_TICK);
 
         Self {
             value: 0.0,

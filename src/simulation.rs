@@ -30,8 +30,8 @@ use crate::{
     nest::Nest,
     settings::{Probabilities, Settings},
     time::{
-        play_time, setup_fast_forward_time, update_game_time, GameTime, IsFastForwarding,
-        PendingTicks, DEFAULT_TICK_RATE,
+        set_rate_of_time, setup_game_time, update_game_time, GameTime, IsFastForwarding,
+        PendingTicks, DEFAULT_SECONDS_PER_TICK,
     },
 };
 
@@ -81,13 +81,13 @@ impl Plugin for SimulationPlugin {
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
         // app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
-        app.insert_resource(FixedTime::new_from_secs(DEFAULT_TICK_RATE));
+        app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
         app.add_systems(
             Startup,
             (
                 setup_world_map,
-                setup_fast_forward_time,
+                setup_game_time,
                 setup_background,
                 #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
@@ -145,7 +145,7 @@ impl Plugin for SimulationPlugin {
                     .chain(),
                 (on_spawn_ant, on_spawn_element).chain(),
                 update_game_time,
-                play_time,
+                set_rate_of_time,
             )
                 .chain(),
         );
