@@ -7,6 +7,7 @@ use crate::{
         Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Facing,
         Initiative,
     },
+    common::Id,
     element::{AirElementBundle, DirtElementBundle, Element},
     food::FoodCount,
     name_list::get_random_name,
@@ -33,6 +34,16 @@ pub struct WorldMap {
 }
 
 pub fn setup_world_map(world: &mut World) {
+    // TODO: I'm reusing this setup for both initial app load and reload of app state but should probably split them apart?
+    // Clearing persistent entities is only needed for reload of app state.
+    // Checking `load_existing_world` isn't necessary when reloading, too.
+    let mut persistent_entity_query = world.query_filtered::<Entity, With<Id>>();
+    let persistent_entites = persistent_entity_query.iter(&world).collect::<Vec<_>>();
+
+    for entity in persistent_entites {
+        world.entity_mut(entity).despawn_recursive();
+    }
+
     if !load_existing_world(world) {
         initialize_new_world(world);
     }

@@ -15,7 +15,7 @@ const BORDER_WIDTH: Val = Val::Px(5.0);
 const FONT_SIZE: f32 = 32.0;
 const FONT_COLOR: Color = Color::RED;
 
-pub fn update_loading_text(
+pub fn update_loading_dialog(
     mut text_query: Query<&mut Text, With<LoadingDialogText>>,
     dialog_query: Query<Entity, With<LoadingDialog>>,
     pending_ticks: Res<PendingTicks>,

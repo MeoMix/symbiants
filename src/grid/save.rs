@@ -110,3 +110,7 @@ pub fn load_existing_world(world: &mut World) -> bool {
         })
         .is_ok()
 }
+
+pub fn delete_save() {
+    LocalStorage::delete(LOCAL_STORAGE_KEY);
+}

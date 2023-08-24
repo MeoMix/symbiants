@@ -15,6 +15,7 @@ RUN apt-get update && \
 # Need to manually ensure nightly is configured when using bookworm
 RUN rustup toolchain install nightly
 RUN rustup default nightly
+RUN rustup component add rustfmt
 RUN rustup target install wasm32-unknown-unknown
 
 # trunk is used for serving in development and wasm-bindgen-cli is used for testing

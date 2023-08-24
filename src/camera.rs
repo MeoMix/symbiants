@@ -1,6 +1,7 @@
 use crate::{
     grid::{setup_world_map, WorldMap},
     pancam::{PanCam, PanCamPlugin},
+    story_state::StoryState,
 };
 use bevy::{
     prelude::*,
@@ -50,7 +51,13 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PanCamPlugin::default());
-        app.add_systems(Startup, setup.after(setup_world_map));
+        // app.add_systems(Startup, setup.after(setup_world_map));
+
+        app.add_systems(
+            OnEnter(StoryState::NotStarted),
+            setup.after(setup_world_map),
+        );
+
         app.add_systems(Update, window_resize);
     }
 }

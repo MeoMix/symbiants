@@ -29,6 +29,7 @@ use crate::{
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     nest::Nest,
     settings::{Probabilities, Settings},
+    story_state::{setup_story_state, StoryState},
     time::{
         set_rate_of_time, setup_game_time, update_game_time, GameTime, IsFastForwarding,
         PendingTicks, DEFAULT_SECONDS_PER_TICK,
@@ -83,12 +84,15 @@ impl Plugin for SimulationPlugin {
         // app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
         app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
+        app.add_state::<StoryState>();
+
         app.add_systems(
-            Startup,
+            OnEnter(StoryState::NotStarted),
             (
                 setup_world_map,
                 setup_game_time,
                 setup_background,
+                setup_story_state,
                 #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
             )

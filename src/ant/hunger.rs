@@ -1,8 +1,10 @@
-use super::{commands::AntCommandsExt, Dead, AntInventory, AntOrientation, Initiative};
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, Dead, Initiative};
 use crate::{
+    common::{get_entity_from_id, Id},
     element::Element,
     grid::{position::Position, WorldMap},
-    time::{DEFAULT_SECONDS_PER_TICK, SECONDS_PER_DAY}, common::{Id, get_entity_from_id},
+    story_state::StoryState,
+    time::{DEFAULT_SECONDS_PER_TICK, SECONDS_PER_DAY},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -64,6 +66,7 @@ pub fn ants_hunger(
     id_query: Query<(Entity, &Id)>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
+    mut story_state: ResMut<NextState<StoryState>>,
 ) {
     for (entity, mut hunger, mut orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
@@ -73,6 +76,8 @@ pub fn ants_hunger(
         if hunger.is_starving() {
             commands.entity(entity).insert(Dead);
             *orientation = orientation.flip_onto_back();
+            // NOTE: It's unfortunate I set this here and then duplicate logic in setup_story_state
+            story_state.set(StoryState::Over);
         } else if hunger.is_hungry() {
             if !initiative.can_act() {
                 continue;

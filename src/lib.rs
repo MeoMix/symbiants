@@ -12,6 +12,7 @@ mod nest;
 mod pancam;
 mod settings;
 mod simulation;
+mod story_state;
 mod time;
 mod ui;
 
