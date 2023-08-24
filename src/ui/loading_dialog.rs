@@ -14,8 +14,6 @@ pub struct LoadingDialogText;
 const MIN_PENDING_TICKS: isize = 1000;
 
 const BORDER_WIDTH: Val = Val::Px(5.0);
-const FONT_SIZE: f32 = 32.0;
-const FONT_COLOR: Color = Color::RED;
 
 pub fn update_loading_dialog(
     mut text_query: Query<&mut Text, With<LoadingDialogText>>,
@@ -24,12 +22,6 @@ pub fn update_loading_dialog(
     is_fast_forwarding: Res<IsFastForwarding>,
     mut commands: Commands,
 ) {
-    let default_text_style = TextStyle {
-        font_size: FONT_SIZE,
-        color: FONT_COLOR,
-        ..default()
-    };
-
     if is_fast_forwarding.is_changed() {
         if is_fast_forwarding.0 && pending_ticks.0 > MIN_PENDING_TICKS {
             commands
@@ -68,8 +60,8 @@ pub fn update_loading_dialog(
 
                         dialog.spawn((
                             TextBundle::from_sections([
-                                TextSection::new(&format!("You were gone for {:.0} minutes.\nPlease wait while this time is simulated.\nRemaining ticks:", minutes), default_text_style.clone()),
-                                TextSection::new(pending_ticks.0.to_string(), default_text_style.clone())
+                                TextSection::new(&format!("You were gone for {:.0} minutes.\nPlease wait while this time is simulated.\nRemaining ticks:", minutes), DIALOG.content.text_style.clone()),
+                                TextSection::new(pending_ticks.0.to_string(), DIALOG.content.text_style.clone())
                             ]),
                             LoadingDialogText,
                         ));

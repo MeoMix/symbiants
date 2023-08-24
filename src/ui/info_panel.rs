@@ -6,6 +6,8 @@ use crate::{
     grid::WorldMap,
 };
 
+use super::common::panel::PANEL;
+
 #[derive(Component)]
 pub struct InfoPanel;
 
@@ -22,16 +24,8 @@ pub struct InfoPanelFoodText;
 pub struct InfoPanelDayText;
 
 const BORDER_WIDTH: Val = Val::Px(5.0);
-const FONT_SIZE: f32 = 32.0;
-const FONT_COLOR: Color = Color::RED;
 
 pub fn setup_info_panel(mut commands: Commands) {
-    let default_text_style = TextStyle {
-        font_size: FONT_SIZE,
-        color: FONT_COLOR,
-        ..default()
-    };
-
     commands
         .spawn((
             NodeBundle {
@@ -50,35 +44,35 @@ pub fn setup_info_panel(mut commands: Commands) {
         .with_children(|info_panel| {
             info_panel.spawn((
                 TextBundle::from_sections([
-                    TextSection::new("Ants:", default_text_style.clone()),
-                    TextSection::from_style(default_text_style.clone()),
+                    TextSection::new("Ants:", PANEL.content.text_style.clone()),
+                    TextSection::from_style(PANEL.content.text_style.clone()),
                 ]),
                 InfoPanelAntCountText,
             ));
 
             info_panel.spawn((
                 TextBundle::from_sections([
-                    TextSection::new("Hunger:", default_text_style.clone()),
-                    TextSection::from_style(default_text_style.clone()),
-                    TextSection::new("%", default_text_style.clone()),
+                    TextSection::new("Hunger:", PANEL.content.text_style.clone()),
+                    TextSection::from_style(PANEL.content.text_style.clone()),
+                    TextSection::new("%", PANEL.content.text_style.clone()),
                 ]),
                 InfoPanelAntHungerText,
             ));
 
             info_panel.spawn((
                 TextBundle::from_sections([
-                    TextSection::new("Food:", default_text_style.clone()),
-                    TextSection::from_style(default_text_style.clone()),
+                    TextSection::new("Food:", PANEL.content.text_style.clone()),
+                    TextSection::from_style(PANEL.content.text_style.clone()),
                 ]),
                 InfoPanelFoodText,
             ));
 
             info_panel.spawn((
                 TextBundle::from_sections([
-                    TextSection::new("Day:", default_text_style.clone()),
-                    TextSection::from_style(default_text_style.clone()),
-                    TextSection::new(" of ", default_text_style.clone()),
-                    TextSection::from_style(default_text_style.clone()),
+                    TextSection::new("Day:", PANEL.content.text_style.clone()),
+                    TextSection::from_style(PANEL.content.text_style.clone()),
+                    TextSection::new(" of ", PANEL.content.text_style.clone()),
+                    TextSection::from_style(PANEL.content.text_style.clone()),
                 ]),
                 InfoPanelDayText,
             ));

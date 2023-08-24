@@ -19,16 +19,8 @@ pub enum DialogButtonAction {
 }
 
 const BORDER_WIDTH: Val = Val::Px(5.0);
-const FONT_SIZE: f32 = 32.0;
-const FONT_COLOR: Color = Color::RED;
 
 pub fn setup_story_over_dialog(mut commands: Commands) {
-    let default_text_style = TextStyle {
-        font_size: FONT_SIZE,
-        color: FONT_COLOR,
-        ..default()
-    };
-
     let modal_overlay_bundle = (
         NodeBundle {
             style: Style {
@@ -80,7 +72,7 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
     let story_over_text_bundle = (
         TextBundle::from_sections([TextSection::new(
             &format!("Your queen died. Sadge. Story over."),
-            default_text_style.clone(),
+            DIALOG.content.text_style.clone(),
         )]),
         StoryOverDialogText,
     );
