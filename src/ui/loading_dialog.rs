@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::time::{IsFastForwarding, PendingTicks};
 
-use super::common::dialog::DIALOG;
+use super::common::{dialog::DIALOG, overlay::OVERLAY};
 
 #[derive(Component)]
 pub struct LoadingDialog;
@@ -12,8 +12,6 @@ pub struct LoadingDialogText;
 
 // Don't flicker the dialogs visibility when processing a small number of ticks
 const MIN_PENDING_TICKS: isize = 1000;
-
-const BORDER_WIDTH: Val = Val::Px(5.0);
 
 pub fn update_loading_dialog(
     mut text_query: Query<&mut Text, With<LoadingDialogText>>,
@@ -27,15 +25,8 @@ pub fn update_loading_dialog(
             commands
             .spawn((
                 NodeBundle {
-                    style: Style {
-                        width: Val::Percent(100.0),
-                        height: Val::Percent(100.0),
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
-                        position_type: PositionType::Absolute,
-                        ..default()
-                    },
-                    background_color: Color::rgba(0.0, 0.0, 0.0, 0.8).into(),
+                    style: OVERLAY.style.clone(),
+                    background_color: OVERLAY.background_color.clone(),
                     ..default()
                 },
                 LoadingDialog,
@@ -43,16 +34,9 @@ pub fn update_loading_dialog(
             .with_children(|dialog_container| {
                 dialog_container
                     .spawn(NodeBundle {
-                        style: Style {
-                            width: Val::Percent(25.0),
-                            height: Val::Percent(50.0),
-                            max_width: Val::Percent(25.0),
-                            max_height: Val::Percent(50.0),
-                            border: UiRect::all(BORDER_WIDTH),
-                            ..default()
-                        },
-                        background_color: DIALOG.background_color.normal,
-                        border_color: DIALOG.border_color.normal,
+                        style: DIALOG.style.clone(),
+                        background_color: DIALOG.background_color,
+                        border_color: DIALOG.border_color,
                         ..default()
                     })
                     .with_children(|dialog| {

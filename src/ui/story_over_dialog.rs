@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{grid::save::delete_save, story_state::StoryState};
 
-use super::common::{button::BUTTON, dialog::DIALOG};
+use super::common::{button::BUTTON, dialog::DIALOG, overlay::OVERLAY};
 
 #[derive(Component)]
 pub struct StoryOverDialogModalOverlay;
@@ -18,20 +18,11 @@ pub enum DialogButtonAction {
     BeginNewStory,
 }
 
-const BORDER_WIDTH: Val = Val::Px(5.0);
-
 pub fn setup_story_over_dialog(mut commands: Commands) {
     let modal_overlay_bundle = (
         NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                position_type: PositionType::Absolute,
-                ..default()
-            },
-            background_color: Color::rgba(0.0, 0.0, 0.0, 0.8).into(),
+            style: OVERLAY.style.clone(),
+            background_color: OVERLAY.background_color.clone(),
             ..default()
         },
         StoryOverDialogModalOverlay,
@@ -39,75 +30,49 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
 
     let dialog_bundle = (
         NodeBundle {
-            style: Style {
-                width: Val::Percent(25.0),
-                height: Val::Percent(50.0),
-                max_width: Val::Percent(25.0),
-                max_height: Val::Percent(50.0),
-                min_height: Val::Px(400.0),
-                border: UiRect::all(BORDER_WIDTH),
-                display: Display::Flex,
-                flex_direction: FlexDirection::Column,
-                ..default()
-            },
-            background_color: DIALOG.background_color.normal,
-            border_color: DIALOG.border_color.normal,
+            style: DIALOG.style.clone(),
+            background_color: DIALOG.background_color,
+            border_color: DIALOG.border_color,
             ..default()
         },
         StoryOverDialog,
     );
 
-    let dialog_header_bundle = NodeBundle { ..default() };
+    let dialog_header_bundle = NodeBundle {
+        style: DIALOG.header.style.clone(),
+        ..default()
+    };
 
     let dialog_content_bundle = NodeBundle {
-        style: Style {
-            flex_grow: 1.0,
-            flex_shrink: 1.0,
-            flex_basis: Val::Auto,
-            ..default()
-        },
+        style: DIALOG.content.style.clone(),
         ..default()
     };
 
     let story_over_text_bundle = (
         TextBundle::from_sections([TextSection::new(
-            &format!("Your queen died. Sadge. Story over."),
+            "Queen has died. Sadge :(. Story over. Begin again?",
             DIALOG.content.text_style.clone(),
         )]),
         StoryOverDialogText,
     );
 
     let dialog_footer_bundle = NodeBundle {
-        style: Style {
-            display: Display::Flex,
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..default()
-        },
+        style: DIALOG.footer.style.clone(),
         ..default()
     };
 
     let begin_new_story_button_bundle = (
         ButtonBundle {
-            style: Style {
-                height: Val::Px(65.0),
-                border: UiRect::all(Val::Px(5.0)),
-                padding: UiRect::all(Val::Px(5.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            border_color: BUTTON.border_color.normal,
-            background_color: BUTTON.background_color.normal,
+            style: BUTTON.style.clone(),
+            border_color: BUTTON.border_color,
+            background_color: BUTTON.background_color,
             ..default()
         },
         DialogButtonAction::BeginNewStory,
     );
 
-    let begin_new_story_button_text_bundle = TextBundle::from_section(
-        "Begin New Story",
-        BUTTON.style.clone()
-    );
+    let begin_new_story_button_text_bundle =
+        TextBundle::from_section("Begin New Story", BUTTON.text_style.clone());
 
     commands
         .spawn(modal_overlay_bundle)

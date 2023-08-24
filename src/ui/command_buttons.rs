@@ -29,17 +29,9 @@ pub fn setup_command_buttons(mut commands: Commands) {
             button_container
                 .spawn((
                     ButtonBundle {
-                        style: Style {
-                            width: Val::Px(150.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            padding: UiRect::all(Val::Px(5.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BUTTON.border_color.normal,
-                        background_color: BUTTON.background_color.normal,
+                        style: BUTTON.style.clone(),
+                        border_color: BUTTON.border_color,
+                        background_color: BUTTON.background_color,
                         ..default()
                     },
                     FoodButton,
@@ -47,7 +39,7 @@ pub fn setup_command_buttons(mut commands: Commands) {
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
                         "Food",
-                        BUTTON.style.clone()
+                        BUTTON.text_style.clone()
                     ));
                 });
 
@@ -55,19 +47,9 @@ pub fn setup_command_buttons(mut commands: Commands) {
             button_container
                 .spawn((
                     ButtonBundle {
-                        style: Style {
-                            // position_type: PositionType::Absolute,
-                            // right: Val::Px(0.0),
-                            width: Val::Px(150.0),
-                            height: Val::Px(65.0),
-                            border: UiRect::all(Val::Px(5.0)),
-                            padding: UiRect::all(Val::Px(5.0)),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        border_color: BUTTON.border_color.normal,
-                        background_color: BUTTON.background_color.normal,
+                        style: BUTTON.style.clone(),
+                        border_color: BUTTON.border_color,
+                        background_color: BUTTON.background_color,
                         ..default()
                     },
                     ResetButton,
@@ -75,7 +57,7 @@ pub fn setup_command_buttons(mut commands: Commands) {
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
                         "Reset",
-                        BUTTON.style.clone()
+                        BUTTON.text_style.clone()
                     ));
                 });
         });
