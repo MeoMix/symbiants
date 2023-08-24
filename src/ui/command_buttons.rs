@@ -2,13 +2,9 @@ use bevy::prelude::*;
 
 use crate::{grid::save::delete_save, story_state::StoryState};
 
-
 use crate::food::FoodCount;
 
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
-
+use super::common::BUTTON;
 
 #[derive(Component)]
 pub struct ResetButton;
@@ -42,8 +38,8 @@ pub fn setup_command_buttons(mut commands: Commands) {
                             align_items: AlignItems::Center,
                             ..default()
                         },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: NORMAL_BUTTON.into(),
+                        border_color: BUTTON.border_color.normal,
+                        background_color: BUTTON.background_color.normal,
                         ..default()
                     },
                     FoodButton,
@@ -74,8 +70,8 @@ pub fn setup_command_buttons(mut commands: Commands) {
                             align_items: AlignItems::Center,
                             ..default()
                         },
-                        border_color: BorderColor(Color::BLACK),
-                        background_color: NORMAL_BUTTON.into(),
+                        border_color: BUTTON.border_color.normal,
+                        background_color: BUTTON.background_color.normal,
                         ..default()
                     },
                     ResetButton,
@@ -108,27 +104,12 @@ pub fn handle_reset_button_interaction(
 }
 
 pub fn update_food_button(
-    mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &mut BorderColor),
-        (Changed<Interaction>, With<Button>),
-    >,
+    mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<FoodButton>)>,
     mut food_count: ResMut<FoodCount>,
 ) {
-    for (interaction, mut color, mut border_color) in &mut interaction_query {
-        match *interaction {
-            Interaction::Pressed => {
-                *color = PRESSED_BUTTON.into();
-                border_color.0 = Color::RED;
-                food_count.0 += 1;
-            }
-            Interaction::Hovered => {
-                *color = HOVERED_BUTTON.into();
-                border_color.0 = Color::WHITE;
-            }
-            Interaction::None => {
-                *color = NORMAL_BUTTON.into();
-                border_color.0 = Color::BLACK;
-            }
+    for interaction in &mut interaction_query {
+        if *interaction == Interaction::Pressed {
+            food_count.0 += 1;
         }
     }
 }

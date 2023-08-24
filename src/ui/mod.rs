@@ -1,3 +1,4 @@
+mod common;
 mod command_buttons;
 mod info_panel;
 mod loading_dialog;
@@ -5,6 +6,7 @@ mod story_over_dialog;
 
 use crate::story_state::StoryState;
 
+use self::common::*;
 use self::command_buttons::*;
 use self::info_panel::*;
 use self::loading_dialog::*;
@@ -43,6 +45,8 @@ impl Plugin for UIPlugin {
             Update,
             handle_story_over_dialog_button_interactions.run_if(in_state(StoryState::Over)),
         );
+
+        app.add_systems(Update, button_system);
     }
 }
 

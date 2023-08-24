@@ -2,6 +2,8 @@ use bevy::prelude::*;
 
 use crate::{grid::save::delete_save, story_state::StoryState};
 
+use super::common::BUTTON;
+
 #[derive(Component)]
 pub struct StoryOverDialogModalOverlay;
 
@@ -19,8 +21,6 @@ pub enum DialogButtonAction {
 const BORDER_WIDTH: Val = Val::Px(5.0);
 const FONT_SIZE: f32 = 32.0;
 const FONT_COLOR: Color = Color::RED;
-
-const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
 
 pub fn setup_story_over_dialog(mut commands: Commands) {
     let default_text_style = TextStyle {
@@ -105,8 +105,8 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
                 align_items: AlignItems::Center,
                 ..default()
             },
-            border_color: BorderColor(Color::BLACK),
-            background_color: NORMAL_BUTTON.into(),
+            border_color: BUTTON.border_color.normal,
+            background_color: BUTTON.background_color.normal,
             ..default()
         },
         DialogButtonAction::BeginNewStory,
