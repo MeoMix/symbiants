@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{grid::save::delete_save, story_state::StoryState};
 
-use super::common::BUTTON;
+use super::common::{button::BUTTON, dialog::DIALOG};
 
 #[derive(Component)]
 pub struct StoryOverDialogModalOverlay;
@@ -58,8 +58,8 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
                 flex_direction: FlexDirection::Column,
                 ..default()
             },
-            background_color: Color::BLACK.into(),
-            border_color: Color::BLACK.into(),
+            background_color: DIALOG.background_color.normal,
+            border_color: DIALOG.border_color.normal,
             ..default()
         },
         StoryOverDialog,

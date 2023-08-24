@@ -4,7 +4,7 @@ use crate::{grid::save::delete_save, story_state::StoryState};
 
 use crate::food::FoodCount;
 
-use super::common::BUTTON;
+use super::common::button::BUTTON;
 
 #[derive(Component)]
 pub struct ResetButton;

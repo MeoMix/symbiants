@@ -6,7 +6,7 @@ mod story_over_dialog;
 
 use crate::story_state::StoryState;
 
-use self::common::*;
+use self::common::button::*;
 use self::command_buttons::*;
 use self::info_panel::*;
 use self::loading_dialog::*;

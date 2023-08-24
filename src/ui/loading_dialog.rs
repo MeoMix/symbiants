@@ -2,6 +2,8 @@ use bevy::prelude::*;
 
 use crate::time::{IsFastForwarding, PendingTicks};
 
+use super::common::dialog::DIALOG;
+
 #[derive(Component)]
 pub struct LoadingDialog;
 
@@ -57,8 +59,8 @@ pub fn update_loading_dialog(
                             border: UiRect::all(BORDER_WIDTH),
                             ..default()
                         },
-                        background_color: Color::BLACK.into(),
-                        border_color: Color::BLACK.into(),
+                        background_color: DIALOG.background_color.normal,
+                        border_color: DIALOG.border_color.normal,
                         ..default()
                     })
                     .with_children(|dialog| {
