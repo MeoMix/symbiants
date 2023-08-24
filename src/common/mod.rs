@@ -7,8 +7,9 @@ pub mod ui;
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
 
+// TODO: Move this since I renamed it from Label
 #[derive(Component)]
-pub struct Label(pub Entity);
+pub struct AntLabel(pub Entity);
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]

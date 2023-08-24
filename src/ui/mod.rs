@@ -1,11 +1,11 @@
-mod food_button;
+mod command_buttons;
 mod info_panel;
 mod loading_dialog;
 mod story_over_dialog;
 
 use crate::story_state::StoryState;
 
-use self::food_button::*;
+use self::command_buttons::*;
 use self::info_panel::*;
 use self::loading_dialog::*;
 use self::story_over_dialog::*;
@@ -15,7 +15,7 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (setup_info_panel, setup_food_button));
+        app.add_systems(Startup, (setup_info_panel, setup_command_buttons));
         app.add_systems(
             Update,
             (
@@ -26,6 +26,11 @@ impl Plugin for UIPlugin {
                 update_info_panel_day,
                 update_food_button,
             ),
+        );
+        
+        app.add_systems(
+            Update,
+            handle_reset_button_interaction,
         );
 
         app.add_systems(OnEnter(StoryState::Over), setup_story_over_dialog);

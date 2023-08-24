@@ -7,12 +7,13 @@ use crate::{
         Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Facing,
         Initiative,
     },
-    common::Id,
+    common::{Id, AntLabel},
     element::{AirElementBundle, DirtElementBundle, Element},
     food::FoodCount,
     name_list::get_random_name,
     nest::Nest,
     settings::Settings,
+    story_state::StoryState,
     time::GameTime,
 };
 
@@ -37,6 +38,15 @@ pub fn setup_world_map(world: &mut World) {
     // TODO: I'm reusing this setup for both initial app load and reload of app state but should probably split them apart?
     // Clearing persistent entities is only needed for reload of app state.
     // Checking `load_existing_world` isn't necessary when reloading, too.
+
+    // HACK: labels aren't directly tied to their ants and so aren't despawned when ants are despawned.
+    let mut label_query = world.query_filtered::<Entity, With<AntLabel>>();
+    let label_entities = label_query.iter(&world).collect::<Vec<_>>();
+
+    for entity in label_entities {
+        world.entity_mut(entity).despawn_recursive();
+    }
+
     let mut persistent_entity_query = world.query_filtered::<Entity, With<Id>>();
     let persistent_entites = persistent_entity_query.iter(&world).collect::<Vec<_>>();
 
@@ -59,6 +69,9 @@ pub fn setup_world_map(world: &mut World) {
 
     let elements_cache = create_elements_cache(world, width as usize, height as usize);
     world.insert_resource(WorldMap::new(width, height, surface_level, elements_cache));
+
+    let mut story_state = world.resource_mut::<NextState<StoryState>>();
+    story_state.set(StoryState::Telling);
 }
 
 // Create a cache which allows for spatial querying of Elements. This is used to speed up

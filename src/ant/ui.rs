@@ -2,7 +2,7 @@ use std::ops::Add;
 
 use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead};
 use crate::{
-    common::{get_entity_from_id, Id, Label, TranslationOffset},
+    common::{get_entity_from_id, AntLabel, Id, TranslationOffset},
     element::{ui::get_element_sprite, Element},
     grid::{position::Position, WorldMap},
     time::IsFastForwarding,
@@ -99,7 +99,7 @@ pub fn on_spawn_ant(
                 ),
                 ..default()
             },
-            Label(entity),
+            AntLabel(entity),
         ));
     }
 }
