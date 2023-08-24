@@ -47,11 +47,7 @@ pub fn setup_command_buttons(mut commands: Commands) {
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
                         "Food",
-                        TextStyle {
-                            font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                            ..default()
-                        },
+                        BUTTON.style.clone()
                     ));
                 });
 
@@ -79,11 +75,7 @@ pub fn setup_command_buttons(mut commands: Commands) {
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(
                         "Reset",
-                        TextStyle {
-                            font_size: 40.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                            ..default()
-                        },
+                        BUTTON.style.clone()
                     ));
                 });
         });
@@ -95,9 +87,7 @@ pub fn handle_reset_button_interaction(
 ) {
     for interaction in &interaction_query {
         if *interaction == Interaction::Pressed {
-            info!("gogo");
             delete_save();
-
             story_state.set(StoryState::NotStarted);
         }
     }

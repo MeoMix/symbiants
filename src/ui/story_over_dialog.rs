@@ -114,11 +114,7 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
 
     let begin_new_story_button_text_bundle = TextBundle::from_section(
         "Begin New Story",
-        TextStyle {
-            font_size: 40.0,
-            color: Color::rgb(0.9, 0.9, 0.9),
-            ..default()
-        },
+        BUTTON.style.clone()
     );
 
     commands
@@ -158,10 +154,7 @@ pub fn handle_story_over_dialog_button_interactions(
             match dialog_button_action {
                 DialogButtonAction::BeginNewStory => {
                     delete_save();
-
                     story_state.set(StoryState::NotStarted);
-
-                    // TODO: destroy and recreate WorldMap from settings
                 }
             }
         }
