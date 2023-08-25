@@ -1,10 +1,10 @@
 use crate::{
     grid::{setup_world_map, WorldMap},
     pancam::{PanCam, PanCamPlugin},
-    story_state::StoryState,
+    story_state::{on_story_cleanup, StoryState},
 };
 use bevy::{
-    prelude::*, 
+    prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
 
@@ -75,8 +75,10 @@ impl Plugin for CameraPlugin {
             setup.after(setup_world_map),
         );
 
-        // TODO: This isn't right because it'll destroy the camera on gameover but that isn't what is wanted
-        app.add_systems(OnExit(StoryState::Telling), teardown);
+        app.add_systems(
+            OnEnter(StoryState::Cleanup),
+            teardown.before(on_story_cleanup),
+        );
 
         app.add_systems(Update, window_resize);
     }

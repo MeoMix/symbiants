@@ -1,13 +1,13 @@
-mod common;
 mod command_buttons;
+mod common;
 mod info_panel;
 mod loading_dialog;
 mod story_over_dialog;
 
 use crate::story_state::StoryState;
 
-use self::common::button::*;
 use self::command_buttons::*;
+use self::common::button::*;
 use self::info_panel::*;
 use self::loading_dialog::*;
 use self::story_over_dialog::*;
@@ -27,13 +27,11 @@ impl Plugin for UIPlugin {
                 update_info_panel_food,
                 update_info_panel_day,
                 update_food_button,
-            ),
+            )
+                .run_if(in_state(StoryState::Telling)),
         );
-        
-        app.add_systems(
-            Update,
-            handle_reset_button_interaction,
-        );
+
+        app.add_systems(Update, handle_reset_button_interaction);
 
         app.add_systems(OnEnter(StoryState::Over), setup_story_over_dialog);
         app.add_systems(
@@ -43,7 +41,7 @@ impl Plugin for UIPlugin {
 
         app.add_systems(
             Update,
-            handle_story_over_dialog_button_interactions.run_if(in_state(StoryState::Over)),
+            on_interact_button.run_if(in_state(StoryState::Over)),
         );
 
         app.add_systems(Update, button_system);

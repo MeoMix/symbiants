@@ -35,6 +35,7 @@ pub struct WorldMap {
 }
 
 pub fn setup_world_map(world: &mut World) {
+    //TODO: Use cleanup step instead
     // TODO: I'm reusing this setup for both initial app load and reload of app state but should probably split them apart?
     // Clearing persistent entities is only needed for reload of app state.
     // Checking `load_existing_world` isn't necessary when reloading, too.

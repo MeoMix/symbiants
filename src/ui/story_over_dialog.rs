@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{grid::save::delete_save, story_state::StoryState};
+use crate::story_state::StoryState;
 
 use super::common::{button::BUTTON, dialog::DIALOG, overlay::OVERLAY};
 
@@ -14,7 +14,7 @@ pub struct StoryOverDialog;
 pub struct StoryOverDialogText;
 
 #[derive(Component)]
-pub enum DialogButtonAction {
+pub enum StoryOverDialogAction {
     BeginNewStory,
 }
 
@@ -68,7 +68,7 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
             background_color: BUTTON.background_color,
             ..default()
         },
-        DialogButtonAction::BeginNewStory,
+        StoryOverDialogAction::BeginNewStory,
     );
 
     let begin_new_story_button_text_bundle =
@@ -99,9 +99,9 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
         });
 }
 
-pub fn handle_story_over_dialog_button_interactions(
+pub fn on_interact_button(
     interaction_query: Query<
-        (&Interaction, &DialogButtonAction),
+        (&Interaction, &StoryOverDialogAction),
         (Changed<Interaction>, With<Button>),
     >,
     mut story_state: ResMut<NextState<StoryState>>,
@@ -109,9 +109,8 @@ pub fn handle_story_over_dialog_button_interactions(
     for (interaction, dialog_button_action) in &interaction_query {
         if *interaction == Interaction::Pressed {
             match dialog_button_action {
-                DialogButtonAction::BeginNewStory => {
-                    delete_save();
-                    story_state.set(StoryState::NotStarted);
+                StoryOverDialogAction::BeginNewStory => {
+                    story_state.set(StoryState::Cleanup);
                 }
             }
         }

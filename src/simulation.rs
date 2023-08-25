@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_save::AppSaveableExt;
+use bevy_save::{AppSaveableExt, SaveableRegistry, Rollbacks};
 use bevy_turborand::GlobalRng;
 use uuid::Uuid;
 
@@ -29,10 +29,10 @@ use crate::{
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     nest::Nest,
     settings::{Probabilities, Settings},
-    story_state::{setup_story_state, StoryState},
+    story_state::{on_story_cleanup, setup_story_state, StoryState},
     time::{
         set_rate_of_time, setup_game_time, update_game_time, GameTime, IsFastForwarding,
-        PendingTicks, DEFAULT_SECONDS_PER_TICK,
+        PendingTicks, DEFAULT_SECONDS_PER_TICK, teardown_game_time,
     },
 };
 
@@ -40,9 +40,11 @@ pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<SaveableRegistry>();
+        app.init_resource::<Rollbacks>();
+
         app.register_saveable::<Settings>();
         app.register_saveable::<Probabilities>();
-        app.register_saveable::<GameTime>();
 
         // User Resources:
         app.register_saveable::<FoodCount>();
@@ -74,15 +76,13 @@ impl Plugin for SimulationPlugin {
 
         // UI:
         app.init_resource::<IsPointerCaptured>();
-        app.init_resource::<IsFastForwarding>();
-        app.init_resource::<PendingTicks>();
 
         // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
         app.init_resource::<GlobalRng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        // app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
-        app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
+        app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
+        //app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
         app.add_state::<StoryState>();
 
@@ -97,6 +97,14 @@ impl Plugin for SimulationPlugin {
                 setup_window_onunload_save_world_state,
             )
                 .chain(),
+        );
+
+        app.add_systems(
+            OnEnter(StoryState::Cleanup),
+            (
+                teardown_game_time,
+                on_story_cleanup
+            ).chain()
         );
 
         // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken
@@ -151,6 +159,7 @@ impl Plugin for SimulationPlugin {
                 update_game_time,
                 set_rate_of_time,
             )
+                .run_if(in_state(StoryState::Telling))
                 .chain(),
         );
 

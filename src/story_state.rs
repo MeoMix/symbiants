@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::ant::{AntRole, Dead};
+use crate::{ant::{AntRole, Dead}, grid::save::delete_save};
 
 // NOTE: I don't think there's a way to persist this nor should it be persisted - seems like it's useful for controlling view state?
 // So I initialize it from model state in setup_story_state
@@ -10,6 +10,7 @@ pub enum StoryState {
     NotStarted,
     Telling,
     Over,
+    Cleanup,
 }
 
 pub fn setup_story_state(
@@ -22,4 +23,10 @@ pub fn setup_story_state(
     {
         story_state.set(StoryState::Over);
     }
+}
+
+pub fn on_story_cleanup(mut story_state: ResMut<NextState<StoryState>>) {
+    delete_save();
+
+    story_state.set(StoryState::NotStarted);
 }

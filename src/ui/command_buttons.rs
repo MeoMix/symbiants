@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{grid::save::delete_save, story_state::StoryState};
+use crate::story_state::StoryState;
 
 use crate::food::FoodCount;
 
@@ -37,10 +37,7 @@ pub fn setup_command_buttons(mut commands: Commands) {
                     FoodButton,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Food",
-                        BUTTON.text_style.clone()
-                    ));
+                    parent.spawn(TextBundle::from_section("Food", BUTTON.text_style.clone()));
                 });
 
             // Reset Button
@@ -55,10 +52,7 @@ pub fn setup_command_buttons(mut commands: Commands) {
                     ResetButton,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Reset",
-                        BUTTON.text_style.clone()
-                    ));
+                    parent.spawn(TextBundle::from_section("Reset", BUTTON.text_style.clone()));
                 });
         });
 }
@@ -69,8 +63,7 @@ pub fn handle_reset_button_interaction(
 ) {
     for interaction in &interaction_query {
         if *interaction == Interaction::Pressed {
-            delete_save();
-            story_state.set(StoryState::NotStarted);
+            story_state.set(StoryState::Cleanup);
         }
     }
 }
