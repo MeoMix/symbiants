@@ -133,6 +133,8 @@ pub fn on_update_ant_inventory(
                         .iter()
                         .filter(|&&child| inventory_item_sprite_query.get(child).is_ok())
                     {
+                        // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+                        commands.entity(child).remove_parent();
                         commands.entity(child).despawn();
                     }
                 }

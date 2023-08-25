@@ -7,7 +7,7 @@ use crate::{
         Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Facing,
         Initiative,
     },
-    common::{Id, AntLabel},
+    common::{AntLabel, Id},
     element::{AirElementBundle, DirtElementBundle, Element},
     food::FoodCount,
     name_list::get_random_name,

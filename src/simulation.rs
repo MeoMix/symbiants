@@ -81,8 +81,8 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<GlobalRng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
-        //app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
+        //app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
+        app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
         app.add_state::<StoryState>();
 
