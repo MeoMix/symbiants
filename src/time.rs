@@ -48,19 +48,28 @@ impl PendingTicks {
     }
 }
 
-/// On startup, determine how much real-world time has passed since the last time the app ran,
-/// record this value into FixedTime, and anticipate further processing.
-/// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
-/// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
-pub fn setup_game_time(world: &mut World) {
+// TODO: The naming here (initialize, setup, teardown) where initialize/teardown have parity is confusing.
+pub fn initialize_game_time(world: &mut World) {
     // TODO: Just playing around with expressing this manually, I doubt this will stick
     world.resource_mut::<AppTypeRegistry>().write().register::<GameTime>();
     world.resource_mut::<SaveableRegistry>().register::<GameTime>();
     
+    world.init_resource::<GameTime>();
     world.init_resource::<IsFastForwarding>();
     world.init_resource::<PendingTicks>();
+}
 
-    let game_time = world.get_resource::<GameTime>().unwrap();
+pub fn teardown_game_time(world: &mut World) {
+    world.remove_resource::<GameTime>();
+    world.remove_resource::<IsFastForwarding>();
+    world.remove_resource::<PendingTicks>();
+}
+
+/// On startup, determine how much real-world time has passed since the last time the app ran,
+/// record this value into FixedTime, and anticipate further processing.
+/// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
+/// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
+pub fn setup_game_time(game_time: Res<GameTime>, mut fixed_time: ResMut<FixedTime>) {
     let delta_seconds = Utc::now()
         .signed_duration_since(game_time.as_datetime())
         .num_seconds();
@@ -69,16 +78,7 @@ pub fn setup_game_time(world: &mut World) {
     // Limit fast-forward to one day of time
     let elapsed_seconds = std::cmp::min(delta_seconds, SECONDS_PER_DAY);
 
-    let mut fixed_time = world.get_resource_mut::<FixedTime>().unwrap();
     fixed_time.tick(Duration::from_secs(elapsed_seconds as u64));
-}
-
-pub fn teardown_game_time(world: &mut World) {
-    // GameTime, IsFastForwarding, PendingTicks all need to get reset
-
-    world.remove_resource::<GameTime>();
-    world.remove_resource::<IsFastForwarding>();
-    world.remove_resource::<PendingTicks>();
 }
 
 /// Control whether the app runs at the default or fast tick rate.

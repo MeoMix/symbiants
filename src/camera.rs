@@ -33,9 +33,10 @@ fn window_resize(
     }
 }
 
-fn setup(
+fn scale_to_world(
     mut commands: Commands,
     world_map: Res<WorldMap>,
+    mut main_camera_query: Query<(Entity, &mut OrthographicProjection), With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let primary_window = primary_window_query.single();
@@ -45,10 +46,11 @@ fn setup(
     let max_ratio = (primary_window.width() / *world_map.width() as f32)
         .max(primary_window.height() / *world_map.height() as f32);
 
-    let mut camera_bundle = Camera2dBundle::default();
-    camera_bundle.projection.scale = 1.0 / max_ratio;
+    let (main_camera_entity, mut projection) = main_camera_query.single_mut();
 
-    commands.spawn((camera_bundle, MainCamera)).insert(PanCam {
+    projection.scale = 1.0 / max_ratio;
+
+    commands.entity(main_camera_entity).insert(PanCam {
         min_x: Some(-world_map.width() as f32 / 2.0),
         min_y: Some(-world_map.height() as f32 / 2.0),
         max_x: Some(*world_map.width() as f32 / 2.0),
@@ -56,6 +58,11 @@ fn setup(
         min_scale: 0.01,
         ..default()
     });
+}
+
+pub fn setup(mut commands: Commands) {
+    // This needs to run early so main menu is visible even without a WorldMap created.
+    commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 
 pub fn teardown(mut commands: Commands, query: Query<Entity, With<MainCamera>>) {
@@ -70,16 +77,16 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PanCamPlugin::default());
 
-        app.add_systems(
-            OnEnter(StoryState::NotStarted),
-            setup.after(setup_world_map),
-        );
+        app.add_systems(OnEnter(StoryState::Initializing), setup);
+
+        app.add_systems(OnEnter(StoryState::Telling), scale_to_world);
 
         app.add_systems(
             OnEnter(StoryState::Cleanup),
             teardown.before(on_story_cleanup),
         );
 
-        app.add_systems(Update, window_resize);
+        // TODO: This should probably include "Over" until I split states out
+        app.add_systems(Update, window_resize.run_if(in_state(StoryState::Telling)));
     }
 }

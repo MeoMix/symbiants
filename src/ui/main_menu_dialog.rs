@@ -5,27 +5,29 @@ use crate::story_state::StoryState;
 use super::common::{button::BUTTON, dialog::DIALOG, overlay::OVERLAY};
 
 #[derive(Component)]
-pub struct StoryOverDialogModalOverlay;
+pub struct MainMenuDialogModalOverlay;
 
 #[derive(Component)]
-pub struct StoryOverDialog;
+pub struct MainMenuDialog;
 
 #[derive(Component)]
-pub struct StoryOverDialogText;
+pub struct MainMenuDialogText;
 
 #[derive(Component)]
-pub enum StoryOverDialogAction {
-    BeginNewStory,
+pub enum MainMenuDialogAction {
+    BeginStory,
 }
 
-pub fn setup_story_over_dialog(mut commands: Commands) {
+// TODO: Sandbox and About menu buttons
+
+pub fn setup_main_menu_dialog(mut commands: Commands) {
     let modal_overlay_bundle = (
         NodeBundle {
             style: OVERLAY.style.clone(),
             background_color: OVERLAY.background_color.clone(),
             ..default()
         },
-        StoryOverDialogModalOverlay,
+        MainMenuDialogModalOverlay,
     );
 
     let dialog_bundle = (
@@ -35,7 +37,7 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
             border_color: DIALOG.border_color,
             ..default()
         },
-        StoryOverDialog,
+        MainMenuDialog,
     );
 
     let dialog_header_bundle = NodeBundle {
@@ -48,12 +50,12 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
         ..default()
     };
 
-    let story_over_text_bundle = (
+    let main_menu_text_bundle = (
         TextBundle::from_sections([TextSection::new(
-            "Queen has died. Sadge :(. Story over. Begin again?",
+            "Welcome to Symbiants",
             DIALOG.content.text_style.clone(),
         )]),
-        StoryOverDialogText,
+        MainMenuDialogText,
     );
 
     let dialog_footer_bundle = NodeBundle {
@@ -61,18 +63,18 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
         ..default()
     };
 
-    let begin_new_story_button_bundle = (
+    let begin_story_button_bundle = (
         ButtonBundle {
             style: BUTTON.style.clone(),
             border_color: BUTTON.border_color,
             background_color: BUTTON.background_color,
             ..default()
         },
-        StoryOverDialogAction::BeginNewStory,
+        MainMenuDialogAction::BeginStory,
     );
 
-    let begin_new_story_button_text_bundle =
-        TextBundle::from_section("Begin New Story", BUTTON.text_style.clone());
+    let begin_story_button_text_bundle =
+        TextBundle::from_section("Begin Story", BUTTON.text_style.clone());
 
     commands
         .spawn(modal_overlay_bundle)
@@ -83,25 +85,25 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
                 dialog
                     .spawn(dialog_content_bundle)
                     .with_children(|dialog_content| {
-                        dialog_content.spawn(story_over_text_bundle);
+                        dialog_content.spawn(main_menu_text_bundle);
                     });
 
                 dialog
                     .spawn(dialog_footer_bundle)
                     .with_children(|dialog_footer| {
                         dialog_footer
-                            .spawn(begin_new_story_button_bundle)
-                            .with_children(|begin_new_story_button| {
-                                begin_new_story_button.spawn(begin_new_story_button_text_bundle);
+                            .spawn(begin_story_button_bundle)
+                            .with_children(|begin_story_button| {
+                                begin_story_button.spawn(begin_story_button_text_bundle);
                             });
                     });
             });
         });
 }
 
-pub fn on_interact_story_over_button(
+pub fn on_interact_main_menu_button(
     interaction_query: Query<
-        (&Interaction, &StoryOverDialogAction),
+        (&Interaction, &MainMenuDialogAction),
         (Changed<Interaction>, With<Button>),
     >,
     mut story_state: ResMut<NextState<StoryState>>,
@@ -109,8 +111,8 @@ pub fn on_interact_story_over_button(
     for (interaction, dialog_button_action) in &interaction_query {
         if *interaction == Interaction::Pressed {
             match dialog_button_action {
-                StoryOverDialogAction::BeginNewStory => {
-                    story_state.set(StoryState::Cleanup);
+                MainMenuDialogAction::BeginStory => {
+                    story_state.set(StoryState::Creating);
                 }
             }
         }

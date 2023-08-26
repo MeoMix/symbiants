@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_save::{AppSaveableExt, SaveableRegistry, Rollbacks};
+use bevy_save::{AppSaveableExt, Rollbacks, SaveableRegistry};
 use bevy_turborand::GlobalRng;
 use uuid::Uuid;
 
@@ -22,8 +22,12 @@ use crate::{
     food::FoodCount,
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability, Unstable},
     grid::{
+        cleanup_world_map,
         position::Position,
-        save::{periodic_save_world_state, setup_window_onunload_save_world_state},
+        regenerate_cache,
+        save::{
+            load_existing_world, periodic_save_world_state, setup_window_onunload_save_world_state,
+        },
         setup_world_map,
     },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
@@ -31,8 +35,8 @@ use crate::{
     settings::{Probabilities, Settings},
     story_state::{on_story_cleanup, setup_story_state, StoryState},
     time::{
-        set_rate_of_time, setup_game_time, update_game_time, GameTime, IsFastForwarding,
-        PendingTicks, DEFAULT_SECONDS_PER_TICK, teardown_game_time,
+        initialize_game_time, set_rate_of_time, setup_game_time, teardown_game_time,
+        update_game_time, DEFAULT_SECONDS_PER_TICK,
     },
 };
 
@@ -40,6 +44,18 @@ pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
+        // STEPS:
+        // 1) Load everything that is needed for multiple stories.
+        // 2) Check save state.
+        // 3) If save state exists, load saved story
+        // 4) If save state does not exist, show main menu.
+        // 5) If user creates new story from Main Menu then create new story.
+        // 6) Load everything needed for new story.
+        // 7) Load everything needed for current story.
+        // 8) Tell story
+        // 9) Mark story over
+        // 10) Cleanup story
+
         app.init_resource::<SaveableRegistry>();
         app.init_resource::<Rollbacks>();
 
@@ -87,28 +103,36 @@ impl Plugin for SimulationPlugin {
         app.add_state::<StoryState>();
 
         app.add_systems(
-            OnEnter(StoryState::NotStarted),
+            OnEnter(StoryState::Initializing),
+            (initialize_game_time, load_from_save).chain(),
+        );
+
+        app.add_systems(OnEnter(StoryState::Creating), setup_world_map);
+
+        app.add_systems(
+            OnEnter(StoryState::FinalizingStartup),
             (
-                setup_world_map,
+                regenerate_cache,
                 setup_game_time,
                 setup_background,
                 setup_story_state,
                 #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
-            )
-                .chain(),
+            ).chain(),
         );
 
         app.add_systems(
             OnEnter(StoryState::Cleanup),
-            (
-                teardown_game_time,
-                on_story_cleanup
-            ).chain()
+            (teardown_game_time, cleanup_world_map, on_story_cleanup).chain(),
         );
 
         // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken
-        app.add_systems(Update, (is_pointer_captured, handle_mouse_clicks).chain());
+        app.add_systems(
+            Update,
+            (is_pointer_captured, handle_mouse_clicks)
+                .run_if(in_state(StoryState::Telling))
+                .chain(),
+        );
 
         app.add_systems(
             FixedUpdate,
@@ -165,5 +189,18 @@ impl Plugin for SimulationPlugin {
 
         // NOTE: maybe turn this on if need to handle user input events?
         // app.add_systems(PostUpdate, (on_spawn_ant, on_spawn_element));
+    }
+}
+
+pub fn load_from_save(world: &mut World) {
+    let is_loaded: bool = load_existing_world(world);
+
+    let mut story_state = world.resource_mut::<NextState<StoryState>>();
+    if is_loaded {
+        info!("set story state to FinalizingStartup");
+        story_state.set(StoryState::FinalizingStartup);
+    } else {
+        info!("set story state to GatheringSettings");
+        story_state.set(StoryState::GatheringSettings);
     }
 }

@@ -14,7 +14,6 @@ use crate::{
     nest::Nest,
     settings::Settings,
     story_state::StoryState,
-    time::GameTime,
 };
 
 pub mod position;
@@ -22,7 +21,7 @@ pub mod save;
 
 use chrono::{DateTime, Utc};
 
-use self::{position::Position, save::load_existing_world};
+use self::position::Position;
 
 // TODO: Maybe parts of this should be reflected rather than regenerating from settings?
 #[derive(Resource, Debug)]
@@ -34,12 +33,7 @@ pub struct WorldMap {
     elements_cache: Vec<Vec<Entity>>,
 }
 
-pub fn setup_world_map(world: &mut World) {
-    //TODO: Use cleanup step instead
-    // TODO: I'm reusing this setup for both initial app load and reload of app state but should probably split them apart?
-    // Clearing persistent entities is only needed for reload of app state.
-    // Checking `load_existing_world` isn't necessary when reloading, too.
-
+pub fn cleanup_world_map(world: &mut World) {
     // HACK: labels aren't directly tied to their ants and so aren't despawned when ants are despawned.
     let mut label_query = world.query_filtered::<Entity, With<AntLabel>>();
     let label_entities = label_query.iter(&world).collect::<Vec<_>>();
@@ -54,11 +48,11 @@ pub fn setup_world_map(world: &mut World) {
     for entity in persistent_entites {
         world.entity_mut(entity).despawn_recursive();
     }
+}
 
-    if !load_existing_world(world) {
-        initialize_new_world(world);
-    }
-
+/// Called after creating a new story, or loading an existing story from storage.
+/// Creates a cache that maps positions to element entities for quick lookup outside of ECS architecture.
+pub fn regenerate_cache(world: &mut World) {
     let (width, height, surface_level) = {
         let settings = world.resource::<Settings>();
         (
@@ -68,35 +62,19 @@ pub fn setup_world_map(world: &mut World) {
         )
     };
 
-    let elements_cache = create_elements_cache(world, width as usize, height as usize);
+    let elements_cache = create_elements_cache(world, width, height);
     world.insert_resource(WorldMap::new(width, height, surface_level, elements_cache));
 
-    let mut story_state = world.resource_mut::<NextState<StoryState>>();
-    story_state.set(StoryState::Telling);
+    world.resource_mut::<NextState<StoryState>>().set(StoryState::Telling);
 }
 
-// Create a cache which allows for spatial querying of Elements. This is used to speed up
-// most logic because there's a consistent need throughout the application to know what elements are
-// at or near a given position.
-pub fn create_elements_cache(world: &mut World, width: usize, height: usize) -> Vec<Vec<Entity>> {
-    let mut elements_cache = vec![vec![Entity::PLACEHOLDER; width as usize]; height as usize];
-
-    for (position, entity) in world
-        .query_filtered::<(&mut Position, Entity), With<Element>>()
-        .iter(&world)
-    {
-        elements_cache[position.y as usize][position.x as usize] = entity;
-    }
-
-    elements_cache
-}
-
-pub fn initialize_new_world(world: &mut World) {
+// TODO: Probably don't have this method and split it up into ants/elements etc
+pub fn setup_world_map(world: &mut World) {
+    info!("setup world map ran");
     let settings = Settings::default();
 
     world.insert_resource(settings);
     world.init_resource::<FoodCount>();
-    world.init_resource::<GameTime>();
     world.init_resource::<Nest>();
 
     for y in 0..settings.world_height {
@@ -142,6 +120,25 @@ pub fn initialize_new_world(world: &mut World) {
     };
 
     world.spawn_batch(ants);
+
+    let mut story_state = world.resource_mut::<NextState<StoryState>>();
+    story_state.set(StoryState::FinalizingStartup);
+}
+
+// Create a cache which allows for spatial querying of Elements. This is used to speed up
+// most logic because there's a consistent need throughout the application to know what elements are
+// at or near a given position.
+pub fn create_elements_cache(world: &mut World, width: isize, height: isize) -> Vec<Vec<Entity>> {
+    let mut elements_cache = vec![vec![Entity::PLACEHOLDER; width as usize]; height as usize];
+
+    for (position, entity) in world
+        .query_filtered::<(&mut Position, Entity), With<Element>>()
+        .iter(&world)
+    {
+        elements_cache[position.y as usize][position.x as usize] = entity;
+    }
+
+    elements_cache
 }
 
 impl WorldMap {
