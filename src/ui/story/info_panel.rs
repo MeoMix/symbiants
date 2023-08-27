@@ -3,10 +3,8 @@ use bevy::prelude::*;
 use crate::{
     ant::{hunger::Hunger, AntRole},
     food::FoodCount,
-    grid::WorldMap,
+    grid::WorldMap, ui::common::panel::PANEL,
 };
-
-use super::common::panel::PANEL;
 
 #[derive(Component)]
 pub struct InfoPanel;

@@ -3,8 +3,7 @@ use bevy::prelude::*;
 use crate::story_state::StoryState;
 
 use crate::food::FoodCount;
-
-use super::common::button::BUTTON;
+use crate::ui::common::button::BUTTON;
 
 #[derive(Component)]
 pub struct ResetButton;

@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 
-use crate::time::{IsFastForwarding, PendingTicks};
-
-use super::common::{dialog::DIALOG, overlay::OVERLAY};
+use crate::{time::{IsFastForwarding, PendingTicks}, ui::common::{overlay::OVERLAY, dialog::DIALOG}};
 
 #[derive(Component)]
 pub struct LoadingDialog;

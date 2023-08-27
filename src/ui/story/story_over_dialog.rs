@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
-use crate::story_state::StoryState;
-
-use super::common::{button::BUTTON, dialog::DIALOG, overlay::OVERLAY};
+use crate::{
+    story_state::StoryState,
+    ui::common::{button::BUTTON, dialog::DIALOG, overlay::OVERLAY},
+};
 
 #[derive(Component)]
 pub struct StoryOverDialogModalOverlay;

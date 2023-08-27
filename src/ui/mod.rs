@@ -1,18 +1,15 @@
-mod command_buttons;
 mod common;
-mod info_panel;
-mod loading_dialog;
-mod main_menu_dialog;
-mod story_over_dialog;
+mod main_menu;
+mod story;
 
 use crate::story_state::StoryState;
 
-use self::command_buttons::*;
 use self::common::button::*;
-use self::info_panel::*;
-use self::loading_dialog::*;
-use self::main_menu_dialog::*;
-use self::story_over_dialog::*;
+use self::main_menu::*;
+use self::story::command_buttons::*;
+use self::story::info_panel::*;
+use self::story::loading_dialog::*;
+use self::story::story_over_dialog::*;
 use bevy::prelude::*;
 
 pub struct UIPlugin;
@@ -36,7 +33,10 @@ impl Plugin for UIPlugin {
 
         app.add_systems(Update, handle_reset_button_interaction);
 
-        app.add_systems(OnEnter(StoryState::GatheringSettings), setup_main_menu_dialog);
+        app.add_systems(
+            OnEnter(StoryState::GatheringSettings),
+            setup_main_menu_dialog,
+        );
         app.add_systems(
             OnExit(StoryState::GatheringSettings),
             despawn_screen::<MainMenuDialogModalOverlay>,
