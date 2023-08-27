@@ -18,6 +18,7 @@ use bevy::prelude::*;
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
+    // TODO: despawn UI when going back to main menu
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (setup_info_panel, setup_command_buttons));
         app.add_systems(

@@ -26,7 +26,8 @@ use crate::{
         position::Position,
         regenerate_cache,
         save::{
-            load_existing_world, periodic_save_world_state, setup_window_onunload_save_world_state,
+            cleanup_window_onunload_save_world_state, load_existing_world,
+            periodic_save_world_state, setup_window_onunload_save_world_state,
         },
         setup_world_map,
     },
@@ -44,18 +45,6 @@ pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        // STEPS:
-        // 1) Load everything that is needed for multiple stories.
-        // 2) Check save state.
-        // 3) If save state exists, load saved story
-        // 4) If save state does not exist, show main menu.
-        // 5) If user creates new story from Main Menu then create new story.
-        // 6) Load everything needed for new story.
-        // 7) Load everything needed for current story.
-        // 8) Tell story
-        // 9) Mark story over
-        // 10) Cleanup story
-
         app.init_resource::<SaveableRegistry>();
         app.init_resource::<Rollbacks>();
 
@@ -118,15 +107,11 @@ impl Plugin for SimulationPlugin {
                 setup_story_state,
                 #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
-            ).chain(),
+            )
+                .chain(),
         );
 
-        app.add_systems(
-            OnEnter(StoryState::Cleanup),
-            (teardown_game_time, cleanup_world_map, on_story_cleanup).chain(),
-        );
-
-        // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken
+        // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken (should be fixed in bevy 0.12)
         app.add_systems(
             Update,
             (is_pointer_captured, handle_mouse_clicks)
@@ -187,8 +172,17 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
-        // NOTE: maybe turn this on if need to handle user input events?
-        // app.add_systems(PostUpdate, (on_spawn_ant, on_spawn_element));
+        app.add_systems(
+            OnEnter(StoryState::Cleanup),
+            (
+                teardown_game_time,
+                #[cfg(target_arch = "wasm32")]
+                cleanup_window_onunload_save_world_state,
+                cleanup_world_map,
+                on_story_cleanup,
+            )
+                .chain(),
+        );
     }
 }
 

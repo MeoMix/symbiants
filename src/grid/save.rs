@@ -3,8 +3,9 @@ use bevy_save::{Snapshot, SnapshotSerializer, WorldSaveableExt};
 use gloo_storage::{LocalStorage, Storage};
 use serde::Serialize;
 use serde_json::{Deserializer, Serializer};
-use std::{ops::Deref, sync::Mutex};
+use std::{cell::RefCell, ops::Deref, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
+use web_sys::BeforeUnloadEvent;
 
 use crate::{settings::Settings, time::IsFastForwarding};
 
@@ -77,24 +78,41 @@ fn write_save_snapshot() -> bool {
     save_result.is_ok()
 }
 
+thread_local! {
+    static ON_BEFORE_UNLOAD: RefCell<Option<Closure<dyn FnMut(BeforeUnloadEvent) -> bool>>> = RefCell::new(None);
+}
+
 pub fn setup_window_onunload_save_world_state() {
     let window = web_sys::window().expect("window not available");
 
-    let on_beforeunload = Closure::wrap(Box::new(move |_| {
-        write_save_snapshot();
-    }) as Box<dyn FnMut(web_sys::BeforeUnloadEvent)>);
+    ON_BEFORE_UNLOAD.with(|opt_closure| {
+        let closure = Closure::wrap(Box::new(move |_| {
+            write_save_snapshot();
+            // Tell browser not to interrupt the unload
+            false
+        }) as Box<dyn FnMut(BeforeUnloadEvent) -> bool>);
 
-    let add_event_listener_result = window
-        .add_event_listener_with_callback("beforeunload", on_beforeunload.as_ref().unchecked_ref());
+        window
+            .add_event_listener_with_callback("beforeunload", closure.as_ref().unchecked_ref())
+            .expect("Failed to add event listener for beforeunload");
 
-    if add_event_listener_result.is_err() {
-        error!(
-            "Failed to add event listener for beforeunload: {:?}",
-            add_event_listener_result
-        );
-    }
+        *opt_closure.borrow_mut() = Some(closure);
+    });
+}
 
-    on_beforeunload.forget();
+pub fn cleanup_window_onunload_save_world_state() {
+    let window = web_sys::window().expect("window not available");
+
+    ON_BEFORE_UNLOAD.with(|opt_closure| {
+        if let Some(on_beforeunload) = opt_closure.borrow_mut().take() {
+            window
+                .remove_event_listener_with_callback(
+                    "beforeunload",
+                    on_beforeunload.as_ref().unchecked_ref(),
+                )
+                .unwrap();
+        }
+    });
 }
 
 pub fn load_existing_world(world: &mut World) -> bool {
