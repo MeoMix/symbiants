@@ -6,6 +6,9 @@ use crate::food::FoodCount;
 use crate::ui::common::button::BUTTON;
 
 #[derive(Component)]
+pub struct CommandButtons;
+
+#[derive(Component)]
 pub struct ResetButton;
 
 #[derive(Component)]
@@ -13,16 +16,19 @@ pub struct FoodButton;
 
 pub fn setup_command_buttons(mut commands: Commands) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
-                flex_direction: FlexDirection::Row,
-                flex_grow: 1.0,
-                flex_shrink: 1.0,
-                flex_basis: Val::Auto,
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    flex_direction: FlexDirection::Row,
+                    flex_grow: 1.0,
+                    flex_shrink: 1.0,
+                    flex_basis: Val::Auto,
+                    ..default()
+                },
                 ..default()
             },
-            ..default()
-        })
+            CommandButtons,
+        ))
         .with_children(|button_container| {
             // Food Button
             button_container

@@ -15,9 +15,27 @@ use bevy::prelude::*;
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
-    // TODO: despawn UI when going back to main menu
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (setup_info_panel, setup_command_buttons));
+        // Common:
+        app.add_systems(Update, button_system);
+
+        // Main Menu:
+        app.add_systems(
+            OnEnter(StoryState::GatheringSettings),
+            create_main_menu_dialog,
+        );
+        app.add_systems(
+            Update,
+            on_interact_main_menu_button.run_if(in_state(StoryState::GatheringSettings)),
+        );
+        app.add_systems(
+            OnExit(StoryState::GatheringSettings),
+            despawn_screen::<MainMenuDialogModalOverlay>,
+        );
+
+        // TODO: Prefer keeping UI around until after Over (but not that simple because can click Reset which skips Over)
+        // Story:
+        app.add_systems(OnEnter(StoryState::Telling), (setup_info_panel, setup_command_buttons));
         app.add_systems(
             Update,
             (
@@ -27,38 +45,25 @@ impl Plugin for UIPlugin {
                 update_info_panel_food,
                 update_info_panel_day,
                 update_food_button,
+                handle_reset_button_interaction,
             )
                 .run_if(in_state(StoryState::Telling)),
         );
 
-        app.add_systems(Update, handle_reset_button_interaction);
-
-        app.add_systems(
-            OnEnter(StoryState::GatheringSettings),
-            setup_main_menu_dialog,
-        );
-        app.add_systems(
-            OnExit(StoryState::GatheringSettings),
-            despawn_screen::<MainMenuDialogModalOverlay>,
-        );
-
-        app.add_systems(
-            Update,
-            on_interact_main_menu_button.run_if(in_state(StoryState::GatheringSettings)),
-        );
+        app.add_systems(OnExit(StoryState::Telling), (
+            despawn_screen::<InfoPanel>,
+            despawn_screen::<CommandButtons>,
+        ));
 
         app.add_systems(OnEnter(StoryState::Over), setup_story_over_dialog);
-        app.add_systems(
-            OnExit(StoryState::Over),
-            despawn_screen::<StoryOverDialogModalOverlay>,
-        );
-
         app.add_systems(
             Update,
             on_interact_story_over_button.run_if(in_state(StoryState::Over)),
         );
-
-        app.add_systems(Update, button_system);
+        app.add_systems(
+            OnExit(StoryState::Over),
+            despawn_screen::<StoryOverDialogModalOverlay>,
+        );
     }
 }
 

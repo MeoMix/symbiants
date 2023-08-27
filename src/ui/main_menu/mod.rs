@@ -20,7 +20,7 @@ pub enum MainMenuDialogAction {
 
 // TODO: Sandbox and About menu buttons
 
-pub fn setup_main_menu_dialog(mut commands: Commands) {
+pub fn create_main_menu_dialog(mut commands: Commands) {
     let modal_overlay_bundle = (
         NodeBundle {
             style: OVERLAY.style.clone(),
