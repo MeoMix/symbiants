@@ -69,8 +69,7 @@ pub fn regenerate_cache(world: &mut World) {
 }
 
 // TODO: Probably don't have this method and split it up into ants/elements etc
-pub fn setup_world_map(world: &mut World) {
-    info!("setup world map ran");
+pub fn create_new_world_map(world: &mut World) {
     let settings = Settings::default();
 
     world.insert_resource(settings);

@@ -29,7 +29,7 @@ use crate::{
             cleanup_window_onunload_save_world_state, load_existing_world,
             periodic_save_world_state, setup_window_onunload_save_world_state,
         },
-        setup_world_map,
+        create_new_world_map,
     },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     nest::Nest,
@@ -48,11 +48,18 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<SaveableRegistry>();
         app.init_resource::<Rollbacks>();
 
+        // TODO: Delegate this to setup/cleanup fns on various submodules
         app.register_saveable::<Settings>();
         app.register_saveable::<Probabilities>();
 
         // User Resources:
         app.register_saveable::<FoodCount>();
+
+        // Common:
+        app.register_saveable::<Id>();
+        app.register_saveable::<Option<Id>>();
+        app.register_saveable::<Uuid>();
+        app.register_saveable::<Nest>();
 
         // Elements:
         app.register_saveable::<Element>();
@@ -74,10 +81,6 @@ impl Plugin for SimulationPlugin {
         app.register_saveable::<Hunger>();
         app.register_saveable::<AntInventory>();
         app.register_saveable::<InventoryItem>();
-        app.register_saveable::<Id>();
-        app.register_saveable::<Option<Id>>();
-        app.register_saveable::<Uuid>();
-        app.register_saveable::<Nest>();
 
         // UI:
         app.init_resource::<IsPointerCaptured>();
@@ -96,7 +99,7 @@ impl Plugin for SimulationPlugin {
             (initialize_game_time, load_from_save).chain(),
         );
 
-        app.add_systems(OnEnter(StoryState::Creating), setup_world_map);
+        app.add_systems(OnEnter(StoryState::Creating), create_new_world_map);
 
         app.add_systems(
             OnEnter(StoryState::FinalizingStartup),
@@ -119,30 +122,27 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
+        // TODO: revisit this idea - I want all simulation systems to be able to run in parallel.
         app.add_systems(
             FixedUpdate,
             (
-                // TODO: revisit this idea - I want all simulation systems to be able to run in parallel.
-                (
-                    // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
-                    // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
-                    gravity_elements,
-                    gravity_ants,
-                    // Gravity side-effects can run whenever with little difference.
-                    gravity_crush,
-                    gravity_stability,
-                    // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
-                    // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
-                    ants_walk,
-                    // Apply specific ant actions in priority order because ants take a maximum of one action per tick.
-                    // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
-                    ants_hunger,
-                    ants_birthing,
-                    ants_act,
-                    // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
-                    ants_initiative,
-                )
-                    .chain(),
+                // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
+                // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
+                gravity_elements,
+                gravity_ants,
+                // Gravity side-effects can run whenever with little difference.
+                gravity_crush,
+                gravity_stability,
+                // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
+                // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
+                ants_walk,
+                // Apply specific ant actions in priority order because ants take a maximum of one action per tick.
+                // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
+                ants_hunger,
+                ants_birthing,
+                ants_act,
+                // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
+                ants_initiative,
                 // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
                 // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
                 // when moving out of the Update stage and into the PostUpdate stage.
@@ -157,14 +157,12 @@ impl Plugin for SimulationPlugin {
                 #[cfg(target_arch = "wasm32")]
                 periodic_save_world_state,
                 // Ensure render state reflects simulation state after having applied movements and command updates.
-                (
-                    on_update_position,
-                    on_update_ant_orientation,
-                    on_update_ant_dead,
-                    on_update_ant_inventory,
-                )
-                    .chain(),
-                (on_spawn_ant, on_spawn_element).chain(),
+                on_update_position,
+                on_update_ant_orientation,
+                on_update_ant_dead,
+                on_update_ant_inventory,
+                on_spawn_ant,
+                on_spawn_element,
                 update_game_time,
                 set_rate_of_time,
             )
@@ -191,10 +189,8 @@ pub fn load_from_save(world: &mut World) {
 
     let mut story_state = world.resource_mut::<NextState<StoryState>>();
     if is_loaded {
-        info!("set story state to FinalizingStartup");
         story_state.set(StoryState::FinalizingStartup);
     } else {
-        info!("set story state to GatheringSettings");
         story_state.set(StoryState::GatheringSettings);
     }
 }
