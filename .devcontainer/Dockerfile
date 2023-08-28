@@ -10,7 +10,10 @@ FROM rust:1.71-bookworm
 # clang is needed to compile Rust more quickly
 # lld and mold are both Rust linkers - one is used for linux and other is used for non-linux
 RUN apt-get update && \
-  apt-get install -y libasound2-dev libudev-dev clang lld mold xorg weston
+  apt-get install -y libasound2-dev libudev-dev clang lld
+
+# these are needed for native builds
+# mold xorg weston
 
 # Need to manually ensure nightly is configured when using bookworm
 RUN rustup toolchain install nightly
