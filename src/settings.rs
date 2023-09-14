@@ -11,6 +11,8 @@ pub struct Probabilities {
     pub random_dig: f32,              // dig down while wandering
     pub random_drop: f32,             // drop while wandering
     pub random_turn: f32,             // turn while wandering
+    pub random_fall: f32,             // fall while upside down
+    pub random_slip: f32,             // fall while vertical
     pub below_surface_dirt_dig: f32,  // chance to dig dirt when below surface level
     pub above_surface_sand_drop: f32, // chance to randomly drop sand when at-or-above surface level
     pub below_surface_food_drop: f32, // chance to randomly drop food when below surface level
@@ -67,9 +69,14 @@ impl Default for Settings {
                 random_dig: 0.003,
                 random_drop: 0.003,
                 random_turn: 0.005,
-                below_surface_dirt_dig: 0.10,
-                above_surface_sand_drop: 0.10,
-                below_surface_food_drop: 0.10,
+                // Ants that are upside down have a high likelihood of falling to gravity
+                // Ants that are vertical have a low likelihood of falling to gravity and will probably catch themselves when they fall
+                // These settings help prevent scenarios where ants dig themselves onto islands and become trapped.
+                random_fall: 0.005,
+                random_slip: 0.001,
+                below_surface_dirt_dig: 0.05,
+                above_surface_sand_drop: 0.05,
+                below_surface_food_drop: 0.05,
 
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,

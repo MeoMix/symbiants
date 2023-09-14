@@ -1,22 +1,33 @@
 use crate::{
     element::Element,
     grid::{position::Position, WorldMap},
+    nest::Nest,
     settings::Settings,
 };
 
-use super::{Dead, AntOrientation, Initiative};
+use super::{birthing::Birthing, AntInventory, AntOrientation, AntRole, Dead, Initiative};
 use bevy::prelude::*;
-use bevy_turborand::{GlobalRng, DelegatedRng};
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
-    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), Without<Dead>>,
+    mut ants_query: Query<
+        (
+            &mut Initiative,
+            &mut Position,
+            &mut AntOrientation,
+            &AntRole,
+            &AntInventory,
+        ),
+        (Without<Dead>, Without<Birthing>),
+    >,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
+    nest: Res<Nest>,
 ) {
-    for (mut initiative, mut position, mut orientation) in ants_query.iter_mut() {
+    for (mut initiative, mut position, mut orientation, role, inventory) in ants_query.iter_mut() {
         // If ant lost the ability to move (potentially due to falling through the air) then skip walking around.
         if !initiative.can_move() {
             continue;
@@ -42,7 +53,34 @@ pub fn ants_walk(
         // An ant might turn randomly. This is to prevent ants from getting stuck in loops and add visual variety.
         let is_turning_randomly = rng.chance(settings.probabilities.random_turn.into());
 
-        if has_air_under_feet || !has_air_ahead || is_turning_randomly {
+        // Queen should head back to the nest when dropping sand off above surface. This is a hacky
+        // stub for now. Pheromones would be better?
+        let mut is_queen_turning_towards_nest = false;
+        if *role == AntRole::Queen
+            && !world_map.is_below_surface(&position)
+            && inventory.0 == None
+            && orientation.is_horizontal()
+            && nest.position().is_some()
+        {
+            let nest_position = nest.position().unwrap();
+            // distance from position to nest position:
+            let distance_to_nest =
+                (position.x - nest_position.x).abs() + (position.y - nest_position.y).abs();
+
+            // distance from forward position to nest position:
+            let distance_to_nest_forward = (forward_position.x - nest_position.x).abs()
+                + (forward_position.y - nest_position.y).abs();
+
+            if distance_to_nest_forward > distance_to_nest {
+                is_queen_turning_towards_nest = true;
+            }
+        }
+
+        if has_air_under_feet
+            || !has_air_ahead
+            || is_turning_randomly
+            || is_queen_turning_towards_nest
+        {
             *orientation = get_turned_orientation(
                 &orientation,
                 &position,

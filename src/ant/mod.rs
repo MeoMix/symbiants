@@ -233,6 +233,14 @@ impl AntOrientation {
         self.angle == Angle::Zero || self.angle == Angle::OneHundredEighty
     }
 
+    pub fn is_vertical(&self) -> bool {
+        self.angle == Angle::Ninety || self.angle == Angle::TwoHundredSeventy
+    }
+
+    pub fn is_upside_down(&self) -> bool {
+        self.angle == Angle::OneHundredEighty
+    }
+
     pub fn turn_around(&self) -> Self {
         let facing = if self.facing == Facing::Left {
             Facing::Right

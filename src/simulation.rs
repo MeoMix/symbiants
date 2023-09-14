@@ -89,7 +89,7 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<GlobalRng>();
 
         // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        //app.insert_resource(FixedTime::new_from_secs(0.2 / 60.0));
+        //app.insert_resource(FixedTime::new_from_secs(1.0 / 60.0));
         app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
         app.add_state::<StoryState>();
@@ -185,7 +185,7 @@ impl Plugin for SimulationPlugin {
 }
 
 pub fn load_from_save(world: &mut World) {
-    let is_loaded: bool = load_existing_world(world);
+    let is_loaded = load_existing_world(world);
 
     let mut story_state = world.resource_mut::<NextState<StoryState>>();
     if is_loaded {

@@ -1,21 +1,23 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::grid::position::Position;
+
 // TODO: This isn't great - prefer inferring this state at a local, ant level rather than relying on global flags to achieve behavior
 #[derive(Resource, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Resource)]
 pub struct Nest {
-    started: bool,
+    position: Option<Position>,
     completed: bool,
 }
 
 impl Nest {
-    pub fn is_started(&self) -> &bool {
-        &self.started
+    pub fn is_started(&self) -> bool {
+        self.position.is_some()
     }
 
-    pub fn start(&mut self) {
-        self.started = true;
+    pub fn start(&mut self, position: Position) {
+        self.position = Some(position);
     }
 
     pub fn is_completed(&self) -> bool {
@@ -24,5 +26,9 @@ impl Nest {
 
     pub fn complete(&mut self) {
         self.completed = true;
+    }
+
+    pub fn position(&self) -> &Option<Position> {
+        &self.position
     }
 }

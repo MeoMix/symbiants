@@ -43,18 +43,26 @@ pub fn ants_act(
             if !world_map.is_below_surface(&position) && !nest.is_started() {
                 if inventory.0 == None {
                     if rng.f32() < settings.probabilities.above_surface_queen_nest_dig {
-                        let target_position =
-                            *position + orientation.rotate_forward().get_forward_delta();
-                        let target_element_entity = *world_map.element(target_position);
-                        commands.dig(ant_entity, target_position, target_element_entity);
+                        // If x position is within 20% of world edge then don't dig there
+                        let offset = settings.world_width / 5;
+                        let is_too_near_left_edge = position.x < offset;
+                        let is_too_near_right_edge = position.x > settings.world_width - offset;
 
-                        initiative.consume_action();
+                        if !is_too_near_left_edge && !is_too_near_right_edge {
+                            let target_position =
+                                *position + orientation.rotate_forward().get_forward_delta();
+                            let target_element_entity = *world_map.element(target_position);
+                            commands.dig(ant_entity, target_position, target_element_entity);
 
-                        // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
-                        // enforcing nest generation probabilistically
-                        nest.start();
+                            initiative.consume_action();
 
-                        continue;
+                            // TODO: technically this command could fail and I wouldn't want to mark nested?
+                            // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
+                            // enforcing nest generation probabilistically
+                            nest.start(target_position);
+
+                            continue;
+                        }
                     }
                 }
             }
@@ -110,15 +118,54 @@ pub fn ants_act(
             if inventory.0 == None {
                 // Randomly dig downwards / perpendicular to current orientation
                 if rng.f32() < settings.probabilities.random_dig
+                // Only queen should dig initial nest tunnel / breach the surface.
                     && world_map.is_below_surface(&position)
                 {
                     let target_position =
                         *position + orientation.rotate_forward().get_forward_delta();
-                    let target_element_entity = *world_map.element(target_position);
-                    commands.dig(ant_entity, target_position, target_element_entity);
 
-                    initiative.consume_action();
-                    continue;
+                    if world_map.is_within_bounds(&target_position) {
+                        let target_element_entity = *world_map.element(target_position);
+
+                        let target_element = elements_query.get(target_element_entity);
+
+                        // TODO: Don't copy/paste this logic around - make it more local to the idea of digging.
+                        // The intent here is to prevent ants from digging through dirt such that they destroy their base by digging holes through walls.
+                        let dig_dirt =
+                            target_element.is_ok() && *target_element.unwrap() == Element::Dirt;
+                        let mut allow_dig = true;
+
+                        if dig_dirt {
+                            // Don't allow digging through dirt underground if it would break through into another tunnel or break through the surface.
+                            let forward_target_position =
+                                target_position + orientation.rotate_forward().get_forward_delta();
+
+                            if world_map.is_within_bounds(&forward_target_position) {
+                                let forward_target_element_entity =
+                                    world_map.element(forward_target_position);
+
+                                let Ok(forward_target_element) =
+                                    elements_query.get(*forward_target_element_entity)
+                                else {
+                                    panic!("act - expected entity to exist")
+                                };
+
+                                // If the check here is for air then digging up through surface with sand stacked ontop is allowed
+                                // which can result in ants undermining their own nest.
+                                if *forward_target_element != Element::Dirt {
+                                    allow_dig = false;
+                                    info!("allow_dig false - preventing digging through")
+                                }
+                            }
+                        }
+
+                        if allow_dig {
+                            commands.dig(ant_entity, target_position, target_element_entity);
+
+                            initiative.consume_action();
+                            continue;
+                        }
+                    }
                 }
             } else {
                 if rng.f32() < settings.probabilities.random_drop {
@@ -151,9 +198,32 @@ pub fn ants_act(
                 let dig_food = *element == Element::Food && !world_map.is_below_surface(&position);
                 // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
                 let dig_sand = *element == Element::Sand && world_map.is_below_surface(&position);
-                let dig_dirt = *element == Element::Dirt
+                // If digging would break through into an open area then don't do that.
+                // IRL this would be done by sensing pressure on the dirt, but in game we allow ants to look one unit ahead.
+                let mut dig_dirt = *element == Element::Dirt
                     && world_map.is_below_surface(&position)
                     && rng.f32() < settings.probabilities.below_surface_dirt_dig;
+
+                if dig_dirt {
+                    // Don't allow digging through dirt underground if it would break through into another tunnel or break through the surface.
+                    let next_forward_position = forward_position + orientation.get_forward_delta();
+                    let next_forward_element_entity = world_map.get_element(next_forward_position);
+
+                    if next_forward_element_entity.is_some() {
+                        let Ok(next_forward_element) =
+                            elements_query.get(*next_forward_element_entity.unwrap())
+                        else {
+                            panic!("act - expected entity to exist")
+                        };
+
+                        // If the check here is for air then digging up through surface with sand stacked ontop is allowed
+                        // which can result in ants undermining their own nest.
+                        if *next_forward_element != Element::Dirt {
+                            dig_dirt = false;
+                            info!("skipping dig");
+                        }
+                    }
+                }
 
                 // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
                 // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.

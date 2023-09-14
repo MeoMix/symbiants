@@ -17,8 +17,11 @@ pub struct PanCamSystemSet;
 
 impl Plugin for PanCamPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (camera_movement, camera_zoom).in_set(PanCamSystemSet))
-            .register_type::<PanCam>();
+        app.add_systems(
+            Update,
+            (camera_movement, camera_zoom, auto_clamp_translation).in_set(PanCamSystemSet),
+        )
+        .register_type::<PanCam>();
 
         #[cfg(feature = "bevy_egui")]
         {
@@ -47,6 +50,43 @@ fn check_egui_wants_focus(
         false
     };
     wants_focus.set_if_neq(EguiWantsFocus(new_wants_focus));
+}
+
+// Whenever the orthographic projection area size changes - reclamp the camera translation
+// NOTE: I added this because when the game starts, user is clicking a button to start the game,
+// and this pancam logic races against the button click logic. This can result in a mismeasurement
+// because a command hasn't been applied yet.
+
+// This workaround wouldn't be hacky if there was no visual delay, but I still see a slight stutter in the UI
+// so I assume this isn't a great solution. Better than having the camera be misaligned though.
+fn auto_clamp_translation(
+    mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection), Changed<OrthographicProjection>>,
+    mut last_size: Local<Option<Vec2>>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+) {
+    if let Ok(query_result) = query.get_single_mut() {
+        let (cam, mut transform, projection) = query_result;
+
+        let proj_size = projection.area.size();
+
+        if Some(proj_size) == *last_size {
+            return;
+        }
+    
+        let window = primary_window.single();
+        let window_size = Vec2::new(window.width(), window.height());
+    
+        clamp_translation(
+            cam,
+            projection,
+            &mut transform,
+            Vec2::ZERO,
+            window_size,
+        );
+    
+        *last_size = Some(proj_size);
+
+    }
 }
 
 fn clamp_translation(

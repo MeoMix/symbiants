@@ -121,6 +121,8 @@ pub fn gravity_ants(
     mut ants_query: Query<(&AntOrientation, &mut Position, &mut Initiative)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
+    settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     for (orientation, mut position, mut initiative) in ants_query.iter_mut() {
         // Figure out foot direction
@@ -129,9 +131,12 @@ pub fn gravity_ants(
         let is_air_beneath_feet =
             world_map.is_all_element(&elements_query, &[below_feet_position], Element::Air);
 
-        let is_out_of_bounds = !world_map.is_within_bounds(&below_feet_position);
+        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_feet_position);
 
-        if is_air_beneath_feet || is_out_of_bounds {
+        let is_chance_falling = orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
+        let is_chance_slipping = orientation.is_vertical() && rng.f32() < settings.probabilities.random_slip;
+
+        if is_air_beneath_feet || is_out_of_bounds_beneath_feet || is_chance_falling || is_chance_slipping {
             let below_position = *position + Position::Y;
             let is_air_below =
                 world_map.is_all_element(&elements_query, &[below_position], Element::Air);
