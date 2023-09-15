@@ -37,10 +37,17 @@ impl AirElementBundle {
     }
 }
 
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Dirt;
+
+
 #[derive(Bundle)]
 pub struct DirtElementBundle {
     id: Id,
     element: Element,
+    dirt: Dirt,
     position: Position,
 }
 
@@ -49,6 +56,7 @@ impl DirtElementBundle {
         Self {
             id: Id::default(),
             element: Element::Dirt,
+            dirt: Dirt,
             position,
         }
     }
@@ -58,10 +66,16 @@ impl DirtElementBundle {
 #[reflect(Component)]
 pub struct Crushable;
 
+
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Sand;
+
 #[derive(Bundle)]
 pub struct SandElementBundle {
     id: Id,
     element: Element,
+    sand: Sand,
     position: Position,
     crushable: Crushable,
     unstable: Unstable,
@@ -72,6 +86,7 @@ impl SandElementBundle {
         Self {
             id: Id::default(),
             element: Element::Sand,
+            sand: Sand,
             position,
             crushable: Crushable,
             unstable: Unstable,
@@ -79,10 +94,15 @@ impl SandElementBundle {
     }
 }
 
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Food;
+
 #[derive(Bundle)]
 pub struct FoodElementBundle {
     id: Id,
     element: Element,
+    food: Food,
     position: Position,
     unstable: Unstable,
 }
@@ -92,6 +112,7 @@ impl FoodElementBundle {
         Self {
             id: Id::default(),
             element: Element::Food,
+            food: Food,
             position,
             unstable: Unstable,
         }

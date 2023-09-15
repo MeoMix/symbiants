@@ -2,8 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     ant::{hunger::Hunger, AntRole},
-    food::FoodCount,
-    grid::WorldMap, ui::common::panel::PANEL,
+    grid::WorldMap, ui::common::panel::PANEL, element::{Element, Food},
 };
 
 #[derive(Component)]
@@ -104,10 +103,10 @@ pub fn update_info_panel_ant_hunger(
 
 pub fn update_info_panel_food(
     mut text_query: Query<&mut Text, With<InfoPanelFoodText>>,
-    food_count: Res<FoodCount>,
+    food_query: Query<&Food>,
 ) {
     for mut text in &mut text_query {
-        text.sections[1].value = food_count.0.to_string();
+        text.sections[1].value = food_query.iter().len().to_string();
     }
 }
 

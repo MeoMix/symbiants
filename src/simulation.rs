@@ -38,7 +38,7 @@ use crate::{
     time::{
         initialize_game_time, set_rate_of_time, setup_game_time, teardown_game_time,
         update_game_time, DEFAULT_SECONDS_PER_TICK,
-    },
+    }, ui::action_menu::on_interact_action_menu_button,
 };
 
 pub struct SimulationPlugin;
@@ -118,7 +118,8 @@ impl Plugin for SimulationPlugin {
         // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken (should be fixed in bevy 0.12)
         app.add_systems(
             Update,
-            (is_pointer_captured, handle_mouse_clicks)
+            // TODO: coupling... need to handle clicking the simulation after menus so pointer capture works properly
+            (is_pointer_captured, on_interact_action_menu_button, handle_mouse_clicks)
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
         );

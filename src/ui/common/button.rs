@@ -57,6 +57,7 @@ lazy_static! {
     };
 }
 
+// TODO: This is way too general
 pub fn button_system(
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor),
@@ -64,10 +65,10 @@ pub fn button_system(
     >,
 ) {
     for (interaction, mut color) in &mut interaction_query {
-        *color = match *interaction {
-            Interaction::Pressed => BUTTON.states.pressed.background_color,
-            Interaction::Hovered => BUTTON.states.hovered.background_color,
-            Interaction::None => BUTTON.background_color,
-        }
+        // *color = match *interaction {
+        //     Interaction::Pressed => BUTTON.states.pressed.background_color,
+        //     Interaction::Hovered => BUTTON.states.hovered.background_color,
+        //     Interaction::None => BUTTON.background_color,
+        // }
     }
 }

@@ -1,9 +1,12 @@
+pub mod action_menu;
 mod common;
 mod main_menu;
 mod story;
 
+use crate::mouse::is_pointer_captured;
 use crate::story_state::StoryState;
 
+use self::action_menu::*;
 use self::common::button::*;
 use self::main_menu::*;
 use self::story::command_buttons::*;
@@ -35,7 +38,10 @@ impl Plugin for UIPlugin {
 
         // TODO: Prefer keeping UI around until after Over (but not that simple because can click Reset which skips Over)
         // Story:
-        app.add_systems(OnEnter(StoryState::Telling), (setup_info_panel, setup_command_buttons));
+        app.add_systems(
+            OnEnter(StoryState::Telling),
+            (setup_info_panel, setup_command_buttons, create_action_menu).chain(),
+        );
         app.add_systems(
             Update,
             (
@@ -44,16 +50,26 @@ impl Plugin for UIPlugin {
                 update_info_panel_ant_hunger,
                 update_info_panel_food,
                 update_info_panel_day,
-                update_food_button,
                 handle_reset_button_interaction,
             )
                 .run_if(in_state(StoryState::Telling)),
         );
 
-        app.add_systems(OnExit(StoryState::Telling), (
-            despawn_screen::<InfoPanel>,
-            despawn_screen::<CommandButtons>,
-        ));
+        // app.add_systems(
+        //     Update,
+        //     (is_pointer_captured, on_interact_action_menu_button)
+        //         .chain()
+        //         .run_if(in_state(StoryState::Telling)),
+        // );
+
+        app.add_systems(
+            OnExit(StoryState::Telling),
+            (
+                despawn_screen::<InfoPanel>,
+                despawn_screen::<CommandButtons>,
+                despawn_screen::<ActionMenu>,
+            ),
+        );
 
         app.add_systems(OnEnter(StoryState::Over), setup_story_over_dialog);
         app.add_systems(

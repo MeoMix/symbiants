@@ -3,8 +3,8 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use crate::{
     camera::MainCamera,
     element::{commands::ElementCommandsExt, Element},
-    food::FoodCount,
     grid::{position::Position, WorldMap},
+    ui::action_menu::PointerAction,
 };
 
 pub fn handle_mouse_clicks(
@@ -14,8 +14,8 @@ pub fn handle_mouse_clicks(
     elements_query: Query<&Element>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
-    mut food_count: ResMut<FoodCount>,
     is_pointer_captured: Res<IsPointerCaptured>,
+    pointer_action: Res<PointerAction>,
 ) {
     if is_pointer_captured.0 {
         return;
@@ -39,12 +39,22 @@ pub fn handle_mouse_clicks(
 
     let grid_position = world_to_grid_position(&world_map, world_position);
 
-    if mouse_input.just_pressed(MouseButton::Left) {
-        handle_left_click(&elements_query, &world_map, &mut commands, &mut food_count, grid_position);
+    if !mouse_input.just_pressed(MouseButton::Left) {
+        return;
     }
 
-    if mouse_input.just_pressed(MouseButton::Right) {
-        handle_right_click(&world_map, &mut commands, grid_position);
+    if *pointer_action == PointerAction::Food {
+        if world_map.is_element(&elements_query, grid_position, Element::Air) {
+            if let Some(entity) = world_map.get_element(grid_position) {
+                commands.replace_element(grid_position, Element::Food, *entity);
+            }
+        }
+    } else if *pointer_action == PointerAction::Despawn {
+        if let Some(entity) = world_map.get_element(grid_position) {
+            commands.replace_element(grid_position, Element::Air, *entity);
+        }
+    } else {
+        info!("Not yet supported");
     }
 }
 
@@ -54,32 +64,7 @@ fn world_to_grid_position(world_map: &WorldMap, world_position: Vec2) -> Positio
 
     Position {
         x: x.abs().round() as isize,
-        y: y.abs().round() as isize
-    }
-}
-
-fn handle_left_click(
-    elements_query: &Query<&Element>,
-    world_map: &Res<WorldMap>,
-    commands: &mut Commands,
-    food_count: &mut ResMut<FoodCount>,
-    grid_position: Position,
-) {
-    if world_map.is_element(elements_query, grid_position, Element::Air) && food_count.0 > 0 {
-        if let Some(entity) = world_map.get_element(grid_position) {
-            commands.replace_element(grid_position, Element::Food, *entity);
-            food_count.0 -= 1;
-        }
-    }
-}
-
-fn handle_right_click(
-    world_map: &Res<WorldMap>,
-    commands: &mut Commands,
-    grid_position: Position,
-) {
-    if let Some(entity) = world_map.get_element(grid_position) {
-        commands.replace_element(grid_position, Element::Air, *entity);
+        y: y.abs().round() as isize,
     }
 }
 

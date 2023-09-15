@@ -58,7 +58,7 @@ impl Default for Settings {
             save_interval: 60,
             // Saving data to local storage is slow, but generating the snapshot of the world is also slow.
             // Take snapshots aggressively because browser tab closes too quickly to JIT snapshot.
-            snapshot_interval: 1,
+            snapshot_interval: 5, // TODO: prefer 1 here but it's too slow (in debug at least), kills FPS
             world_width: 144,
             world_height: 81,
             compact_sand_depth: 15,
