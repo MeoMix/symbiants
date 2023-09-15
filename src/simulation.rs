@@ -63,6 +63,7 @@ impl Plugin for SimulationPlugin {
 
         // Elements:
         app.register_saveable::<Element>();
+        app.register_saveable::<Option<Position>>();
         app.register_saveable::<Position>();
         app.register_saveable::<Air>();
         app.register_saveable::<Crushable>();
@@ -186,6 +187,8 @@ impl Plugin for SimulationPlugin {
 
 pub fn load_from_save(world: &mut World) {
     let is_loaded = load_existing_world(world);
+
+    info!("is_loaded: {}", is_loaded);
 
     let mut story_state = world.resource_mut::<NextState<StoryState>>();
     if is_loaded {
