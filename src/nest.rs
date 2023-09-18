@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::grid::position::Position;
+use crate::{grid::position::Position, common::register};
 
 // TODO: This isn't great - prefer inferring this state at a local, ant level rather than relying on global flags to achieve behavior
 #[derive(Resource, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -31,4 +31,13 @@ impl Nest {
     pub fn position(&self) -> &Option<Position> {
         &self.position
     }
+}
+
+pub fn initialize_nest(world: &mut World) {
+    register::<Nest>(world);
+    // world.init_resource::<GameTime>();
+}
+
+pub fn deinitialize_nest(world: &mut World) {
+    // world.remove_resource::<GameTime>();
 }

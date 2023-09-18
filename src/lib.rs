@@ -6,7 +6,6 @@ mod background;
 mod camera;
 mod common;
 mod element;
-mod food;
 mod gravity;
 mod grid;
 mod mouse;

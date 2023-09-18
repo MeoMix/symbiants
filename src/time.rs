@@ -3,6 +3,8 @@ use bevy_save::SaveableRegistry;
 use chrono::{LocalResult, TimeZone, Utc, DateTime};
 use std::time::Duration;
 
+use crate::common::register;
+
 pub const DEFAULT_SECONDS_PER_TICK: f32 = 10.0 / 60.0;
 pub const FASTFORWARD_SECONDS_PER_TICK: f32 = 0.001 / 60.0;
 pub const SECONDS_PER_HOUR: i64 = 3600;
@@ -48,18 +50,15 @@ impl PendingTicks {
     }
 }
 
-// TODO: The naming here (initialize, setup, teardown) where initialize/teardown have parity is confusing.
 pub fn initialize_game_time(world: &mut World) {
-    // TODO: Just playing around with expressing this manually, I doubt this will stick
-    world.resource_mut::<AppTypeRegistry>().write().register::<GameTime>();
-    world.resource_mut::<SaveableRegistry>().register::<GameTime>();
+    register::<GameTime>(world);
     
     world.init_resource::<GameTime>();
     world.init_resource::<IsFastForwarding>();
     world.init_resource::<PendingTicks>();
 }
 
-pub fn teardown_game_time(world: &mut World) {
+pub fn deinitialize_game_time(world: &mut World) {
     world.remove_resource::<GameTime>();
     world.remove_resource::<IsFastForwarding>();
     world.remove_resource::<PendingTicks>();

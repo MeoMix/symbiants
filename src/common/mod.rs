@@ -1,6 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, reflect::GetTypeRegistration};
+use bevy_save::SaveableRegistry;
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
+
+use crate::grid::position::Position;
 
 pub mod ui;
 
@@ -24,4 +27,27 @@ impl Default for Id {
 // TODO: Use cache instead of iterating all entities
 pub fn get_entity_from_id(target_id: Id, query: &Query<(Entity, &Id)>) -> Option<Entity> {
     query.iter().find(|(_, id)| **id == target_id).map(|(entity, _)| entity)
+}
+
+/// Register a given type such that it is valid to use with `bevy_save`.
+pub fn register<T: GetTypeRegistration>(world: &mut World) {
+    // Enable reflection
+    world.resource_mut::<AppTypeRegistry>().write().register::<T>();
+
+    // Enable serialization
+    world.resource_mut::<SaveableRegistry>().register::<T>();
+}
+
+pub fn initialize_common(world: &mut World) {
+    register::<Id>(world);
+    register::<Option<Id>>(world);
+    register::<Uuid>(world);
+    register::<Option<Position>>(world);
+    register::<Position>(world);
+
+    // world.init_resource::<GameTime>();
+}
+
+pub fn deinitialize_common(world: &mut World) {
+    // world.remove_resource::<GameTime>();
 }

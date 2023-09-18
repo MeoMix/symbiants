@@ -1,10 +1,7 @@
-use bevy::{
-    prelude::{Color, Mut, ReflectResource, Resource},
-    reflect::Reflect,
-};
-use bevy_turborand::{GlobalRng, DelegatedRng};
+use bevy::{prelude::*, reflect::Reflect};
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::grid::position::Position;
+use crate::{common::register, grid::position::Position};
 
 #[derive(Clone, Copy, Reflect)]
 pub struct Probabilities {
@@ -44,10 +41,7 @@ impl Settings {
     }
 
     pub fn get_random_surface_position(&self, rng: &mut Mut<GlobalRng>) -> Position {
-        Position::new(
-            rng.isize(0..self.world_width),
-            self.get_surface_level(),
-        )
+        Position::new(rng.isize(0..self.world_width), self.get_surface_level())
     }
 }
 
@@ -83,4 +77,14 @@ impl Default for Settings {
             },
         }
     }
+}
+
+pub fn initialize_settings(world: &mut World) {
+    register::<Settings>(world);
+    register::<Probabilities>(world);
+    // world.init_resource::<GameTime>();
+}
+
+pub fn deinitialize_settings(world: &mut World) {
+    // world.remove_resource::<GameTime>();
 }

@@ -1,44 +1,39 @@
 use bevy::prelude::*;
-use bevy_save::{AppSaveableExt, Rollbacks, SaveableRegistry};
+use bevy_save::{Rollbacks, SaveableRegistry};
 use bevy_turborand::GlobalRng;
-use uuid::Uuid;
 
 use crate::{
     ant::{
         act::ants_act,
         ants_initiative,
         birthing::ants_birthing,
-        hunger::{ants_hunger, Hunger},
+        hunger::ants_hunger,
+        initialize_ant,
         ui::{
             on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
         },
-        walk::ants_walk,
-        Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
-        Initiative, InventoryItem,
+        walk::ants_walk, deinitialize_ant,
     },
     background::setup_background,
-    common::{ui::on_update_position, Id},
-    element::{ui::on_spawn_element, Air, Crushable, Element},
-    food::FoodCount,
-    gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability, Unstable},
+    common::{initialize_common, ui::on_update_position, deinitialize_common},
+    element::{initialize_element, ui::on_spawn_element, deinitialize_element},
+    gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
     grid::{
-        cleanup_world_map,
-        position::Position,
-        regenerate_cache,
+        cleanup_world_map, create_new_world_map, regenerate_cache,
         save::{
             cleanup_window_onunload_save_world_state, load_existing_world,
             periodic_save_world_state, setup_window_onunload_save_world_state,
         },
-        create_new_world_map,
     },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
-    nest::Nest,
-    settings::{Probabilities, Settings},
+    nest::{initialize_nest, deinitialize_nest},
+    settings::{initialize_settings, deinitialize_settings},
     story_state::{on_story_cleanup, setup_story_state, StoryState},
     time::{
-        initialize_game_time, set_rate_of_time, setup_game_time, teardown_game_time,
+        deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
         update_game_time, DEFAULT_SECONDS_PER_TICK,
-    }, ui::action_menu::on_interact_action_menu_button,
+    },
+    ui::action_menu::on_interact_action_menu_button,
 };
 
 pub struct SimulationPlugin;
@@ -46,42 +41,10 @@ pub struct SimulationPlugin;
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SaveableRegistry>();
+        // TODO: Not sure I need this?
         app.init_resource::<Rollbacks>();
 
         // TODO: Delegate this to setup/cleanup fns on various submodules
-        app.register_saveable::<Settings>();
-        app.register_saveable::<Probabilities>();
-
-        // User Resources:
-        app.register_saveable::<FoodCount>();
-
-        // Common:
-        app.register_saveable::<Id>();
-        app.register_saveable::<Option<Id>>();
-        app.register_saveable::<Uuid>();
-        app.register_saveable::<Nest>();
-
-        // Elements:
-        app.register_saveable::<Element>();
-        app.register_saveable::<Option<Position>>();
-        app.register_saveable::<Position>();
-        app.register_saveable::<Air>();
-        app.register_saveable::<Crushable>();
-        app.register_saveable::<Unstable>();
-
-        // Ants:
-        app.register_saveable::<Ant>();
-        app.register_saveable::<AntName>();
-        app.register_saveable::<AntColor>();
-        app.register_saveable::<Dead>();
-        app.register_saveable::<Initiative>();
-        app.register_saveable::<AntOrientation>();
-        app.register_saveable::<Facing>();
-        app.register_saveable::<Angle>();
-        app.register_saveable::<AntRole>();
-        app.register_saveable::<Hunger>();
-        app.register_saveable::<AntInventory>();
-        app.register_saveable::<InventoryItem>();
 
         // UI:
         app.init_resource::<IsPointerCaptured>();
@@ -97,7 +60,16 @@ impl Plugin for SimulationPlugin {
 
         app.add_systems(
             OnEnter(StoryState::Initializing),
-            (initialize_game_time, load_from_save).chain(),
+            (
+                initialize_settings,
+                initialize_common,
+                initialize_game_time,
+                initialize_nest,
+                initialize_element,
+                initialize_ant,
+                load_from_save,
+            )
+                .chain(),
         );
 
         app.add_systems(OnEnter(StoryState::Creating), create_new_world_map);
@@ -119,7 +91,11 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             Update,
             // TODO: coupling... need to handle clicking the simulation after menus so pointer capture works properly
-            (is_pointer_captured, on_interact_action_menu_button, handle_mouse_clicks)
+            (
+                is_pointer_captured,
+                on_interact_action_menu_button,
+                handle_mouse_clicks,
+            )
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
         );
@@ -175,7 +151,12 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::Cleanup),
             (
-                teardown_game_time,
+                deinitialize_ant,
+                deinitialize_common,
+                deinitialize_element,
+                deinitialize_nest,
+                deinitialize_game_time,
+                deinitialize_settings,
                 #[cfg(target_arch = "wasm32")]
                 cleanup_window_onunload_save_world_state,
                 cleanup_world_map,

@@ -1,5 +1,8 @@
 use super::grid::position::Position;
-use crate::{gravity::Unstable, common::Id};
+use crate::{
+    common::{register, Id},
+    gravity::Unstable,
+};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -37,11 +40,9 @@ impl AirElementBundle {
     }
 }
 
-
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct Dirt;
-
 
 #[derive(Bundle)]
 pub struct DirtElementBundle {
@@ -65,7 +66,6 @@ impl DirtElementBundle {
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct Crushable;
-
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
@@ -123,8 +123,24 @@ impl FoodElementBundle {
 #[reflect(Component)]
 pub enum Element {
     // TODO: IDK, I needed a default for Reflect (IDK why) but I don't necessarily feel like Air is the perfect choice?
-    #[default] Air,
+    #[default]
+    Air,
     Dirt,
     Sand,
     Food,
+}
+
+pub fn initialize_element(world: &mut World) {
+    register::<Element>(world);
+    register::<Air>(world);
+    register::<Food>(world);
+    register::<Dirt>(world);
+    register::<Sand>(world);
+    register::<Crushable>(world);
+    register::<Unstable>(world);
+    // world.init_resource::<GameTime>();
+}
+
+pub fn deinitialize_element(world: &mut World) {
+    // world.remove_resource::<GameTime>();
 }

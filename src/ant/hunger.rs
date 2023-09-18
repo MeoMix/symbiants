@@ -22,8 +22,6 @@ impl Hunger {
         let max = 100.0;
         let rate_of_hunger = max / (SECONDS_PER_DAY as f32 / DEFAULT_SECONDS_PER_TICK);
 
-        info!("rate of hunger: {}", rate_of_hunger);
-
         Self {
             value: 0.0,
             max,

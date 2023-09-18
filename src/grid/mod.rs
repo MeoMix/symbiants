@@ -9,7 +9,6 @@ use crate::{
     },
     common::{AntLabel, Id},
     element::{AirElementBundle, DirtElementBundle, Element},
-    food::FoodCount,
     name_list::get_random_name,
     nest::Nest,
     settings::Settings,
@@ -73,7 +72,6 @@ pub fn create_new_world_map(world: &mut World) {
     let settings = Settings::default();
 
     world.insert_resource(settings);
-    world.init_resource::<FoodCount>();
     world.init_resource::<Nest>();
 
     for y in 0..settings.world_height {

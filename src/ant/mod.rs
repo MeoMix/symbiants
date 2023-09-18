@@ -1,8 +1,11 @@
-use bevy_turborand::{GlobalRng, DelegatedRng};
+use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
-use crate::{common::Id, grid::position::Position};
+use crate::{
+    common::{register, Id},
+    grid::position::Position,
+};
 
 use self::hunger::Hunger;
 
@@ -318,6 +321,26 @@ pub fn ants_initiative(
 
         *initiative = Initiative::new(&mut rng.reborrow());
     }
+}
+
+pub fn initialize_ant(world: &mut World) {
+    register::<Ant>(world);
+    register::<AntName>(world);
+    register::<AntColor>(world);
+    register::<Dead>(world);
+    register::<Initiative>(world);
+    register::<AntOrientation>(world);
+    register::<Facing>(world);
+    register::<Angle>(world);
+    register::<AntRole>(world);
+    register::<Hunger>(world);
+    register::<AntInventory>(world);
+    register::<InventoryItem>(world);
+    // world.init_resource::<GameTime>();
+}
+
+pub fn deinitialize_ant(world: &mut World) {
+    // world.remove_resource::<GameTime>();
 }
 
 // TODO: tests
