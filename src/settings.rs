@@ -3,7 +3,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{common::register, grid::position::Position};
 
-#[derive(Clone, Copy, Reflect)]
+#[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {
     pub random_dig: f32,              // dig down while wandering
     pub random_drop: f32,             // drop while wandering
@@ -18,7 +18,7 @@ pub struct Probabilities {
     pub below_surface_queen_nest_dig: f32,
 }
 
-#[derive(Resource, Copy, Clone, Reflect)]
+#[derive(Resource, Copy, Clone, Reflect, Debug)]
 #[reflect(Resource)]
 pub struct Settings {
     pub snapshot_interval: isize,
@@ -82,9 +82,10 @@ impl Default for Settings {
 pub fn initialize_settings(world: &mut World) {
     register::<Settings>(world);
     register::<Probabilities>(world);
-    // world.init_resource::<GameTime>();
+
+    world.init_resource::<Settings>();
 }
 
 pub fn deinitialize_settings(world: &mut World) {
-    // world.remove_resource::<GameTime>();
+    world.remove_resource::<Settings>();
 }

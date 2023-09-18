@@ -10,7 +10,6 @@ use crate::{
     common::{AntLabel, Id},
     element::{AirElementBundle, DirtElementBundle, Element},
     name_list::get_random_name,
-    nest::Nest,
     settings::Settings,
     story_state::StoryState,
 };
@@ -69,10 +68,7 @@ pub fn regenerate_cache(world: &mut World) {
 
 // TODO: Probably don't have this method and split it up into ants/elements etc
 pub fn create_new_world_map(world: &mut World) {
-    let settings = Settings::default();
-
-    world.insert_resource(settings);
-    world.init_resource::<Nest>();
+    let settings = world.resource::<Settings>().clone();
 
     for y in 0..settings.world_height {
         for x in 0..settings.world_width {

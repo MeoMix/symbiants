@@ -35,9 +35,9 @@ impl Nest {
 
 pub fn initialize_nest(world: &mut World) {
     register::<Nest>(world);
-    // world.init_resource::<GameTime>();
+    world.init_resource::<Nest>();
 }
 
 pub fn deinitialize_nest(world: &mut World) {
-    // world.remove_resource::<GameTime>();
+    world.remove_resource::<Nest>();
 }

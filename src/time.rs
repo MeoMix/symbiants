@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_save::SaveableRegistry;
 use chrono::{LocalResult, TimeZone, Utc, DateTime};
 use std::time::Duration;
 
@@ -56,12 +55,17 @@ pub fn initialize_game_time(world: &mut World) {
     world.init_resource::<GameTime>();
     world.init_resource::<IsFastForwarding>();
     world.init_resource::<PendingTicks>();
+
+    // Control the speed of the simulation by defining how many simulation ticks occur per second.
+    world.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 }
 
 pub fn deinitialize_game_time(world: &mut World) {
     world.remove_resource::<GameTime>();
     world.remove_resource::<IsFastForwarding>();
     world.remove_resource::<PendingTicks>();
+
+    world.remove_resource::<FixedTime>();
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,

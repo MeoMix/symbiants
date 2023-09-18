@@ -7,16 +7,17 @@ use crate::{
         act::ants_act,
         ants_initiative,
         birthing::ants_birthing,
+        deinitialize_ant,
         hunger::ants_hunger,
         initialize_ant,
         ui::{
             on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
         },
-        walk::ants_walk, deinitialize_ant,
+        walk::ants_walk,
     },
     background::setup_background,
-    common::{initialize_common, ui::on_update_position, deinitialize_common},
-    element::{initialize_element, ui::on_spawn_element, deinitialize_element},
+    common::{deinitialize_common, initialize_common, ui::on_update_position},
+    element::{deinitialize_element, initialize_element, ui::on_spawn_element},
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
     grid::{
         cleanup_world_map, create_new_world_map, regenerate_cache,
@@ -26,12 +27,12 @@ use crate::{
         },
     },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
-    nest::{initialize_nest, deinitialize_nest},
-    settings::{initialize_settings, deinitialize_settings},
+    nest::{deinitialize_nest, initialize_nest},
+    settings::{deinitialize_settings, initialize_settings},
     story_state::{on_story_cleanup, setup_story_state, StoryState},
     time::{
         deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
-        update_game_time, DEFAULT_SECONDS_PER_TICK,
+        update_game_time,
     },
     ui::action_menu::on_interact_action_menu_button,
 };
@@ -41,20 +42,12 @@ pub struct SimulationPlugin;
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SaveableRegistry>();
-        // TODO: Not sure I need this?
-        app.init_resource::<Rollbacks>();
 
-        // TODO: Delegate this to setup/cleanup fns on various submodules
-
-        // UI:
+        // Some resources should be available for the entire lifetime of the application.
+        // For example, IsPointerCaptured is a UI resource which is useful when interacting with the GameStart menu.
         app.init_resource::<IsPointerCaptured>();
-
         // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
         app.init_resource::<GlobalRng>();
-
-        // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        //app.insert_resource(FixedTime::new_from_secs(1.0 / 60.0));
-        app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
         app.add_state::<StoryState>();
 
