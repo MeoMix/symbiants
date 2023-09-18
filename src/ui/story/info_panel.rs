@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     ant::{hunger::Hunger, AntRole},
-    grid::WorldMap, ui::common::panel::PANEL, element::{Element, Food},
+    element::Food,
+    grid::WorldMap,
+    ui::common::panel::PANEL,
 };
 
 #[derive(Component)]
@@ -90,10 +92,7 @@ pub fn update_info_panel_ant_hunger(
     ant_query: Query<&Hunger, With<AntRole>>,
 ) {
     for mut text in &mut text_query {
-        let hunger_sum: f32 = ant_query
-            .iter()
-            .map(|hunger: &Hunger| hunger.value())
-            .sum();
+        let hunger_sum: f32 = ant_query.iter().map(|hunger: &Hunger| hunger.value()).sum();
 
         let hunger_avg = hunger_sum / ant_query.iter().count() as f32;
 

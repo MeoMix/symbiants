@@ -2,6 +2,7 @@ use super::grid::position::Position;
 use crate::{
     common::{register, Id},
     gravity::Unstable,
+    settings::Settings,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -138,9 +139,31 @@ pub fn initialize_element(world: &mut World) {
     register::<Sand>(world);
     register::<Crushable>(world);
     register::<Unstable>(world);
-    // world.init_resource::<GameTime>();
 }
 
-pub fn deinitialize_element(world: &mut World) {
-    // world.remove_resource::<GameTime>();
+pub fn setup_element(world: &mut World) {
+    let settings = world.resource::<Settings>().clone();
+
+    for y in 0..settings.world_height {
+        for x in 0..settings.world_width {
+            let position = Position::new(x, y);
+
+            if y <= settings.get_surface_level() {
+                world.spawn(AirElementBundle::new(position));
+            } else {
+                world.spawn(DirtElementBundle::new(position));
+            }
+        }
+    }
 }
+
+pub fn cleanup_element(world: &mut World) {
+    let mut element_query = world.query_filtered::<Entity, With<Element>>();
+    let elements = element_query.iter(&world).collect::<Vec<_>>();
+
+    for element in elements {
+        world.entity_mut(element).despawn_recursive();
+    }
+}
+
+pub fn deinitialize_element() {}

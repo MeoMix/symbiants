@@ -3,11 +3,13 @@ use std::ops::Add;
 use bevy::prelude::*;
 
 use crate::{
+    // TODO: This is out of place - maybe split position into AntPosition and ElementPosition
+    ant::AntLabel,
     grid::{position::Position, WorldMap},
     time::IsFastForwarding,
 };
 
-use super::{AntLabel, TranslationOffset};
+use super::TranslationOffset;
 
 // Manages rerendering entities when their positions are updated. Applies to ants, labels, and elements.
 // TODO: it might make more sense to split this into ant-specific and element-specific functions because ants have labels and offsets
@@ -33,7 +35,7 @@ pub fn on_update_position(
                 .add(translation_offset.map_or(Vec3::ZERO, |offset| offset.0));
         }
     }
-    
+
     // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
     for (mut transform, translation_offset, label) in label_query.iter_mut() {
         let (position, _, _) = query.get(label.0).unwrap();

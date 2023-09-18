@@ -5,6 +5,8 @@ use std::f32::consts::PI;
 use crate::{
     common::{register, Id},
     grid::position::Position,
+    name_list::get_random_name,
+    settings::Settings,
 };
 
 use self::hunger::Hunger;
@@ -61,6 +63,9 @@ impl AntBundle {
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AntName(pub String);
+
+#[derive(Component)]
+pub struct AntLabel(pub Entity);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -336,11 +341,63 @@ pub fn initialize_ant(world: &mut World) {
     register::<Hunger>(world);
     register::<AntInventory>(world);
     register::<InventoryItem>(world);
-    // world.init_resource::<GameTime>();
 }
 
-pub fn deinitialize_ant(world: &mut World) {
-    // world.remove_resource::<GameTime>();
+pub fn setup_ant(world: &mut World) {
+    let settings = world.resource::<Settings>().clone();
+
+    let ants = {
+        let mut rng = world.resource_mut::<GlobalRng>();
+
+        let queen_ant = AntBundle::new(
+            settings.get_random_surface_position(&mut rng),
+            AntColor(settings.ant_color),
+            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+            AntInventory::default(),
+            AntRole::Queen,
+            AntName(String::from("Queen")),
+            Initiative::new(&mut rng),
+        );
+
+        let worker_ants = (0..settings.initial_ant_worker_count)
+            .map(|_| {
+                AntBundle::new(
+                    settings.get_random_surface_position(&mut rng),
+                    AntColor(settings.ant_color),
+                    AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+                    AntInventory::default(),
+                    AntRole::Worker,
+                    AntName(get_random_name(&mut rng)),
+                    Initiative::new(&mut rng),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        vec![queen_ant].into_iter().chain(worker_ants.into_iter())
+    };
+
+    world.spawn_batch(ants);
+}
+
+pub fn cleanup_ant(world: &mut World) {
+    // NOTE: labels aren't directly tied to their ants and so aren't despawned when ants are despawned.
+    // This is because label should not rotate with ants and its much simpler to keep them detached to achieve this.
+    let mut label_query = world.query_filtered::<Entity, With<AntLabel>>();
+    let label_entities = label_query.iter(&world).collect::<Vec<_>>();
+
+    for entity in label_entities {
+        world.entity_mut(entity).despawn_recursive();
+    }
+
+    let mut ant_query = world.query_filtered::<Entity, With<Ant>>();
+    let ants = ant_query.iter(&world).collect::<Vec<_>>();
+
+    for ant in ants {
+        world.entity_mut(ant).despawn_recursive();
+    }
+}
+
+pub fn deinitialize_ant() {
 }
 
 // TODO: tests

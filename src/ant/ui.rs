@@ -1,8 +1,8 @@
 use std::ops::Add;
 
-use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead};
+use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, AntLabel};
 use crate::{
-    common::{get_entity_from_id, AntLabel, Id, TranslationOffset},
+    common::{get_entity_from_id, Id, TranslationOffset},
     element::{ui::get_element_sprite, Element},
     grid::{position::Position, WorldMap},
     time::IsFastForwarding,

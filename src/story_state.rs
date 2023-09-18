@@ -34,6 +34,7 @@ pub enum StoryState {
     Cleanup,
 }
 
+// TODO: This is weird
 pub fn setup_story_state(
     mut story_state: ResMut<NextState<StoryState>>,
     dead_ants_query: Query<&AntRole, With<Dead>>,

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_save::{Rollbacks, SaveableRegistry};
+use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
 
 use crate::{
@@ -7,9 +7,9 @@ use crate::{
         act::ants_act,
         ants_initiative,
         birthing::ants_birthing,
-        deinitialize_ant,
+        cleanup_ant, deinitialize_ant,
         hunger::ants_hunger,
-        initialize_ant,
+        initialize_ant, setup_ant,
         ui::{
             on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
         },
@@ -17,10 +17,13 @@ use crate::{
     },
     background::setup_background,
     common::{deinitialize_common, initialize_common, ui::on_update_position},
-    element::{deinitialize_element, initialize_element, ui::on_spawn_element},
+    element::{
+        cleanup_element, deinitialize_element, initialize_element, setup_element,
+        ui::on_spawn_element,
+    },
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
     grid::{
-        cleanup_world_map, create_new_world_map, regenerate_cache,
+        regenerate_cache,
         save::{
             cleanup_window_onunload_save_world_state, load_existing_world,
             periodic_save_world_state, setup_window_onunload_save_world_state,
@@ -65,7 +68,10 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
-        app.add_systems(OnEnter(StoryState::Creating), create_new_world_map);
+        app.add_systems(
+            OnEnter(StoryState::Creating),
+            ((setup_element, setup_ant), finalize_startup).chain(),
+        );
 
         app.add_systems(
             OnEnter(StoryState::FinalizingStartup),
@@ -152,7 +158,8 @@ impl Plugin for SimulationPlugin {
                 deinitialize_settings,
                 #[cfg(target_arch = "wasm32")]
                 cleanup_window_onunload_save_world_state,
-                cleanup_world_map,
+                cleanup_ant,
+                cleanup_element,
                 on_story_cleanup,
             )
                 .chain(),
@@ -171,4 +178,9 @@ pub fn load_from_save(world: &mut World) {
     } else {
         story_state.set(StoryState::GatheringSettings);
     }
+}
+
+pub fn finalize_startup(world: &mut World) {
+    let mut story_state = world.resource_mut::<NextState<StoryState>>();
+    story_state.set(StoryState::FinalizingStartup);
 }

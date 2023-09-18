@@ -1,18 +1,7 @@
 use bevy::prelude::*;
-use bevy_turborand::GlobalRng;
 use std::ops::Add;
 
-use crate::{
-    ant::{
-        Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Facing,
-        Initiative,
-    },
-    common::{AntLabel, Id},
-    element::{AirElementBundle, DirtElementBundle, Element},
-    name_list::get_random_name,
-    settings::Settings,
-    story_state::StoryState,
-};
+use crate::{element::Element, settings::Settings, story_state::StoryState};
 
 pub mod position;
 pub mod save;
@@ -21,7 +10,6 @@ use chrono::{DateTime, Utc};
 
 use self::position::Position;
 
-// TODO: Maybe parts of this should be reflected rather than regenerating from settings?
 #[derive(Resource, Debug)]
 pub struct WorldMap {
     width: isize,
@@ -29,23 +17,6 @@ pub struct WorldMap {
     surface_level: isize,
     created_at: DateTime<Utc>,
     elements_cache: Vec<Vec<Entity>>,
-}
-
-pub fn cleanup_world_map(world: &mut World) {
-    // HACK: labels aren't directly tied to their ants and so aren't despawned when ants are despawned.
-    let mut label_query = world.query_filtered::<Entity, With<AntLabel>>();
-    let label_entities = label_query.iter(&world).collect::<Vec<_>>();
-
-    for entity in label_entities {
-        world.entity_mut(entity).despawn_recursive();
-    }
-
-    let mut persistent_entity_query = world.query_filtered::<Entity, With<Id>>();
-    let persistent_entites = persistent_entity_query.iter(&world).collect::<Vec<_>>();
-
-    for entity in persistent_entites {
-        world.entity_mut(entity).despawn_recursive();
-    }
 }
 
 /// Called after creating a new story, or loading an existing story from storage.
@@ -63,59 +34,9 @@ pub fn regenerate_cache(world: &mut World) {
     let elements_cache = create_elements_cache(world, width, height);
     world.insert_resource(WorldMap::new(width, height, surface_level, elements_cache));
 
-    world.resource_mut::<NextState<StoryState>>().set(StoryState::Telling);
-}
-
-// TODO: Probably don't have this method and split it up into ants/elements etc
-pub fn create_new_world_map(world: &mut World) {
-    let settings = world.resource::<Settings>().clone();
-
-    for y in 0..settings.world_height {
-        for x in 0..settings.world_width {
-            let position = Position::new(x, y);
-
-            if y <= settings.get_surface_level() {
-                world.spawn(AirElementBundle::new(position));
-            } else {
-                world.spawn(DirtElementBundle::new(position));
-            }
-        }
-    }
-
-    let ants = {
-        let mut rng = world.resource_mut::<GlobalRng>();
-
-        let queen_ant = AntBundle::new(
-            settings.get_random_surface_position(&mut rng),
-            AntColor(settings.ant_color),
-            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-            AntInventory::default(),
-            AntRole::Queen,
-            AntName(String::from("Queen")),
-            Initiative::new(&mut rng),
-        );
-
-        let worker_ants = (0..settings.initial_ant_worker_count)
-            .map(|_| {
-                AntBundle::new(
-                    settings.get_random_surface_position(&mut rng),
-                    AntColor(settings.ant_color),
-                    AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-                    AntInventory::default(),
-                    AntRole::Worker,
-                    AntName(get_random_name(&mut rng)),
-                    Initiative::new(&mut rng),
-                )
-            })
-            .collect::<Vec<_>>();
-
-        vec![queen_ant].into_iter().chain(worker_ants.into_iter())
-    };
-
-    world.spawn_batch(ants);
-
-    let mut story_state = world.resource_mut::<NextState<StoryState>>();
-    story_state.set(StoryState::FinalizingStartup);
+    world
+        .resource_mut::<NextState<StoryState>>()
+        .set(StoryState::Telling);
 }
 
 // Create a cache which allows for spatial querying of Elements. This is used to speed up
