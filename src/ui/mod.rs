@@ -3,7 +3,6 @@ mod common;
 mod main_menu;
 mod story;
 
-use crate::mouse::is_pointer_captured;
 use crate::story_state::StoryState;
 
 use self::action_menu::*;
@@ -14,11 +13,14 @@ use self::story::info_panel::*;
 use self::story::loading_dialog::*;
 use self::story::story_over_dialog::*;
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(EguiPlugin);
+
         // Common:
         app.add_systems(Update, button_system);
 
@@ -40,7 +42,7 @@ impl Plugin for UIPlugin {
         // Story:
         app.add_systems(
             OnEnter(StoryState::Telling),
-            (setup_info_panel, setup_command_buttons, create_action_menu).chain(),
+            (setup_info_panel, setup_command_buttons, initialize_action_menu).chain(),
         );
         app.add_systems(
             Update,
@@ -50,23 +52,17 @@ impl Plugin for UIPlugin {
                 update_info_panel_ant_hunger,
                 update_info_panel_food,
                 handle_reset_button_interaction,
+                update_action_menu,
             )
                 .run_if(in_state(StoryState::Telling)),
         );
-
-        // app.add_systems(
-        //     Update,
-        //     (is_pointer_captured, on_interact_action_menu_button)
-        //         .chain()
-        //         .run_if(in_state(StoryState::Telling)),
-        // );
 
         app.add_systems(
             OnExit(StoryState::Telling),
             (
                 despawn_screen::<InfoPanel>,
                 despawn_screen::<CommandButtons>,
-                despawn_screen::<ActionMenu>,
+                deinitialize_action_menu,
             ),
         );
 

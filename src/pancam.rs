@@ -7,6 +7,8 @@ use bevy::{
     window::PrimaryWindow,
 };
 
+use crate::mouse::IsPointerCaptured;
+
 /// Plugin that adds the necessary systems for `PanCam` components to work
 #[derive(Default)]
 pub struct PanCamPlugin;
@@ -19,7 +21,8 @@ impl Plugin for PanCamPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (camera_movement, camera_zoom, auto_clamp_translation).in_set(PanCamSystemSet),
+            (camera_movement, camera_zoom, auto_clamp_translation).in_set(PanCamSystemSet)
+            .run_if(resource_equals(IsPointerCaptured(false))),
         )
         .register_type::<PanCam>();
 
@@ -60,7 +63,10 @@ fn check_egui_wants_focus(
 // This workaround wouldn't be hacky if there was no visual delay, but I still see a slight stutter in the UI
 // so I assume this isn't a great solution. Better than having the camera be misaligned though.
 fn auto_clamp_translation(
-    mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection), Changed<OrthographicProjection>>,
+    mut query: Query<
+        (&PanCam, &mut Transform, &OrthographicProjection),
+        Changed<OrthographicProjection>,
+    >,
     mut last_size: Local<Option<Vec2>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
@@ -72,20 +78,13 @@ fn auto_clamp_translation(
         if Some(proj_size) == *last_size {
             return;
         }
-    
+
         let window = primary_window.single();
         let window_size = Vec2::new(window.width(), window.height());
-    
-        clamp_translation(
-            cam,
-            projection,
-            &mut transform,
-            Vec2::ZERO,
-            window_size,
-        );
-    
-        *last_size = Some(proj_size);
 
+        clamp_translation(cam, projection, &mut transform, Vec2::ZERO, window_size);
+
+        *last_size = Some(proj_size);
     }
 }
 

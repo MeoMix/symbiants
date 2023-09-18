@@ -1,29 +1,7 @@
 // Create a floating menu which contains a set of action icons. Very similar to Photoshop/Paint action menu.
 // Used in Sandbox Mode to allow the user to play around with the environment - manually spawning/despawning anything that could exist.
 use bevy::prelude::*;
-
-
-
-#[derive(Component)]
-pub struct ActionMenu;
-
-#[derive(Component)]
-pub struct ActionMenuButton(PointerAction);
-
-#[derive(Component)]
-pub struct SelectButton;
-
-#[derive(Component)]
-pub struct SpawnFoodButton;
-
-#[derive(Component)]
-pub struct SpawnDirtButton;
-
-#[derive(Component)]
-pub struct SpawnSandButton;
-
-#[derive(Component)]
-pub struct DespawnButton;
+use bevy_egui::{egui, EguiContexts};
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
 pub enum PointerAction {
@@ -35,129 +13,35 @@ pub enum PointerAction {
     Sand,
 }
 
-pub fn create_action_menu(mut commands: Commands) {
+pub fn initialize_action_menu(mut commands: Commands) {
     commands.init_resource::<PointerAction>();
-
-    let menu_bundle = (
-        NodeBundle {
-            style: Style {
-                position_type: PositionType::Absolute,
-                right: Val::Px(0.0),
-                width: Val::Px(100.0),
-                display: Display::Flex,
-                flex_wrap: FlexWrap::Wrap,
-                justify_content: JustifyContent::SpaceBetween,
-                align_content: AlignContent::FlexStart,
-                ..default()
-            },
-            background_color: BackgroundColor(Color::BLACK),
-            ..default()
-        },
-        ActionMenu,
-    );
-
-    // TODO: Separate the concept of icon from button and nest.
-
-    let select_icon_bundle = (
-        ButtonBundle {
-            style: Style {
-                width: Val::Px(48.0),
-                height: Val::Px(48.0),
-                min_width: Val::Px(48.0),
-                min_height: Val::Px(48.0),
-                ..default()
-            },
-            background_color: BackgroundColor(Color::WHITE),
-            ..default()
-        },
-        ActionMenuButton(PointerAction::Select),
-        SelectButton,
-    );
-
-    let food_icon_bundle = (
-        ButtonBundle {
-            style: Style {
-                width: Val::Px(48.0),
-                height: Val::Px(48.0),
-                min_width: Val::Px(48.0),
-                min_height: Val::Px(48.0),
-                ..default()
-            },
-            background_color: BackgroundColor(Color::rgb(0.388, 0.584, 0.294)),
-            ..default()
-        },
-        ActionMenuButton(PointerAction::Food),
-        SpawnFoodButton,
-    );
-
-    let dirt_icon_bundle = (
-        ButtonBundle {
-            style: Style {
-                width: Val::Px(48.0),
-                height: Val::Px(48.0),
-                min_width: Val::Px(48.0),
-                min_height: Val::Px(48.0),
-                ..default()
-            },
-            background_color: BackgroundColor(Color::rgb(0.514, 0.396, 0.224)),
-            ..default()
-        },
-        ActionMenuButton(PointerAction::Dirt),
-        SpawnDirtButton,
-    );
-
-    let sand_icon_bundle = (
-        ButtonBundle {
-            style: Style {
-                width: Val::Px(48.0),
-                height: Val::Px(48.0),
-                min_width: Val::Px(48.0),
-                min_height: Val::Px(48.0),
-                ..default()
-            },
-            background_color: BackgroundColor(Color::rgb(0.761, 0.698, 0.502)),
-            ..default()
-        },
-        ActionMenuButton(PointerAction::Sand),
-        SpawnSandButton,
-    );
-
-    let despawn_icon_bundle = (
-        ButtonBundle {
-            style: Style {
-                width: Val::Px(48.0),
-                height: Val::Px(48.0),
-                min_width: Val::Px(48.0),
-                min_height: Val::Px(48.0),
-                ..default()
-            },
-            background_color: BackgroundColor(Color::RED),
-            ..default()
-        },
-        ActionMenuButton(PointerAction::Despawn),
-        DespawnButton,
-    );
-
-    commands.spawn(menu_bundle).with_children(|menu| {
-        // Add a bunch of child icons.
-        menu.spawn(select_icon_bundle);
-        menu.spawn(despawn_icon_bundle);
-        menu.spawn(food_icon_bundle);
-        menu.spawn(dirt_icon_bundle);
-        menu.spawn(sand_icon_bundle);
-    });
 }
 
-pub fn on_interact_action_menu_button(
-    interaction_query: Query<
-        (&Interaction, &ActionMenuButton),
-        (Changed<Interaction>, With<Button>),
-    >,
-    mut pointer_action: ResMut<PointerAction>
-) {
-    for (interaction, action_menu_button) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            *pointer_action = action_menu_button.0;
-        }
-    }
+pub fn update_action_menu(mut contexts: EguiContexts, mut pointer_action: ResMut<PointerAction>) {
+    let ctx = contexts.ctx_mut();
+
+    // TODO: set default position
+    // TODO: resetting story doesn't reset window position
+    egui::Window::new("Actions")
+        .resizable(false)
+        .show(ctx, |ui| {
+            ui.selectable_value(
+                pointer_action.as_mut(),
+                PointerAction::Select,
+                "Select Unit",
+            );
+            ui.selectable_value(
+                pointer_action.as_mut(),
+                PointerAction::Despawn,
+                "Despawn Unit",
+            );
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Spawn Food");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Spawn Dirt");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Spawn Sand");
+        });
+}
+
+// TODO: discrepancy between using world directly vs commands for remove_resource
+pub fn deinitialize_action_menu(mut commands: Commands) {
+    commands.remove_resource::<PointerAction>();
 }

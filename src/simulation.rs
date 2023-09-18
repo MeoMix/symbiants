@@ -37,7 +37,6 @@ use crate::{
         deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
         update_game_time, DEFAULT_SECONDS_PER_TICK,
     },
-    ui::action_menu::on_interact_action_menu_button,
 };
 
 pub struct SimulationPlugin;
@@ -95,7 +94,6 @@ impl Plugin for SimulationPlugin {
             // TODO: coupling... need to handle clicking the simulation after menus so pointer capture works properly
             (
                 is_pointer_captured,
-                on_interact_action_menu_button,
                 handle_mouse_clicks,
             )
                 .run_if(in_state(StoryState::Telling))

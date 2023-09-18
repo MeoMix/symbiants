@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_egui::EguiContexts;
 
 use crate::{
     camera::MainCamera,
@@ -68,7 +69,7 @@ fn world_to_grid_position(world_map: &WorldMap, world_position: Vec2) -> Positio
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, PartialEq)]
 pub struct IsPointerCaptured(pub bool);
 
 #[derive(Component)]
@@ -80,8 +81,19 @@ pub fn is_pointer_captured(
         &Interaction,
         (With<Node>, Changed<Interaction>, Without<NoPointerCapture>),
     >,
+    mut contexts: EguiContexts,
 ) {
-    is_pointer_captured.0 = interaction_query
+    let is_pointer_over_bevy_ui = interaction_query
         .iter()
         .any(|i| matches!(i, Interaction::Pressed | Interaction::Hovered));
+
+    let context = contexts.ctx_mut();
+
+    // NOTE: 99% of the time just checking wanting_input is fine, but if you move really quickly then there's a brief moment
+    // where wanting input isn't true. This can cause the underlying window to get panned undesirably. So, check over area, too.
+    let is_pointer_over_egui = context.is_pointer_over_area();
+    let is_egui_wanting_input = context.wants_pointer_input() || context.wants_keyboard_input();
+
+    is_pointer_captured.0 =
+        is_pointer_over_bevy_ui || is_egui_wanting_input || is_pointer_over_egui;
 }
