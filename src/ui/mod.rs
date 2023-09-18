@@ -1,6 +1,7 @@
 pub mod action_menu;
 mod common;
 mod main_menu;
+mod settings_menu;
 mod story;
 
 use crate::story_state::StoryState;
@@ -8,7 +9,7 @@ use crate::story_state::StoryState;
 use self::action_menu::*;
 use self::common::button::*;
 use self::main_menu::*;
-use self::story::command_buttons::*;
+use self::settings_menu::update_settings_menu;
 use self::story::info_panel::*;
 use self::story::loading_dialog::*;
 use self::story::story_over_dialog::*;
@@ -42,7 +43,11 @@ impl Plugin for UIPlugin {
         // Story:
         app.add_systems(
             OnEnter(StoryState::Telling),
-            (setup_info_panel, setup_command_buttons, initialize_action_menu).chain(),
+            (
+                setup_info_panel,
+                initialize_action_menu,
+            )
+                .chain(),
         );
         app.add_systems(
             Update,
@@ -51,7 +56,7 @@ impl Plugin for UIPlugin {
                 update_info_panel_ant_count,
                 update_info_panel_ant_hunger,
                 update_info_panel_food,
-                handle_reset_button_interaction,
+                update_settings_menu,
                 update_action_menu,
             )
                 .run_if(in_state(StoryState::Telling)),
@@ -61,7 +66,6 @@ impl Plugin for UIPlugin {
             OnExit(StoryState::Telling),
             (
                 despawn_screen::<InfoPanel>,
-                despawn_screen::<CommandButtons>,
                 deinitialize_action_menu,
             ),
         );

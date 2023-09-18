@@ -1,6 +1,6 @@
 // Create a floating menu which contains a set of action icons. Very similar to Photoshop/Paint action menu.
 // Used in Sandbox Mode to allow the user to play around with the environment - manually spawning/despawning anything that could exist.
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
@@ -17,12 +17,17 @@ pub fn initialize_action_menu(mut commands: Commands) {
     commands.init_resource::<PointerAction>();
 }
 
-pub fn update_action_menu(mut contexts: EguiContexts, mut pointer_action: ResMut<PointerAction>) {
+pub fn update_action_menu(
+    mut contexts: EguiContexts,
+    mut pointer_action: ResMut<PointerAction>,
+    primary_window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
 
-    // TODO: set default position
     // TODO: resetting story doesn't reset window position
     egui::Window::new("Actions")
+        .default_pos(egui::Pos2::new(window.width(), 0.0))
         .resizable(false)
         .show(ctx, |ui| {
             ui.selectable_value(
