@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 bevy = { version = "0.11.0" }
+bevy_egui = { version="0.21.0"}
 bevy_save = { version = "0.9.1" }
 bevy_turborand = { version = "0.6.0" }
 console_error_panic_hook = { version = "0.1.7" }
