@@ -1,12 +1,9 @@
 use bevy::prelude::*;
-use std::ops::Add;
 
 use crate::{element::Element, settings::Settings};
 
 pub mod position;
 pub mod save;
-
-use chrono::{DateTime, Utc};
 
 use self::position::Position;
 
@@ -15,7 +12,6 @@ pub struct WorldMap {
     width: isize,
     height: isize,
     surface_level: isize,
-    created_at: DateTime<Utc>,
     elements_cache: Vec<Vec<Entity>>,
 }
 
@@ -67,7 +63,6 @@ impl WorldMap {
             height,
             surface_level,
             elements_cache,
-            created_at: Utc::now(),
         }
     }
 
@@ -81,13 +76,6 @@ impl WorldMap {
 
     pub fn surface_level(&self) -> &isize {
         &self.surface_level
-    }
-
-    // round up so start at 1
-    pub fn days_old(&self) -> i64 {
-        let now = Utc::now();
-        let duration = now - self.created_at;
-        duration.num_days().add(1)
     }
 
     pub fn is_below_surface(&self, position: &Position) -> bool {

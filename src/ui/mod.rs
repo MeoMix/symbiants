@@ -49,7 +49,6 @@ impl Plugin for UIPlugin {
                 update_info_panel_ant_count,
                 update_info_panel_ant_hunger,
                 update_info_panel_food,
-                update_info_panel_day,
                 handle_reset_button_interaction,
             )
                 .run_if(in_state(StoryState::Telling)),
