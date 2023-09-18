@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use std::ops::Add;
 
-use crate::{element::Element, settings::Settings, story_state::StoryState};
+use crate::{element::Element, settings::Settings};
 
 pub mod position;
 pub mod save;
@@ -21,7 +21,7 @@ pub struct WorldMap {
 
 /// Called after creating a new story, or loading an existing story from storage.
 /// Creates a cache that maps positions to element entities for quick lookup outside of ECS architecture.
-pub fn regenerate_cache(world: &mut World) {
+pub fn setup_caches(world: &mut World) {
     let (width, height, surface_level) = {
         let settings = world.resource::<Settings>();
         (
@@ -33,16 +33,16 @@ pub fn regenerate_cache(world: &mut World) {
 
     let elements_cache = create_elements_cache(world, width, height);
     world.insert_resource(WorldMap::new(width, height, surface_level, elements_cache));
+}
 
-    world
-        .resource_mut::<NextState<StoryState>>()
-        .set(StoryState::Telling);
+pub fn cleanup_caches(world: &mut World) {
+    world.remove_resource::<WorldMap>();
 }
 
 // Create a cache which allows for spatial querying of Elements. This is used to speed up
 // most logic because there's a consistent need throughout the application to know what elements are
 // at or near a given position.
-pub fn create_elements_cache(world: &mut World, width: isize, height: isize) -> Vec<Vec<Entity>> {
+fn create_elements_cache(world: &mut World, width: isize, height: isize) -> Vec<Vec<Entity>> {
     let mut elements_cache = vec![vec![Entity::PLACEHOLDER; width as usize]; height as usize];
 
     for (position, entity) in world

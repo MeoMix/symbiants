@@ -10,7 +10,8 @@ use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct Birthing {
     value: f32,
     max: f32,

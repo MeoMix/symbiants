@@ -157,7 +157,6 @@ pub fn on_interact_action_menu_button(
 ) {
     for (interaction, action_menu_button) in &interaction_query {
         if *interaction == Interaction::Pressed {
-            info!("ayy lmao");
             *pointer_action = action_menu_button.0;
         }
     }

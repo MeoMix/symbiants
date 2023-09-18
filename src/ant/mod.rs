@@ -9,7 +9,7 @@ use crate::{
     settings::Settings,
 };
 
-use self::hunger::Hunger;
+use self::{hunger::Hunger, birthing::Birthing};
 
 use super::element::Element;
 use bevy::prelude::*;
@@ -341,6 +341,8 @@ pub fn initialize_ant(world: &mut World) {
     register::<Hunger>(world);
     register::<AntInventory>(world);
     register::<InventoryItem>(world);
+
+    register::<Birthing>(world);
 }
 
 pub fn setup_ant(world: &mut World) {

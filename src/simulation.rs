@@ -23,11 +23,11 @@ use crate::{
     },
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
     grid::{
-        regenerate_cache,
+        setup_caches,
         save::{
             cleanup_window_onunload_save_world_state, load_existing_world,
             periodic_save_world_state, setup_window_onunload_save_world_state,
-        },
+        }, cleanup_caches,
     },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     nest::{deinitialize_nest, initialize_nest},
@@ -35,7 +35,7 @@ use crate::{
     story_state::{on_story_cleanup, setup_story_state, StoryState},
     time::{
         deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
-        update_game_time,
+        update_game_time, DEFAULT_SECONDS_PER_TICK,
     },
     ui::action_menu::on_interact_action_menu_button,
 };
@@ -51,6 +51,8 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<IsPointerCaptured>();
         // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
         app.init_resource::<GlobalRng>();
+        // Control the speed of the simulation by defining how many simulation ticks occur per second.
+        app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
         app.add_state::<StoryState>();
 
@@ -63,7 +65,7 @@ impl Plugin for SimulationPlugin {
                 initialize_nest,
                 initialize_element,
                 initialize_ant,
-                load_from_save,
+                try_load_from_save,
             )
                 .chain(),
         );
@@ -76,12 +78,13 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::FinalizingStartup),
             (
-                regenerate_cache,
+                setup_caches,
                 setup_game_time,
                 setup_background,
                 setup_story_state,
                 #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
+                begin_story,
             )
                 .chain(),
         );
@@ -99,7 +102,6 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
-        // TODO: revisit this idea - I want all simulation systems to be able to run in parallel.
         app.add_systems(
             FixedUpdate,
             (
@@ -160,6 +162,7 @@ impl Plugin for SimulationPlugin {
                 cleanup_window_onunload_save_world_state,
                 cleanup_ant,
                 cleanup_element,
+                cleanup_caches,
                 on_story_cleanup,
             )
                 .chain(),
@@ -167,10 +170,8 @@ impl Plugin for SimulationPlugin {
     }
 }
 
-pub fn load_from_save(world: &mut World) {
+pub fn try_load_from_save(world: &mut World) {
     let is_loaded = load_existing_world(world);
-
-    info!("is_loaded: {}", is_loaded);
 
     let mut story_state = world.resource_mut::<NextState<StoryState>>();
     if is_loaded {
@@ -183,4 +184,10 @@ pub fn load_from_save(world: &mut World) {
 pub fn finalize_startup(world: &mut World) {
     let mut story_state = world.resource_mut::<NextState<StoryState>>();
     story_state.set(StoryState::FinalizingStartup);
+}
+
+pub fn begin_story(world: &mut World) {
+    world
+        .resource_mut::<NextState<StoryState>>()
+        .set(StoryState::Telling);
 }

@@ -154,7 +154,6 @@ pub fn ants_act(
                                 // which can result in ants undermining their own nest.
                                 if *forward_target_element != Element::Dirt {
                                     allow_dig = false;
-                                    info!("allow_dig false - preventing digging through")
                                 }
                             }
                         }
@@ -220,7 +219,6 @@ pub fn ants_act(
                         // which can result in ants undermining their own nest.
                         if *next_forward_element != Element::Dirt {
                             dig_dirt = false;
-                            info!("skipping dig");
                         }
                     }
                 }
