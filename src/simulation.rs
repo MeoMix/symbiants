@@ -78,7 +78,6 @@ impl Plugin for SimulationPlugin {
             OnEnter(StoryState::FinalizingStartup),
             (
                 setup_caches,
-                setup_game_time,
                 setup_background,
                 setup_story_state,
                 #[cfg(target_arch = "wasm32")]
@@ -87,6 +86,10 @@ impl Plugin for SimulationPlugin {
             )
                 .chain(),
         );
+
+        // IMPORTANT: setup_game_time sets FixedTime.accumulated which is reset when transitioning between schedules.
+        // If this is ran OnEnter FinalizingStartup then the accumulated time will be reset to zero before FixedUpdate runs.
+        app.add_systems(OnExit(StoryState::FinalizingStartup), setup_game_time);
 
         // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken (should be fixed in bevy 0.12)
         app.add_systems(
