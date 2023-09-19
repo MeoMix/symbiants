@@ -1,114 +1,28 @@
 use bevy::prelude::*;
-
-use crate::{
-    story_state::StoryState,
-    ui::common::{dialog::DIALOG, overlay::OVERLAY},
+use bevy_egui::{
+    egui::{self, Align2},
+    EguiContexts,
 };
 
-#[derive(Component)]
-pub struct StoryOverDialogModalOverlay;
+use crate::story_state::StoryState;
 
-#[derive(Component)]
-pub struct StoryOverDialog;
-
-#[derive(Component)]
-pub struct StoryOverDialogText;
-
-#[derive(Component)]
-pub enum StoryOverDialogAction {
-    BeginNewStory,
-}
-
-pub fn setup_story_over_dialog(mut commands: Commands) {
-    let modal_overlay_bundle = (
-        NodeBundle {
-            style: OVERLAY.style.clone(),
-            background_color: OVERLAY.background_color.clone(),
-            ..default()
-        },
-        StoryOverDialogModalOverlay,
-    );
-
-    let dialog_bundle = (
-        NodeBundle {
-            style: DIALOG.style.clone(),
-            background_color: DIALOG.background_color,
-            border_color: DIALOG.border_color,
-            ..default()
-        },
-        StoryOverDialog,
-    );
-
-    let dialog_header_bundle = NodeBundle {
-        style: DIALOG.header.style.clone(),
-        ..default()
-    };
-
-    let dialog_content_bundle = NodeBundle {
-        style: DIALOG.content.style.clone(),
-        ..default()
-    };
-
-    let story_over_text_bundle = (
-        TextBundle::from_sections([TextSection::new(
-            "Queen has died. Sadge :(. Story over. Begin again?",
-            DIALOG.content.text_style.clone(),
-        )]),
-        StoryOverDialogText,
-    );
-
-    let dialog_footer_bundle = NodeBundle {
-        style: DIALOG.footer.style.clone(),
-        ..default()
-    };
-
-    let begin_new_story_button_bundle = (
-        ButtonBundle { ..default() },
-        StoryOverDialogAction::BeginNewStory,
-    );
-
-    let begin_new_story_button_text_bundle =
-        TextBundle::from_section("Begin New Story", TextStyle { ..default() });
-
-    commands
-        .spawn(modal_overlay_bundle)
-        .with_children(|modal_overlay| {
-            modal_overlay.spawn(dialog_bundle).with_children(|dialog| {
-                dialog.spawn(dialog_header_bundle);
-
-                dialog
-                    .spawn(dialog_content_bundle)
-                    .with_children(|dialog_content| {
-                        dialog_content.spawn(story_over_text_bundle);
-                    });
-
-                dialog
-                    .spawn(dialog_footer_bundle)
-                    .with_children(|dialog_footer| {
-                        dialog_footer
-                            .spawn(begin_new_story_button_bundle)
-                            .with_children(|begin_new_story_button| {
-                                begin_new_story_button.spawn(begin_new_story_button_text_bundle);
-                            });
-                    });
-            });
-        });
-}
-
-pub fn on_interact_story_over_button(
-    interaction_query: Query<
-        (&Interaction, &StoryOverDialogAction),
-        (Changed<Interaction>, With<Button>),
-    >,
+pub fn update_story_over_dialog(
+    mut contexts: EguiContexts,
     mut story_state: ResMut<NextState<StoryState>>,
 ) {
-    for (interaction, dialog_button_action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match dialog_button_action {
-                StoryOverDialogAction::BeginNewStory => {
+    let ctx = contexts.ctx_mut();
+
+    egui::Window::new("Story Over")
+        .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+        .resizable(false)
+        .collapsible(false)
+        .show(ctx, |ui| {
+            ui.label("Queen has died. Sadge :(. Story over. Begin again?");
+
+            ui.vertical_centered(|ui| {
+                if ui.button("Begin New Story").clicked() {
                     story_state.set(StoryState::Cleanup);
                 }
-            }
-        }
-    }
+            });
+        });
 }

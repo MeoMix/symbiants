@@ -19,5 +19,9 @@ pub fn update_settings_menu(
             if ui.button("Reset Story").clicked() {
                 story_state.set(StoryState::Cleanup);
             }
+
+            if ui.button("End Story").clicked() {
+                story_state.set(StoryState::Over);
+            }
         });
 }
