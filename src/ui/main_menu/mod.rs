@@ -1,10 +1,9 @@
+use crate::story_state::StoryState;
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, Align2},
     EguiContexts,
 };
-
-use crate::story_state::StoryState;
 
 // TODO: Sandbox and About menu buttons
 pub fn update_main_menu_dialog(
@@ -13,15 +12,18 @@ pub fn update_main_menu_dialog(
 ) {
     let ctx = contexts.ctx_mut();
 
-    egui::Window::new("Choose Story Mode")
+    egui::Window::new("Main Menu")
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
         .resizable(false)
         .collapsible(false)
         .show(ctx, |ui| {
-            ui.label("Welcome to Symbiants");
-
             ui.vertical_centered(|ui| {
-                if ui.button("Begin Story").clicked() {
+                ui.label("Welcome to Symbiants");
+
+                ui.add_enabled(false, egui::Button::new("Story Mode"))
+                    .on_disabled_hover_text("Coming soon™!");
+
+                if ui.button("Sandbox Mode").clicked() {
                     story_state.set(StoryState::Creating);
                 }
             });

@@ -12,13 +12,20 @@ use self::story::info_panel::*;
 use self::story::loading_dialog::*;
 use self::story::story_over_dialog::*;
 use bevy::prelude::*;
+use bevy_egui::EguiContexts;
 use bevy_egui::EguiPlugin;
+
+use bevy_egui::egui::{self, TextStyle};
+use egui::FontFamily::Proportional;
+use egui::FontId;
 
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin);
+
+        app.add_systems(Update, set_theme);
 
         app.add_systems(
             Update,
@@ -46,4 +53,35 @@ impl Plugin for UIPlugin {
             update_story_over_dialog.run_if(in_state(StoryState::Over)),
         );
     }
+}
+
+/// This themeing isn't good by any means, but it serves as an example for how to adjust it further. It would be nice to have it look much more like Material UI
+fn set_theme(mut contexts: EguiContexts) {
+    let ctx = contexts.ctx_mut();
+    let mut style = (*ctx.style()).clone();
+
+    style.spacing.window_margin = egui::Margin::symmetric(12.0, 18.0);
+    style.spacing.item_spacing = egui::Vec2::new(8.0, 12.0);
+    style.spacing.button_padding = egui::Vec2::new(8.0, 8.0);
+
+    // Redefine text_styles
+    style.text_styles = [
+        (TextStyle::Heading, FontId::new(20.0, Proportional)),
+        (
+            TextStyle::Name("Heading2".into()),
+            FontId::new(18.0, Proportional),
+        ),
+        (
+            TextStyle::Name("Context".into()),
+            FontId::new(18.0, Proportional),
+        ),
+        (TextStyle::Body, FontId::new(16.0, Proportional)),
+        (TextStyle::Monospace, FontId::new(14.0, Proportional)),
+        (TextStyle::Button, FontId::new(14.0, Proportional)),
+        (TextStyle::Small, FontId::new(10.0, Proportional)),
+    ]
+    .into();
+
+    // Mutate global style with above changes
+    ctx.set_style(style);
 }
