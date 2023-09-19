@@ -13,7 +13,6 @@ bevy_egui = { version="0.21.0"}
 bevy_save = { version = "0.9.1" }
 bevy_turborand = { version = "0.6.0" }
 console_error_panic_hook = { version = "0.1.7" }
-lazy_static = { version = "1.4.0" }
 wasm-bindgen = { version = "0.2.87" }
 uuid = { version = "1.4.0" }
 gloo-storage = "0.3.0"

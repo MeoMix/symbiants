@@ -77,16 +77,8 @@ pub struct NoPointerCapture;
 
 pub fn is_pointer_captured(
     mut is_pointer_captured: ResMut<IsPointerCaptured>,
-    interaction_query: Query<
-        &Interaction,
-        (With<Node>, Changed<Interaction>, Without<NoPointerCapture>),
-    >,
     mut contexts: EguiContexts,
 ) {
-    let is_pointer_over_bevy_ui = interaction_query
-        .iter()
-        .any(|i| matches!(i, Interaction::Pressed | Interaction::Hovered));
-
     let context = contexts.ctx_mut();
 
     // NOTE: 99% of the time just checking wanting_input is fine, but if you move really quickly then there's a brief moment
@@ -94,6 +86,5 @@ pub fn is_pointer_captured(
     let is_pointer_over_egui = context.is_pointer_over_area();
     let is_egui_wanting_input = context.wants_pointer_input() || context.wants_keyboard_input();
 
-    is_pointer_captured.0 =
-        is_pointer_over_bevy_ui || is_egui_wanting_input || is_pointer_over_egui;
+    is_pointer_captured.0 = is_egui_wanting_input || is_pointer_over_egui;
 }
