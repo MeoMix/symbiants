@@ -43,32 +43,20 @@ impl Plugin for UIPlugin {
         // Story:
         app.add_systems(
             OnEnter(StoryState::Telling),
-            (
-                setup_info_panel,
-                initialize_action_menu,
-            )
-                .chain(),
+            (initialize_action_menu,).chain(),
         );
         app.add_systems(
             Update,
             (
+                update_info_window,
                 update_loading_dialog,
-                update_info_panel_ant_count,
-                update_info_panel_ant_hunger,
-                update_info_panel_food,
                 update_settings_menu,
                 update_action_menu,
             )
                 .run_if(in_state(StoryState::Telling)),
         );
 
-        app.add_systems(
-            OnExit(StoryState::Telling),
-            (
-                despawn_screen::<InfoPanel>,
-                deinitialize_action_menu,
-            ),
-        );
+        app.add_systems(OnExit(StoryState::Telling), (deinitialize_action_menu,));
 
         app.add_systems(OnEnter(StoryState::Over), setup_story_over_dialog);
         app.add_systems(
