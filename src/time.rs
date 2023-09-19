@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use chrono::{LocalResult, TimeZone, Utc, DateTime};
+use chrono::{DateTime, LocalResult, TimeZone, Utc};
 use std::time::Duration;
 
 use crate::common::register;
@@ -51,7 +51,7 @@ impl PendingTicks {
 
 pub fn initialize_game_time(world: &mut World) {
     register::<GameTime>(world);
-    
+
     world.init_resource::<GameTime>();
     world.init_resource::<IsFastForwarding>();
     world.init_resource::<PendingTicks>();
@@ -97,9 +97,10 @@ pub fn set_rate_of_time(
                 fixed_time.period = accumulated_time;
                 let _ = fixed_time.expend();
                 fixed_time.period = Duration::from_secs_f32(FASTFORWARD_SECONDS_PER_TICK);
-    
+
                 is_fast_forwarding.0 = true;
-                pending_ticks.0 = ((1.0 / DEFAULT_SECONDS_PER_TICK) * accumulated_time.as_secs() as f32) as isize;
+                pending_ticks.0 =
+                    ((1.0 / DEFAULT_SECONDS_PER_TICK) * accumulated_time.as_secs() as f32) as isize;
             }
         } else {
             fixed_time.period = Duration::from_secs_f32(DEFAULT_SECONDS_PER_TICK);
