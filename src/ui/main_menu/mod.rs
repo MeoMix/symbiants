@@ -5,7 +5,7 @@ use bevy_egui::{
     EguiContexts,
 };
 
-// TODO: Sandbox and About menu buttons
+// TODO: About menu
 pub fn update_main_menu_dialog(
     mut contexts: EguiContexts,
     mut story_state: ResMut<NextState<StoryState>>,

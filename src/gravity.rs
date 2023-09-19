@@ -210,6 +210,10 @@ pub fn gravity_stability(
                     if matches!(*element, Element::Sand | Element::Food) {
                         commands.toggle_element_command(*entity, adjacent_position, true, Unstable);
                     }
+
+                    if *element == Element::Dirt && !world_map.is_below_surface(&adjacent_position) {
+                        commands.toggle_element_command(*entity, adjacent_position, true, Unstable);
+                    }
                 }
             }
         }

@@ -15,7 +15,7 @@ use crate::{
         },
         walk::ants_walk,
     },
-    background::{setup_background, cleanup_background},
+    background::{cleanup_background, setup_background},
     common::{deinitialize_common, initialize_common, ui::on_update_position},
     element::{
         cleanup_element, deinitialize_element, initialize_element, setup_element,
@@ -23,11 +23,12 @@ use crate::{
     },
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
     grid::{
-        setup_caches,
+        cleanup_caches,
         save::{
             cleanup_window_onunload_save_world_state, load_existing_world,
             periodic_save_world_state, setup_window_onunload_save_world_state,
-        }, cleanup_caches,
+        },
+        setup_caches,
     },
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     nest::{deinitialize_nest, initialize_nest},
@@ -95,10 +96,7 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             Update,
             // TODO: coupling... need to handle clicking the simulation after menus so pointer capture works properly
-            (
-                is_pointer_captured,
-                handle_mouse_clicks,
-            )
+            (is_pointer_captured, handle_mouse_clicks)
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
         );

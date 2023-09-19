@@ -50,6 +50,18 @@ pub fn handle_mouse_clicks(
                 commands.replace_element(grid_position, Element::Food, *entity);
             }
         }
+    } else if *pointer_action == PointerAction::Sand {
+        if world_map.is_element(&elements_query, grid_position, Element::Air) {
+            if let Some(entity) = world_map.get_element(grid_position) {
+                commands.replace_element(grid_position, Element::Sand, *entity);
+            }
+        }
+    } else if *pointer_action == PointerAction::Dirt {
+        if world_map.is_element(&elements_query, grid_position, Element::Air) {
+            if let Some(entity) = world_map.get_element(grid_position) {
+                commands.replace_element(grid_position, Element::Dirt, *entity);
+            }
+        }
     } else if *pointer_action == PointerAction::Despawn {
         if let Some(entity) = world_map.get_element(grid_position) {
             commands.replace_element(grid_position, Element::Air, *entity);

@@ -1,5 +1,8 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
-use crate::grid::{position::Position, WorldMap};
+use crate::{
+    gravity::Unstable,
+    grid::{position::Position, WorldMap},
+};
 use bevy::{ecs::system::Command, prelude::*};
 
 pub trait ElementCommandsExt {
@@ -104,7 +107,20 @@ impl Command for SpawnElementCommand {
 pub fn spawn_element(element: Element, position: Position, world: &mut World) -> Entity {
     match element {
         Element::Air => world.spawn(AirElementBundle::new(position)).id(),
-        Element::Dirt => world.spawn(DirtElementBundle::new(position)).id(),
+        Element::Dirt => {
+            // HACK: Dirt that spawns below surface level is not unstable but dirt that is above is unstable.
+            // It should be possible to do this is a more generic way, but performance issues abound. The main one is
+            // is that using a Query which iterates over Element and filters on With<Added> still iterates all elements.
+            let world_map = world.resource::<WorldMap>();
+
+            if world_map.is_below_surface(&position) {
+                world.spawn(DirtElementBundle::new(position)).id()
+            } else {
+                world
+                    .spawn((DirtElementBundle::new(position), Unstable))
+                    .id()
+            }
+        }
         Element::Sand => world.spawn(SandElementBundle::new(position)).id(),
         Element::Food => world.spawn(FoodElementBundle::new(position)).id(),
     }
