@@ -12,15 +12,9 @@ pub const SECONDS_PER_DAY: i64 = 86_400;
 // NOTE: `bevy_reflect` doesn't support DateTime<Utc> without manually implement Reflect (which is hard)
 // So, use a timestamp instead and convert to DateTime<Utc> when needed.
 // Also, Time/Instant/Duration aren't serializable.
-#[derive(Resource, Clone, Reflect)]
+#[derive(Resource, Clone, Reflect, Default)]
 #[reflect(Resource)]
 pub struct GameTime(pub i64);
-
-impl Default for GameTime {
-    fn default() -> Self {
-        GameTime(Utc::now().timestamp_millis())
-    }
-}
 
 impl GameTime {
     pub fn as_datetime(&self) -> DateTime<Utc> {
@@ -67,7 +61,12 @@ pub fn deinitialize_game_time(world: &mut World) {
 /// record this value into FixedTime, and anticipate further processing.
 /// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
 /// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
-pub fn setup_game_time(game_time: Res<GameTime>, mut fixed_time: ResMut<FixedTime>) {
+pub fn setup_game_time(mut game_time: ResMut<GameTime>, mut fixed_time: ResMut<FixedTime>) {
+    // Initialize game_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
+    if game_time.0 == 0 {
+        game_time.0 = Utc::now().timestamp_millis();
+    }
+
     let delta_seconds = Utc::now()
         .signed_duration_since(game_time.as_datetime())
         .num_seconds();
