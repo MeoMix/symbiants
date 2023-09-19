@@ -15,7 +15,7 @@ use crate::{
         },
         walk::ants_walk,
     },
-    background::setup_background,
+    background::{setup_background, cleanup_background},
     common::{deinitialize_common, initialize_common, ui::on_update_position},
     element::{
         cleanup_element, deinitialize_element, initialize_element, setup_element,
@@ -158,6 +158,7 @@ impl Plugin for SimulationPlugin {
                 deinitialize_settings,
                 #[cfg(target_arch = "wasm32")]
                 cleanup_window_onunload_save_world_state,
+                cleanup_background,
                 cleanup_ant,
                 cleanup_element,
                 cleanup_caches,

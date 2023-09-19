@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     story_state::StoryState,
-    ui::common::{button::BUTTON, dialog::DIALOG, overlay::OVERLAY},
+    ui::common::{dialog::DIALOG, overlay::OVERLAY},
 };
 
 #[derive(Component)]
@@ -63,17 +63,12 @@ pub fn setup_story_over_dialog(mut commands: Commands) {
     };
 
     let begin_new_story_button_bundle = (
-        ButtonBundle {
-            style: BUTTON.style.clone(),
-            border_color: BUTTON.border_color,
-            background_color: BUTTON.background_color,
-            ..default()
-        },
+        ButtonBundle { ..default() },
         StoryOverDialogAction::BeginNewStory,
     );
 
     let begin_new_story_button_text_bundle =
-        TextBundle::from_section("Begin New Story", BUTTON.text_style.clone());
+        TextBundle::from_section("Begin New Story", TextStyle { ..default() });
 
     commands
         .spawn(modal_overlay_bundle)

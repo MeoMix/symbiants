@@ -7,7 +7,6 @@ mod story;
 use crate::story_state::StoryState;
 
 use self::action_menu::*;
-use self::common::button::*;
 use self::main_menu::*;
 use self::settings_menu::update_settings_menu;
 use self::story::info_panel::*;
@@ -22,21 +21,10 @@ impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin);
 
-        // Common:
-        app.add_systems(Update, button_system);
-
         // Main Menu:
         app.add_systems(
-            OnEnter(StoryState::GatheringSettings),
-            create_main_menu_dialog,
-        );
-        app.add_systems(
             Update,
-            on_interact_main_menu_button.run_if(in_state(StoryState::GatheringSettings)),
-        );
-        app.add_systems(
-            OnExit(StoryState::GatheringSettings),
-            despawn_screen::<MainMenuDialogModalOverlay>,
+            update_main_menu_dialog.run_if(in_state(StoryState::GatheringSettings)),
         );
 
         // TODO: Prefer keeping UI around until after Over (but not that simple because can click Reset which skips Over)
