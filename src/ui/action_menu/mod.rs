@@ -11,10 +11,13 @@ use crate::time::{TicksPerSecond, DEFAULT_TICKS_PER_SECOND, FASTFORWARD_TICKS_PE
 pub enum PointerAction {
     #[default]
     Select,
-    Despawn,
+    DespawnElement,
     Food,
     Dirt,
     Sand,
+    KillAnt,
+    SpawnWorkerAnt,
+    DespawnWorkerAnt,
 }
 
 pub fn initialize_action_menu(mut commands: Commands) {
@@ -43,12 +46,16 @@ pub fn update_action_menu(
             );
             ui.selectable_value(
                 pointer_action.as_mut(),
-                PointerAction::Despawn,
-                "Despawn Unit",
+                PointerAction::DespawnElement,
+                "Despawn Element",
             );
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Spawn Food");
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Spawn Dirt");
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Spawn Sand");
+            
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::SpawnWorkerAnt, "Spawn Worker Ant");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::DespawnWorkerAnt, "Despawn Worker Ant");
 
             if ui.button("Speed++").clicked() {
                 let new_ticks_per_second = (ticks_per_second.0 + DEFAULT_TICKS_PER_SECOND)

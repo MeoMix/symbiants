@@ -3,7 +3,6 @@ use crate::{
     common::{get_entity_from_id, Id},
     element::Element,
     grid::{position::Position, WorldMap},
-    story_state::StoryState,
     time::{TicksPerSecond, SECONDS_PER_DAY},
 };
 use bevy::prelude::*;
@@ -42,7 +41,7 @@ impl Hunger {
         self.value >= self.max / 2.0
     }
 
-    pub fn is_starving(&self) -> bool {
+    pub fn is_starved(&self) -> bool {
         self.value >= self.max
     }
 
@@ -56,7 +55,7 @@ pub fn ants_hunger(
         (
             Entity,
             &mut Hunger,
-            &mut AntOrientation,
+            &AntOrientation,
             &Position,
             &mut AntInventory,
             &mut Initiative,
@@ -67,21 +66,17 @@ pub fn ants_hunger(
     id_query: Query<(Entity, &Id)>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
-    mut story_state: ResMut<NextState<StoryState>>,
     ticks_per_second: Res<TicksPerSecond>,
 ) {
-    for (entity, mut hunger, mut orientation, position, mut inventory, mut initiative) in
+    for (entity, mut hunger, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
         // Get 100% hungry once per full real-world day.
         let rate_of_hunger = hunger.max() / (SECONDS_PER_DAY as f32 * ticks_per_second.0);
         hunger.tick(rate_of_hunger);
 
-        if hunger.is_starving() {
+        if hunger.is_starved() {
             commands.entity(entity).insert(Dead);
-            *orientation = orientation.flip_onto_back();
-            // NOTE: It's unfortunate I set this here and then duplicate logic in setup_story_state
-            story_state.set(StoryState::Over);
         } else if hunger.is_hungry() {
             if !initiative.can_act() {
                 continue;

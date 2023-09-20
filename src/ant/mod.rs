@@ -259,10 +259,6 @@ impl AntOrientation {
         Self::new(facing, self.angle)
     }
 
-    pub fn flip_onto_back(&self) -> Self {
-        self.rotate_backward().rotate_backward()
-    }
-
     pub fn rotate_forward(&self) -> Self {
         let rotation = if self.facing == Facing::Left { -1 } else { 1 };
 

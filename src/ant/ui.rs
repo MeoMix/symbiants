@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use super::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, AntLabel};
+use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead};
 use crate::{
     common::{get_entity_from_id, Id, TranslationOffset},
     element::{ui::get_element_sprite, Element},
@@ -20,6 +20,7 @@ pub fn on_spawn_ant(
             &AntName,
             &AntRole,
             &AntInventory,
+            Option<&Dead>,
         ),
         Added<Ant>,
     >,
@@ -28,18 +29,24 @@ pub fn on_spawn_ant(
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
 ) {
-    for (entity, position, color, orientation, name, role, inventory) in &ants_query {
+    for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
         let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
+
+        let (sprite_image, sprite_color) = if dead.is_some() {
+            ("images/ant_dead.png", Color::GRAY)
+        } else {
+            ("images/ant.png", color.0)
+        };
 
         commands
             .entity(entity)
             .insert((
                 translation_offset,
                 SpriteBundle {
-                    texture: asset_server.load("images/ant.png"),
+                    texture: asset_server.load(sprite_image),
                     sprite: Sprite {
-                        color: color.0,
+                        color: sprite_color,
                         // 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
                         custom_size: Some(Vec2::splat(1.2)),
                         ..default()
@@ -196,10 +203,13 @@ pub fn on_update_ant_orientation(
 }
 
 pub fn on_update_ant_dead(
-    mut query: Query<&mut Handle<Image>, Added<Dead>>,
+    mut query: Query<(&mut Handle<Image>, &mut Sprite), Added<Dead>>,
     asset_server: Res<AssetServer>,
 ) {
-    for mut image_handle in query.iter_mut() {
+    for (mut image_handle, mut sprite) in query.iter_mut() {
         *image_handle = asset_server.load("images/ant_dead.png");
+
+        // Apply gray tint to dead ants.
+        sprite.color = Color::GRAY;
     }
 }

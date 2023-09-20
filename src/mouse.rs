@@ -1,10 +1,17 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
+use bevy_turborand::GlobalRng;
 
 use crate::{
+    ant::{
+        Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Facing,
+        Initiative, Ant, Dead,
+    },
     camera::MainCamera,
     element::{commands::ElementCommandsExt, Element},
     grid::{position::Position, WorldMap},
+    name_list::get_random_name,
+    settings::Settings,
     ui::action_menu::PointerAction,
 };
 
@@ -17,6 +24,9 @@ pub fn handle_mouse_clicks(
     world_map: Res<WorldMap>,
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
+    settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
+    ants_query: Query<(Entity, &Position), With<Ant>>,
 ) {
     if is_pointer_captured.0 {
         return;
@@ -62,9 +72,25 @@ pub fn handle_mouse_clicks(
                 commands.replace_element(grid_position, Element::Dirt, *entity);
             }
         }
-    } else if *pointer_action == PointerAction::Despawn {
+    } else if *pointer_action == PointerAction::DespawnElement {
         if let Some(entity) = world_map.get_element(grid_position) {
             commands.replace_element(grid_position, Element::Air, *entity);
+        }
+    } else if *pointer_action == PointerAction::SpawnWorkerAnt {
+        if world_map.is_element(&elements_query, grid_position, Element::Air) {
+            commands.spawn(AntBundle::new(
+                grid_position,
+                AntColor(settings.ant_color),
+                AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
+                AntInventory::default(),
+                AntRole::Worker,
+                AntName(get_random_name(&mut rng.reborrow())),
+                Initiative::new(&mut rng.reborrow()),
+            ));
+        }
+    } else if *pointer_action == PointerAction::KillAnt {
+        if let Some((entity, _)) = ants_query.iter().find(|(_, &position)| position == grid_position) {
+            commands.entity(entity).insert(Dead);
         }
     } else {
         info!("Not yet supported");

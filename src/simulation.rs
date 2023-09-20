@@ -33,7 +33,7 @@ use crate::{
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     nest::{deinitialize_nest, initialize_nest},
     settings::{deinitialize_settings, initialize_settings},
-    story_state::{on_story_cleanup, setup_story_state, StoryState},
+    story_state::{on_story_cleanup, StoryState, check_story_over},
     time::{
         deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
         update_game_time,
@@ -78,7 +78,6 @@ impl Plugin for SimulationPlugin {
             (
                 setup_caches,
                 setup_background,
-                setup_story_state,
                 #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
                 begin_story,
@@ -119,6 +118,7 @@ impl Plugin for SimulationPlugin {
                 ants_act,
                 // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                 ants_initiative,
+                check_story_over,
                 // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
                 // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
                 // when moving out of the Update stage and into the PostUpdate stage.
