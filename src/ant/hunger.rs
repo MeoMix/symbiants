@@ -4,37 +4,38 @@ use crate::{
     element::Element,
     grid::{position::Position, WorldMap},
     story_state::StoryState,
-    time::{DEFAULT_SECONDS_PER_TICK, SECONDS_PER_DAY},
+    time::{TicksPerSecond, SECONDS_PER_DAY},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct Hunger {
     value: f32,
     max: f32,
-    rate_of_hunger: f32,
+}
+
+impl Default for Hunger {
+    fn default() -> Self {
+        Self {
+            value: 0.0,
+            max: 100.0,
+        }
+    }
 }
 
 impl Hunger {
-    pub fn default() -> Self {
-        let max = 100.0;
-        let rate_of_hunger = max / (SECONDS_PER_DAY as f32 / DEFAULT_SECONDS_PER_TICK);
-
-        Self {
-            value: 0.0,
-            max,
-            rate_of_hunger,
-        }
-    }
-
     pub fn value(&self) -> f32 {
         self.value
     }
 
-    pub fn tick(&mut self) {
-        self.value = (self.value + self.rate_of_hunger).min(self.max);
+    pub fn max(&self) -> f32 {
+        self.max
+    }
+
+    pub fn tick(&mut self, rate_of_hunger: f32) {
+        self.value = (self.value + rate_of_hunger).min(self.max);
     }
 
     pub fn is_hungry(&self) -> bool {
@@ -67,11 +68,14 @@ pub fn ants_hunger(
     mut commands: Commands,
     world_map: Res<WorldMap>,
     mut story_state: ResMut<NextState<StoryState>>,
+    ticks_per_second: Res<TicksPerSecond>,
 ) {
     for (entity, mut hunger, mut orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
-        hunger.tick();
+        // Get 100% hungry once per full real-world day.
+        let rate_of_hunger = hunger.max() / (SECONDS_PER_DAY as f32 * ticks_per_second.0);
+        hunger.tick(rate_of_hunger);
 
         if hunger.is_starving() {
             commands.entity(entity).insert(Dead);

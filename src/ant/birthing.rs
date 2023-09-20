@@ -1,37 +1,40 @@
 use super::{
-    Angle, AntBundle, AntColor, AntInventory, AntOrientation, AntRole, Dead, Facing, Initiative, AntName,
+    Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
+    Initiative,
 };
-use crate::{
-    grid::position::Position,
-    name_list::get_random_name,
-    time::{DEFAULT_SECONDS_PER_TICK, SECONDS_PER_HOUR},
-};
+use crate::{grid::position::Position, name_list::get_random_name, time::{SECONDS_PER_HOUR, TicksPerSecond}};
 use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct Birthing {
     value: f32,
     max: f32,
-    rate_of_birthing: f32,
+}
+
+impl Default for Birthing {
+    fn default() -> Self {
+        Self {
+            value: 0.0,
+            max: 100.0,
+        }
+    }
 }
 
 impl Birthing {
-    pub fn default() -> Self {
-        let max = 100.0;
-        let rate_of_birthing = max / (SECONDS_PER_HOUR as f32 / DEFAULT_SECONDS_PER_TICK);
-
-        Self {
-            value: 0.0,
-            max,
-            rate_of_birthing,
-        }
+    pub fn value(&self) -> f32 {
+        self.value
     }
 
-    pub fn tick(&mut self) {
-        self.value = (self.value + self.rate_of_birthing).min(self.max);
+    pub fn max(&self) -> f32 {
+        self.max
+    }
+
+
+    pub fn tick(&mut self, rate_of_birthing: f32) {
+        self.value = (self.value + rate_of_birthing).min(self.max);
     }
 
     pub fn is_ready(&self) -> bool {
@@ -56,11 +59,14 @@ pub fn ants_birthing(
     >,
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
+    ticks_per_second: Res<TicksPerSecond>,
 ) {
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()
     {
-        birthing.tick();
+        // Create offspring once per full real-world hour.
+        let rate_of_birthing = birthing.max() / (SECONDS_PER_HOUR as f32 * ticks_per_second.0);
+        birthing.tick(rate_of_birthing);
 
         if birthing.is_ready() && initiative.can_act() {
             let behind_position = *position + orientation.turn_around().get_forward_delta();
@@ -77,7 +83,7 @@ pub fn ants_birthing(
                 AntInventory::default(),
                 AntRole::Worker,
                 AntName(get_random_name(&mut rng.reborrow())),
-                Initiative::new(&mut rng.reborrow())
+                Initiative::new(&mut rng.reborrow()),
             ));
 
             birthing.reset();

@@ -70,7 +70,7 @@ impl Default for Settings {
                 random_slip: 0.001,
                 below_surface_dirt_dig: 0.05,
                 above_surface_sand_drop: 0.05,
-                below_surface_food_drop: 0.05,
+                below_surface_food_drop: 0.20,
 
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,

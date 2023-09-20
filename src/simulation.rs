@@ -36,7 +36,7 @@ use crate::{
     story_state::{on_story_cleanup, setup_story_state, StoryState},
     time::{
         deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
-        update_game_time, DEFAULT_SECONDS_PER_TICK,
+        update_game_time,
     },
 };
 
@@ -51,8 +51,6 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<IsPointerCaptured>();
         // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
         app.init_resource::<GlobalRng>();
-        // Control the speed of the simulation by defining how many simulation ticks occur per second.
-        app.insert_resource(FixedTime::new_from_secs(DEFAULT_SECONDS_PER_TICK));
 
         app.add_state::<StoryState>();
 

@@ -45,7 +45,7 @@ fn get_element_fall_position(
         &elements_query,
         &[left_position, left_below_position],
         Element::Air,
-    ) && rng.chance(0.33);
+    ) && rng.chance(0.66);
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
@@ -53,7 +53,7 @@ fn get_element_fall_position(
         &elements_query,
         &[right_position, right_below_position],
         Element::Air,
-    ) && rng.chance(0.33);
+    ) && rng.chance(0.66);
 
     // Flip a coin and choose a direction randomly to resolve ambiguity in fall direction.
     if go_left && go_right {
