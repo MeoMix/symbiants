@@ -41,20 +41,18 @@ pub struct TicksPerSecond(pub f32);
 pub struct IsFastForwarding(pub bool);
 
 #[derive(Resource, Default)]
-pub struct PendingTicks(pub isize);
+pub struct RemainingPendingTicks(pub isize);
 
-impl PendingTicks {
-    pub fn as_minutes(&self, ticks_per_second: f32) -> f32 {
-        (self.0 as f32) / (60.0 / ticks_per_second * 60.0)
-    }
-}
+#[derive(Resource, Default)]
+pub struct TotalPendingTicks(pub isize);
 
 pub fn initialize_game_time(world: &mut World) {
     register::<GameTime>(world);
 
     world.init_resource::<GameTime>();
     world.init_resource::<IsFastForwarding>();
-    world.init_resource::<PendingTicks>();
+    world.init_resource::<RemainingPendingTicks>();
+    world.init_resource::<TotalPendingTicks>();
 
     // Control the speed of the simulation by defining how many simulation ticks occur per second.
     world.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND));
@@ -64,7 +62,8 @@ pub fn initialize_game_time(world: &mut World) {
 pub fn deinitialize_game_time(world: &mut World) {
     world.remove_resource::<GameTime>();
     world.remove_resource::<IsFastForwarding>();
-    world.remove_resource::<PendingTicks>();
+    world.remove_resource::<RemainingPendingTicks>();
+    world.remove_resource::<TotalPendingTicks>();
 
     // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
     world.resource_mut::<FixedTime>().period =
@@ -95,10 +94,11 @@ pub fn setup_game_time(mut game_time: ResMut<GameTime>, mut fixed_time: ResMut<F
 pub fn set_rate_of_time(
     mut fixed_time: ResMut<FixedTime>,
     mut is_fast_forwarding: ResMut<IsFastForwarding>,
-    mut pending_ticks: ResMut<PendingTicks>,
+    mut remaining_pending_ticks: ResMut<RemainingPendingTicks>,
+    mut total_pending_ticks: ResMut<TotalPendingTicks>,
     ticks_per_second: Res<TicksPerSecond>,
 ) {
-    if pending_ticks.0 == 0 {
+    if remaining_pending_ticks.0 == 0 {
         if !is_fast_forwarding.0 {
             let accumulated_time = fixed_time.accumulated();
 
@@ -112,14 +112,16 @@ pub fn set_rate_of_time(
 
                 is_fast_forwarding.0 = true;
 
-                pending_ticks.0 = (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
+                remaining_pending_ticks.0 = (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
+                total_pending_ticks.0 = remaining_pending_ticks.0;
             }
         } else {
             fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0);
             is_fast_forwarding.0 = false;
+            total_pending_ticks.0 = 0;
         }
     } else {
-        pending_ticks.0 -= 1;
+        remaining_pending_ticks.0 -= 1;
     }
 }
 
