@@ -135,6 +135,7 @@ pub fn gravity_ants(
 
         let is_chance_falling = orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
         let is_chance_slipping = orientation.is_vertical() && rng.f32() < settings.probabilities.random_slip;
+        // TODO: dead ants should be able to tumble to like sand/food
         let is_dead = dead.is_some();
 
         if is_air_beneath_feet || is_out_of_bounds_beneath_feet || is_chance_falling || is_chance_slipping || is_dead {

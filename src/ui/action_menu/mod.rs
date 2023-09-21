@@ -10,7 +10,7 @@ use crate::time::{TicksPerSecond, DEFAULT_TICKS_PER_SECOND, FASTFORWARD_TICKS_PE
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
 pub enum PointerAction {
     #[default]
-    Select,
+    Default,
     DespawnElement,
     Food,
     Dirt,
@@ -41,8 +41,8 @@ pub fn update_action_menu(
         .show(ctx, |ui| {
             ui.selectable_value(
                 pointer_action.as_mut(),
-                PointerAction::Select,
-                "Select Unit",
+                PointerAction::Default,
+                "Default",
             );
             ui.selectable_value(
                 pointer_action.as_mut(),

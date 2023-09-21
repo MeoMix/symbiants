@@ -16,7 +16,7 @@ use bevy::prelude::*;
 
 pub mod act;
 pub mod birthing;
-mod commands;
+pub mod commands;
 pub mod hunger;
 pub mod ui;
 pub mod walk;

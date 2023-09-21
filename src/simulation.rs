@@ -11,7 +11,8 @@ use crate::{
         hunger::ants_hunger,
         initialize_ant, setup_ant,
         ui::{
-            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
+            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory,
+            on_update_ant_orientation,
         },
         walk::ants_walk,
     },
@@ -33,7 +34,7 @@ use crate::{
     mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
     nest::{deinitialize_nest, initialize_nest},
     settings::{deinitialize_settings, initialize_settings},
-    story_state::{on_story_cleanup, StoryState, check_story_over},
+    story_state::{check_story_over, on_story_cleanup, StoryState},
     time::{
         deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
         update_game_time,
@@ -101,24 +102,27 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
-                // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
-                gravity_elements,
-                gravity_ants,
-                // Gravity side-effects can run whenever with little difference.
-                gravity_crush,
-                gravity_stability,
-                // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
-                // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
-                ants_walk,
-                // Apply specific ant actions in priority order because ants take a maximum of one action per tick.
-                // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
-                ants_hunger,
-                ants_birthing,
-                ants_act,
-                // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
-                ants_initiative,
-                check_story_over,
+                (
+                    // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
+                    // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
+                    gravity_elements,
+                    gravity_ants,
+                    // Gravity side-effects can run whenever with little difference.
+                    gravity_crush,
+                    gravity_stability,
+                    // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
+                    // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
+                    ants_walk,
+                    // Apply specific ant actions in priority order because ants take a maximum of one action per tick.
+                    // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
+                    ants_hunger,
+                    ants_birthing,
+                    ants_act,
+                    // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
+                    ants_initiative,
+                    check_story_over,
+                )
+                    .chain(),
                 // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
                 // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
                 // when moving out of the Update stage and into the PostUpdate stage.
@@ -133,12 +137,15 @@ impl Plugin for SimulationPlugin {
                 #[cfg(target_arch = "wasm32")]
                 periodic_save_world_state,
                 // Ensure render state reflects simulation state after having applied movements and command updates.
-                on_update_position,
-                on_update_ant_orientation,
-                on_update_ant_dead,
-                on_update_ant_inventory,
-                on_spawn_ant,
-                on_spawn_element,
+                (
+                    on_update_position,
+                    on_update_ant_orientation,
+                    on_update_ant_dead,
+                    on_update_ant_inventory,
+                    on_spawn_ant,
+                    on_spawn_element,
+                )
+                    .chain(),
                 update_game_time,
                 set_rate_of_time,
             )

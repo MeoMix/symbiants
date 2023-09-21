@@ -1,11 +1,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 use bevy_turborand::GlobalRng;
+use crate::ant::commands::AntCommandsExt;
 
 use crate::{
     ant::{
-        Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Facing,
-        Initiative, Ant, Dead,
+        Angle, Ant, AntBundle, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole,
+        Dead, Facing, Initiative,
     },
     camera::MainCamera,
     element::{commands::ElementCommandsExt, Element},
@@ -26,7 +27,8 @@ pub fn handle_mouse_clicks(
     pointer_action: Res<PointerAction>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
-    ants_query: Query<(Entity, &Position), With<Ant>>,
+    ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
+    ant_label_query: Query<(Entity, &AntLabel)>,
 ) {
     if is_pointer_captured.0 {
         return;
@@ -89,8 +91,57 @@ pub fn handle_mouse_clicks(
             ));
         }
     } else if *pointer_action == PointerAction::KillAnt {
-        if let Some((entity, _)) = ants_query.iter().find(|(_, &position)| position == grid_position) {
+        if let Some((entity, _, _, inventory)) = ants_query
+            .iter()
+            .find(|(_, &position, _, _)| position == grid_position)
+        {
+            // If the ant is carrying something - drop it first.
+            if inventory.0 != None {
+                // If the ant is standing on air then drop element where standing otherwise despawn element.
+                // TODO: in the future maybe try to find an adjacent place to drop element.
+                let element_entity = world_map.get_element(grid_position).unwrap();
+
+                if world_map.is_element(&elements_query, grid_position, Element::Air) {
+                    commands.drop(entity, grid_position, *element_entity);
+                } else {
+                    // No room - despawn inventory.
+                    commands.entity(*element_entity).despawn();
+                }
+            }
+
             commands.entity(entity).insert(Dead);
+        }
+    } else if *pointer_action == PointerAction::DespawnWorkerAnt {
+        if let Some((entity, _, _, inventory)) = ants_query
+            .iter()
+            .find(|(_, &position, &role, _)| position == grid_position && role == AntRole::Worker)
+        {
+            // If the ant is carrying something - drop it first.
+            if inventory.0 != None {
+                // If the ant is standing on air then drop element where standing otherwise despawn element.
+                // TODO: in the future maybe try to find an adjacent place to drop element.
+                let element_entity = world_map.get_element(grid_position).unwrap();
+
+                if world_map.is_element(&elements_query, grid_position, Element::Air) {
+                    commands.drop(entity, grid_position, *element_entity);
+                } else {
+                    // No room - despawn inventory.
+                    commands.entity(*element_entity).despawn();
+                }
+            }
+
+            // despawn_recursive to clean up any existing inventory UI since ant inventory system won't work since ant is gone.
+            commands.entity(entity).despawn_recursive();
+
+            // TODO: I tried using RemovedComponents in an attempt to react to any time an ant is despawned but it didn't seem to work
+            
+            // Unfortunately, need to despawn label separately.
+            let (label_entity, _) = ant_label_query
+                .iter()
+                .find(|(_, label)| label.0 == entity)
+                .unwrap();
+
+            commands.entity(label_entity).despawn();
         }
     } else {
         info!("Not yet supported");

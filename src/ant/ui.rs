@@ -111,6 +111,24 @@ pub fn on_spawn_ant(
     }
 }
 
+// TODO: This doesn't seem to work when used inside of a FixedUpdate loop?
+// pub fn on_despawn_ant(
+//     mut removed: RemovedComponents<Ant>,
+//     mut label_query: Query<(Entity, &AntLabel)>,
+//     mut commands: Commands,
+// ) {
+//     for ant_entity in &mut removed {
+//         info!("ant entity removed:'{:?}'", ant_entity);
+
+//         // let (label_entity, _) = label_query
+//         //     .iter()
+//         //     .find(|(_, label)| label.0 == ant_entity)
+//         //     .unwrap();
+
+//         // commands.entity(label_entity).despawn();
+//     }
+// }
+
 pub fn on_update_ant_inventory(
     mut commands: Commands,
     mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
