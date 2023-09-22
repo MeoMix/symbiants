@@ -1,6 +1,6 @@
-// TODO: Running pancam locally until https://github.com/johanhelsing/bevy_pancam/pull/38 is merged
 use bevy::{
     input::mouse::{MouseScrollUnit, MouseWheel},
+    input::touch::{Touch, TouchInput, TouchPhase},
     math::vec2,
     prelude::*,
     render::camera::CameraProjection,
@@ -19,40 +19,23 @@ pub struct PanCamSystemSet;
 
 impl Plugin for PanCamPlugin {
     fn build(&self, app: &mut App) {
+        app.insert_resource(TouchTracker::default())
+            .insert_resource(TouchCameraConfig::default());
+
         app.add_systems(
             Update,
-            (camera_movement, camera_zoom, auto_clamp_translation).in_set(PanCamSystemSet)
-            .run_if(resource_equals(IsPointerCaptured(false))),
+            (
+                camera_mouse_movement,
+                //camera_touch_movement,
+                camera_mouse_zoom,
+                camera_touch_zoom_2,
+                auto_clamp_translation,
+            )
+                .in_set(PanCamSystemSet)
+                .run_if(resource_equals(IsPointerCaptured(false))),
         )
         .register_type::<PanCam>();
-
-        #[cfg(feature = "bevy_egui")]
-        {
-            app.init_resource::<EguiWantsFocus>()
-                .add_system(check_egui_wants_focus.before(PanCamSystemSet))
-                .configure_set(PanCamSystemSet.run_if(resource_equals(EguiWantsFocus(false))));
-        }
     }
-}
-
-#[derive(Resource, Deref, DerefMut, PartialEq, Eq, Default)]
-#[cfg(feature = "bevy_egui")]
-struct EguiWantsFocus(bool);
-
-// todo: make run condition when Bevy supports mutable resources in them
-#[cfg(feature = "bevy_egui")]
-fn check_egui_wants_focus(
-    mut contexts: Query<&mut bevy_egui::EguiContext>,
-    mut wants_focus: ResMut<EguiWantsFocus>,
-) {
-    let ctx = contexts.iter_mut().next();
-    let new_wants_focus = if let Some(ctx) = ctx {
-        let ctx = ctx.into_inner().get_mut();
-        ctx.wants_pointer_input() || ctx.wants_keyboard_input()
-    } else {
-        false
-    };
-    wants_focus.set_if_neq(EguiWantsFocus(new_wants_focus));
 }
 
 // Whenever the orthographic projection area size changes - reclamp the camera translation
@@ -124,7 +107,7 @@ fn clamp_translation(
     transform.translation = proposed_cam_transform;
 }
 
-fn camera_zoom(
+fn camera_mouse_zoom(
     mut query: Query<(
         &PanCam,
         &mut OrthographicProjection,
@@ -256,7 +239,7 @@ fn max_scale_within_bounds(
     bounds_size / base_world_size
 }
 
-fn camera_movement(
+fn camera_mouse_movement(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     mouse_buttons: Res<Input<MouseButton>>,
     mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection)>,
@@ -289,6 +272,414 @@ fn camera_movement(
         }
     }
     *last_pos = Some(current_pos);
+}
+
+fn camera_touch_movement(
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mut touch_events: EventReader<TouchInput>,
+    mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection)>,
+    mut last_touch_position: Local<Option<Vec2>>,
+) {
+    let window = primary_window.single();
+    let window_size = Vec2::new(window.width(), window.height());
+
+    for event in touch_events.iter() {
+        let current_pos = Vec2::new(event.position.x, -event.position.y);
+
+        if event.phase == TouchPhase::Moved {
+            let delta_device_pixels = current_pos - last_touch_position.unwrap_or(current_pos);
+
+            for (cam, mut transform, projection) in &mut query {
+                if cam.enabled {
+                    clamp_translation(
+                        cam,
+                        projection,
+                        &mut transform,
+                        delta_device_pixels,
+                        window_size,
+                    );
+                }
+            }
+        }
+
+        *last_touch_position = Some(current_pos);
+    }
+}
+
+/// Contains the configuration parameters for the plugin.
+/// A copy of this will be attached as a `Resource` to the `App`.
+#[derive(Resource, Clone)]
+pub struct TouchCameraConfig {
+    /// How far the camera will move relative to the touch drag distance. Higher is faster
+    pub drag_sensitivity: f32,
+    /// How much the camera will zoom relative to the pinch distance using two fingers. Higher means faster.
+    /// At the moment the default is very low at 0.005 but this might change in the future
+    pub zoom_sensitivity: f32,
+    /// Minimum time before starting to pan in seconds. Useful to avoid panning on short taps
+    pub touch_time_min: f32,
+    /// Tolerance for pinch fingers moving in opposite directions (-1. .. 1.).
+    /// Higher values make it more tolerant.
+    /// Very low values not recommended as it would be overly sensitive
+    pub opposites_tolerance: f32,
+}
+
+impl Default for TouchCameraConfig {
+    fn default() -> Self {
+        Self {
+            drag_sensitivity: 1.,
+            zoom_sensitivity: 0.005,
+            touch_time_min: 0.01,
+            opposites_tolerance: 0.,
+        }
+    }
+}
+
+/// This is the tag that the plugin will scan for and update its `Camera` component.
+/// You can either attach it manually to your camera, or the plugin will try to attach it
+/// to the default camera in the `PostStartup` schedule
+#[derive(Component)]
+pub struct TouchCameraTag;
+
+#[derive(PartialEq, Default)]
+enum GestureType {
+    #[default]
+    None,
+    Pan,
+    Pinch,
+    PinchCancelled,
+}
+
+#[derive(Resource, Default)]
+struct TouchTracker {
+    pub camera_start_pos: Vec3,
+    pub time_start_touch: f32,
+    pub gesture_type: GestureType,
+
+    // Keeps track of position on last frame.
+    // This is different from Touch.last_position as that only updates when there has been a movement
+    pub last_touch_a: Option<Vec2>,
+    pub last_touch_b: Option<Vec2>,
+}
+
+fn setup(
+    tag_query: Query<&PanCam, With<Camera>>,
+    camera_query: Query<Entity, With<Camera>>,
+    mut commands: Commands,
+) {
+    if !tag_query.is_empty() {
+        info!("TouchCameraPlugin initialized: found a tag attached to a camera");
+        return;
+    }
+    if camera_query.is_empty() {
+        error!("TouchCameraPlugin found no camera to use. Please attach the TouchCameraTag to a camera manually or create a camera before the PostUpdate schedule");
+        return;
+    }
+    match camera_query.get_single() {
+        Ok(camera) => {
+            info!("TouchCameraPlugin initialized: using main camera");
+            commands.entity(camera).insert(TouchCameraTag);
+        },
+        Err(_) => error!("TouchCameraPlugin found multiple cameras. Not sure which to use. Please attach the TouchCameraTag to a camera manually"),
+    }
+}
+
+fn camera_touch_zoom_2(
+    touches_res: Res<Touches>,
+    // mut camera_q: Query<(&mut Transform, &mut OrthographicProjection), With<PanCam>>,
+    mut tracker: ResMut<TouchTracker>,
+    config: Res<TouchCameraConfig>,
+    time: Res<Time>,
+
+    mut camera_q: Query<(
+        &PanCam,
+        &mut OrthographicProjection,
+        &mut Transform,
+        &mut Camera,
+    )>,
+    // mut scroll_events: EventReader<MouseWheel>,
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+) {
+    let Ok((cam, mut proj, mut pos, camera)) = camera_q.get_single_mut() else {
+        return;
+    };
+
+    let touches: Vec<&Touch> = touches_res.iter().collect();
+
+    if touches.is_empty() {
+        info!("is empty");
+        tracker.gesture_type = GestureType::None;
+        tracker.last_touch_a = None;
+        tracker.last_touch_b = None;
+        return;
+    }
+
+    let window = primary_window.single();
+    let window_size = Vec2::new(window.width(), window.height());
+
+    let mouse_normalized_screen_pos = window
+        .cursor_position()
+        .map(|cursor_pos| (cursor_pos / window_size) * 2. - Vec2::ONE)
+        .map(|p| Vec2::new(p.x, -p.y));
+
+    if touches_res.any_just_released() {
+        info!("just released");
+        tracker.gesture_type = GestureType::PinchCancelled;
+        tracker.last_touch_a = None;
+        tracker.last_touch_b = None;
+    }
+
+    info!("touches: {:?}", touches.len());
+
+    if touches.len() == 2 {
+        tracker.gesture_type = GestureType::Pinch;
+        // complicated way to reset previous position to prevent some bugs. Should simplify
+        let last_a = if tracker.last_touch_b.is_none() {
+            touches[0].position()
+        } else {
+            tracker.last_touch_a.unwrap_or(touches[0].position())
+        };
+        let last_b = if tracker.last_touch_b.is_none() {
+            touches[1].position()
+        } else {
+            tracker.last_touch_b.unwrap_or(touches[1].position())
+        };
+
+        let delta_a = touches[0].position() - last_a;
+        let delta_b = touches[1].position() - last_b;
+        let delta_total = (delta_a + delta_b).length();
+        let dot_delta = delta_a.dot(delta_b);
+        if dot_delta > config.opposites_tolerance {
+            return;
+        }
+
+        let distance_current = touches[0].position() - touches[1].position();
+        let distance_prev = touches[0].previous_position() - touches[1].previous_position();
+        let pinch_direction = distance_prev.length() - distance_current.length();
+        // projection.scale +=
+        //     pinch_direction.signum() * delta_total * config.zoom_sensitivity * projection.scale;
+
+        let old_scale = proj.scale;
+        // proj.scale = (proj.scale * (1. + -scroll * 0.001)).max(cam.min_scale);
+        // TODO: this is += but mouse code is =
+        proj.scale += pinch_direction.signum() * delta_total * config.zoom_sensitivity * proj.scale;
+
+        // Apply max scale constraint
+        if let Some(max_scale) = cam.max_scale {
+            proj.scale = proj.scale.min(max_scale);
+        }
+
+        // If there is both a min and max boundary, that limits how far we can zoom. Make sure we don't exceed that
+        let scale_constrained = BVec2::new(
+            cam.min_x.is_some() && cam.max_x.is_some(),
+            cam.min_y.is_some() && cam.max_y.is_some(),
+        );
+
+        if scale_constrained.x || scale_constrained.y {
+            let bounds_width = if let (Some(min_x), Some(max_x)) = (cam.min_x, cam.max_x) {
+                max_x - min_x
+            } else {
+                f32::INFINITY
+            };
+
+            let bounds_height = if let (Some(min_y), Some(max_y)) = (cam.min_y, cam.max_y) {
+                max_y - min_y
+            } else {
+                f32::INFINITY
+            };
+
+            let bounds_size = vec2(bounds_width, bounds_height);
+            let max_safe_scale = max_scale_within_bounds(bounds_size, &proj, window_size);
+
+            if scale_constrained.x {
+                proj.scale = proj.scale.min(max_safe_scale.x);
+            }
+
+            if scale_constrained.y {
+                proj.scale = proj.scale.min(max_safe_scale.y);
+            }
+        }
+
+        // Move the camera position to normalize the projection window
+        if let (Some(mouse_normalized_screen_pos), true) =
+            (mouse_normalized_screen_pos, cam.zoom_to_cursor)
+        {
+            let proj_size = proj.area.max / old_scale;
+            let mouse_world_pos =
+                pos.translation.truncate() + mouse_normalized_screen_pos * proj_size * old_scale;
+            pos.translation = (mouse_world_pos
+                - mouse_normalized_screen_pos * proj_size * proj.scale)
+                .extend(pos.translation.z);
+
+            // As we zoom out, we don't want the viewport to move beyond the provided boundary. If the most recent
+            // change to the camera zoom would move cause parts of the window beyond the boundary to be shown, we
+            // need to change the camera position to keep the viewport within bounds. The four if statements below
+            // provide this behavior for the min and max x and y boundaries.
+            let proj_size = proj.area.size();
+
+            let half_of_viewport = proj_size / 2.;
+
+            if let Some(min_x_bound) = cam.min_x {
+                let min_safe_cam_x = min_x_bound + half_of_viewport.x;
+                pos.translation.x = pos.translation.x.max(min_safe_cam_x);
+            }
+            if let Some(max_x_bound) = cam.max_x {
+                let max_safe_cam_x = max_x_bound - half_of_viewport.x;
+                pos.translation.x = pos.translation.x.min(max_safe_cam_x);
+            }
+            if let Some(min_y_bound) = cam.min_y {
+                let min_safe_cam_y = min_y_bound + half_of_viewport.y;
+                pos.translation.y = pos.translation.y.max(min_safe_cam_y);
+            }
+            if let Some(max_y_bound) = cam.max_y {
+                let max_safe_cam_y = max_y_bound - half_of_viewport.y;
+                pos.translation.y = pos.translation.y.min(max_safe_cam_y);
+            }
+        }
+
+        if let Some(size) = camera.logical_viewport_size() {
+            proj.update(size.x, size.y);
+        }
+
+        clamp_translation(cam, &mut proj, &mut pos, Vec2::default(), window_size);
+
+        tracker.last_touch_a = Some(touches[0].position());
+        tracker.last_touch_b = Some(touches[1].position());
+    } else if touches.len() == 1
+        && matches!(tracker.gesture_type, GestureType::None | GestureType::Pan)
+    {
+        if tracker.gesture_type == GestureType::None {
+            tracker.camera_start_pos = pos.translation;
+            tracker.time_start_touch = time.elapsed_seconds();
+        }
+        tracker.gesture_type = GestureType::Pan;
+        let time_since_start = time.elapsed_seconds() - tracker.time_start_touch;
+        if time_since_start < config.touch_time_min {
+            return;
+        }
+        let distance = Vec3::new(touches[0].distance().x, -touches[0].distance().y, 0.);
+        pos.translation =
+            tracker.camera_start_pos - config.drag_sensitivity * distance * proj.scale;
+        tracker.last_touch_a = Some(touches[0].position());
+        tracker.last_touch_b = None;
+    }
+}
+
+fn camera_touch_zoom(
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mut touch_events: EventReader<TouchInput>,
+    mut query: Query<(
+        &PanCam,
+        &mut OrthographicProjection,
+        &mut Transform,
+        &mut Camera,
+    )>,
+    mut last_pinch_distance: Local<Option<f32>>,
+) {
+    let window = primary_window.single();
+    let window_size = Vec2::new(window.width(), window.height());
+
+    let touches = touch_events
+        .iter()
+        .filter(|event| matches!(event.phase, TouchPhase::Moved | TouchPhase::Started))
+        .collect::<Vec<_>>();
+
+    info!("touches: {:?}", touches.len());
+
+    if touches.len() != 2 {
+        *last_pinch_distance = None;
+        return;
+    }
+    let touch1 = touches[0].position;
+    let touch2 = touches[1].position;
+
+    info!("touch1: {:?}, touch2: {:?}", touch1, touch2);
+
+    let current_distance = touch1.distance(touch2);
+
+    if let Some(last_distance) = *last_pinch_distance {
+        let zoom_factor = current_distance / last_distance;
+
+        for (cam, mut proj, mut pos, camera) in &mut query {
+            if cam.enabled {
+                let old_scale = proj.scale;
+                proj.scale = (proj.scale * zoom_factor).max(cam.min_scale);
+
+                // Apply max scale constraint
+                if let Some(max_scale) = cam.max_scale {
+                    proj.scale = proj.scale.min(max_scale);
+                }
+
+                // Additional scale constraint handling similar to camera_mouse_zoom
+                let scale_constrained = BVec2::new(
+                    cam.min_x.is_some() && cam.max_x.is_some(),
+                    cam.min_y.is_some() && cam.max_y.is_some(),
+                );
+
+                if scale_constrained.x || scale_constrained.y {
+                    let bounds_width = if let (Some(min_x), Some(max_x)) = (cam.min_x, cam.max_x) {
+                        max_x - min_x
+                    } else {
+                        f32::INFINITY
+                    };
+
+                    let bounds_height = if let (Some(min_y), Some(max_y)) = (cam.min_y, cam.max_y) {
+                        max_y - min_y
+                    } else {
+                        f32::INFINITY
+                    };
+
+                    let bounds_size = Vec2::new(bounds_width, bounds_height);
+                    let max_safe_scale = max_scale_within_bounds(bounds_size, &proj, window_size);
+
+                    if scale_constrained.x {
+                        proj.scale = proj.scale.min(max_safe_scale.x);
+                    }
+
+                    if scale_constrained.y {
+                        proj.scale = proj.scale.min(max_safe_scale.y);
+                    }
+                }
+
+                // Adjust camera position as per updated scale
+                let pinch_center = (touch1 + touch2) / 2.;
+                let pinch_center_normalized = (pinch_center / window_size) * 2. - Vec2::ONE;
+                let proj_size = proj.area.max / old_scale;
+                let pinch_world_pos =
+                    pos.translation.truncate() + pinch_center_normalized * proj_size * old_scale;
+                pos.translation = (pinch_world_pos
+                    - pinch_center_normalized * proj_size * proj.scale)
+                    .extend(pos.translation.z);
+
+                // Boundary clamping
+                let proj_size = proj.area.size();
+                let half_of_viewport = proj_size / 2.;
+
+                if let Some(min_x_bound) = cam.min_x {
+                    let min_safe_cam_x = min_x_bound + half_of_viewport.x;
+                    pos.translation.x = pos.translation.x.max(min_safe_cam_x);
+                }
+                if let Some(max_x_bound) = cam.max_x {
+                    let max_safe_cam_x = max_x_bound - half_of_viewport.x;
+                    pos.translation.x = pos.translation.x.min(max_safe_cam_x);
+                }
+                if let Some(min_y_bound) = cam.min_y {
+                    let min_safe_cam_y = min_y_bound + half_of_viewport.y;
+                    pos.translation.y = pos.translation.y.max(min_safe_cam_y);
+                }
+                if let Some(max_y_bound) = cam.max_y {
+                    let max_safe_cam_y = max_y_bound - half_of_viewport.y;
+                    pos.translation.y = pos.translation.y.min(max_safe_cam_y);
+                }
+
+                if let Some(size) = camera.logical_viewport_size() {
+                    proj.update(size.x, size.y);
+                }
+                clamp_translation(cam, &mut proj, &mut pos, Vec2::default(), window_size);
+            }
+        }
+    }
+
+    *last_pinch_distance = Some(current_distance);
 }
 
 /// A component that adds panning camera controls to an orthographic camera
