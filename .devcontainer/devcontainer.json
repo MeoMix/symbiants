@@ -13,7 +13,7 @@
       ]
     }
   },
-  "forwardPorts": [8080]
+  "appPort": ["8080:8080"]
   // NOTE: trunk serve will not fall back to polling and pushing notifications didn't work from Windows, but is fine from WSL2.
   // "postCreateCommand": "trunk serve"
 }

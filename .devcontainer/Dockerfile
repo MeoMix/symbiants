@@ -24,6 +24,11 @@ RUN rustup target install wasm32-unknown-unknown
 # trunk is used for serving in development and wasm-bindgen-cli is used for testing
 RUN cargo install trunk wasm-bindgen-cli
 
+# TODO: If multiple people start working on this code then need a more robust location for this.
+# If these aren't set then they need to be set every time the Docker container is rebuilt which is annoying.
+RUN git config --global user.name "Sean Anderson"
+RUN git config --global user.email "Sean.Palmer.Anderson@gmail.com"
+
 # TODO: If/when I take testing seriously again I can re-enable this logic, but it *DOMINATES* (100-1) Docker setup time
 # Install headless chrome driver to support testing (log messages break when using node)
 # https://gist.github.com/varyonic/dea40abcf3dd891d204ef235c6e8dd79?permalink_comment_id=4368270#gistcomment-4368270
