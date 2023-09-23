@@ -318,40 +318,32 @@ enum GestureType {
 
 #[derive(Resource, Default)]
 struct TouchTracker {
-    pub camera_start_pos: Vec3,
     pub time_start_touch: f32,
     pub gesture_type: GestureType,
-
     pub zoom_pointer_normalized_screen_pos: Option<Vec2>,
-
     // Keeps track of position on last frame.
     // This is different from Touch.last_position as that only updates when there has been a movement
     pub last_touch_a: Option<Vec2>,
     pub last_touch_b: Option<Vec2>,
 }
 
+// NOTE: significant portions of this code are adapted from https://docs.rs/bevy_touch_camera/latest/bevy_touch_camera/
+// Significant changes have been made, though, too. "panning" is implemented differently. bevy_touch_camera
+// implements a seemingly non-standard attempt at pan + inertia, but it felt wrong, so I replaced it with a basic, non-inertia panning movement.
+// For pinch-to-zoom I added logic which determines the center point and optionally zooms on that center point.
 fn camera_touch_pan_zoom(
     touches_res: Res<Touches>,
     mut tracker: ResMut<TouchTracker>,
     config: Res<TouchCameraConfig>,
     time: Res<Time>,
-
-    mut camera_q: Query<(
+    mut query: Query<(
         &PanCam,
-        &mut Transform,
         &mut OrthographicProjection,
+        &mut Transform,
         &mut Camera,
     )>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let Ok((cam, mut pos, mut proj, camera)) = camera_q.get_single_mut() else {
-        return;
-    };
-
-    if !cam.enabled {
-        return;
-    }
-
     let touches: Vec<&Touch> = touches_res.iter().collect();
 
     if touches.is_empty() {
@@ -408,91 +400,96 @@ fn camera_touch_pan_zoom(
         let distance_prev = touches[0].previous_position() - touches[1].previous_position();
         let pinch_direction = distance_prev.length() - distance_current.length();
 
-        let old_scale = proj.scale;
+        for (cam, mut proj, mut pos, camera) in &mut query {
+            if cam.enabled {
+                let old_scale = proj.scale;
 
-        proj.scale += proj.scale * pinch_direction.signum() * delta_total * config.zoom_sensitivity;
+                proj.scale +=
+                    proj.scale * pinch_direction.signum() * delta_total * config.zoom_sensitivity;
 
-        proj.scale = proj.scale.max(cam.min_scale);
+                proj.scale = proj.scale.max(cam.min_scale);
 
-        // Apply max scale constraint
-        if let Some(max_scale) = cam.max_scale {
-            proj.scale = proj.scale.min(max_scale);
+                // Apply max scale constraint
+                if let Some(max_scale) = cam.max_scale {
+                    proj.scale = proj.scale.min(max_scale);
+                }
+
+                // If there is both a min and max boundary, that limits how far we can zoom. Make sure we don't exceed that
+                let scale_constrained = BVec2::new(
+                    cam.min_x.is_some() && cam.max_x.is_some(),
+                    cam.min_y.is_some() && cam.max_y.is_some(),
+                );
+
+                if scale_constrained.x || scale_constrained.y {
+                    let bounds_width = if let (Some(min_x), Some(max_x)) = (cam.min_x, cam.max_x) {
+                        max_x - min_x
+                    } else {
+                        f32::INFINITY
+                    };
+
+                    let bounds_height = if let (Some(min_y), Some(max_y)) = (cam.min_y, cam.max_y) {
+                        max_y - min_y
+                    } else {
+                        f32::INFINITY
+                    };
+
+                    let bounds_size = vec2(bounds_width, bounds_height);
+                    let max_safe_scale = max_scale_within_bounds(bounds_size, &proj, window_size);
+
+                    if scale_constrained.x {
+                        proj.scale = proj.scale.min(max_safe_scale.x);
+                    }
+
+                    if scale_constrained.y {
+                        proj.scale = proj.scale.min(max_safe_scale.y);
+                    }
+                }
+
+                // Move the camera position to normalize the projection window
+                if let (Some(zoom_pointer_normalized_screen_pos), true) = (
+                    tracker.zoom_pointer_normalized_screen_pos,
+                    cam.zoom_to_cursor,
+                ) {
+                    let proj_size = proj.area.max / old_scale;
+                    let mouse_world_pos = pos.translation.truncate()
+                        + zoom_pointer_normalized_screen_pos * proj_size * old_scale;
+                    pos.translation = (mouse_world_pos
+                        - zoom_pointer_normalized_screen_pos * proj_size * proj.scale)
+                        .extend(pos.translation.z);
+
+                    // As we zoom out, we don't want the viewport to move beyond the provided boundary. If the most recent
+                    // change to the camera zoom would move cause parts of the window beyond the boundary to be shown, we
+                    // need to change the camera position to keep the viewport within bounds. The four if statements below
+                    // provide this behavior for the min and max x and y boundaries.
+                    let proj_size = proj.area.size();
+
+                    let half_of_viewport = proj_size / 2.;
+
+                    if let Some(min_x_bound) = cam.min_x {
+                        let min_safe_cam_x = min_x_bound + half_of_viewport.x;
+                        pos.translation.x = pos.translation.x.max(min_safe_cam_x);
+                    }
+                    if let Some(max_x_bound) = cam.max_x {
+                        let max_safe_cam_x = max_x_bound - half_of_viewport.x;
+                        pos.translation.x = pos.translation.x.min(max_safe_cam_x);
+                    }
+                    if let Some(min_y_bound) = cam.min_y {
+                        let min_safe_cam_y = min_y_bound + half_of_viewport.y;
+                        pos.translation.y = pos.translation.y.max(min_safe_cam_y);
+                    }
+                    if let Some(max_y_bound) = cam.max_y {
+                        let max_safe_cam_y = max_y_bound - half_of_viewport.y;
+                        pos.translation.y = pos.translation.y.min(max_safe_cam_y);
+                    }
+                }
+
+                if let Some(size) = camera.logical_viewport_size() {
+                    proj.update(size.x, size.y);
+                }
+
+                clamp_translation(cam, &mut proj, &mut pos, Vec2::default(), window_size);
+            }
         }
-
-        // If there is both a min and max boundary, that limits how far we can zoom. Make sure we don't exceed that
-        let scale_constrained = BVec2::new(
-            cam.min_x.is_some() && cam.max_x.is_some(),
-            cam.min_y.is_some() && cam.max_y.is_some(),
-        );
-
-        if scale_constrained.x || scale_constrained.y {
-            let bounds_width = if let (Some(min_x), Some(max_x)) = (cam.min_x, cam.max_x) {
-                max_x - min_x
-            } else {
-                f32::INFINITY
-            };
-
-            let bounds_height = if let (Some(min_y), Some(max_y)) = (cam.min_y, cam.max_y) {
-                max_y - min_y
-            } else {
-                f32::INFINITY
-            };
-
-            let bounds_size = vec2(bounds_width, bounds_height);
-            let max_safe_scale = max_scale_within_bounds(bounds_size, &proj, window_size);
-
-            if scale_constrained.x {
-                proj.scale = proj.scale.min(max_safe_scale.x);
-            }
-
-            if scale_constrained.y {
-                proj.scale = proj.scale.min(max_safe_scale.y);
-            }
-        }
-
-        // Move the camera position to normalize the projection window
-        if let (Some(zoom_pointer_normalized_screen_pos), true) = (
-            tracker.zoom_pointer_normalized_screen_pos,
-            cam.zoom_to_cursor,
-        ) {
-            let proj_size = proj.area.max / old_scale;
-            let mouse_world_pos = pos.translation.truncate()
-                + zoom_pointer_normalized_screen_pos * proj_size * old_scale;
-            pos.translation = (mouse_world_pos
-                - zoom_pointer_normalized_screen_pos * proj_size * proj.scale)
-                .extend(pos.translation.z);
-
-            // As we zoom out, we don't want the viewport to move beyond the provided boundary. If the most recent
-            // change to the camera zoom would move cause parts of the window beyond the boundary to be shown, we
-            // need to change the camera position to keep the viewport within bounds. The four if statements below
-            // provide this behavior for the min and max x and y boundaries.
-            let proj_size = proj.area.size();
-
-            let half_of_viewport = proj_size / 2.;
-
-            if let Some(min_x_bound) = cam.min_x {
-                let min_safe_cam_x = min_x_bound + half_of_viewport.x;
-                pos.translation.x = pos.translation.x.max(min_safe_cam_x);
-            }
-            if let Some(max_x_bound) = cam.max_x {
-                let max_safe_cam_x = max_x_bound - half_of_viewport.x;
-                pos.translation.x = pos.translation.x.min(max_safe_cam_x);
-            }
-            if let Some(min_y_bound) = cam.min_y {
-                let min_safe_cam_y = min_y_bound + half_of_viewport.y;
-                pos.translation.y = pos.translation.y.max(min_safe_cam_y);
-            }
-            if let Some(max_y_bound) = cam.max_y {
-                let max_safe_cam_y = max_y_bound - half_of_viewport.y;
-                pos.translation.y = pos.translation.y.min(max_safe_cam_y);
-            }
-        }
-
-        if let Some(size) = camera.logical_viewport_size() {
-            proj.update(size.x, size.y);
-        }
-
-        clamp_translation(cam, &mut proj, &mut pos, Vec2::default(), window_size);
 
         tracker.last_touch_a = Some(touches[0].position());
         tracker.last_touch_b = Some(touches[1].position());
@@ -501,7 +498,6 @@ fn camera_touch_pan_zoom(
     {
         // TODO: Add support for inertia
         if tracker.gesture_type == GestureType::None {
-            tracker.camera_start_pos = pos.translation;
             tracker.time_start_touch = time.elapsed_seconds();
         }
 
@@ -511,11 +507,15 @@ fn camera_touch_pan_zoom(
             return;
         }
 
-        let last_a = tracker.last_touch_a.unwrap_or(touches[0].position());
-        let delta = touches[0].position() - last_a;
-        let delta_device_pixels = config.drag_sensitivity * Vec2::new(delta.x, -delta.y);
-
-        clamp_translation(cam, &mut proj, &mut pos, delta_device_pixels, window_size);
+        for (cam, mut proj, mut pos, _) in &mut query {
+            if cam.enabled {
+                let last_a = tracker.last_touch_a.unwrap_or(touches[0].position());
+                let delta = touches[0].position() - last_a;
+                let delta_device_pixels = config.drag_sensitivity * Vec2::new(delta.x, -delta.y);
+        
+                clamp_translation(cam, &mut proj, &mut pos, delta_device_pixels, window_size);
+            }
+        }
 
         tracker.last_touch_a = Some(touches[0].position());
         tracker.last_touch_b = None;
