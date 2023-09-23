@@ -60,25 +60,32 @@ fn set_theme(mut contexts: EguiContexts) {
     let ctx = contexts.ctx_mut();
     let mut style = (*ctx.style()).clone();
 
+    // TODO: This is just a very temporary hack to make iOS UI look better/usable.
+    // I think that the user probably expects the UI to scale with zoom in/out and that'll take more fussing.
+    let mut scale_factor = 1.0;
+    if ctx.pixels_per_point() >= 2.0 {
+        scale_factor = 1.5;
+    }
+
     style.spacing.window_margin = egui::Margin::symmetric(12.0, 18.0);
     style.spacing.item_spacing = egui::Vec2::new(8.0, 12.0);
     style.spacing.button_padding = egui::Vec2::new(8.0, 8.0);
 
     // Redefine text_styles
     style.text_styles = [
-        (TextStyle::Heading, FontId::new(20.0, Proportional)),
+        (TextStyle::Heading, FontId::new(20.0 * scale_factor, Proportional)),
         (
             TextStyle::Name("Heading2".into()),
-            FontId::new(18.0, Proportional),
+            FontId::new(18.0 * scale_factor, Proportional),
         ),
         (
             TextStyle::Name("Context".into()),
-            FontId::new(18.0, Proportional),
+            FontId::new(18.0 * scale_factor, Proportional),
         ),
         (TextStyle::Body, FontId::new(16.0, Proportional)),
-        (TextStyle::Monospace, FontId::new(14.0, Proportional)),
-        (TextStyle::Button, FontId::new(14.0, Proportional)),
-        (TextStyle::Small, FontId::new(10.0, Proportional)),
+        (TextStyle::Monospace, FontId::new(14.0 * scale_factor, Proportional)),
+        (TextStyle::Button, FontId::new(14.0 * scale_factor, Proportional)),
+        (TextStyle::Small, FontId::new(10.0 * scale_factor, Proportional)),
     ]
     .into();
 
