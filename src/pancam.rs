@@ -499,6 +499,7 @@ fn camera_touch_pan_zoom(
     } else if touches.len() == 1
         && matches!(tracker.gesture_type, GestureType::None | GestureType::Pan)
     {
+        // TODO: Add support for inertia
         if tracker.gesture_type == GestureType::None {
             tracker.camera_start_pos = pos.translation;
             tracker.time_start_touch = time.elapsed_seconds();
