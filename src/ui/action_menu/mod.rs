@@ -47,15 +47,15 @@ pub fn update_action_menu(
             ui.selectable_value(
                 pointer_action.as_mut(),
                 PointerAction::DespawnElement,
-                "Despawn Element",
+                "Remove Element",
             );
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Spawn Food");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Spawn Dirt");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Spawn Sand");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Place Food");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Place Dirt");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Place Sand");
             
             ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::SpawnWorkerAnt, "Spawn Worker Ant");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::DespawnWorkerAnt, "Despawn Worker Ant");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::SpawnWorkerAnt, "Place Worker Ant");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::DespawnWorkerAnt, "Remove Worker Ant");
 
             if ui.button("Speed++").clicked() {
                 let new_ticks_per_second = (ticks_per_second.0 + DEFAULT_TICKS_PER_SECOND)
