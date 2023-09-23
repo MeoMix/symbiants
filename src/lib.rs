@@ -5,7 +5,7 @@ mod common;
 mod element;
 mod gravity;
 mod grid;
-mod mouse;
+mod pointer;
 mod name_list;
 mod nest;
 mod pancam;

@@ -1,3 +1,4 @@
+use bevy::input::touch::Touch;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 use bevy_turborand::GlobalRng;
@@ -16,8 +17,9 @@ use crate::{
     ui::action_menu::PointerAction,
 };
 
-pub fn handle_mouse_clicks(
+pub fn handle_pointer_tap(
     mouse_input: Res<Input<MouseButton>>,
+    touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     elements_query: Query<&Element>,
@@ -39,22 +41,29 @@ pub fn handle_mouse_clicks(
         Err(_) => return,
     };
 
-    let cursor_position = match window.cursor_position() {
-        Some(position) => position,
-        None => return,
-    };
+    let left_mouse_button_pressed = mouse_input.just_pressed(MouseButton::Left);
+    let touches_vec: Vec<&Touch> = touches.iter().collect();
+    let primary_touch_pressed = touches.any_just_pressed() && touches_vec.len() == 1;
+
+    let pointer_position;
+    if left_mouse_button_pressed {
+        pointer_position = match window.cursor_position() {
+            Some(position) => position,
+            None => return,
+        };
+    } else if primary_touch_pressed {
+        pointer_position = touches_vec[0].position();
+    } else {
+        return;
+    }
 
     let (camera, camera_transform) = query.single_mut();
 
     let world_position = camera
-        .viewport_to_world_2d(camera_transform, cursor_position)
+        .viewport_to_world_2d(camera_transform, pointer_position)
         .unwrap();
 
     let grid_position = world_to_grid_position(&world_map, world_position);
-
-    if !mouse_input.just_pressed(MouseButton::Left) {
-        return;
-    }
 
     if *pointer_action == PointerAction::Food {
         if world_map.is_element(&elements_query, grid_position, Element::Air) {

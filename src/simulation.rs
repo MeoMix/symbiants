@@ -31,7 +31,7 @@ use crate::{
         },
         setup_caches,
     },
-    mouse::{handle_mouse_clicks, is_pointer_captured, IsPointerCaptured},
+    pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     nest::{deinitialize_nest, initialize_nest},
     settings::{deinitialize_settings, initialize_settings},
     story_state::{check_story_over, on_story_cleanup, StoryState},
@@ -94,7 +94,7 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             Update,
             // TODO: coupling... need to handle clicking the simulation after menus so pointer capture works properly
-            (is_pointer_captured, handle_mouse_clicks)
+            (is_pointer_captured, handle_pointer_tap)
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
         );

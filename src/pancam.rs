@@ -7,7 +7,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use crate::mouse::IsPointerCaptured;
+use crate::pointer::IsPointerCaptured;
 
 /// Plugin that adds the necessary systems for `PanCam` components to work
 #[derive(Default)]
