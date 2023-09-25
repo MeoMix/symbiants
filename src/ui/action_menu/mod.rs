@@ -75,7 +75,6 @@ pub fn update_action_menu(
         });
 }
 
-// TODO: discrepancy between using world directly vs commands for remove_resource
 pub fn deinitialize_action_menu(mut commands: Commands) {
     commands.remove_resource::<PointerAction>();
 }
