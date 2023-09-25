@@ -5,6 +5,7 @@ use crate::{
     settings::Settings,
 };
 use bevy::prelude::*;
+use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
 pub mod commands;
@@ -131,38 +132,36 @@ pub enum Element {
     Food,
 }
 
-pub fn initialize_element(world: &mut World) {
-    register::<Element>(world);
-    register::<Air>(world);
-    register::<Food>(world);
-    register::<Dirt>(world);
-    register::<Sand>(world);
-    register::<Crushable>(world);
-    register::<Unstable>(world);
+pub fn initialize_element(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+) {
+    register::<Element>(&app_type_registry, &mut saveable_registry);
+    register::<Air>(&app_type_registry, &mut saveable_registry);
+    register::<Food>(&app_type_registry, &mut saveable_registry);
+    register::<Dirt>(&app_type_registry, &mut saveable_registry);
+    register::<Sand>(&app_type_registry, &mut saveable_registry);
+    register::<Crushable>(&app_type_registry, &mut saveable_registry);
+    register::<Unstable>(&app_type_registry, &mut saveable_registry);
 }
 
-pub fn setup_element(world: &mut World) {
-    let settings = world.resource::<Settings>().clone();
-
+pub fn setup_element(settings: Res<Settings>, mut commands: Commands) {
     for y in 0..settings.world_height {
         for x in 0..settings.world_width {
             let position = Position::new(x, y);
 
             if y <= settings.get_surface_level() {
-                world.spawn(AirElementBundle::new(position));
+                commands.spawn(AirElementBundle::new(position));
             } else {
-                world.spawn(DirtElementBundle::new(position));
+                commands.spawn(DirtElementBundle::new(position));
             }
         }
     }
 }
 
-pub fn cleanup_element(world: &mut World) {
-    let mut element_query = world.query_filtered::<Entity, With<Element>>();
-    let elements = element_query.iter(&world).collect::<Vec<_>>();
-
-    for element in elements {
-        world.entity_mut(element).despawn_recursive();
+pub fn cleanup_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {
+    for element in element_query.iter() {
+        commands.entity(element).despawn_recursive();
     }
 }
 

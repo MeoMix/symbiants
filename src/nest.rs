@@ -1,7 +1,8 @@
 use bevy::prelude::*;
+use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::position::Position, common::register};
+use crate::{common::register, grid::position::Position};
 
 // TODO: This isn't great - prefer inferring this state at a local, ant level rather than relying on global flags to achieve behavior
 #[derive(Resource, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -33,11 +34,15 @@ impl Nest {
     }
 }
 
-pub fn initialize_nest(world: &mut World) {
-    register::<Nest>(world);
-    world.init_resource::<Nest>();
+pub fn initialize_nest(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+    mut commands: Commands,
+) {
+    register::<Nest>(&app_type_registry, &mut saveable_registry);
+    commands.init_resource::<Nest>();
 }
 
-pub fn deinitialize_nest(world: &mut World) {
-    world.remove_resource::<Nest>();
+pub fn deinitialize_nest(mut commands: Commands) {
+    commands.remove_resource::<Nest>();
 }

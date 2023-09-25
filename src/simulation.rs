@@ -11,8 +11,7 @@ use crate::{
         hunger::ants_hunger,
         initialize_ant, setup_ant,
         ui::{
-            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory,
-            on_update_ant_orientation,
+            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
         },
         walk::ants_walk,
     },
@@ -31,8 +30,8 @@ use crate::{
         },
         setup_caches,
     },
-    pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     nest::{deinitialize_nest, initialize_nest},
+    pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     settings::{deinitialize_settings, initialize_settings},
     story_state::{check_story_over, on_story_cleanup, StoryState},
     time::{
@@ -78,6 +77,8 @@ impl Plugin for SimulationPlugin {
             OnEnter(StoryState::FinalizingStartup),
             (
                 setup_caches,
+                // Ensure cache is created before continuing
+                apply_deferred,
                 setup_background,
                 #[cfg(target_arch = "wasm32")]
                 setup_window_onunload_save_world_state,
@@ -186,13 +187,10 @@ pub fn try_load_from_save(world: &mut World) {
     }
 }
 
-pub fn finalize_startup(world: &mut World) {
-    let mut story_state = world.resource_mut::<NextState<StoryState>>();
+pub fn finalize_startup(mut story_state: ResMut<NextState<StoryState>>) {
     story_state.set(StoryState::FinalizingStartup);
 }
 
-pub fn begin_story(world: &mut World) {
-    world
-        .resource_mut::<NextState<StoryState>>()
-        .set(StoryState::Telling);
+pub fn begin_story(mut story_state: ResMut<NextState<StoryState>>) {
+    story_state.set(StoryState::Telling);
 }

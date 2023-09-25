@@ -29,23 +29,26 @@ pub fn get_entity_from_id(target_id: Id, query: &Query<(Entity, &Id)>) -> Option
 }
 
 /// Register a given type such that it is valid to use with `bevy_save`.
-pub fn register<T: GetTypeRegistration>(world: &mut World) {
+pub fn register<T: GetTypeRegistration>(
+    app_type_registry: &ResMut<AppTypeRegistry>,
+    saveable_registry: &mut ResMut<SaveableRegistry>,
+) {
     // Enable reflection
-    world
-        .resource_mut::<AppTypeRegistry>()
-        .write()
-        .register::<T>();
+    app_type_registry.write().register::<T>();
 
     // Enable serialization
-    world.resource_mut::<SaveableRegistry>().register::<T>();
+    saveable_registry.register::<T>();
 }
 
-pub fn initialize_common(world: &mut World) {
-    register::<Id>(world);
-    register::<Option<Id>>(world);
-    register::<Uuid>(world);
-    register::<Option<Position>>(world);
-    register::<Position>(world);
+pub fn initialize_common(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+) {
+    register::<Id>(&app_type_registry, &mut saveable_registry);
+    register::<Option<Id>>(&app_type_registry, &mut saveable_registry);
+    register::<Uuid>(&app_type_registry, &mut saveable_registry);
+    register::<Option<Position>>(&app_type_registry, &mut saveable_registry);
+    register::<Position>(&app_type_registry, &mut saveable_registry);
 }
 
 pub fn deinitialize_common() {}

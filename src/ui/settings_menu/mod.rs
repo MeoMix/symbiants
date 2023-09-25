@@ -11,7 +11,6 @@ pub fn update_settings_menu(
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
 
-    // TODO: resetting story doesn't reset window position
     egui::Window::new("Settings")
         .default_pos(egui::Pos2::new(window.width() - 300.0, 0.0))
         .resizable(false)

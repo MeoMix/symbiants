@@ -1,3 +1,4 @@
+use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
@@ -9,7 +10,7 @@ use crate::{
     settings::Settings,
 };
 
-use self::{hunger::Hunger, birthing::Birthing};
+use self::{birthing::Birthing, hunger::Hunger};
 
 use super::element::Element;
 use bevy::prelude::*;
@@ -324,28 +325,28 @@ pub fn ants_initiative(
     }
 }
 
-pub fn initialize_ant(world: &mut World) {
-    register::<Ant>(world);
-    register::<AntName>(world);
-    register::<AntColor>(world);
-    register::<Dead>(world);
-    register::<Initiative>(world);
-    register::<AntOrientation>(world);
-    register::<Facing>(world);
-    register::<Angle>(world);
-    register::<AntRole>(world);
-    register::<Hunger>(world);
-    register::<AntInventory>(world);
-    register::<InventoryItem>(world);
-
-    register::<Birthing>(world);
+pub fn initialize_ant(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+) {
+    register::<Ant>(&app_type_registry, &mut saveable_registry);
+    register::<AntName>(&app_type_registry, &mut saveable_registry);
+    register::<AntColor>(&app_type_registry, &mut saveable_registry);
+    register::<Dead>(&app_type_registry, &mut saveable_registry);
+    register::<Initiative>(&app_type_registry, &mut saveable_registry);
+    register::<AntOrientation>(&app_type_registry, &mut saveable_registry);
+    register::<Facing>(&app_type_registry, &mut saveable_registry);
+    register::<Angle>(&app_type_registry, &mut saveable_registry);
+    register::<AntRole>(&app_type_registry, &mut saveable_registry);
+    register::<Hunger>(&app_type_registry, &mut saveable_registry);
+    register::<AntInventory>(&app_type_registry, &mut saveable_registry);
+    register::<InventoryItem>(&app_type_registry, &mut saveable_registry);
+    register::<Birthing>(&app_type_registry, &mut saveable_registry);
 }
 
-pub fn setup_ant(world: &mut World) {
-    let settings = world.resource::<Settings>().clone();
-
+pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut commands: Commands) {
     let ants = {
-        let mut rng = world.resource_mut::<GlobalRng>();
+        let mut rng = rng.reborrow();
 
         let queen_ant = AntBundle::new(
             settings.get_random_surface_position(&mut rng),
@@ -374,28 +375,25 @@ pub fn setup_ant(world: &mut World) {
         vec![queen_ant].into_iter().chain(worker_ants.into_iter())
     };
 
-    world.spawn_batch(ants);
+    commands.spawn_batch(ants);
 }
 
-pub fn cleanup_ant(world: &mut World) {
+pub fn cleanup_ant(
+    label_query: Query<Entity, With<AntLabel>>,
+    ant_query: Query<Entity, With<Ant>>,
+    mut commands: Commands,
+) {
     // NOTE: labels aren't directly tied to their ants and so aren't despawned when ants are despawned.
     // This is because label should not rotate with ants and its much simpler to keep them detached to achieve this.
-    let mut label_query = world.query_filtered::<Entity, With<AntLabel>>();
-    let label_entities = label_query.iter(&world).collect::<Vec<_>>();
-
-    for entity in label_entities {
-        world.entity_mut(entity).despawn_recursive();
+    for entity in label_query.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 
-    let mut ant_query = world.query_filtered::<Entity, With<Ant>>();
-    let ants = ant_query.iter(&world).collect::<Vec<_>>();
-
-    for ant in ants {
-        world.entity_mut(ant).despawn_recursive();
+    for ant in ant_query.iter() {
+        commands.entity(ant).despawn_recursive();
     }
 }
 
-pub fn deinitialize_ant() {
-}
+pub fn deinitialize_ant() {}
 
 // TODO: tests

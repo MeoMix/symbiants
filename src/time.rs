@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_save::SaveableRegistry;
 use chrono::{DateTime, LocalResult, TimeZone, Utc};
 use std::time::Duration;
 
@@ -46,29 +47,36 @@ pub struct RemainingPendingTicks(pub isize);
 #[derive(Resource, Default)]
 pub struct TotalPendingTicks(pub isize);
 
-pub fn initialize_game_time(world: &mut World) {
-    register::<GameTime>(world);
+pub fn initialize_game_time(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+    mut commands: Commands,
+) {
+    register::<GameTime>(&app_type_registry, &mut saveable_registry);
 
-    world.init_resource::<GameTime>();
-    world.init_resource::<IsFastForwarding>();
-    world.init_resource::<RemainingPendingTicks>();
-    world.init_resource::<TotalPendingTicks>();
+    commands.init_resource::<GameTime>();
+    commands.init_resource::<IsFastForwarding>();
+    commands.init_resource::<RemainingPendingTicks>();
+    commands.init_resource::<TotalPendingTicks>();
 
     // Control the speed of the simulation by defining how many simulation ticks occur per second.
-    world.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND));
-    world.insert_resource(TicksPerSecond(DEFAULT_TICKS_PER_SECOND));
+    commands.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND));
+    commands.insert_resource(TicksPerSecond(DEFAULT_TICKS_PER_SECOND));
 }
 
-pub fn deinitialize_game_time(world: &mut World) {
-    world.remove_resource::<GameTime>();
-    world.remove_resource::<IsFastForwarding>();
-    world.remove_resource::<RemainingPendingTicks>();
-    world.remove_resource::<TotalPendingTicks>();
+pub fn deinitialize_game_time(
+    mut commands: Commands,
+    mut fixed_time: ResMut<FixedTime>,
+    mut ticks_per_second: ResMut<TicksPerSecond>,
+) {
+    commands.remove_resource::<GameTime>();
+    commands.remove_resource::<IsFastForwarding>();
+    commands.remove_resource::<RemainingPendingTicks>();
+    commands.remove_resource::<TotalPendingTicks>();
 
     // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
-    world.resource_mut::<FixedTime>().period =
-        Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND);
-    world.resource_mut::<TicksPerSecond>().0 = DEFAULT_TICKS_PER_SECOND;
+    fixed_time.period = Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND);
+    ticks_per_second.0 = DEFAULT_TICKS_PER_SECOND;
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,
@@ -112,7 +120,8 @@ pub fn set_rate_of_time(
 
                 is_fast_forwarding.0 = true;
 
-                remaining_pending_ticks.0 = (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
+                remaining_pending_ticks.0 =
+                    (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
                 total_pending_ticks.0 = remaining_pending_ticks.0;
             }
         } else {

@@ -17,38 +17,33 @@ pub struct WorldMap {
 
 /// Called after creating a new story, or loading an existing story from storage.
 /// Creates a cache that maps positions to element entities for quick lookup outside of ECS architecture.
-pub fn setup_caches(world: &mut World) {
-    let (width, height, surface_level) = {
-        let settings = world.resource::<Settings>();
-        (
-            settings.world_width,
-            settings.world_height,
-            settings.get_surface_level(),
-        )
-    };
+///
+/// This is used to speed up most logic because there's a consistent need throughout the application to know what elements are
+/// at or near a given position.
+pub fn setup_caches(
+    element_query: Query<(&mut Position, Entity), With<Element>>,
+    settings: Res<Settings>,
+    mut commands: Commands,
+) {
+    let mut elements_cache = vec![
+        vec![Entity::PLACEHOLDER; settings.world_width as usize];
+        settings.world_height as usize
+    ];
 
-    let elements_cache = create_elements_cache(world, width, height);
-    world.insert_resource(WorldMap::new(width, height, surface_level, elements_cache));
-}
-
-pub fn cleanup_caches(world: &mut World) {
-    world.remove_resource::<WorldMap>();
-}
-
-// Create a cache which allows for spatial querying of Elements. This is used to speed up
-// most logic because there's a consistent need throughout the application to know what elements are
-// at or near a given position.
-fn create_elements_cache(world: &mut World, width: isize, height: isize) -> Vec<Vec<Entity>> {
-    let mut elements_cache = vec![vec![Entity::PLACEHOLDER; width as usize]; height as usize];
-
-    for (position, entity) in world
-        .query_filtered::<(&mut Position, Entity), With<Element>>()
-        .iter(&world)
-    {
+    for (position, entity) in element_query.iter() {
         elements_cache[position.y as usize][position.x as usize] = entity;
     }
 
-    elements_cache
+    commands.insert_resource(WorldMap::new(
+        settings.world_width,
+        settings.world_height,
+        settings.get_surface_level(),
+        elements_cache,
+    ));
+}
+
+pub fn cleanup_caches(mut commands: Commands) {
+    commands.remove_resource::<WorldMap>();
 }
 
 impl WorldMap {

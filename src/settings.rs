@@ -1,4 +1,5 @@
 use bevy::{prelude::*, reflect::Reflect};
+use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{common::register, grid::position::Position};
@@ -79,13 +80,17 @@ impl Default for Settings {
     }
 }
 
-pub fn initialize_settings(world: &mut World) {
-    register::<Settings>(world);
-    register::<Probabilities>(world);
+pub fn initialize_settings(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+    mut commands: Commands,
+) {
+    register::<Settings>(&app_type_registry, &mut saveable_registry);
+    register::<Probabilities>(&app_type_registry, &mut saveable_registry);
 
-    world.init_resource::<Settings>();
+    commands.init_resource::<Settings>();
 }
 
-pub fn deinitialize_settings(world: &mut World) {
-    world.remove_resource::<Settings>();
+pub fn deinitialize_settings(mut commands: Commands) {
+    commands.remove_resource::<Settings>();
 }
