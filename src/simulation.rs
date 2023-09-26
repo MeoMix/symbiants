@@ -11,15 +11,15 @@ use crate::{
         hunger::ants_hunger,
         initialize_ant, setup_ant,
         ui::{
-            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
+            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position,
         },
         walk::ants_walk,
     },
     background::{cleanup_background, setup_background},
-    common::{deinitialize_common, initialize_common, ui::on_update_position},
+    common::{deinitialize_common, initialize_common},
     element::{
         cleanup_element, deinitialize_element, initialize_element, setup_element,
-        ui::on_spawn_element,
+        ui::{on_spawn_element, on_update_element_position},
     },
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
     grid::{
@@ -139,10 +139,11 @@ impl Plugin for SimulationPlugin {
                 periodic_save_world_state,
                 // Ensure render state reflects simulation state after having applied movements and command updates.
                 (
-                    on_update_position,
+                    on_update_ant_position,
                     on_update_ant_orientation,
                     on_update_ant_dead,
                     on_update_ant_inventory,
+                    on_update_element_position,
                     on_spawn_ant,
                     on_spawn_element,
                 )

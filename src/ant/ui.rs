@@ -204,6 +204,42 @@ fn get_inventory_item_sprite_bundle(
     })
 }
 
+pub fn on_update_ant_position(
+    mut ant_query: Query<
+        (Ref<Position>, &mut Transform, &TranslationOffset),
+        (With<Ant>, Without<AntLabel>),
+    >,
+    mut ant_label_query: Query<
+        (&mut Transform, &TranslationOffset, &AntLabel),
+        (Without<Ant>, With<AntLabel>),
+    >,
+    is_fast_forwarding: Res<IsFastForwarding>,
+    world_map: Res<WorldMap>,
+) {
+    if is_fast_forwarding.0 {
+        return;
+    }
+
+    for (position, mut transform, translation_offset) in ant_query.iter_mut() {
+        if is_fast_forwarding.is_changed() || position.is_changed() {
+            transform.translation = position
+                .as_world_position(&world_map)
+                .add(translation_offset.0);
+        }
+    }
+
+    // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
+    for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
+        let (position, _, _) = ant_query.get(label.0).unwrap();
+
+        if is_fast_forwarding.is_changed() || position.is_changed() {
+            transform.translation = position
+                .as_world_position(&world_map)
+                .add(translation_offset.0);
+        }
+    }
+}
+
 pub fn on_update_ant_orientation(
     mut query: Query<(&mut Transform, Ref<AntOrientation>)>,
     is_fast_forwarding: Res<IsFastForwarding>,

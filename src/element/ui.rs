@@ -1,5 +1,8 @@
 use super::Element;
-use crate::grid::{position::Position, WorldMap};
+use crate::{
+    grid::{position::Position, WorldMap},
+    time::IsFastForwarding,
+};
 use bevy::prelude::*;
 
 pub fn get_element_sprite(element: &Element) -> Sprite {
@@ -25,5 +28,21 @@ pub fn on_spawn_element(
             sprite: get_element_sprite(element),
             ..default()
         });
+    }
+}
+
+pub fn on_update_element_position(
+    mut element_query: Query<(Ref<Position>, &mut Transform), With<Element>>,
+    is_fast_forwarding: Res<IsFastForwarding>,
+    world_map: Res<WorldMap>,
+) {
+    if is_fast_forwarding.0 {
+        return;
+    }
+
+    for (position, mut transform) in element_query.iter_mut() {
+        if is_fast_forwarding.is_changed() || position.is_changed() {
+            transform.translation = position.as_world_position(&world_map);
+        }
     }
 }

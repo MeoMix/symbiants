@@ -5,8 +5,6 @@ use uuid::Uuid;
 
 use crate::grid::position::Position;
 
-pub mod ui;
-
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
 
