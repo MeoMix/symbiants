@@ -194,7 +194,7 @@ pub fn ants_act(
             // Consider digging / picking up the element under various circumstances.
             if inventory.0 == None {
                 // When above ground, prioritize picking up food
-                let dig_food = *element == Element::Food && !world_map.is_below_surface(&position);
+                let dig_food = *element == Element::Food && !world_map.is_below_surface(&position) && *role == AntRole::Worker;
                 // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
                 let dig_sand = *element == Element::Sand && world_map.is_below_surface(&position);
                 // If digging would break through into an open area then don't do that.
