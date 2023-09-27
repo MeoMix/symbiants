@@ -237,7 +237,6 @@ fn finish_digging_nest(
         .remove::<Nesting>()
         .insert(Birthing::default());
 
-    // FIXME: Ant keeps dropping and then picking up the thing just dropped.
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);
         let drop_target_entity = world_map.element(drop_position);
