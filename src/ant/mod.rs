@@ -275,7 +275,7 @@ impl AntOrientation {
         Self::new(self.facing, self.angle.rotate(rotation))
     }
 
-    pub fn get_ahead_delta(&self) -> Position {
+    fn get_ahead_delta(&self) -> Position {
         let delta = match self.angle {
             Angle::Zero => Position::X,
             Angle::Ninety => Position::NEG_Y,
@@ -290,15 +290,15 @@ impl AntOrientation {
         }
     }
 
-    pub fn get_below_delta(&self) -> Position {
+    fn get_below_delta(&self) -> Position {
         self.rotate_forward().get_ahead_delta()
     }
 
-    pub fn get_behind_delta(&self) -> Position {
+    fn get_behind_delta(&self) -> Position {
         self.turn_around().get_ahead_delta()
     }
 
-    pub fn get_above_delta(&self) -> Position {
+    fn get_above_delta(&self) -> Position {
         self.rotate_backward().get_ahead_delta()
     }
 

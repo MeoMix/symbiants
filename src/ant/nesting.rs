@@ -206,7 +206,7 @@ fn can_finish_nesting(
     }
 
     let below_position = ant_orientation.get_below_position(ant_position);
-    let behind_below_position = below_position + ant_orientation.get_behind_delta();
+    let behind_below_position = ant_orientation.get_behind_position(&below_position);
 
     let is_chamber_floor_sturdy = world_map.is_all_element(
         &elements_query,

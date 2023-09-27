@@ -95,7 +95,7 @@ pub fn ants_walk(
 
         // Definitely walking forward, but if that results in standing over air then turn on current block.
         let foot_orientation = orientation.rotate_forward();
-        let foot_position = ahead_position + foot_orientation.get_ahead_delta();
+        let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
         if let Some(foot_entity) = world_map.get_element(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
