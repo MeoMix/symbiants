@@ -2,8 +2,9 @@ use super::{
     Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
     Initiative,
 };
-use crate::{grid::position::Position, name_list::get_random_name, time::{SECONDS_PER_HOUR, TicksPerSecond}};
+use crate::{grid::position::Position, name_list::get_random_name, time::{SECONDS_PER_HOUR, TicksPerSecond}, common::register};
 use bevy::prelude::*;
+use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
@@ -44,6 +45,13 @@ impl Birthing {
     pub fn reset(&mut self) {
         self.value = 0.0;
     }
+}
+
+pub fn initialize_birthing(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+) {
+    register::<Birthing>(&app_type_registry, &mut saveable_registry);
 }
 
 pub fn ants_birthing(
@@ -91,3 +99,5 @@ pub fn ants_birthing(
         }
     }
 }
+
+// TODO: Don't I need to register Birthing?

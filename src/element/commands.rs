@@ -113,7 +113,7 @@ pub fn spawn_element(element: Element, position: Position, world: &mut World) ->
             // is that using a Query which iterates over Element and filters on With<Added> still iterates all elements.
             let world_map = world.resource::<WorldMap>();
 
-            if world_map.is_below_surface(&position) {
+            if world_map.is_underground(&position) {
                 world.spawn(DirtElementBundle::new(position)).id()
             } else {
                 world

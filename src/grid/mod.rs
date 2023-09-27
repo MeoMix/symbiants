@@ -73,7 +73,11 @@ impl WorldMap {
         &self.surface_level
     }
 
-    pub fn is_below_surface(&self, position: &Position) -> bool {
+    pub fn is_aboveground(&self, position: &Position) -> bool {
+        !self.is_underground(position)
+    }
+
+    pub fn is_underground(&self, position: &Position) -> bool {
         position.y > self.surface_level
     }
 

@@ -7,7 +7,6 @@ mod gravity;
 mod grid;
 mod pointer;
 mod name_list;
-mod nest;
 mod pancam;
 mod settings;
 mod simulation;

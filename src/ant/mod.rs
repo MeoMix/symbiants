@@ -10,7 +10,7 @@ use crate::{
     settings::Settings,
 };
 
-use self::{birthing::Birthing, hunger::Hunger};
+use self::{birthing::Birthing, hunger::Hunger, nesting::Nesting};
 
 use super::element::Element;
 use bevy::prelude::*;
@@ -19,6 +19,7 @@ pub mod act;
 pub mod birthing;
 pub mod commands;
 pub mod hunger;
+pub mod nesting;
 pub mod ui;
 pub mod walk;
 
@@ -345,37 +346,37 @@ pub fn initialize_ant(
 }
 
 pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut commands: Commands) {
-    let ants = {
-        let mut rng = rng.reborrow();
+    let mut rng = rng.reborrow();
 
-        let queen_ant = AntBundle::new(
-            settings.get_random_surface_position(&mut rng),
-            AntColor(settings.ant_color),
-            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-            AntInventory::default(),
-            AntRole::Queen,
-            AntName(String::from("Queen")),
-            Initiative::new(&mut rng),
-        );
+    let queen_ant = AntBundle::new(
+        settings.get_random_surface_position(&mut rng),
+        AntColor(settings.ant_color),
+        AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+        AntInventory::default(),
+        AntRole::Queen,
+        AntName(String::from("Queen")),
+        Initiative::new(&mut rng),
+    );
 
-        let worker_ants = (0..settings.initial_ant_worker_count)
-            .map(|_| {
-                AntBundle::new(
-                    settings.get_random_surface_position(&mut rng),
-                    AntColor(settings.ant_color),
-                    AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-                    AntInventory::default(),
-                    AntRole::Worker,
-                    AntName(get_random_name(&mut rng)),
-                    Initiative::new(&mut rng),
-                )
-            })
-            .collect::<Vec<_>>();
+    info!("spawning queen with default nesting");
+    // Newly created queens instinctively start building a nest.
+    commands.spawn((queen_ant, Nesting::default()));
 
-        vec![queen_ant].into_iter().chain(worker_ants.into_iter())
-    };
+    let worker_ants = (0..settings.initial_ant_worker_count)
+        .map(|_| {
+            AntBundle::new(
+                settings.get_random_surface_position(&mut rng),
+                AntColor(settings.ant_color),
+                AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+                AntInventory::default(),
+                AntRole::Worker,
+                AntName(get_random_name(&mut rng)),
+                Initiative::new(&mut rng),
+            )
+        })
+        .collect::<Vec<_>>();
 
-    commands.spawn_batch(ants);
+    commands.spawn_batch(worker_ants);
 }
 
 pub fn cleanup_ant(
@@ -394,6 +395,5 @@ pub fn cleanup_ant(
     }
 }
 
-pub fn deinitialize_ant() {}
 
 // TODO: tests

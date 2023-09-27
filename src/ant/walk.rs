@@ -1,11 +1,10 @@
 use crate::{
     element::Element,
     grid::{position::Position, WorldMap},
-    nest::Nest,
     settings::Settings,
 };
 
-use super::{birthing::Birthing, AntInventory, AntOrientation, AntRole, Dead, Initiative};
+use super::{birthing::Birthing, AntInventory, AntOrientation, AntRole, Dead, Initiative, nesting::Nesting};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
@@ -18,6 +17,8 @@ pub fn ants_walk(
             &mut AntOrientation,
             &AntRole,
             &AntInventory,
+            // TODO: Optional component is usually a bad sign of encapsulation - feels like walking can't be as separate as I want it to be?
+            Option<&Nesting>
         ),
         (Without<Dead>, Without<Birthing>),
     >,
@@ -25,9 +26,8 @@ pub fn ants_walk(
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
-    nest: Res<Nest>,
 ) {
-    for (mut initiative, mut position, mut orientation, role, inventory) in ants_query.iter_mut() {
+    for (mut initiative, mut position, mut orientation, role, inventory, nesting) in ants_query.iter_mut() {
         // If ant lost the ability to move (potentially due to falling through the air) then skip walking around.
         if !initiative.can_move() {
             continue;
@@ -57,12 +57,12 @@ pub fn ants_walk(
         // stub for now. Pheromones would be better?
         let mut is_queen_turning_towards_nest = false;
         if *role == AntRole::Queen
-            && !world_map.is_below_surface(&position)
+            && world_map.is_aboveground(&position)
             && inventory.0 == None
             && orientation.is_horizontal()
-            && nest.position().is_some()
+            && nesting.is_some() && nesting.unwrap().position().is_some()
         {
-            let nest_position = nest.position().unwrap();
+            let nest_position = nesting.unwrap().position().unwrap();
             // distance from position to nest position:
             let distance_to_nest =
                 (position.x - nest_position.x).abs() + (position.y - nest_position.y).abs();

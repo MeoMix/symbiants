@@ -48,5 +48,3 @@ pub fn initialize_common(
     register::<Option<Position>>(&app_type_registry, &mut saveable_registry);
     register::<Position>(&app_type_registry, &mut saveable_registry);
 }
-
-pub fn deinitialize_common() {}

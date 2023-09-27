@@ -213,7 +213,7 @@ pub fn gravity_stability(
                         commands.toggle_element_command(*entity, adjacent_position, true, Unstable);
                     }
 
-                    if *element == Element::Dirt && !world_map.is_below_surface(&adjacent_position) {
+                    if *element == Element::Dirt && world_map.is_aboveground(&adjacent_position) {
                         commands.toggle_element_command(*entity, adjacent_position, true, Unstable);
                     }
                 }

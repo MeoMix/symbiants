@@ -6,8 +6,9 @@ use crate::{
     ant::{
         act::ants_act,
         ants_initiative,
-        birthing::ants_birthing,
-        cleanup_ant, deinitialize_ant,
+        birthing::{ants_birthing, initialize_birthing},
+        nesting::{ants_nesting, initialize_nesting},
+        cleanup_ant,
         hunger::ants_hunger,
         initialize_ant, setup_ant,
         ui::{
@@ -16,9 +17,9 @@ use crate::{
         walk::ants_walk,
     },
     background::{cleanup_background, setup_background},
-    common::{deinitialize_common, initialize_common},
+    common::{initialize_common},
     element::{
-        cleanup_element, deinitialize_element, initialize_element, setup_element,
+        cleanup_element, initialize_element, setup_element,
         ui::{on_spawn_element, on_update_element_position},
     },
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
@@ -30,7 +31,6 @@ use crate::{
         },
         setup_caches,
     },
-    nest::{deinitialize_nest, initialize_nest},
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     settings::{deinitialize_settings, initialize_settings},
     story_state::{check_story_over, on_story_cleanup, StoryState},
@@ -60,7 +60,8 @@ impl Plugin for SimulationPlugin {
                 initialize_settings,
                 initialize_common,
                 initialize_game_time,
-                initialize_nest,
+                initialize_nesting,
+                initialize_birthing,
                 initialize_element,
                 initialize_ant,
                 try_load_from_save,
@@ -118,6 +119,7 @@ impl Plugin for SimulationPlugin {
                     // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
                     ants_hunger,
                     ants_birthing,
+                    ants_nesting,
                     ants_act,
                     // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                     ants_initiative,
@@ -158,10 +160,6 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::Cleanup),
             (
-                deinitialize_ant,
-                deinitialize_common,
-                deinitialize_element,
-                deinitialize_nest,
                 deinitialize_game_time,
                 deinitialize_settings,
                 #[cfg(target_arch = "wasm32")]

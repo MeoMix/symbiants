@@ -1,9 +1,7 @@
 use crate::{
-    ant::birthing::Birthing,
     common::{get_entity_from_id, Id},
     element::Element,
     grid::{position::Position, WorldMap},
-    nest::Nest,
     settings::Settings,
 };
 
@@ -26,7 +24,6 @@ pub fn ants_act(
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
     world_map: Res<WorldMap>,
-    mut nest: ResMut<Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
@@ -38,80 +35,6 @@ pub fn ants_act(
             continue;
         }
 
-        // TODO: queen specific logic
-        if *role == AntRole::Queen {
-            if !world_map.is_below_surface(&position) && !nest.is_started() {
-                if inventory.0 == None {
-                    if rng.f32() < settings.probabilities.above_surface_queen_nest_dig {
-                        // If x position is within 20% of world edge then don't dig there
-                        let offset = settings.world_width / 5;
-                        let is_too_near_left_edge = position.x < offset;
-                        let is_too_near_right_edge = position.x > settings.world_width - offset;
-
-                        if !is_too_near_left_edge && !is_too_near_right_edge {
-                            let target_position =
-                                *position + orientation.rotate_forward().get_forward_delta();
-                            let target_element_entity = *world_map.element(target_position);
-                            commands.dig(ant_entity, target_position, target_element_entity);
-
-                            initiative.consume_action();
-
-                            // TODO: technically this command could fail and I wouldn't want to mark nested?
-                            // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
-                            // enforcing nest generation probabilistically
-                            nest.start(target_position);
-
-                            continue;
-                        }
-                    }
-                }
-            }
-
-            if position.y - world_map.surface_level() > 8 && !nest.is_completed() {
-                // Check if the queen is sufficiently surounded by space while being deep underground and, if so, decide to start nesting.
-                let left_position = *position + Position::NEG_X;
-                let above_position = *position + Position::NEG_Y;
-                let right_position = *position + Position::X;
-
-                let has_valid_air_nest = world_map.is_all_element(
-                    &elements_query,
-                    &[left_position, *position, above_position, right_position],
-                    Element::Air,
-                );
-
-                let below_position = *position + Position::Y;
-                // Make sure there's stable place for ant child to be born
-                let behind_position = *position + orientation.turn_around().get_forward_delta();
-                let behind_below_position = behind_position + Position::Y;
-
-                let has_valid_dirt_nest = world_map.is_all_element(
-                    &elements_query,
-                    &[below_position, behind_below_position],
-                    Element::Dirt,
-                );
-
-                if has_valid_air_nest && has_valid_dirt_nest {
-                    nest.complete();
-
-                    // Spawn birthing component on QueenAnt
-                    commands.entity(ant_entity).insert(Birthing::default());
-
-                    if inventory.0 != None {
-                        let target_position = *position + orientation.get_forward_delta();
-                        let target_element_entity = world_map.element(target_position);
-                        commands.drop(ant_entity, target_position, *target_element_entity);
-                    }
-
-                    initiative.consume_action();
-                    continue;
-                }
-            }
-
-            if nest.is_completed() {
-                continue;
-            }
-        }
-
         // Add some randomness to worker behavior to make more lively, need to avoid applying this to queen because
         // too much randomness can kill her before she can nest
         if *role == AntRole::Worker {
@@ -119,7 +42,7 @@ pub fn ants_act(
                 // Randomly dig downwards / perpendicular to current orientation
                 if rng.f32() < settings.probabilities.random_dig
                 // Only queen should dig initial nest tunnel / breach the surface.
-                    && world_map.is_below_surface(&position)
+                    && world_map.is_underground(&position)
                 {
                     let target_position =
                         *position + orientation.rotate_forward().get_forward_delta();
@@ -194,13 +117,13 @@ pub fn ants_act(
             // Consider digging / picking up the element under various circumstances.
             if inventory.0 == None {
                 // When above ground, prioritize picking up food
-                let dig_food = *element == Element::Food && !world_map.is_below_surface(&position) && *role == AntRole::Worker;
+                let dig_food = *element == Element::Food && world_map.is_aboveground(&position) && *role == AntRole::Worker;
                 // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
-                let dig_sand = *element == Element::Sand && world_map.is_below_surface(&position);
+                let dig_sand = *element == Element::Sand && world_map.is_underground(&position);
                 // If digging would break through into an open area then don't do that.
                 // IRL this would be done by sensing pressure on the dirt, but in game we allow ants to look one unit ahead.
                 let mut dig_dirt = *element == Element::Dirt
-                    && world_map.is_below_surface(&position)
+                    && world_map.is_underground(&position)
                     && rng.f32() < settings.probabilities.below_surface_dirt_dig;
 
                 if dig_dirt {
@@ -225,17 +148,17 @@ pub fn ants_act(
 
                 // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
                 // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
-                let mut queen_dig = *element == Element::Dirt
-                    && world_map.is_below_surface(&position)
+                let mut queen_dig_nest = *element == Element::Dirt
+                    && world_map.is_underground(&position)
                     && *role == AntRole::Queen;
 
                 if position.y - world_map.surface_level() > 8 {
                     if rng.f32() > settings.probabilities.below_surface_queen_nest_dig {
-                        queen_dig = false;
+                        queen_dig_nest = false;
                     }
                 }
 
-                if dig_food || dig_sand || dig_dirt || queen_dig {
+                if dig_food || dig_sand || dig_dirt || queen_dig_nest {
                     let target_position = *position + orientation.get_forward_delta();
                     let target_element_entity = *world_map.element(target_position);
                     commands.dig(ant_entity, target_position, target_element_entity);
@@ -260,11 +183,11 @@ pub fn ants_act(
 
             // Prioritize dropping sand above ground and food below ground.
             let drop_sand = *inventory_item_element == Element::Sand
-                && !world_map.is_below_surface(&forward_position)
+                && world_map.is_aboveground(&forward_position)
                 && rng.f32() < settings.probabilities.above_surface_sand_drop;
 
             let drop_food = *inventory_item_element == Element::Food
-                && world_map.is_below_surface(&forward_position)
+                && world_map.is_underground(&forward_position)
                 && rng.f32() < settings.probabilities.below_surface_food_drop;
 
             if drop_sand || drop_food {

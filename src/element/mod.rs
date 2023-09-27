@@ -164,5 +164,3 @@ pub fn cleanup_element(mut commands: Commands, element_query: Query<Entity, With
         commands.entity(element).despawn_recursive();
     }
 }
-
-pub fn deinitialize_element() {}
