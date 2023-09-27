@@ -1,5 +1,5 @@
 use crate::{
-    ant::{AntOrientation, Initiative, Dead},
+    ant::{AntOrientation, Dead, Initiative},
     element::{commands::ElementCommandsExt, Air, Crushable},
     time::IsFastForwarding,
 };
@@ -10,7 +10,7 @@ use super::{
     settings::Settings,
 };
 use bevy::prelude::*;
-use bevy_turborand::{GlobalRng, DelegatedRng};
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
@@ -118,7 +118,12 @@ pub fn gravity_elements(
 // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
 pub fn gravity_ants(
-    mut ants_query: Query<(&AntOrientation, &mut Position, &mut Initiative, Option<&Dead>)>,
+    mut ants_query: Query<(
+        &AntOrientation,
+        &mut Position,
+        &mut Initiative,
+        Option<&Dead>,
+    )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
@@ -126,19 +131,26 @@ pub fn gravity_ants(
 ) {
     for (orientation, mut position, mut initiative, dead) in ants_query.iter_mut() {
         // Figure out foot direction
-        let below_feet_position = *position + orientation.rotate_forward().get_forward_delta();
+        let below_position = orientation.get_below_position(&position);
 
         let is_air_beneath_feet =
-            world_map.is_all_element(&elements_query, &[below_feet_position], Element::Air);
+            world_map.is_all_element(&elements_query, &[below_position], Element::Air);
 
-        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_feet_position);
+        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_position);
 
-        let is_chance_falling = orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
-        let is_chance_slipping = orientation.is_vertical() && rng.f32() < settings.probabilities.random_slip;
+        let is_chance_falling =
+            orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
+        let is_chance_slipping =
+            orientation.is_vertical() && rng.f32() < settings.probabilities.random_slip;
         // TODO: dead ants should be able to tumble to like sand/food
         let is_dead = dead.is_some();
 
-        if is_air_beneath_feet || is_out_of_bounds_beneath_feet || is_chance_falling || is_chance_slipping || is_dead {
+        if is_air_beneath_feet
+            || is_out_of_bounds_beneath_feet
+            || is_chance_falling
+            || is_chance_slipping
+            || is_dead
+        {
             let below_position = *position + Position::Y;
             let is_air_below =
                 world_map.is_all_element(&elements_query, &[below_position], Element::Air);

@@ -132,6 +132,17 @@ pub enum Element {
     Food,
 }
 
+impl Element {
+    pub fn is_diggable(&self) -> bool{
+        match self {
+            Element::Dirt => true,
+            Element::Sand => true,
+            Element::Food => true,
+            Element::Air => false,
+        }
+    }
+}
+
 pub fn initialize_element(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,

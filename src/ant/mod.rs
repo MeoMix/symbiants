@@ -86,6 +86,8 @@ pub struct Dead;
 #[reflect(Component)]
 pub struct Ant;
 
+impl Ant {}
+
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub enum AntRole {
@@ -273,7 +275,7 @@ impl AntOrientation {
         Self::new(self.facing, self.angle.rotate(rotation))
     }
 
-    pub fn get_forward_delta(&self) -> Position {
+    pub fn get_ahead_delta(&self) -> Position {
         let delta = match self.angle {
             Angle::Zero => Position::X,
             Angle::Ninety => Position::NEG_Y,
@@ -286,6 +288,37 @@ impl AntOrientation {
         } else {
             delta
         }
+    }
+
+    pub fn get_below_delta(&self) -> Position {
+        self.rotate_forward().get_ahead_delta()
+    }
+
+    pub fn get_behind_delta(&self) -> Position {
+        self.turn_around().get_ahead_delta()
+    }
+
+    pub fn get_above_delta(&self) -> Position {
+        self.rotate_backward().get_ahead_delta()
+    }
+
+    /// Returns the position of the tile in front of the ant's face.
+    pub fn get_ahead_position(&self, position: &Position) -> Position {
+        *position + self.get_ahead_delta()
+    }
+
+    /// Returns the position of the tile below the ant's feet.
+    pub fn get_below_position(&self, position: &Position) -> Position {
+        *position + self.get_below_delta()
+    }
+    /// Returns the position of the tile behind the ant's butt.
+    pub fn get_behind_position(&self, position: &Position) -> Position {
+        *position + self.get_behind_delta()
+    }
+
+    /// Returns the position of the tile above the ant's head.
+    pub fn get_above_position(&self, position: &Position) -> Position {
+        *position + self.get_above_delta()
     }
 
     pub fn all_orientations() -> Vec<Self> {
@@ -394,6 +427,5 @@ pub fn cleanup_ant(
         commands.entity(ant).despawn_recursive();
     }
 }
-
 
 // TODO: tests

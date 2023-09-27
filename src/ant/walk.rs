@@ -4,7 +4,9 @@ use crate::{
     settings::Settings,
 };
 
-use super::{birthing::Birthing, AntInventory, AntOrientation, AntRole, Dead, Initiative, nesting::Nesting};
+use super::{
+    birthing::Birthing, nesting::Nesting, AntInventory, AntOrientation, AntRole, Dead, Initiative,
+};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
@@ -18,7 +20,7 @@ pub fn ants_walk(
             &AntRole,
             &AntInventory,
             // TODO: Optional component is usually a bad sign of encapsulation - feels like walking can't be as separate as I want it to be?
-            Option<&Nesting>
+            Option<&Nesting>,
         ),
         (Without<Dead>, Without<Birthing>),
     >,
@@ -27,7 +29,9 @@ pub fn ants_walk(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    for (mut initiative, mut position, mut orientation, role, inventory, nesting) in ants_query.iter_mut() {
+    for (mut initiative, mut position, mut orientation, role, inventory, nesting) in
+        ants_query.iter_mut()
+    {
         // If ant lost the ability to move (potentially due to falling through the air) then skip walking around.
         if !initiative.can_move() {
             continue;
@@ -36,14 +40,13 @@ pub fn ants_walk(
         // An ant might not have stable footing even though it's not falling through the air. This can occur when an ant is
         // standing perpendicular to the ground, with ground to the south of them, and the block they're walking on is dug up.
         // An ant without stable footing will turn in an attempt to find stable footing.
-        let under_feet_position = *position + orientation.rotate_forward().get_forward_delta();
-        let has_air_under_feet =
-            world_map.is_element(&elements_query, under_feet_position, Element::Air);
+        let below_position = orientation.get_below_position(&position);
+        let has_air_below = world_map.is_element(&elements_query, below_position, Element::Air);
 
         // An ant might be attempting to walk forward into a solid block. If so, they'll turn and walk up the block.
-        let forward_position = *position + orientation.get_forward_delta();
+        let ahead_position = orientation.get_ahead_position(&position);
         let has_air_ahead = world_map
-            .get_element(forward_position)
+            .get_element(ahead_position)
             .map_or(false, |entity| {
                 elements_query
                     .get(*entity)
@@ -60,27 +63,24 @@ pub fn ants_walk(
             && world_map.is_aboveground(&position)
             && inventory.0 == None
             && orientation.is_horizontal()
-            && nesting.is_some() && nesting.unwrap().position().is_some()
+            && nesting.is_some()
         {
-            let nest_position = nesting.unwrap().position().unwrap();
-            // distance from position to nest position:
-            let distance_to_nest =
-                (position.x - nest_position.x).abs() + (position.y - nest_position.y).abs();
+            if let Nesting::Started(nest_position) = nesting.unwrap() {
+                // distance from position to nest position:
+                let distance_to_nest =
+                    (position.x - nest_position.x).abs() + (position.y - nest_position.y).abs();
 
-            // distance from forward position to nest position:
-            let distance_to_nest_forward = (forward_position.x - nest_position.x).abs()
-                + (forward_position.y - nest_position.y).abs();
+                // distance from forward position to nest position:
+                let distance_to_nest_forward = (ahead_position.x - nest_position.x).abs()
+                    + (ahead_position.y - nest_position.y).abs();
 
-            if distance_to_nest_forward > distance_to_nest {
-                is_queen_turning_towards_nest = true;
+                if distance_to_nest_forward > distance_to_nest {
+                    is_queen_turning_towards_nest = true;
+                }
             }
         }
 
-        if has_air_under_feet
-            || !has_air_ahead
-            || is_turning_randomly
-            || is_queen_turning_towards_nest
-        {
+        if has_air_below || !has_air_ahead || is_turning_randomly || is_queen_turning_towards_nest {
             *orientation = get_turned_orientation(
                 &orientation,
                 &position,
@@ -95,7 +95,7 @@ pub fn ants_walk(
 
         // Definitely walking forward, but if that results in standing over air then turn on current block.
         let foot_orientation = orientation.rotate_forward();
-        let foot_position = forward_position + foot_orientation.get_forward_delta();
+        let foot_position = ahead_position + foot_orientation.get_ahead_delta();
 
         if let Some(foot_entity) = world_map.get_element(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
@@ -106,7 +106,7 @@ pub fn ants_walk(
                 *orientation = foot_orientation;
             } else {
                 // Just move forward
-                *position = forward_position;
+                *position = ahead_position;
             }
 
             initiative.consume_movement();
@@ -169,8 +169,8 @@ fn is_valid_location(
     }
 
     // Get the location beneath the ants' feet and check for air
-    let foot_position = position + orientation.rotate_forward().get_forward_delta();
-    let Some(entity) = world_map.get_element(foot_position) else {
+    let below_position = orientation.get_below_position(&position);
+    let Some(entity) = world_map.get_element(below_position) else {
         return false;
     };
     let Ok(element) = elements_query.get(*entity) else {

@@ -28,6 +28,7 @@ pub struct Settings {
     pub world_height: isize,
     // sand turns to dirt when stacked this high
     pub compact_sand_depth: isize,
+    pub minimum_nest_depth: isize,
     pub initial_dirt_percent: f32,
     pub initial_ant_worker_count: isize,
     pub ant_color: Color,
@@ -57,6 +58,7 @@ impl Default for Settings {
             world_width: 144,
             world_height: 81,
             compact_sand_depth: 15,
+            minimum_nest_depth: 8,
             initial_dirt_percent: 3.0 / 4.0,
             initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!

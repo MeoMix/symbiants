@@ -77,7 +77,7 @@ pub fn ants_birthing(
         birthing.tick(rate_of_birthing);
 
         if birthing.is_ready() && initiative.can_act() {
-            let behind_position = *position + orientation.turn_around().get_forward_delta();
+            let behind_position = orientation.get_behind_position(position);
 
             // NOTE: As written, this could spawn directly into a piece of dirt/food/etc.
             // This isn't going to cause the application to panic, but isn't visually appealing, either.

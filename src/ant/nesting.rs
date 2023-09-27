@@ -14,22 +14,10 @@ use bevy_turborand::prelude::*;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct Nesting {
-    position: Option<Position>,
-}
-
-impl Nesting {
-    pub fn is_started(&self) -> bool {
-        self.position.is_some()
-    }
-
-    pub fn start(&mut self, position: Position) {
-        self.position = Some(position);
-    }
-
-    pub fn position(&self) -> &Option<Position> {
-        &self.position
-    }
+pub enum Nesting {
+    #[default]
+    NotStarted,
+    Started(Position),
 }
 
 pub fn initialize_nesting(
@@ -64,72 +52,197 @@ pub fn ants_nesting(
             continue;
         }
 
-        if world_map.is_aboveground(&position) && !nesting.is_started() {
-            if inventory.0 == None {
-                if rng.f32() < settings.probabilities.above_surface_queen_nest_dig {
-                    // If x position is within 20% of world edge then don't dig there
-                    let offset = settings.world_width / 5;
-                    let is_too_near_left_edge = position.x < offset;
-                    let is_too_near_right_edge = position.x > settings.world_width - offset;
-
-                    if !is_too_near_left_edge && !is_too_near_right_edge {
-                        let target_position =
-                            *position + orientation.rotate_forward().get_forward_delta();
-                        let target_element_entity = *world_map.element(target_position);
-                        commands.dig(ant_entity, target_position, target_element_entity);
-
-                        initiative.consume_action();
-
-                        // TODO: technically this command could fail and I wouldn't want to mark nested?
-                        // TODO: replace this with pheromones - queen should be able to find her way back to dig site via pheromones rather than
-                        // enforcing nest generation probabilistically
-                        nesting.start(target_position);
-
-                        continue;
-                    }
-                }
-            }
+        if can_start_nesting(
+            &nesting,
+            &mut rng,
+            &inventory,
+            &position,
+            &orientation,
+            &world_map,
+            &elements_query,
+            &settings,
+        ) {
+            start_digging_nest(
+                &position,
+                &orientation,
+                ant_entity,
+                &mut initiative,
+                &mut nesting,
+                &world_map,
+                &mut commands,
+            );
+            continue;
         }
 
-        if position.y - world_map.surface_level() > 8 {
-            // Check if the queen is sufficiently surounded by space while being deep underground and, if so, decide to start nesting.
-            let left_position = *position + Position::NEG_X;
-            let above_position = *position + Position::NEG_Y;
-            let right_position = *position + Position::X;
-
-            let has_valid_air_nest = world_map.is_all_element(
-                &elements_query,
-                &[left_position, *position, above_position, right_position],
-                Element::Air,
+        if can_finish_nesting(
+            &position,
+            &orientation,
+            &world_map,
+            &elements_query,
+            &settings,
+        ) {
+            finish_digging_nest(
+                &position,
+                &orientation,
+                ant_entity,
+                &inventory,
+                &mut initiative,
+                &world_map,
+                &mut commands,
             );
-
-            let below_position = *position + Position::Y;
-            // Make sure there's stable place for ant child to be born
-            let behind_position = *position + orientation.turn_around().get_forward_delta();
-            let behind_below_position = behind_position + Position::Y;
-
-            let has_valid_dirt_nest = world_map.is_all_element(
-                &elements_query,
-                &[below_position, behind_below_position],
-                Element::Dirt,
-            );
-
-            if has_valid_air_nest && has_valid_dirt_nest {
-                // Stop queen from nesting
-                commands.entity(ant_entity).remove::<Nesting>();
-
-                // Spawn birthing component on QueenAnt
-                commands.entity(ant_entity).insert(Birthing::default());
-
-                if inventory.0 != None {
-                    let target_position = *position + orientation.get_forward_delta();
-                    let target_element_entity = world_map.element(target_position);
-                    commands.drop(ant_entity, target_position, *target_element_entity);
-                }
-
-                initiative.consume_action();
-                continue;
-            }
+            continue;
         }
     }
+}
+
+/// Returns true if ant is at a valid location to begin digging out a nest chamber.
+/// This requires six things:
+///     1) The ant must not already be creating a nest.
+///     2) The ant must not be carrying anything.
+///     3) The ant must want to dig a nest (based on chance).
+///     4) The ant must be aboveground.
+///     5) The ant must not be too close to the edge of the world.
+///     6) The ant must be standing on a diggable element.
+/// TODO:
+///     * Instead of arbitrarily checking if ant is near edge of the map, place immovable rocks which dissuade ant from digging.
+fn can_start_nesting(
+    nesting: &Nesting,
+    rng: &mut ResMut<GlobalRng>,
+    inventory: &AntInventory,
+    ant_position: &Position,
+    ant_orientation: &AntOrientation,
+    world_map: &WorldMap,
+    elements_query: &Query<&Element>,
+    settings: &Settings,
+) -> bool {
+    let should_consider_digging = *nesting == Nesting::NotStarted
+        && rng.f32() < settings.probabilities.above_surface_queen_nest_dig
+        && inventory.0 == None;
+
+    if !should_consider_digging {
+        return false;
+    }
+
+    // If x position is within 20% of world edge then don't dig there
+    let offset = settings.world_width / 5;
+    let is_too_near_world_edge =
+        ant_position.x < offset || ant_position.x > settings.world_width - offset;
+
+    let has_valid_dig_site = world_map.is_aboveground(&ant_position) && !is_too_near_world_edge;
+
+    let dig_position = ant_orientation.get_below_position(ant_position);
+    let dig_target_entity = *world_map.element(dig_position);
+
+    let is_element_diggable = elements_query
+        .get(dig_target_entity)
+        .map_or(false, |element| element.is_diggable());
+
+    has_valid_dig_site && is_element_diggable
+}
+
+/// Start digging a nest by digging its entrance underneath the ant's current position
+/// TODO:
+///     * `commands.dig` could fail (conceptually, if worker ants existed) and, if it did fail, it would be wrong to mark the nest as having been started.
+///     * Prefer marking nest location with pheromone rather than tracking position.
+fn start_digging_nest(
+    ant_position: &Position,
+    ant_orientation: &AntOrientation,
+    ant_entity: Entity,
+    initiative: &mut Initiative,
+    nesting: &mut Nesting,
+    world_map: &WorldMap,
+    commands: &mut Commands,
+) {
+    let dig_position = ant_orientation.get_below_position(ant_position);
+    let dig_target_entity = *world_map.element(dig_position);
+    commands.dig(ant_entity, dig_position, dig_target_entity);
+
+    initiative.consume_action();
+    *nesting = Nesting::Started(dig_position);
+}
+
+/// Returns true if ant is at a valid location to settle down and begin giving birth.
+/// This requires four things:
+///     1) The ant must be deep enough in the ground.
+///     2) The ant must be horizontal - newborn ants shouldn't fall.
+///     3) The ant must be in a spacious chamber - surrounded by air to its left/right/above.
+///     4) The ant must be standing on a sturdy floor - dirt underneath it and behind it.
+/// TODO:
+///     * The sturdy floor check looks for Dirt, but Sand/Food/Rock is sturdy.
+fn can_finish_nesting(
+    ant_position: &Position,
+    ant_orientation: &AntOrientation,
+    world_map: &WorldMap,
+    elements_query: &Query<&Element>,
+    settings: &Settings,
+) -> bool {
+    let is_chamber_sufficiently_deep =
+        ant_position.y - world_map.surface_level() > settings.minimum_nest_depth;
+    if !is_chamber_sufficiently_deep {
+        return false;
+    }
+
+    if !ant_orientation.is_horizontal() {
+        return false;
+    }
+
+    let behind_position: Position = ant_orientation.get_behind_position(ant_position);
+    let above_position = ant_orientation.get_above_position(ant_position);
+    let ahead_position = ant_orientation.get_ahead_position(ant_position);
+
+    let is_chamber_spacious = world_map.is_all_element(
+        &elements_query,
+        &[
+            *ant_position,
+            behind_position,
+            above_position,
+            ahead_position,
+        ],
+        Element::Air,
+    );
+
+    if !is_chamber_spacious {
+        return false;
+    }
+
+    let below_position = ant_orientation.get_below_position(ant_position);
+    let behind_below_position = below_position + ant_orientation.get_behind_delta();
+
+    let is_chamber_floor_sturdy = world_map.is_all_element(
+        &elements_query,
+        &[below_position, behind_below_position],
+        Element::Dirt,
+    );
+
+    if !is_chamber_floor_sturdy {
+        return false;
+    }
+
+    true
+}
+
+/// Finish digging a nest by removing the Nesting instinct and adding the Birthing instinct.
+/// Also, drop anything the ant is carrying so that they can eat food later.
+fn finish_digging_nest(
+    ant_position: &Position,
+    ant_orientation: &AntOrientation,
+    ant_entity: Entity,
+    ant_inventory: &AntInventory,
+    initiative: &mut Initiative,
+    world_map: &WorldMap,
+    commands: &mut Commands,
+) {
+    commands
+        .entity(ant_entity)
+        .remove::<Nesting>()
+        .insert(Birthing::default());
+
+    // FIXME: Ant keeps dropping and then picking up the thing just dropped.
+    if ant_inventory.0 != None {
+        let drop_position = ant_orientation.get_ahead_position(ant_position);
+        let drop_target_entity = world_map.element(drop_position);
+        commands.drop(ant_entity, drop_position, *drop_target_entity);
+    }
+
+    initiative.consume_action();
 }

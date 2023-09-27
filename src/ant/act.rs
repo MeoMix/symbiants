@@ -5,7 +5,10 @@ use crate::{
     settings::Settings,
 };
 
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
+use super::{
+    birthing::Birthing, commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead,
+    Initiative,
+};
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -18,6 +21,7 @@ pub fn ants_act(
             &Position,
             &AntRole,
             Entity,
+            Option<&Birthing>,
         ),
         Without<Dead>,
     >,
@@ -28,7 +32,7 @@ pub fn ants_act(
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
-    for (orientation, inventory, mut initiative, position, role, ant_entity) in
+    for (orientation, inventory, mut initiative, position, role, ant_entity, birthing) in
         ants_query.iter_mut()
     {
         if !initiative.can_act() {
@@ -44,11 +48,10 @@ pub fn ants_act(
                 // Only queen should dig initial nest tunnel / breach the surface.
                     && world_map.is_underground(&position)
                 {
-                    let target_position =
-                        *position + orientation.rotate_forward().get_forward_delta();
+                    let ahead_position = orientation.get_ahead_position(position);
 
-                    if world_map.is_within_bounds(&target_position) {
-                        let target_element_entity = *world_map.element(target_position);
+                    if world_map.is_within_bounds(&ahead_position) {
+                        let target_element_entity = *world_map.element(ahead_position);
 
                         let target_element = elements_query.get(target_element_entity);
 
@@ -60,12 +63,12 @@ pub fn ants_act(
 
                         if dig_dirt {
                             // Don't allow digging through dirt underground if it would break through into another tunnel or break through the surface.
-                            let forward_target_position =
-                                target_position + orientation.rotate_forward().get_forward_delta();
+                            let ahead_ahead_position =
+                                orientation.get_ahead_position(&ahead_position);
 
-                            if world_map.is_within_bounds(&forward_target_position) {
+                            if world_map.is_within_bounds(&ahead_ahead_position) {
                                 let forward_target_element_entity =
-                                    world_map.element(forward_target_position);
+                                    world_map.element(ahead_ahead_position);
 
                                 let Ok(forward_target_element) =
                                     elements_query.get(*forward_target_element_entity)
@@ -82,7 +85,7 @@ pub fn ants_act(
                         }
 
                         if allow_dig {
-                            commands.dig(ant_entity, target_position, target_element_entity);
+                            commands.dig(ant_entity, ahead_position, target_element_entity);
 
                             initiative.consume_action();
                             continue;
@@ -100,15 +103,15 @@ pub fn ants_act(
             }
         }
 
-        let forward_position = *position + orientation.get_forward_delta();
+        let ahead_position = orientation.get_ahead_position(position);
 
-        if !world_map.is_within_bounds(&forward_position) {
+        if !world_map.is_within_bounds(&ahead_position) {
             // Hit an edge - need to turn.
             continue;
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = world_map.get_element(forward_position).unwrap();
+        let entity = world_map.get_element(ahead_position).unwrap();
         let Ok(element) = elements_query.get(*entity) else {
             panic!("act - expected entity to exist")
         };
@@ -117,23 +120,28 @@ pub fn ants_act(
             // Consider digging / picking up the element under various circumstances.
             if inventory.0 == None {
                 // When above ground, prioritize picking up food
-                let dig_food = *element == Element::Food && world_map.is_aboveground(&position) && *role == AntRole::Worker;
+                let dig_food = *element == Element::Food
+                    && world_map.is_aboveground(&position)
+                    && *role == AntRole::Worker;
                 // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
-                let dig_sand = *element == Element::Sand && world_map.is_underground(&position);
+                let dig_sand = *element == Element::Sand
+                    && world_map.is_underground(&position)
+                    && birthing.is_none();
                 // If digging would break through into an open area then don't do that.
                 // IRL this would be done by sensing pressure on the dirt, but in game we allow ants to look one unit ahead.
                 let mut dig_dirt = *element == Element::Dirt
                     && world_map.is_underground(&position)
-                    && rng.f32() < settings.probabilities.below_surface_dirt_dig;
+                    && rng.f32() < settings.probabilities.below_surface_dirt_dig
+                    && birthing.is_none();
 
                 if dig_dirt {
                     // Don't allow digging through dirt underground if it would break through into another tunnel or break through the surface.
-                    let next_forward_position = forward_position + orientation.get_forward_delta();
-                    let next_forward_element_entity = world_map.get_element(next_forward_position);
+                    let ahead_ahead_position = orientation.get_ahead_position(&ahead_position);
+                    let ahead_ahead_element_entity = world_map.get_element(ahead_ahead_position);
 
-                    if next_forward_element_entity.is_some() {
+                    if ahead_ahead_element_entity.is_some() {
                         let Ok(next_forward_element) =
-                            elements_query.get(*next_forward_element_entity.unwrap())
+                            elements_query.get(*ahead_ahead_element_entity.unwrap())
                         else {
                             panic!("act - expected entity to exist")
                         };
@@ -148,6 +156,7 @@ pub fn ants_act(
 
                 // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
                 // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
+                // TODO: support nest location getting unintentionally filled in by dirt/sand/food
                 let mut queen_dig_nest = *element == Element::Dirt
                     && world_map.is_underground(&position)
                     && *role == AntRole::Queen;
@@ -159,9 +168,9 @@ pub fn ants_act(
                 }
 
                 if dig_food || dig_sand || dig_dirt || queen_dig_nest {
-                    let target_position = *position + orientation.get_forward_delta();
-                    let target_element_entity = *world_map.element(target_position);
-                    commands.dig(ant_entity, target_position, target_element_entity);
+                    let dig_position = orientation.get_ahead_position(position);
+                    let dig_target_entity = *world_map.element(dig_position);
+                    commands.dig(ant_entity, dig_position, dig_target_entity);
 
                     initiative.consume_action();
                     continue;
@@ -183,17 +192,17 @@ pub fn ants_act(
 
             // Prioritize dropping sand above ground and food below ground.
             let drop_sand = *inventory_item_element == Element::Sand
-                && world_map.is_aboveground(&forward_position)
+                && world_map.is_aboveground(&ahead_position)
                 && rng.f32() < settings.probabilities.above_surface_sand_drop;
 
             let drop_food = *inventory_item_element == Element::Food
-                && world_map.is_underground(&forward_position)
+                && world_map.is_underground(&ahead_position)
                 && rng.f32() < settings.probabilities.below_surface_food_drop;
 
             if drop_sand || drop_food {
                 // Drop inventory in front of ant
-                let target_element_entity = world_map.element(forward_position);
-                commands.drop(ant_entity, forward_position, *target_element_entity);
+                let target_element_entity = world_map.element(ahead_position);
+                commands.drop(ant_entity, ahead_position, *target_element_entity);
 
                 initiative.consume_action();
                 continue;
