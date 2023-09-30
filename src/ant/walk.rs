@@ -4,44 +4,61 @@ use crate::{
     settings::Settings,
 };
 
-use super::{
-    birthing::Birthing, nesting::Nesting, AntInventory, AntOrientation, AntRole, Dead, Initiative,
-};
+use super::{AntOrientation, Dead, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
+/// Ants walking vertically may have the ground beneath their feet disappear.
+/// Usually, this means gravity will take over and they'll fall downward, but sometimes they have a stable
+/// element to the south of them. In that case, they'll rotate to regain their footing.
+/// TODO:
+///     * I think there's a bug where ant standing adjacent to the edge of the world map will not fall because it's not air.
+///     * Code could be written better such that movement initiative isn't consumed if there's not a valid orientation to turn to.
+pub fn ants_stabilize_footing_movement(
+    mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation), Without<Dead>>,
+    elements_query: Query<&Element>,
+    world_map: Res<WorldMap>,
+    mut rng: ResMut<GlobalRng>,
+) {
+    for (mut initiative, position, mut orientation) in ants_query.iter_mut() {
+        if !initiative.can_move() {
+            continue;
+        }
+
+        let below_position = orientation.get_below_position(&position);
+        let has_air_below = world_map.is_element(&elements_query, below_position, Element::Air);
+        if !has_air_below {
+            continue;
+        }
+
+        *orientation = get_turned_orientation(
+            &orientation,
+            &position,
+            &elements_query,
+            &world_map,
+            &mut rng,
+        );
+
+        info!("ants_stabilize_footing_movement - consumed movement");
+        initiative.consume_movement();
+    }
+}
+
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
-    mut ants_query: Query<
-        (
-            &mut Initiative,
-            &mut Position,
-            &mut AntOrientation,
-            &AntRole,
-            &AntInventory,
-            // TODO: Optional component is usually a bad sign of encapsulation - feels like walking can't be as separate as I want it to be?
-            Option<&Nesting>,
-        ),
-        (Without<Dead>, Without<Birthing>),
-    >,
+    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), Without<Dead>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    for (mut initiative, mut position, mut orientation, role, inventory, nesting) in
-        ants_query.iter_mut()
-    {
-        // If ant lost the ability to move (potentially due to falling through the air) then skip walking around.
+    for (mut initiative, mut position, mut orientation) in ants_query.iter_mut() {
         if !initiative.can_move() {
+            info!("ants_walk - initiative cannot move");
             continue;
         }
 
-        // An ant might not have stable footing even though it's not falling through the air. This can occur when an ant is
-        // standing perpendicular to the ground, with ground to the south of them, and the block they're walking on is dug up.
-        // An ant without stable footing will turn in an attempt to find stable footing.
-        let below_position = orientation.get_below_position(&position);
-        let has_air_below = world_map.is_element(&elements_query, below_position, Element::Air);
+        info!("ants_walk - can move");
 
         // An ant might be attempting to walk forward into a solid block. If so, they'll turn and walk up the block.
         let ahead_position = orientation.get_ahead_position(&position);
@@ -56,31 +73,7 @@ pub fn ants_walk(
         // An ant might turn randomly. This is to prevent ants from getting stuck in loops and add visual variety.
         let is_turning_randomly = rng.chance(settings.probabilities.random_turn.into());
 
-        // Queen should head back to the nest when dropping sand off above surface. This is a hacky
-        // stub for now. Pheromones would be better?
-        let mut is_queen_turning_towards_nest = false;
-        if *role == AntRole::Queen
-            && world_map.is_aboveground(&position)
-            && inventory.0 == None
-            && orientation.is_horizontal()
-            && nesting.is_some()
-        {
-            if let Nesting::Started(nest_position) = nesting.unwrap() {
-                // distance from position to nest position:
-                let distance_to_nest =
-                    (position.x - nest_position.x).abs() + (position.y - nest_position.y).abs();
-
-                // distance from forward position to nest position:
-                let distance_to_nest_forward = (ahead_position.x - nest_position.x).abs()
-                    + (ahead_position.y - nest_position.y).abs();
-
-                if distance_to_nest_forward > distance_to_nest {
-                    is_queen_turning_towards_nest = true;
-                }
-            }
-        }
-
-        if has_air_below || !has_air_ahead || is_turning_randomly || is_queen_turning_towards_nest {
+        if !has_air_ahead || is_turning_randomly {
             *orientation = get_turned_orientation(
                 &orientation,
                 &position,
@@ -114,7 +107,8 @@ pub fn ants_walk(
     }
 }
 
-fn get_turned_orientation(
+// TODO: coupling..
+pub fn get_turned_orientation(
     orientation: &AntOrientation,
     position: &Position,
     elements_query: &Query<&Element>,

@@ -6,6 +6,7 @@ mod element;
 mod gravity;
 mod grid;
 mod pointer;
+mod pheromone;
 mod name_list;
 mod pancam;
 mod settings;

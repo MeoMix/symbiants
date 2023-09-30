@@ -3,12 +3,16 @@ use crate::{
     common::register,
     element::Element,
     grid::{position::Position, WorldMap},
+    pheromone::{Pheromone, PheromoneMap},
     settings::Settings,
 };
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, Dead, Initiative};
+use super::{
+    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Dead,
+    Initiative,
+};
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -27,7 +31,59 @@ pub fn initialize_nesting(
     register::<Nesting>(&app_type_registry, &mut saveable_registry);
 }
 
-pub fn ants_nesting(
+/// Ants that are building the initial nest (usually just a queen) should prioritize making it back to the nest
+/// quickly rather than wandering aimlessly on the surface. They still need to wait until they drop their inventory
+/// otherwise they won't walk away from the nest their excavated dirt.
+/// TODO:
+///     * Code checks orientation.is_vertical() to simplify calculations, but should be possible to turn towards nest while vertical.
+pub fn ants_nesting_movement(
+    mut ants_query: Query<
+        (
+            &mut Initiative,
+            &Position,
+            &mut AntOrientation,
+            &AntInventory,
+            &Nesting,
+        ),
+        Without<Dead>,
+    >,
+    elements_query: Query<&Element>,
+    world_map: Res<WorldMap>,
+    mut rng: ResMut<GlobalRng>,
+) {
+    for (mut initiative, position, mut orientation, inventory, nesting) in ants_query.iter_mut() {
+        if !initiative.can_move() {
+            continue;
+        }
+
+        if world_map.is_underground(&position) || inventory.0 != None || orientation.is_vertical() {
+            continue;
+        }
+
+        if let Nesting::Started(nest_position) = nesting {
+            let ahead_position = orientation.get_ahead_position(&position);
+
+            if position.distance(nest_position) > ahead_position.distance(nest_position) {
+                continue;
+            }
+        } else {
+            continue;
+        }
+
+        *orientation = get_turned_orientation(
+            &orientation,
+            &position,
+            &elements_query,
+            &world_map,
+            &mut rng,
+        );
+
+        info!("ants_nesting_movement - consumed movement");
+        initiative.consume_movement();
+    }
+}
+
+pub fn ants_nesting_action(
     mut ants_query: Query<
         (
             &mut Nesting,
@@ -44,6 +100,7 @@ pub fn ants_nesting(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
+    mut pheromone_map: ResMut<PheromoneMap>,
 ) {
     for (mut nesting, orientation, inventory, mut initiative, position, ant_entity) in
         ants_query.iter_mut()
@@ -70,17 +127,12 @@ pub fn ants_nesting(
                 &mut nesting,
                 &world_map,
                 &mut commands,
+                &mut pheromone_map,
             );
             continue;
         }
 
-        if can_finish_nesting(
-            &position,
-            &orientation,
-            &world_map,
-            &elements_query,
-            &settings,
-        ) {
+        if can_finish_nesting(&position, &orientation, &world_map, &elements_query) {
             finish_digging_nest(
                 &position,
                 &orientation,
@@ -152,18 +204,23 @@ fn start_digging_nest(
     nesting: &mut Nesting,
     world_map: &WorldMap,
     commands: &mut Commands,
+    pheromone_map: &mut ResMut<PheromoneMap>,
 ) {
+    // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
     let dig_target_entity = *world_map.element(dig_position);
     commands.dig(ant_entity, dig_position, dig_target_entity);
 
+    // TODO: maybe consume movement here too since it looks weird when digging down and moving forward in same frame?
     initiative.consume_action();
     *nesting = Nesting::Started(dig_position);
+
+    pheromone_map.0.insert(dig_position, Pheromone::Tunnel);
 }
 
 /// Returns true if ant is at a valid location to settle down and begin giving birth.
 /// This requires four things:
-///     1) The ant must be deep enough in the ground.
+///     1) The ant must be underground.
 ///     2) The ant must be horizontal - newborn ants shouldn't fall.
 ///     3) The ant must be in a spacious chamber - surrounded by air to its left/right/above.
 ///     4) The ant must be standing on a sturdy floor - dirt underneath it and behind it.
@@ -174,15 +231,12 @@ fn can_finish_nesting(
     ant_orientation: &AntOrientation,
     world_map: &WorldMap,
     elements_query: &Query<&Element>,
-    settings: &Settings,
 ) -> bool {
-    let is_chamber_sufficiently_deep =
-        ant_position.y - world_map.surface_level() > settings.minimum_nest_depth;
-    if !is_chamber_sufficiently_deep {
+    if world_map.is_aboveground(ant_position) {
         return false;
     }
 
-    if !ant_orientation.is_horizontal() {
+    if ant_orientation.is_vertical() || ant_orientation.is_upside_down() {
         return false;
     }
 
@@ -243,5 +297,6 @@ fn finish_digging_nest(
         commands.drop(ant_entity, drop_position, *drop_target_entity);
     }
 
-    initiative.consume_action();
+    // Ensure that ant doesn't try to move or act after settling down
+    initiative.consume();
 }

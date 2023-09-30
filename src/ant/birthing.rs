@@ -72,6 +72,10 @@ pub fn ants_birthing(
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()
     {
+        // Once an ant starts giving birth - they're incapacitated and cannot move.
+        info!("ants_birthing - consumed movement");
+        initiative.consume_movement();
+
         // Create offspring once per full real-world hour.
         let rate_of_birthing = birthing.max() / (SECONDS_PER_HOUR as f32 * ticks_per_second.0);
         birthing.tick(rate_of_birthing);

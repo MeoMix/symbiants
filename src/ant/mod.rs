@@ -144,6 +144,11 @@ impl Initiative {
         self.timer == 0 && self.has_action
     }
 
+    pub fn consume(&mut self) {
+        self.has_action = false;
+        self.has_movement = false;
+    }
+
     pub fn consume_action(&mut self) {
         self.has_action = false;
     }

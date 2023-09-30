@@ -154,23 +154,12 @@ pub fn ants_act(
                     }
                 }
 
-                // Once at sufficient depth it's not guaranteed that queen will want to continue digging deeper.
-                // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
-                // TODO: support nest location getting unintentionally filled in by dirt/sand/food
-                let mut queen_dig_nest = *element == Element::Dirt
-                    && world_map.is_underground(&position)
-                    && *role == AntRole::Queen;
-
-                if position.y - world_map.surface_level() > 8 {
-                    if rng.f32() > settings.probabilities.below_surface_queen_nest_dig {
-                        queen_dig_nest = false;
-                    }
-                }
-
-                if dig_food || dig_sand || dig_dirt || queen_dig_nest {
+                if dig_food || dig_sand || dig_dirt {
                     let dig_position = orientation.get_ahead_position(position);
                     let dig_target_entity = *world_map.element(dig_position);
                     commands.dig(ant_entity, dig_position, dig_target_entity);
+
+                    info!("digging ahead");
 
                     initiative.consume_action();
                     continue;

@@ -45,6 +45,5 @@ pub fn initialize_common(
     register::<Id>(&app_type_registry, &mut saveable_registry);
     register::<Option<Id>>(&app_type_registry, &mut saveable_registry);
     register::<Uuid>(&app_type_registry, &mut saveable_registry);
-    register::<Option<Position>>(&app_type_registry, &mut saveable_registry);
     register::<Position>(&app_type_registry, &mut saveable_registry);
 }

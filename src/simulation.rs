@@ -7,17 +7,19 @@ use crate::{
         act::ants_act,
         ants_initiative,
         birthing::{ants_birthing, initialize_birthing},
-        nesting::{ants_nesting, initialize_nesting},
         cleanup_ant,
         hunger::ants_hunger,
-        initialize_ant, setup_ant,
+        initialize_ant,
+        nesting::{ants_nesting_action, ants_nesting_movement, initialize_nesting},
+        setup_ant,
         ui::{
-            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position,
+            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
+            on_update_ant_position,
         },
-        walk::ants_walk,
+        walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{cleanup_background, setup_background},
-    common::{initialize_common},
+    common::initialize_common,
     element::{
         cleanup_element, initialize_element, setup_element,
         ui::{on_spawn_element, on_update_element_position},
@@ -30,6 +32,10 @@ use crate::{
             periodic_save_world_state, setup_window_onunload_save_world_state,
         },
         setup_caches,
+    },
+    pheromone::{
+        ants_chamber_pheromone, ants_chamber_pheromone_act, ants_tunnel_pheromone,
+        ants_tunnel_pheromone_act, ants_tunnel_pheromone_move, initialize_pheromone,
     },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     settings::{deinitialize_settings, initialize_settings},
@@ -64,6 +70,7 @@ impl Plugin for SimulationPlugin {
                 initialize_birthing,
                 initialize_element,
                 initialize_ant,
+                initialize_pheromone,
                 try_load_from_save,
             )
                 .chain(),
@@ -105,24 +112,58 @@ impl Plugin for SimulationPlugin {
             FixedUpdate,
             (
                 (
-                    // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
-                    // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
-                    gravity_elements,
-                    gravity_ants,
-                    // Gravity side-effects can run whenever with little difference.
-                    gravity_crush,
-                    gravity_stability,
-                    // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
-                    // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
-                    ants_walk,
-                    // Apply specific ant actions in priority order because ants take a maximum of one action per tick.
-                    // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
-                    ants_hunger,
-                    ants_birthing,
-                    ants_nesting,
-                    ants_act,
-                    // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
-                    ants_initiative,
+                    (
+                        // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
+                        // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
+                        gravity_elements,
+                        gravity_ants,
+                        // Gravity side-effects can run whenever with little difference.
+                        gravity_crush,
+                        gravity_stability,
+                    )
+                        .chain(),
+                    (
+                        // Apply specific ant actions in priority order because ants take a maximum of one action per tick.
+                        // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
+                        ants_stabilize_footing_movement,
+                        // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
+                        (ants_hunger, apply_deferred).chain(),
+                        (ants_birthing, apply_deferred).chain(),
+                        (
+                            // Apply Nesting Logic
+                            ants_nesting_movement,
+                            ants_nesting_action,
+                            apply_deferred,
+                        )
+                            .chain(),
+                        (
+                            // Apply Pheromones
+                            ants_tunnel_pheromone,
+                            ants_chamber_pheromone,
+                            apply_deferred,
+                        )
+                            .chain(),
+                        (
+                            // Apply Tunneling Logic
+                            ants_tunnel_pheromone_move,
+                            ants_tunnel_pheromone_act,
+                            apply_deferred,
+                        )
+                            .chain(),
+                        (
+                            // Apply Chambering Logic
+                            // TODO: ants_chamber_pheromone_move
+                            ants_chamber_pheromone_act,
+                            apply_deferred,
+                        )
+                            .chain(),
+                        // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
+                        // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
+                        (ants_walk, ants_act, apply_deferred).chain(),
+                        // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
+                        ants_initiative,
+                    )
+                        .chain(),
                     check_story_over,
                 )
                     .chain(),

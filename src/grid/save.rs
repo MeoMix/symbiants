@@ -34,6 +34,8 @@ pub fn periodic_save_world_state(
     if let Some(snapshot) = create_save_snapshot(world) {
         *SAVE_SNAPSHOT.lock().unwrap() = Some(snapshot);
         *last_snapshot_time = current_time;
+    } else {
+        error!("Failed to create snapshot");
     }
 
     let save_interval = world.resource::<Settings>().save_interval;
@@ -121,7 +123,9 @@ pub fn load_existing_world(world: &mut World) -> bool {
             error!("Failed to load world state from local storage: {:?}", e);
         })
         .and_then(|saved_state| {
+            info!("deserializing");
             let mut serde = Deserializer::from_str(&saved_state);
+            info!("deserialized");
             world.deserialize(&mut serde).map_err(|e| {
                 error!("Deserialization error: {:?}", e);
             })
