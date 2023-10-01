@@ -1,7 +1,7 @@
 use super::Element;
 use crate::{
     world_map::{position::Position, WorldMap},
-    time::IsFastForwarding,
+    story_time::IsFastForwarding,
 };
 use bevy::prelude::*;
 

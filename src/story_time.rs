@@ -16,9 +16,9 @@ pub const SECONDS_PER_DAY: i64 = 86_400;
 // Also, Time/Instant/Duration aren't serializable.
 #[derive(Resource, Clone, Reflect, Default)]
 #[reflect(Resource)]
-pub struct GameTime(pub i64);
+pub struct StoryTime(pub i64);
 
-impl GameTime {
+impl StoryTime {
     pub fn as_datetime(&self) -> DateTime<Utc> {
         match Utc.timestamp_millis_opt(self.0) {
             LocalResult::Single(datetime) => datetime,
@@ -48,16 +48,16 @@ pub struct RemainingPendingTicks(pub isize);
 #[derive(Resource, Default)]
 pub struct TotalPendingTicks(pub isize);
 
-pub fn register_game_time(
+pub fn register_story_time(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
-    register::<GameTime>(&app_type_registry, &mut saveable_registry);
+    register::<StoryTime>(&app_type_registry, &mut saveable_registry);
 }
 
 // TODO: awkward timing for this - need to have resources available before calling try_load_from_save
-pub fn pre_setup_game_time(mut commands: Commands) {
-    commands.init_resource::<GameTime>();
+pub fn pre_setup_story_time(mut commands: Commands) {
+    commands.init_resource::<StoryTime>();
     commands.init_resource::<IsFastForwarding>();
     commands.init_resource::<RemainingPendingTicks>();
     commands.init_resource::<TotalPendingTicks>();
@@ -71,25 +71,25 @@ pub fn pre_setup_game_time(mut commands: Commands) {
 /// record this value into FixedTime, and anticipate further processing.
 /// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
 /// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
-pub fn setup_game_time(mut game_time: ResMut<GameTime>, mut fixed_time: ResMut<FixedTime>) {
-    // Setup game_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
-    if game_time.0 == 0 {
-        game_time.0 = Utc::now().timestamp_millis();
+pub fn setup_story_time(mut story_time: ResMut<StoryTime>, mut fixed_time: ResMut<FixedTime>) {
+    // Setup story_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
+    if story_time.0 == 0 {
+        story_time.0 = Utc::now().timestamp_millis();
     } else {
         let delta_seconds = Utc::now()
-            .signed_duration_since(game_time.as_datetime())
+            .signed_duration_since(story_time.as_datetime())
             .num_seconds();
 
         fixed_time.tick(Duration::from_secs(delta_seconds as u64));
     }
 }
 
-pub fn teardown_game_time(
+pub fn teardown_story_time(
     mut commands: Commands,
     mut fixed_time: ResMut<FixedTime>,
     mut ticks_per_second: ResMut<TicksPerSecond>,
 ) {
-    commands.remove_resource::<GameTime>();
+    commands.remove_resource::<StoryTime>();
     commands.remove_resource::<IsFastForwarding>();
     commands.remove_resource::<RemainingPendingTicks>();
     commands.remove_resource::<TotalPendingTicks>();
@@ -137,12 +137,12 @@ pub fn set_rate_of_time(
     }
 }
 
-/// Increment GameTime by the default tick rate.
-/// This is used to track how synchronized GameTime is with real-world time.
+/// Increment StoryTime by the default tick rate.
+/// This is used to track how synchronized StoryTime is with real-world time.
 /// If app is fast-forwarding time then this system will be called more frequently and will
 /// reduce the delta difference between game time and real-world time.
-pub fn update_game_time(mut game_time: ResMut<GameTime>, ticks_per_second: Res<TicksPerSecond>) {
-    game_time.0 += (1000.0 / ticks_per_second.0) as i64;
+pub fn update_story_time(mut story_time: ResMut<StoryTime>, ticks_per_second: Res<TicksPerSecond>) {
+    story_time.0 += (1000.0 / ticks_per_second.0) as i64;
 }
 
 pub fn update_time_scale(

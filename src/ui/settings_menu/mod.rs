@@ -3,7 +3,7 @@ use bevy_egui::{egui, EguiContexts};
 
 use crate::{
     story_state::StoryState,
-    time::{TicksPerSecond, DEFAULT_TICKS_PER_SECOND, MAX_USER_TICKS_PER_SECOND},
+    story_time::{TicksPerSecond, DEFAULT_TICKS_PER_SECOND, MAX_USER_TICKS_PER_SECOND},
 };
 
 pub fn update_settings_menu(

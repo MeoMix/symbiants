@@ -12,7 +12,7 @@ mod pancam;
 mod settings;
 mod simulation;
 mod story_state;
-mod time;
+mod story_time;
 mod ui;
 
 use bevy::{

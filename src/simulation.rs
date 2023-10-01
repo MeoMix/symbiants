@@ -32,9 +32,9 @@ use crate::{
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     settings::{pre_setup_settings, register_settings, teardown_settings},
     story_state::{check_story_over, on_story_cleanup, StoryState},
-    time::{
-        pre_setup_game_time, register_game_time, set_rate_of_time, setup_game_time,
-        teardown_game_time, update_game_time, update_time_scale,
+    story_time::{
+        pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
+        teardown_story_time, update_story_time, update_time_scale,
     },
     world_map::{
         save::{load_existing_world, periodic_save_world_state, setup_save, teardown_save},
@@ -61,14 +61,14 @@ impl Plugin for SimulationPlugin {
             (
                 register_settings,
                 register_common,
-                register_game_time,
+                register_story_time,
                 register_nesting,
                 register_birthing,
                 register_element,
                 register_ant,
                 register_pheromone,
                 (pre_setup_settings, apply_deferred).chain(),
-                (pre_setup_game_time, apply_deferred).chain(),
+                (pre_setup_story_time, apply_deferred).chain(),
                 try_load_from_save,
             )
                 .chain(),
@@ -92,9 +92,9 @@ impl Plugin for SimulationPlugin {
                 .chain(),
         );
 
-        // IMPORTANT: setup_game_time sets FixedTime.accumulated which is reset when transitioning between schedules.
+        // IMPORTANT: setup_story_time sets FixedTime.accumulated which is reset when transitioning between schedules.
         // If this is ran OnEnter FinalizingStartup then the accumulated time will be reset to zero before FixedUpdate runs.
-        app.add_systems(OnExit(StoryState::FinalizingStartup), setup_game_time);
+        app.add_systems(OnExit(StoryState::FinalizingStartup), setup_story_time);
 
         // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken (should be fixed in bevy 0.12)
         app.add_systems(
@@ -195,7 +195,7 @@ impl Plugin for SimulationPlugin {
                     on_spawn_pheromone,
                 )
                     .chain(),
-                update_game_time,
+                update_story_time,
                 set_rate_of_time,
             )
                 .run_if(in_state(StoryState::Telling))
@@ -205,7 +205,7 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::Cleanup),
             (
-                teardown_game_time,
+                teardown_story_time,
                 teardown_settings,
                 teardown_background,
                 teardown_ant,

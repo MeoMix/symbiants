@@ -6,7 +6,7 @@ use crate::{
     common::register,
     world_map::position::Position,
     name_list::get_random_name,
-    time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
+    story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
 };
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;

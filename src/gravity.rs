@@ -1,7 +1,7 @@
 use crate::{
     ant::{AntOrientation, Dead, Initiative},
     element::{commands::ElementCommandsExt, Air, Crushable},
-    time::IsFastForwarding,
+    story_time::IsFastForwarding,
 };
 
 use super::{

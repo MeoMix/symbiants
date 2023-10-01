@@ -5,7 +5,7 @@ use crate::{
     common::{get_entity_from_id, Id, TranslationOffset},
     element::{ui::get_element_sprite, Element},
     world_map::{position::Position, WorldMap},
-    time::IsFastForwarding,
+    story_time::IsFastForwarding,
 };
 use bevy::prelude::*;
 

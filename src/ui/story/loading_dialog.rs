@@ -4,7 +4,7 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::time::{IsFastForwarding, TotalPendingTicks, RemainingPendingTicks, TicksPerSecond};
+use crate::story_time::{IsFastForwarding, TotalPendingTicks, RemainingPendingTicks, TicksPerSecond};
 
 // Don't flicker the dialogs visibility when processing a small number of ticks
 const MIN_PENDING_TICKS: isize = 1000;

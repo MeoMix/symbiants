@@ -7,7 +7,7 @@ use std::{cell::RefCell, ops::Deref, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
-use crate::{settings::Settings, time::IsFastForwarding};
+use crate::{settings::Settings, story_time::IsFastForwarding};
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
 

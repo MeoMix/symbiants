@@ -3,7 +3,7 @@ use crate::{
     common::{get_entity_from_id, Id},
     element::Element,
     world_map::{position::Position, WorldMap},
-    time::{SECONDS_PER_DAY, DEFAULT_TICKS_PER_SECOND},
+    story_time::{SECONDS_PER_DAY, DEFAULT_TICKS_PER_SECOND},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
