@@ -2,7 +2,12 @@ use super::{
     Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
     Initiative,
 };
-use crate::{grid::position::Position, name_list::get_random_name, time::{SECONDS_PER_HOUR, TicksPerSecond}, common::register};
+use crate::{
+    common::register,
+    world_map::position::Position,
+    name_list::get_random_name,
+    time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
+};
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
@@ -33,7 +38,6 @@ impl Birthing {
         self.max
     }
 
-
     pub fn tick(&mut self, rate_of_birthing: f32) {
         self.value = (self.value + rate_of_birthing).min(self.max);
     }
@@ -47,7 +51,7 @@ impl Birthing {
     }
 }
 
-pub fn initialize_birthing(
+pub fn register_birthing(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
@@ -67,7 +71,6 @@ pub fn ants_birthing(
     >,
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
-    ticks_per_second: Res<TicksPerSecond>,
 ) {
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()
@@ -77,7 +80,8 @@ pub fn ants_birthing(
         initiative.consume_movement();
 
         // Create offspring once per full real-world hour.
-        let rate_of_birthing = birthing.max() / (SECONDS_PER_HOUR as f32 * ticks_per_second.0);
+        let rate_of_birthing =
+            birthing.max() / (SECONDS_PER_HOUR as f32 * DEFAULT_TICKS_PER_SECOND);
         birthing.tick(rate_of_birthing);
 
         if birthing.is_ready() && initiative.can_act() {

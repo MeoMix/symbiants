@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Reflect};
 use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::{common::register, grid::position::Position};
+use crate::{common::register, world_map::position::Position};
 
 #[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {
@@ -17,6 +17,8 @@ pub struct Probabilities {
 
     pub above_surface_queen_nest_dig: f32,
     pub below_surface_queen_nest_dig: f32,
+
+    pub expand_nest: f32,
 }
 
 #[derive(Resource, Copy, Clone, Reflect, Debug)]
@@ -77,22 +79,26 @@ impl Default for Settings {
 
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,
+
+                // TODO: play with this value
+                expand_nest: 0.50,
             },
         }
     }
 }
 
-pub fn initialize_settings(
+pub fn register_settings(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
-    mut commands: Commands,
 ) {
     register::<Settings>(&app_type_registry, &mut saveable_registry);
     register::<Probabilities>(&app_type_registry, &mut saveable_registry);
+}
 
+pub fn pre_setup_settings(mut commands: Commands) {
     commands.init_resource::<Settings>();
 }
 
-pub fn deinitialize_settings(mut commands: Commands) {
+pub fn teardown_settings(mut commands: Commands) {
     commands.remove_resource::<Settings>();
 }

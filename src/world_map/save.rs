@@ -84,7 +84,7 @@ thread_local! {
     static ON_BEFORE_UNLOAD: RefCell<Option<Closure<dyn FnMut(BeforeUnloadEvent) -> bool>>> = RefCell::new(None);
 }
 
-pub fn setup_window_onunload_save_world_state() {
+pub fn setup_save() {
     let window = web_sys::window().expect("window not available");
 
     ON_BEFORE_UNLOAD.with(|opt_closure| {
@@ -102,7 +102,7 @@ pub fn setup_window_onunload_save_world_state() {
     });
 }
 
-pub fn cleanup_window_onunload_save_world_state() {
+pub fn teardown_save() {
     let window = web_sys::window().expect("window not available");
 
     ON_BEFORE_UNLOAD.with(|opt_closure| {

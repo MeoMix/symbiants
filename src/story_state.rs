@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     ant::{AntRole, Dead},
-    grid::save::delete_save,
+    world_map::save::delete_save,
 };
 
 // TODO: Probably split this into AppState and StoryState where AppState encompasses the app

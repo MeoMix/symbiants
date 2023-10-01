@@ -4,7 +4,7 @@ use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntR
 use crate::{
     common::{get_entity_from_id, Id, TranslationOffset},
     element::{ui::get_element_sprite, Element},
-    grid::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap},
     time::IsFastForwarding,
 };
 use bevy::prelude::*;

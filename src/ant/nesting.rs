@@ -2,8 +2,8 @@ use crate::{
     ant::birthing::Birthing,
     common::register,
     element::Element,
-    grid::{position::Position, WorldMap},
-    pheromone::{Pheromone, PheromoneMap},
+    world_map::{position::Position, WorldMap},
+    pheromone::{Pheromone, commands::PheromoneCommandsExt},
     settings::Settings,
 };
 use bevy_save::SaveableRegistry;
@@ -16,6 +16,7 @@ use super::{
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
+// TODO: Maybe rename to NestCreation
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub enum Nesting {
@@ -24,7 +25,7 @@ pub enum Nesting {
     Started(Position),
 }
 
-pub fn initialize_nesting(
+pub fn register_nesting(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
@@ -100,7 +101,6 @@ pub fn ants_nesting_action(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
-    mut pheromone_map: ResMut<PheromoneMap>,
 ) {
     for (mut nesting, orientation, inventory, mut initiative, position, ant_entity) in
         ants_query.iter_mut()
@@ -127,7 +127,6 @@ pub fn ants_nesting_action(
                 &mut nesting,
                 &world_map,
                 &mut commands,
-                &mut pheromone_map,
             );
             continue;
         }
@@ -204,7 +203,6 @@ fn start_digging_nest(
     nesting: &mut Nesting,
     world_map: &WorldMap,
     commands: &mut Commands,
-    pheromone_map: &mut ResMut<PheromoneMap>,
 ) {
     // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
@@ -214,8 +212,8 @@ fn start_digging_nest(
     // TODO: maybe consume movement here too since it looks weird when digging down and moving forward in same frame?
     initiative.consume_action();
     *nesting = Nesting::Started(dig_position);
-
-    pheromone_map.0.insert(dig_position, Pheromone::Tunnel);
+    
+    commands.spawn_pheromone(dig_position, Pheromone::Tunnel);
 }
 
 /// Returns true if ant is at a valid location to settle down and begin giving birth.

@@ -1,7 +1,7 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
 use crate::{
     gravity::Unstable,
-    grid::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap},
 };
 use bevy::{ecs::system::Command, prelude::*};
 

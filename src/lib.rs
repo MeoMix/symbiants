@@ -4,7 +4,7 @@ mod camera;
 mod common;
 mod element;
 mod gravity;
-mod grid;
+mod world_map;
 mod pointer;
 mod pheromone;
 mod name_list;

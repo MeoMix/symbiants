@@ -2,8 +2,8 @@ use super::{commands::AntCommandsExt, AntInventory, AntOrientation, Dead, Initia
 use crate::{
     common::{get_entity_from_id, Id},
     element::Element,
-    grid::{position::Position, WorldMap},
-    time::{TicksPerSecond, SECONDS_PER_DAY},
+    world_map::{position::Position, WorldMap},
+    time::{SECONDS_PER_DAY, DEFAULT_TICKS_PER_SECOND},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -66,13 +66,12 @@ pub fn ants_hunger(
     id_query: Query<(Entity, &Id)>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
-    ticks_per_second: Res<TicksPerSecond>,
 ) {
     for (entity, mut hunger, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
         // Get 100% hungry once per full real-world day.
-        let rate_of_hunger = hunger.max() / (SECONDS_PER_DAY as f32 * ticks_per_second.0);
+        let rate_of_hunger = hunger.max() / (SECONDS_PER_DAY as f32 * DEFAULT_TICKS_PER_SECOND);
         hunger.tick(rate_of_hunger);
 
         if hunger.is_starved() {

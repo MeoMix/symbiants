@@ -20,7 +20,7 @@ pub struct WorldMap {
 ///
 /// This is used to speed up most logic because there's a consistent need throughout the application to know what elements are
 /// at or near a given position.
-pub fn setup_caches(
+pub fn setup_world_map(
     element_query: Query<(&mut Position, Entity), With<Element>>,
     settings: Res<Settings>,
     mut commands: Commands,
@@ -42,7 +42,7 @@ pub fn setup_caches(
     ));
 }
 
-pub fn cleanup_caches(mut commands: Commands) {
+pub fn teardown_world_map(mut commands: Commands) {
     commands.remove_resource::<WorldMap>();
 }
 

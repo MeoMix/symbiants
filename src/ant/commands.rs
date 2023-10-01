@@ -6,7 +6,7 @@ use crate::{
     ant::AntInventory,
     common::Id,
     element::{commands::spawn_element, AirElementBundle, Element},
-    grid::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap},
 };
 
 use super::InventoryItemBundle;

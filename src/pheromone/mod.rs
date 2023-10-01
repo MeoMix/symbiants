@@ -3,6 +3,9 @@ use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
+pub mod commands;
+pub mod ui;
+
 use crate::{
     ant::{
         commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Dead,
@@ -10,11 +13,11 @@ use crate::{
     },
     common::register,
     element::Element,
-    grid::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap}, pheromone::commands::PheromoneCommandsExt,
 };
 
 // TODO: better home for all the pheromone stuff.
-#[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 pub enum Pheromone {
     #[default]
     Tunnel,
@@ -23,7 +26,7 @@ pub enum Pheromone {
 
 #[derive(Resource, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Resource)]
-pub struct PheromoneMap(pub HashMap<Position, Pheromone>);
+pub struct PheromoneMap(pub HashMap<Position, Entity>);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -33,19 +36,34 @@ pub struct Tunneling(pub isize);
 #[reflect(Component)]
 pub struct Chambering(pub isize);
 
-pub fn initialize_pheromone(
+/// Registers Pheromone-related Resource and Component types with bevy for persistence.
+/// Note the intentional omission of HashMap<Position, Pheromone>. It would be wasteful to persist
+/// because it's able to be trivially regenerated at runtime.
+pub fn register_pheromone(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
-    mut commands: Commands,
 ) {
-    register::<PheromoneMap>(&app_type_registry, &mut saveable_registry);
     register::<Tunneling>(&app_type_registry, &mut saveable_registry);
     register::<Chambering>(&app_type_registry, &mut saveable_registry);
-
-    register::<HashMap<Position, Pheromone>>(&app_type_registry, &mut saveable_registry);
     register::<Pheromone>(&app_type_registry, &mut saveable_registry);
+}
 
-    commands.init_resource::<PheromoneMap>();
+/// Called after creating a new story, or loading an existing story from storage.
+/// Creates a cache that maps positions to pheromone entities for quick lookup outside of ECS architecture.
+///
+/// This isn't super necessary. Performance impact of O(N) lookup on Pheromone is likely to be negligible.
+/// Still, it seemed like a good idea architecturally to have O(1) lookup when Position is known.
+pub fn setup_pheromone(
+    pheromone_query: Query<(&mut Position, Entity), With<Pheromone>>,
+    mut commands: Commands,
+) {
+    let mut pheromone_map = PheromoneMap::default();
+
+    for (position, entity) in pheromone_query.iter() {
+        pheromone_map.0.insert(*position, entity);
+    }
+
+    commands.insert_resource(pheromone_map);
 }
 
 // "Whenever ant walks over tile with nesting pheromone, they gain "Nesting: 8". Then, they attempt to take a step forward and decrement Nesting to 7. If they end up digging, nesting is "forgotten" and they shift back to hauling dirt
@@ -194,7 +212,8 @@ pub fn ants_tunnel_pheromone(
         (Entity, Ref<Position>, &AntInventory, Option<&mut Tunneling>),
         Without<Dead>,
     >,
-    mut pheromone_map: ResMut<PheromoneMap>,
+    pheromone_query: Query<&Pheromone>,
+    pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
@@ -216,23 +235,24 @@ pub fn ants_tunnel_pheromone(
                     info!("Removed tunneling!");
 
                     // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
-                    // TODO: Maybe double-check to make sure this location isn't already a chamber first
-                    pheromone_map.0.insert(*position, Pheromone::Chamber);
+                    commands.spawn_pheromone(*position, Pheromone::Chamber);
                 }
             }
         }
     }
 
     // Whenever an ant walks over a tile which has a pheromone, it will gain a Component representing that Pheromone.
-    for (entity, position, _, tunneling) in ants_query.iter_mut() {
-        if let Some(pheromone) = pheromone_map.0.get(position.as_ref()) {
+    for (ant_entity, ant_position, _, tunneling) in ants_query.iter_mut() {
+        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position.as_ref()) {
+            let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
+            
             match pheromone {
                 Pheromone::Tunnel => {
                     if let Some(mut tunneling) = tunneling {
                         tunneling.0 = 8;
                         info!("Reset tunneling to 8");
                     } else {
-                        commands.entity(entity).insert(Tunneling(8));
+                        commands.entity(ant_entity).insert(Tunneling(8));
                         info!("Set tunneling to 8!");
                     }
                 }
@@ -339,6 +359,7 @@ pub fn ants_chamber_pheromone(
         ),
         Without<Dead>,
     >,
+    pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
@@ -368,15 +389,17 @@ pub fn ants_chamber_pheromone(
     }
 
     // Whenever an ant walks over a tile which has a pheromone, it will gain a Component representing that Pheromone.
-    for (entity, position, _, chambering) in ants_query.iter_mut() {
-        if let Some(pheromone) = pheromone_map.0.get(position.as_ref()) {
+    for (ant_entity, ant_position, _, chambering) in ants_query.iter_mut() {
+        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position.as_ref()) {
+            let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
+
             match pheromone {
                 Pheromone::Chamber => {
                     if let Some(mut chambering) = chambering {
                         chambering.0 = 2;
                         info!("Reset chambering to 2");
                     } else {
-                        commands.entity(entity).insert(Chambering(8));
+                        commands.entity(ant_entity).insert(Chambering(8));
                         info!("Set chambering to 2!");
                     }
                 }

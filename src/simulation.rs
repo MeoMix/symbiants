@@ -6,43 +6,39 @@ use crate::{
     ant::{
         act::ants_act,
         ants_initiative,
-        birthing::{ants_birthing, initialize_birthing},
-        cleanup_ant,
+        birthing::{ants_birthing, register_birthing},
         hunger::ants_hunger,
-        initialize_ant,
-        nesting::{ants_nesting_action, ants_nesting_movement, initialize_nesting},
-        setup_ant,
+        nest_expansion::ants_nest_expansion,
+        nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
+        register_ant, setup_ant, teardown_ant,
         ui::{
             on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
             on_update_ant_position,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
-    background::{cleanup_background, setup_background},
-    common::initialize_common,
+    background::{setup_background, teardown_background},
+    common::register_common,
     element::{
-        cleanup_element, initialize_element, setup_element,
+        register_element, setup_element, teardown_element,
         ui::{on_spawn_element, on_update_element_position},
     },
     gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
-    grid::{
-        cleanup_caches,
-        save::{
-            cleanup_window_onunload_save_world_state, load_existing_world,
-            periodic_save_world_state, setup_window_onunload_save_world_state,
-        },
-        setup_caches,
-    },
     pheromone::{
         ants_chamber_pheromone, ants_chamber_pheromone_act, ants_tunnel_pheromone,
-        ants_tunnel_pheromone_act, ants_tunnel_pheromone_move, initialize_pheromone,
+        ants_tunnel_pheromone_act, ants_tunnel_pheromone_move, register_pheromone, setup_pheromone,
+        ui::on_spawn_pheromone,
     },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
-    settings::{deinitialize_settings, initialize_settings},
+    settings::{pre_setup_settings, register_settings, teardown_settings},
     story_state::{check_story_over, on_story_cleanup, StoryState},
     time::{
-        deinitialize_game_time, initialize_game_time, set_rate_of_time, setup_game_time,
-        update_game_time,
+        pre_setup_game_time, register_game_time, set_rate_of_time, setup_game_time,
+        teardown_game_time, update_game_time, update_time_scale,
+    },
+    world_map::{
+        save::{load_existing_world, periodic_save_world_state, setup_save, teardown_save},
+        setup_world_map, teardown_world_map,
     },
 };
 
@@ -63,14 +59,16 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::Initializing),
             (
-                initialize_settings,
-                initialize_common,
-                initialize_game_time,
-                initialize_nesting,
-                initialize_birthing,
-                initialize_element,
-                initialize_ant,
-                initialize_pheromone,
+                register_settings,
+                register_common,
+                register_game_time,
+                register_nesting,
+                register_birthing,
+                register_element,
+                register_ant,
+                register_pheromone,
+                (pre_setup_settings, apply_deferred).chain(),
+                (pre_setup_game_time, apply_deferred).chain(),
                 try_load_from_save,
             )
                 .chain(),
@@ -84,12 +82,11 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::FinalizingStartup),
             (
-                setup_caches,
-                // Ensure cache is created before continuing
-                apply_deferred,
-                setup_background,
+                (setup_world_map, apply_deferred).chain(),
+                (setup_pheromone, apply_deferred).chain(),
+                (setup_background, apply_deferred).chain(),
                 #[cfg(target_arch = "wasm32")]
-                setup_window_onunload_save_world_state,
+                setup_save,
                 begin_story,
             )
                 .chain(),
@@ -106,6 +103,11 @@ impl Plugin for SimulationPlugin {
             (is_pointer_captured, handle_pointer_tap)
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
+        );
+
+        app.add_systems(
+            Update,
+            update_time_scale.run_if(in_state(StoryState::Telling)),
         );
 
         app.add_systems(
@@ -136,6 +138,7 @@ impl Plugin for SimulationPlugin {
                             apply_deferred,
                         )
                             .chain(),
+                        (ants_nest_expansion, apply_deferred).chain(),
                         (
                             // Apply Pheromones
                             ants_tunnel_pheromone,
@@ -189,6 +192,7 @@ impl Plugin for SimulationPlugin {
                     on_update_element_position,
                     on_spawn_ant,
                     on_spawn_element,
+                    on_spawn_pheromone,
                 )
                     .chain(),
                 update_game_time,
@@ -201,14 +205,14 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::Cleanup),
             (
-                deinitialize_game_time,
-                deinitialize_settings,
+                teardown_game_time,
+                teardown_settings,
+                teardown_background,
+                teardown_ant,
+                teardown_element,
+                teardown_world_map,
                 #[cfg(target_arch = "wasm32")]
-                cleanup_window_onunload_save_world_state,
-                cleanup_background,
-                cleanup_ant,
-                cleanup_element,
-                cleanup_caches,
+                teardown_save,
                 on_story_cleanup,
             )
                 .chain(),

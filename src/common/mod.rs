@@ -3,7 +3,7 @@ use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::grid::position::Position;
+use crate::world_map::position::Position;
 
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
@@ -38,7 +38,7 @@ pub fn register<T: GetTypeRegistration>(
     saveable_registry.register::<T>();
 }
 
-pub fn initialize_common(
+pub fn register_common(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {

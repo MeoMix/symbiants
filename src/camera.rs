@@ -1,5 +1,5 @@
 use crate::{
-    grid::WorldMap,
+    world_map::WorldMap,
     pancam::{PanCam, PanCamPlugin},
     story_state::{on_story_cleanup, StoryState},
 };

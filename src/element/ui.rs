@@ -1,6 +1,6 @@
 use super::Element;
 use crate::{
-    grid::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap},
     time::IsFastForwarding,
 };
 use bevy::prelude::*;

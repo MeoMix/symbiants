@@ -11,7 +11,7 @@ use crate::{
     },
     camera::MainCamera,
     element::{commands::ElementCommandsExt, Element},
-    grid::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap},
     name_list::get_random_name,
     settings::Settings,
     ui::action_menu::PointerAction,

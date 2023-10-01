@@ -5,7 +5,7 @@ use std::f32::consts::PI;
 
 use crate::{
     common::{register, Id},
-    grid::position::Position,
+    world_map::position::Position,
     name_list::get_random_name,
     settings::Settings,
 };
@@ -20,6 +20,7 @@ pub mod birthing;
 pub mod commands;
 pub mod hunger;
 pub mod nesting;
+pub mod nest_expansion;
 pub mod ui;
 pub mod walk;
 
@@ -258,6 +259,10 @@ impl AntOrientation {
         self.angle == Angle::OneHundredEighty
     }
 
+    pub fn is_rightside_up(&self) -> bool {
+        self.angle == Angle::Zero
+    }
+
     pub fn turn_around(&self) -> Self {
         let facing = if self.facing == Facing::Left {
             Facing::Right
@@ -364,7 +369,7 @@ pub fn ants_initiative(
     }
 }
 
-pub fn initialize_ant(
+pub fn register_ant(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
@@ -417,7 +422,7 @@ pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut comman
     commands.spawn_batch(worker_ants);
 }
 
-pub fn cleanup_ant(
+pub fn teardown_ant(
     label_query: Query<Entity, With<AntLabel>>,
     ant_query: Query<Entity, With<Ant>>,
     mut commands: Commands,

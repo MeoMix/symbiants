@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::grid::WorldMap;
+use crate::world_map::WorldMap;
 
 #[derive(Component)]
 pub struct Background;
@@ -52,7 +52,7 @@ pub fn setup_background(mut commands: Commands, world_map: Res<WorldMap>) {
     ));
 }
 
-pub fn cleanup_background(query: Query<Entity, With<Background>>, mut commands: Commands) {
+pub fn teardown_background(query: Query<Entity, With<Background>>, mut commands: Commands) {
     for entity in query.iter() {
         commands.entity(entity).despawn();
     }

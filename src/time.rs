@@ -6,7 +6,8 @@ use std::time::Duration;
 use crate::common::register;
 
 pub const DEFAULT_TICKS_PER_SECOND: f32 = 6.0;
-pub const FASTFORWARD_TICKS_PER_SECOND: f32 = 6000.0;
+pub const MAX_USER_TICKS_PER_SECOND: f32 = 600.0;
+pub const MAX_SYSTEM_TICKS_PER_SECOND: f32 = 6000.0;
 pub const SECONDS_PER_HOUR: i64 = 3600;
 pub const SECONDS_PER_DAY: i64 = 86_400;
 
@@ -47,13 +48,15 @@ pub struct RemainingPendingTicks(pub isize);
 #[derive(Resource, Default)]
 pub struct TotalPendingTicks(pub isize);
 
-pub fn initialize_game_time(
+pub fn register_game_time(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
-    mut commands: Commands,
 ) {
     register::<GameTime>(&app_type_registry, &mut saveable_registry);
+}
 
+// TODO: awkward timing for this - need to have resources available before calling try_load_from_save
+pub fn pre_setup_game_time(mut commands: Commands) {
     commands.init_resource::<GameTime>();
     commands.init_resource::<IsFastForwarding>();
     commands.init_resource::<RemainingPendingTicks>();
@@ -62,21 +65,6 @@ pub fn initialize_game_time(
     // Control the speed of the simulation by defining how many simulation ticks occur per second.
     commands.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND));
     commands.insert_resource(TicksPerSecond(DEFAULT_TICKS_PER_SECOND));
-}
-
-pub fn deinitialize_game_time(
-    mut commands: Commands,
-    mut fixed_time: ResMut<FixedTime>,
-    mut ticks_per_second: ResMut<TicksPerSecond>,
-) {
-    commands.remove_resource::<GameTime>();
-    commands.remove_resource::<IsFastForwarding>();
-    commands.remove_resource::<RemainingPendingTicks>();
-    commands.remove_resource::<TotalPendingTicks>();
-
-    // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
-    fixed_time.period = Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND);
-    ticks_per_second.0 = DEFAULT_TICKS_PER_SECOND;
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,
@@ -94,6 +82,21 @@ pub fn setup_game_time(mut game_time: ResMut<GameTime>, mut fixed_time: ResMut<F
 
         fixed_time.tick(Duration::from_secs(delta_seconds as u64));
     }
+}
+
+pub fn teardown_game_time(
+    mut commands: Commands,
+    mut fixed_time: ResMut<FixedTime>,
+    mut ticks_per_second: ResMut<TicksPerSecond>,
+) {
+    commands.remove_resource::<GameTime>();
+    commands.remove_resource::<IsFastForwarding>();
+    commands.remove_resource::<RemainingPendingTicks>();
+    commands.remove_resource::<TotalPendingTicks>();
+
+    // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
+    fixed_time.period = Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND);
+    ticks_per_second.0 = DEFAULT_TICKS_PER_SECOND;
 }
 
 /// Control whether the app runs at the default or fast tick rate.
@@ -115,7 +118,7 @@ pub fn set_rate_of_time(
                 // The UI becomes unresponsive because the FixedUpdate schedule, when behind, will run in a loop without yielding until it catches up.
                 fixed_time.period = accumulated_time;
                 let _ = fixed_time.expend();
-                fixed_time.period = Duration::from_secs_f32(1.0 / FASTFORWARD_TICKS_PER_SECOND);
+                fixed_time.period = Duration::from_secs_f32(1.0 / MAX_SYSTEM_TICKS_PER_SECOND);
                 // NOTE: intentionally do not update TicksPerSecond.
 
                 is_fast_forwarding.0 = true;
@@ -140,4 +143,16 @@ pub fn set_rate_of_time(
 /// reduce the delta difference between game time and real-world time.
 pub fn update_game_time(mut game_time: ResMut<GameTime>, ticks_per_second: Res<TicksPerSecond>) {
     game_time.0 += (1000.0 / ticks_per_second.0) as i64;
+}
+
+pub fn update_time_scale(
+    mut fixed_time: ResMut<FixedTime>,
+    ticks_per_second: Res<TicksPerSecond>,
+    is_fast_forwarding: Res<IsFastForwarding>,
+) {
+    if is_fast_forwarding.0 {
+        return;
+    }
+
+    fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0);
 }

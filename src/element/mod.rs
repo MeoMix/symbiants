@@ -1,4 +1,4 @@
-use super::grid::position::Position;
+use super::world_map::position::Position;
 use crate::{
     common::{register, Id},
     gravity::Unstable,
@@ -143,7 +143,7 @@ impl Element {
     }
 }
 
-pub fn initialize_element(
+pub fn register_element(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
@@ -170,7 +170,7 @@ pub fn setup_element(settings: Res<Settings>, mut commands: Commands) {
     }
 }
 
-pub fn cleanup_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {
+pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {
     for element in element_query.iter() {
         commands.entity(element).despawn_recursive();
     }
