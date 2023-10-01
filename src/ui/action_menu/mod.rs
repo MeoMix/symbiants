@@ -3,8 +3,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use crate::time::{TicksPerSecond, DEFAULT_TICKS_PER_SECOND, MAX_USER_TICKS_PER_SECOND};
-
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
 pub enum PointerAction {
     #[default]
@@ -26,7 +24,6 @@ pub fn update_action_menu(
     mut contexts: EguiContexts,
     mut pointer_action: ResMut<PointerAction>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    mut ticks_per_second: ResMut<TicksPerSecond>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -56,14 +53,6 @@ pub fn update_action_menu(
                 pointer_action.as_mut(),
                 PointerAction::DespawnWorkerAnt,
                 "Remove Worker Ant",
-            );
-
-            ui.add(
-                egui::Slider::new(
-                    &mut ticks_per_second.0,
-                    DEFAULT_TICKS_PER_SECOND..=MAX_USER_TICKS_PER_SECOND,
-                )
-                .text("Speed"),
             );
         });
 }
