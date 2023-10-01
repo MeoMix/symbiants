@@ -14,22 +14,6 @@ use crate::{
 };
 
 use super::{hunger::Hunger, AntInventory, AntOrientation, AntRole, Dead, Initiative};
-// use serde::{Deserialize, Serialize};
-
-// #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
-// #[reflect(Component)]
-// pub enum NestExpansion {
-//     #[default]
-//     NotStarted,
-//     Started(Position),
-// }
-
-// pub fn initialize_nest_expansion(
-//     app_type_registry: ResMut<AppTypeRegistry>,
-//     mut saveable_registry: ResMut<SaveableRegistry>,
-// ) {
-//     // register::<NestExpansion>(&app_type_registry, &mut saveable_registry);
-// }
 
 pub fn ants_nest_expansion(
     mut ants_query: Query<

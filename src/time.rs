@@ -72,7 +72,7 @@ pub fn pre_setup_game_time(mut commands: Commands) {
 /// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
 /// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
 pub fn setup_game_time(mut game_time: ResMut<GameTime>, mut fixed_time: ResMut<FixedTime>) {
-    // Initialize game_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
+    // Setup game_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
     if game_time.0 == 0 {
         game_time.0 = Utc::now().timestamp_millis();
     } else {

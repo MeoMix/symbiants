@@ -7,6 +7,8 @@ pub mod save;
 
 use self::position::Position;
 
+/// Note the intentional omission of reflection/serialization.
+/// This is because WorldMap is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]
 pub struct WorldMap {
     width: isize,

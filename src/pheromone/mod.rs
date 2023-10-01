@@ -13,7 +13,8 @@ use crate::{
     },
     common::register,
     element::Element,
-    world_map::{position::Position, WorldMap}, pheromone::commands::PheromoneCommandsExt,
+    pheromone::commands::PheromoneCommandsExt,
+    world_map::{position::Position, WorldMap},
 };
 
 // TODO: better home for all the pheromone stuff.
@@ -24,8 +25,9 @@ pub enum Pheromone {
     Chamber,
 }
 
-#[derive(Resource, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
-#[reflect(Resource)]
+/// Note the intentional omission of reflection/serialization.
+/// This is because PheromoneMap is a cache that is trivially regenerated on app startup from persisted state.
+#[derive(Resource, Debug)]
 pub struct PheromoneMap(pub HashMap<Position, Entity>);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -57,13 +59,12 @@ pub fn setup_pheromone(
     pheromone_query: Query<(&mut Position, Entity), With<Pheromone>>,
     mut commands: Commands,
 ) {
-    let mut pheromone_map = PheromoneMap::default();
+    let pheromone_map = pheromone_query
+        .iter()
+        .map(|(position, entity)| (*position, entity))
+        .collect::<HashMap<_, _>>();
 
-    for (position, entity) in pheromone_query.iter() {
-        pheromone_map.0.insert(*position, entity);
-    }
-
-    commands.insert_resource(pheromone_map);
+    commands.insert_resource(PheromoneMap(pheromone_map));
 }
 
 // "Whenever ant walks over tile with nesting pheromone, they gain "Nesting: 8". Then, they attempt to take a step forward and decrement Nesting to 7. If they end up digging, nesting is "forgotten" and they shift back to hauling dirt
@@ -71,7 +72,6 @@ pub fn setup_pheromone(
 // and if they succeed in getting to nesting 0, then drop a new pheromone marker "build chamber here"
 // and when they hit that marker, they will look around them in all directions and, if they see any adjacent dirt, they will dig one piece of it and go back into "haul dirt" mode
 // if they do not see any adjacent dirt, they clean up the pheromone and, in the case of the queen, shift to giving birth
-
 pub fn ants_tunnel_pheromone_move(
     mut ants_query: Query<
         (&mut AntOrientation, &mut Initiative, &mut Position),
@@ -245,7 +245,7 @@ pub fn ants_tunnel_pheromone(
     for (ant_entity, ant_position, _, tunneling) in ants_query.iter_mut() {
         if let Some(pheromone_entity) = pheromone_map.0.get(ant_position.as_ref()) {
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
-            
+
             match pheromone {
                 Pheromone::Tunnel => {
                     if let Some(mut tunneling) = tunneling {

@@ -16,7 +16,7 @@ pub enum PointerAction {
     DespawnWorkerAnt,
 }
 
-pub fn initialize_action_menu(mut commands: Commands) {
+pub fn setup_action_menu(mut commands: Commands) {
     commands.init_resource::<PointerAction>();
 }
 
@@ -57,6 +57,6 @@ pub fn update_action_menu(
         });
 }
 
-pub fn deinitialize_action_menu(mut commands: Commands) {
+pub fn teardown_action_menu(mut commands: Commands) {
     commands.remove_resource::<PointerAction>();
 }

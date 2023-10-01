@@ -32,7 +32,7 @@ impl Plugin for UIPlugin {
             update_main_menu_dialog.run_if(in_state(StoryState::GatheringSettings)),
         );
 
-        app.add_systems(OnEnter(StoryState::Telling), initialize_action_menu);
+        app.add_systems(OnEnter(StoryState::Telling), setup_action_menu);
 
         // TODO: Prefer keeping UI around until after Over (but not that simple because can click Reset which skips Over)
         app.add_systems(
@@ -46,7 +46,7 @@ impl Plugin for UIPlugin {
                 .run_if(in_state(StoryState::Telling)),
         );
 
-        app.add_systems(OnExit(StoryState::Telling), deinitialize_action_menu);
+        app.add_systems(OnExit(StoryState::Telling), teardown_action_menu);
 
         app.add_systems(
             Update,
