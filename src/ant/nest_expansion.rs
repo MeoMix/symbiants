@@ -63,8 +63,6 @@ pub fn ants_nest_expansion(
             >= 2;
 
         if is_crowded && rng.f32() < settings.probabilities.expand_nest {
-            info!("i want to expand the nest!");
-
             // Collect a set of positions to check for dirt.
             let mut positions = Vec::new();
             if ant_orientation.is_rightside_up() {

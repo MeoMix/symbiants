@@ -76,7 +76,6 @@ pub fn ants_birthing(
         ants_birthing_query.iter_mut()
     {
         // Once an ant starts giving birth - they're incapacitated and cannot move.
-        info!("ants_birthing - consumed movement");
         initiative.consume_movement();
 
         // Create offspring once per full real-world hour.

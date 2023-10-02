@@ -79,7 +79,6 @@ pub fn ants_nesting_movement(
             &mut rng,
         );
 
-        info!("ants_nesting_movement - consumed movement");
         initiative.consume_movement();
     }
 }

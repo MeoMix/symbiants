@@ -48,6 +48,15 @@ pub struct RemainingPendingTicks(pub isize);
 #[derive(Resource, Default)]
 pub struct TotalPendingTicks(pub isize);
 
+#[derive(States, Default, Hash, Clone, Copy, Eq, PartialEq, Debug)]
+pub enum StoryPlaybackState {
+    #[default]
+    Stopped,
+    Paused,
+    Playing,
+    FastForwarding,
+}
+
 pub fn register_story_time(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
@@ -71,7 +80,11 @@ pub fn pre_setup_story_time(mut commands: Commands) {
 /// record this value into FixedTime, and anticipate further processing.
 /// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
 /// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
-pub fn setup_story_time(mut story_time: ResMut<StoryTime>, mut fixed_time: ResMut<FixedTime>) {
+pub fn setup_story_time(
+    mut story_time: ResMut<StoryTime>,
+    mut fixed_time: ResMut<FixedTime>,
+    mut story_playback_state: ResMut<NextState<StoryPlaybackState>>,
+) {
     // Setup story_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
     if story_time.0 == 0 {
         story_time.0 = Utc::now().timestamp_millis();
@@ -82,6 +95,9 @@ pub fn setup_story_time(mut story_time: ResMut<StoryTime>, mut fixed_time: ResMu
 
         fixed_time.tick(Duration::from_secs(delta_seconds as u64));
     }
+
+    story_playback_state.set(StoryPlaybackState::Playing);
+    info!("changed state to playing");
 }
 
 pub fn teardown_story_time(

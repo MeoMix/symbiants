@@ -1,13 +1,12 @@
 use crate::{
     ant::{AntOrientation, Dead, Initiative},
-    element::{commands::ElementCommandsExt, Air, Crushable},
-    story_time::IsFastForwarding,
+    element::{commands::ElementCommandsExt, Air},
 };
 
 use super::{
     element::Element,
-    world_map::{position::Position, WorldMap},
     settings::Settings,
+    world_map::{position::Position, WorldMap},
 };
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
@@ -162,40 +161,6 @@ pub fn gravity_ants(
                 initiative.consume_movement();
                 initiative.consume_action();
             }
-        }
-    }
-}
-
-// TODO: wire up tests properly
-pub fn gravity_crush(
-    element_position_query: Query<(&Element, Ref<Position>, Entity), With<Crushable>>,
-    elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
-    mut commands: Commands,
-    settings: Res<Settings>,
-    is_fast_forwarding: Res<IsFastForwarding>,
-) {
-    // TODO: prefer not skipping gravity_crush when fast-forwarding, but searching `compact_sand_depth` number of elements
-    // is too slow. There's frequently ~600+ sand needing to be searched. A "pressure" system which calculates "pressure"
-    // as it changes (and thus eliminates the need to search) would be faster, but much more complicated.
-    if is_fast_forwarding.0 {
-        return;
-    }
-    // TODO: this could benefit from par_iter, but would need to reenvision it a bit.
-    for (element, position, entity) in element_position_query.iter() {
-        // Find all stationary sand
-        if *element != Element::Sand || position.is_changed() {
-            continue;
-        }
-
-        // Crush sand that is under sufficient pressure
-        let above_sand_positions: Vec<_> = (1..=settings.compact_sand_depth)
-            .map(|y| Position::new(position.x, position.y - y))
-            .collect();
-
-        if world_map.is_all_element(&elements_query, &above_sand_positions, Element::Sand) {
-            // Despawn the sand because it's been crushed into dirt and show the dirt by spawning a new element.
-            commands.replace_element(*position, Element::Dirt, entity);
         }
     }
 }

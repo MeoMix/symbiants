@@ -67,10 +67,6 @@ impl DirtElementBundle {
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
-pub struct Crushable;
-
-#[derive(Component, Reflect, Default)]
-#[reflect(Component)]
 pub struct Sand;
 
 #[derive(Bundle)]
@@ -79,7 +75,6 @@ pub struct SandElementBundle {
     element: Element,
     sand: Sand,
     position: Position,
-    crushable: Crushable,
     unstable: Unstable,
 }
 
@@ -90,7 +85,6 @@ impl SandElementBundle {
             element: Element::Sand,
             sand: Sand,
             position,
-            crushable: Crushable,
             unstable: Unstable,
         }
     }
@@ -152,7 +146,6 @@ pub fn register_element(
     register::<Food>(&app_type_registry, &mut saveable_registry);
     register::<Dirt>(&app_type_registry, &mut saveable_registry);
     register::<Sand>(&app_type_registry, &mut saveable_registry);
-    register::<Crushable>(&app_type_registry, &mut saveable_registry);
     register::<Unstable>(&app_type_registry, &mut saveable_registry);
 }
 

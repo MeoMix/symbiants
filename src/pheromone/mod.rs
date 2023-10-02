@@ -117,15 +117,12 @@ pub fn ants_tunnel_pheromone_move(
                 &mut rng,
             );
 
-            info!("ants_tunnel_pheromone_move - consumed movement");
-
             initiative.consume_movement();
             continue;
         }
 
         // Blocked, defer to default action
         if !has_air_ahead && !has_air_above {
-            info!("ants_tunnel_pheromone_move - blocked");
             continue;
         }
 
@@ -145,7 +142,6 @@ pub fn ants_tunnel_pheromone_move(
                 *ant_position = ahead_position;
             }
 
-            info!("ants_tunnel_pheromone_move - consumed movement 2");
             initiative.consume_movement();
         }
     }
@@ -200,9 +196,6 @@ pub fn ants_tunnel_pheromone_act(
         let dig_position = orientation.get_ahead_position(position);
         let dig_target_entity = *world_map.element(dig_position);
         commands.dig(ant_entity, dig_position, dig_target_entity);
-
-        info!("digging ahead");
-
         initiative.consume_action();
     }
 }

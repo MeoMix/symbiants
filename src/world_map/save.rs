@@ -123,9 +123,7 @@ pub fn load_existing_world(world: &mut World) -> bool {
             error!("Failed to load world state from local storage: {:?}", e);
         })
         .and_then(|saved_state| {
-            info!("deserializing");
             let mut serde = Deserializer::from_str(&saved_state);
-            info!("deserialized");
             world.deserialize(&mut serde).map_err(|e| {
                 error!("Deserialization error: {:?}", e);
             })

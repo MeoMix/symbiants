@@ -401,7 +401,6 @@ pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut comman
         Initiative::new(&mut rng),
     );
 
-    info!("spawning queen with default nesting");
     // Newly created queens instinctively start building a nest.
     commands.spawn((queen_ant, Nesting::default()));
 

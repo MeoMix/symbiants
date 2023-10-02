@@ -23,7 +23,7 @@ use crate::{
         register_element, setup_element, teardown_element,
         ui::{on_spawn_element, on_update_element_position},
     },
-    gravity::{gravity_ants, gravity_crush, gravity_elements, gravity_stability},
+    gravity::{gravity_ants, gravity_elements, gravity_stability},
     pheromone::{
         ants_chamber_pheromone, ants_chamber_pheromone_act, ants_tunnel_pheromone,
         ants_tunnel_pheromone_act, ants_tunnel_pheromone_move, register_pheromone, setup_pheromone,
@@ -34,7 +34,7 @@ use crate::{
     story_state::{check_story_over, on_story_cleanup, StoryState},
     story_time::{
         pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
-        teardown_story_time, update_story_time, update_time_scale,
+        teardown_story_time, update_story_time, update_time_scale, StoryPlaybackState,
     },
     world_map::{
         save::{load_existing_world, periodic_save_world_state, setup_save, teardown_save},
@@ -55,6 +55,9 @@ impl Plugin for SimulationPlugin {
         app.init_resource::<GlobalRng>();
 
         app.add_state::<StoryState>();
+        // TODO: call this in setup_story_time?
+        app.add_state::<StoryPlaybackState>();
+        info!("adding story playback state");
 
         app.add_systems(
             OnEnter(StoryState::Initializing),
@@ -120,7 +123,6 @@ impl Plugin for SimulationPlugin {
                         gravity_elements,
                         gravity_ants,
                         // Gravity side-effects can run whenever with little difference.
-                        gravity_crush,
                         gravity_stability,
                     )
                         .chain(),
@@ -198,7 +200,9 @@ impl Plugin for SimulationPlugin {
                 update_story_time,
                 set_rate_of_time,
             )
-                .run_if(in_state(StoryState::Telling))
+                .run_if(
+                    in_state(StoryState::Telling).and_then(in_state(StoryPlaybackState::Playing)),
+                )
                 .chain(),
         );
 

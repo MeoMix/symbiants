@@ -159,8 +159,6 @@ pub fn ants_act(
                     let dig_target_entity = *world_map.element(dig_position);
                     commands.dig(ant_entity, dig_position, dig_target_entity);
 
-                    info!("digging ahead");
-
                     initiative.consume_action();
                     continue;
                 }

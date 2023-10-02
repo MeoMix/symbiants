@@ -39,7 +39,6 @@ pub fn ants_stabilize_footing_movement(
             &mut rng,
         );
 
-        info!("ants_stabilize_footing_movement - consumed movement");
         initiative.consume_movement();
     }
 }
@@ -54,11 +53,8 @@ pub fn ants_walk(
 ) {
     for (mut initiative, mut position, mut orientation) in ants_query.iter_mut() {
         if !initiative.can_move() {
-            info!("ants_walk - initiative cannot move");
             continue;
         }
-
-        info!("ants_walk - can move");
 
         // An ant might be attempting to walk forward into a solid block. If so, they'll turn and walk up the block.
         let ahead_position = orientation.get_ahead_position(&position);
