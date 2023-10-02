@@ -73,36 +73,20 @@ pub fn ants_chamber_pheromone_act(
     }
 }
 
+/// Apply chambering to ants which walk over tiles covered in chamber pheromone.
+/// Chambering is set to Chambering(2). This encourages ants to dig for the next 2 steps.
 pub fn ants_add_chamber_pheromone(
-    mut ants_query: Query<
-        (
-            Entity,
-            Ref<Position>,
-            &AntInventory,
-            Option<&mut Chambering>,
-        ),
-        Without<Dead>,
-    >,
+    mut ants_query: Query<(Entity, &Position), Without<Dead>>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
 ) {
-    // Whenever an ant walks over a tile which has a pheromone, it will gain a Component representing that Pheromone.
-    for (ant_entity, ant_position, _, chambering) in ants_query.iter_mut() {
-        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position.as_ref()) {
+    for (ant_entity, ant_position) in ants_query.iter_mut() {
+        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position) {
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
 
-            match pheromone {
-                Pheromone::Chamber => {
-                    if let Some(mut chambering) = chambering {
-                        chambering.0 = 2;
-                        info!("Reset chambering to 2");
-                    } else {
-                        commands.entity(ant_entity).insert(Chambering(8));
-                        info!("Set chambering to 2!");
-                    }
-                }
-                _ => {}
+            if *pheromone == Pheromone::Chamber {
+                commands.entity(ant_entity).insert(Chambering(2));
             }
         }
     }

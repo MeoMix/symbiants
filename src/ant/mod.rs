@@ -10,7 +10,10 @@ use crate::{
     world_map::position::Position,
 };
 
-use self::{birthing::Birthing, hunger::Hunger, nesting::Nesting, tunneling::Tunneling, chambering::Chambering};
+use self::{
+    birthing::Birthing, chambering::Chambering, hunger::Hunger, nesting::Nesting,
+    tunneling::Tunneling,
+};
 
 use super::element::Element;
 use bevy::prelude::*;
@@ -263,6 +266,14 @@ impl AntOrientation {
 
     pub fn is_rightside_up(&self) -> bool {
         self.angle == Angle::Zero
+    }
+
+    pub fn is_facing_north(&self) -> bool {
+        match (self.angle, self.facing) {
+            (Angle::Ninety, Facing::Left) => true,
+            (Angle::TwoHundredSeventy, Facing::Right) => true,
+            _ => false,
+        }
     }
 
     pub fn turn_around(&self) -> Self {

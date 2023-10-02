@@ -149,30 +149,26 @@ pub fn ants_tunnel_pheromone_act(
     }
 }
 
+/// Apply tunneling to ants which walk over tiles covered in tunnel pheromone.
+/// Tunneling is set to Tunneling(8). This encourages ants to prioritize digging for the next 8 steps.
+/// Ants walking north avoid tunneling pheromone to ensure tunnels are always dug downward.
 pub fn ants_add_tunnel_pheromone(
-    mut ants_query: Query<
-        (Entity, Ref<Position>, &AntInventory, Option<&mut Tunneling>),
-        Without<Dead>,
-    >,
+    mut ants_query: Query<(Entity, &Position, &AntOrientation), Without<Dead>>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
 ) {
-    // TODO: Check if ant is facing upward
-    // Whenever an ant walks over a Tunneling pheromone, and it's not heading up out of the nest, it will gain the pheromone.
-    for (ant_entity, ant_position, _, tunneling) in ants_query.iter_mut() {
-        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position.as_ref()) {
+    for (ant_entity, ant_position, ant_orientation) in ants_query.iter_mut() {
+        if ant_orientation.is_facing_north() {
+            continue;
+        }
+
+        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position) {
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
 
             match pheromone {
                 Pheromone::Tunnel => {
-                    if let Some(mut tunneling) = tunneling {
-                        tunneling.0 = 8;
-                        info!("Reset tunneling to 8");
-                    } else {
-                        commands.entity(ant_entity).insert(Tunneling(8));
-                        info!("Set tunneling to 8!");
-                    }
+                    commands.entity(ant_entity).insert(Tunneling(8));
                 }
                 _ => {}
             }
