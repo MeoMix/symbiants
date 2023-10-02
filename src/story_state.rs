@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    ant::{AntRole, Dead},
-    save::delete_save,
-};
+use crate::ant::{AntRole, Dead};
 
 // TODO: Probably split this into AppState and StoryState where AppState encompasses the app
 // and StoryState is a single instance, usually 1:1 but 0:1 during story creation.
@@ -27,25 +24,42 @@ pub enum StoryState {
     GatheringSettings,
     Creating,
     FinalizingStartup,
-
     Telling,
     Over,
     Cleanup,
 }
 
-pub fn on_story_cleanup(mut story_state: ResMut<NextState<StoryState>>) {
-    delete_save();
-    story_state.set(StoryState::Initializing);
+pub fn restart_story(mut next_story_state: ResMut<NextState<StoryState>>) {
+    next_story_state.set(StoryState::Initializing);
+}
+
+pub fn continue_startup(
+    In(is_loading_existing_story): In<bool>,
+    mut next_story_state: ResMut<NextState<StoryState>>,
+) {
+    if is_loading_existing_story {
+        next_story_state.set(StoryState::FinalizingStartup);
+    } else {
+        next_story_state.set(StoryState::GatheringSettings);
+    }
+}
+
+pub fn finalize_startup(mut next_story_state: ResMut<NextState<StoryState>>) {
+    next_story_state.set(StoryState::FinalizingStartup);
+}
+
+pub fn begin_story(mut next_story_state: ResMut<NextState<StoryState>>) {
+    next_story_state.set(StoryState::Telling);
 }
 
 pub fn check_story_over(
     dead_ants_query: Query<&AntRole, With<Dead>>,
-    mut story_state: ResMut<NextState<StoryState>>,
+    mut next_story_state: ResMut<NextState<StoryState>>,
 ) {
     if dead_ants_query
         .iter()
         .any(|ant_role| *ant_role == AntRole::Queen)
     {
-        story_state.set(StoryState::Over);
+        next_story_state.set(StoryState::Over);
     }
 }

@@ -16,11 +16,7 @@ static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
 /// Provide an opportunity to write world state to disk.
 /// This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
 /// to avoid losing too much state in the event of a crash.
-pub fn save(
-    world: &mut World,
-    mut last_snapshot_time: Local<f32>,
-    mut last_save_time: Local<f32>,
-) {
+pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save_time: Local<f32>) {
     let current_time = world.resource::<Time>().raw_elapsed_seconds();
     let snapshot_interval = world.resource::<Settings>().snapshot_interval;
     if *last_snapshot_time != 0.0 && current_time - *last_snapshot_time < snapshot_interval as f32 {
@@ -99,6 +95,8 @@ pub fn setup_save() {
 }
 
 pub fn teardown_save() {
+    LocalStorage::delete(LOCAL_STORAGE_KEY);
+
     let window = web_sys::window().expect("window not available");
 
     ON_BEFORE_UNLOAD.with(|opt_closure| {
@@ -125,8 +123,4 @@ pub fn load(world: &mut World) -> bool {
             })
         })
         .is_ok()
-}
-
-pub fn delete_save() {
-    LocalStorage::delete(LOCAL_STORAGE_KEY);
 }

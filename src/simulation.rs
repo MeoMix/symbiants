@@ -35,7 +35,10 @@ use crate::{
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     save::{load, save, setup_save, teardown_save},
     settings::{pre_setup_settings, register_settings, teardown_settings},
-    story_state::{check_story_over, on_story_cleanup, StoryState},
+    story_state::{
+        begin_story, check_story_over, continue_startup, finalize_startup, restart_story,
+        StoryState,
+    },
     story_time::{
         pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
         teardown_story_time, update_story_time, update_time_scale, StoryPlaybackState,
@@ -72,7 +75,7 @@ impl Plugin for SimulationPlugin {
                 register_pheromone,
                 (pre_setup_settings, apply_deferred).chain(),
                 (pre_setup_story_time, apply_deferred).chain(),
-                try_load_from_save,
+                load.pipe(continue_startup),
             )
                 .chain(),
         );
@@ -99,10 +102,10 @@ impl Plugin for SimulationPlugin {
         // If this is ran OnEnter FinalizingStartup then the accumulated time will be reset to zero before FixedUpdate runs.
         app.add_systems(OnExit(StoryState::FinalizingStartup), setup_story_time);
 
-        // NOTE: don't process user input events in FixedUpdate because events in FixedUpdate are broken (should be fixed in bevy 0.12)
+        // IMPORTANT: don't process user input in FixedUpdate because events in FixedUpdate are broken
+        // https://github.com/bevyengine/bevy/issues/7691
         app.add_systems(
             Update,
-            // TODO: coupling... need to handle clicking the simulation after menus so pointer capture works properly
             (is_pointer_captured, handle_pointer_tap)
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
@@ -226,28 +229,9 @@ impl Plugin for SimulationPlugin {
                 teardown_world_map,
                 #[cfg(target_arch = "wasm32")]
                 teardown_save,
-                on_story_cleanup,
+                restart_story,
             )
                 .chain(),
         );
     }
-}
-
-pub fn try_load_from_save(world: &mut World) {
-    let is_loaded = load(world);
-
-    let mut story_state = world.resource_mut::<NextState<StoryState>>();
-    if is_loaded {
-        story_state.set(StoryState::FinalizingStartup);
-    } else {
-        story_state.set(StoryState::GatheringSettings);
-    }
-}
-
-pub fn finalize_startup(mut story_state: ResMut<NextState<StoryState>>) {
-    story_state.set(StoryState::FinalizingStartup);
-}
-
-pub fn begin_story(mut story_state: ResMut<NextState<StoryState>>) {
-    story_state.set(StoryState::Telling);
 }

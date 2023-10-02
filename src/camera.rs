@@ -1,7 +1,7 @@
 use crate::{
     world_map::WorldMap,
     pancam::{PanCam, PanCamPlugin},
-    story_state::{on_story_cleanup, StoryState},
+    story_state::{restart_story, StoryState},
 };
 use bevy::{
     prelude::*,
@@ -83,7 +83,7 @@ impl Plugin for CameraPlugin {
 
         app.add_systems(
             OnEnter(StoryState::Cleanup),
-            teardown.before(on_story_cleanup),
+            teardown.before(restart_story),
         );
 
         // TODO: This should probably include "Over" until I split states out

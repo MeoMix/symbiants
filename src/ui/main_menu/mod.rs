@@ -8,7 +8,7 @@ use bevy_egui::{
 // TODO: About menu
 pub fn update_main_menu_dialog(
     mut contexts: EguiContexts,
-    mut story_state: ResMut<NextState<StoryState>>,
+    mut next_story_state: ResMut<NextState<StoryState>>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -24,7 +24,7 @@ pub fn update_main_menu_dialog(
                     .on_disabled_hover_text("Coming soon™!");
 
                 if ui.button("Sandbox Mode").clicked() {
-                    story_state.set(StoryState::Creating);
+                    next_story_state.set(StoryState::Creating);
                 }
             });
         });

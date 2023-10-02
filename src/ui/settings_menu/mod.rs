@@ -11,7 +11,7 @@ use crate::{
 pub fn update_settings_menu(
     mut contexts: EguiContexts,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    mut story_state: ResMut<NextState<StoryState>>,
+    mut next_story_state: ResMut<NextState<StoryState>>,
     mut ticks_per_second: ResMut<TicksPerSecond>,
     story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
@@ -24,11 +24,11 @@ pub fn update_settings_menu(
         .resizable(false)
         .show(ctx, |ui| {
             if ui.button("Reset Story").clicked() {
-                story_state.set(StoryState::Cleanup);
+                next_story_state.set(StoryState::Cleanup);
             }
 
             if ui.button("End Story").clicked() {
-                story_state.set(StoryState::Over);
+                next_story_state.set(StoryState::Over);
             }
 
             ui.add(

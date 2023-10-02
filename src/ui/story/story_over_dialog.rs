@@ -8,7 +8,7 @@ use crate::story_state::StoryState;
 
 pub fn update_story_over_dialog(
     mut contexts: EguiContexts,
-    mut story_state: ResMut<NextState<StoryState>>,
+    mut next_story_state: ResMut<NextState<StoryState>>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -21,7 +21,7 @@ pub fn update_story_over_dialog(
 
             ui.vertical_centered(|ui| {
                 if ui.button("Begin New Story").clicked() {
-                    story_state.set(StoryState::Cleanup);
+                    next_story_state.set(StoryState::Cleanup);
                 }
             });
         });
