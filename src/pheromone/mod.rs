@@ -8,6 +8,7 @@ pub mod commands;
 pub mod ui;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub enum Pheromone {
     #[default]
     Tunnel,

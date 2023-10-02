@@ -44,9 +44,6 @@ pub fn ants_chamber_pheromone_act(
         if inventory.0 != None {
             continue;
         }
-
-        info!("Chambering!");
-
         if try_dig(
             &ant_entity,
             &orientation.get_ahead_position(ant_position),

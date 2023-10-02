@@ -268,8 +268,8 @@ impl AntOrientation {
 
     pub fn is_facing_north(&self) -> bool {
         match (self.angle, self.facing) {
-            (Angle::Ninety, Facing::Left) => true,
-            (Angle::TwoHundredSeventy, Facing::Right) => true,
+            (Angle::Ninety, Facing::Right) => true,
+            (Angle::TwoHundredSeventy, Facing::Left) => true,
             _ => false,
         }
     }
