@@ -5,9 +5,6 @@ use uuid::Uuid;
 
 use crate::world_map::position::Position;
 
-#[derive(Component, Copy, Clone)]
-pub struct TranslationOffset(pub Vec3);
-
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct Id(pub Uuid);

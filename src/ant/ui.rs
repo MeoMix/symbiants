@@ -2,12 +2,15 @@ use std::ops::Add;
 
 use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead};
 use crate::{
-    common::{get_entity_from_id, Id, TranslationOffset},
+    common::{get_entity_from_id, Id},
     element::{ui::get_element_sprite, Element},
     story_time::StoryPlaybackState,
     world_map::{position::Position, WorldMap},
 };
 use bevy::prelude::*;
+
+#[derive(Component, Copy, Clone)]
+pub struct TranslationOffset(pub Vec3);
 
 pub fn on_spawn_ant(
     mut commands: Commands,
