@@ -5,22 +5,24 @@ use std::f32::consts::PI;
 
 use crate::{
     common::{register, Id},
-    world_map::position::Position,
     name_list::get_random_name,
     settings::Settings,
+    world_map::position::Position,
 };
 
-use self::{birthing::Birthing, hunger::Hunger, nesting::Nesting};
+use self::{birthing::Birthing, hunger::Hunger, nesting::Nesting, tunneling::Tunneling, chambering::Chambering};
 
 use super::element::Element;
 use bevy::prelude::*;
 
 pub mod act;
 pub mod birthing;
+pub mod chambering;
 pub mod commands;
 pub mod hunger;
-pub mod nesting;
 pub mod nest_expansion;
+pub mod nesting;
+pub mod tunneling;
 pub mod ui;
 pub mod walk;
 
@@ -386,6 +388,8 @@ pub fn register_ant(
     register::<AntInventory>(&app_type_registry, &mut saveable_registry);
     register::<InventoryItem>(&app_type_registry, &mut saveable_registry);
     register::<Birthing>(&app_type_registry, &mut saveable_registry);
+    register::<Tunneling>(&app_type_registry, &mut saveable_registry);
+    register::<Chambering>(&app_type_registry, &mut saveable_registry);
 }
 
 pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut commands: Commands) {

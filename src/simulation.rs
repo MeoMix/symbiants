@@ -10,6 +10,8 @@ use crate::{
         hunger::ants_hunger,
         nest_expansion::ants_nest_expansion,
         nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
+        tunneling::{ants_tunnel_pheromone, ants_tunnel_pheromone_act, ants_tunnel_pheromone_move},
+        chambering::{ants_chamber_pheromone, ants_chamber_pheromone_act},
         register_ant, setup_ant, teardown_ant,
         ui::{
             on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
@@ -25,8 +27,7 @@ use crate::{
     },
     gravity::{gravity_ants, gravity_elements, gravity_stability},
     pheromone::{
-        ants_chamber_pheromone, ants_chamber_pheromone_act, ants_tunnel_pheromone,
-        ants_tunnel_pheromone_act, ants_tunnel_pheromone_move, register_pheromone, setup_pheromone,
+        register_pheromone, setup_pheromone,
         ui::on_spawn_pheromone,
     },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
@@ -55,7 +56,6 @@ impl Plugin for SimulationPlugin {
         app.add_state::<StoryState>();
         // TODO: call this in setup_story_time?
         app.add_state::<StoryPlaybackState>();
-        info!("adding story playback state");
 
         app.add_systems(
             OnEnter(StoryState::Initializing),
