@@ -8,9 +8,9 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use crate::{
     ant::commands::AntCommandsExt,
     element::Element,
-    world_map::{position::Position, WorldMap},
-    pheromone::{Pheromone, commands::PheromoneCommandsExt},
+    pheromone::{commands::PheromoneCommandsExt, Pheromone},
     settings::Settings,
+    world_map::{position::Position, WorldMap},
 };
 
 use super::{hunger::Hunger, AntInventory, AntOrientation, AntRole, Dead, Initiative};
@@ -64,6 +64,7 @@ pub fn ants_nest_expansion(
 
         if is_crowded && rng.f32() < settings.probabilities.expand_nest {
             // Collect a set of positions to check for dirt.
+            // These positions are all East/South/West of the ant and are never behind the ant.
             let mut positions = Vec::new();
             if ant_orientation.is_rightside_up() {
                 // If ant is rightside up then it can dig forward (east/west) or below it (south).
@@ -78,7 +79,10 @@ pub fn ants_nest_expansion(
                 // If ant is vertical pointing down then ant can dig forward (south) above it (east/west) or below it (east/west).
                 positions.push(ant_orientation.get_above_position(ant_position));
                 positions.push(ant_orientation.get_below_position(ant_position));
-                // TODO: double-check logic for facing downward and include digging south
+
+                if ant_orientation.is_facing_south() {
+                    positions.push(ant_orientation.get_ahead_position(ant_position));
+                }
             }
 
             let dirt_position = positions
@@ -86,17 +90,11 @@ pub fn ants_nest_expansion(
                 .find(|position| world_map.is_element(&elements_query, **position, Element::Dirt));
 
             if let Some(dirt_position) = dirt_position {
-                // Look for a dirt block to the east/west/south of current position
-                // TODO: need to handle the fact an ant could be upside down - I don't want them digging "down" from themselves and going north
-
-                // let dig_position = ant_orientation.get_below_position(ant_position);
                 let dig_target_entity = *world_map.element(*dirt_position);
                 commands.dig(ant_entity, *dirt_position, dig_target_entity);
 
                 // TODO: maybe consume movement here too since it looks weird when digging down and moving forward in same frame?
                 initiative.consume_action();
-                // *nesting = Nesting::Started(dig_position);
-
                 commands.spawn_pheromone(*dirt_position, Pheromone::Tunnel);
             }
         }

@@ -121,11 +121,14 @@ pub fn ants_tunnel_pheromone_act(
             continue;
         }
 
-        let ahead_position = orientation.get_ahead_position(position);
+        // Tunneling up only results in breaching the surface which isn't desirable because then sand pours
+        // in constantly and overwhelms the colony.
+        if orientation.is_facing_north() {
+            continue;
+        }
 
+        let ahead_position = orientation.get_ahead_position(position);
         if !world_map.is_within_bounds(&ahead_position) {
-            // Hit an edge - need to turn.
-            error!("tunneled into wall - need to figure out how to handle this better still");
             continue;
         }
 
@@ -139,9 +142,6 @@ pub fn ants_tunnel_pheromone_act(
             continue;
         }
 
-        // TODO: Make this a little less rigid - it's weird seeing always a straight line down 8.
-        // TODO: prefer only going straight or down when digging tunnels.
-        // rng.f32() < settings.probabilities.below_surface_queen_nest_dig;
         let dig_position = orientation.get_ahead_position(position);
         let dig_target_entity = *world_map.element(dig_position);
         commands.dig(ant_entity, dig_position, dig_target_entity);

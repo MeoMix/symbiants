@@ -1,8 +1,8 @@
 use crate::{
     common::{get_entity_from_id, Id},
     element::Element,
-    world_map::{position::Position, WorldMap},
     settings::Settings,
+    world_map::{position::Position, WorldMap},
 };
 
 use super::{
@@ -39,74 +39,19 @@ pub fn ants_act(
             continue;
         }
 
-        // Add some randomness to worker behavior to make more lively, need to avoid applying this to queen because
-        // too much randomness can kill her before she can nest
-        if *role == AntRole::Worker {
-            if inventory.0 == None {
-                // Randomly dig downwards / perpendicular to current orientation
-                if rng.f32() < settings.probabilities.random_dig
-                // Only queen should dig initial nest tunnel / breach the surface.
-                    && world_map.is_underground(&position)
-                {
-                    // let ahead_position = orientation.get_ahead_position(position);
+        if *role == AntRole::Worker
+            && inventory.0 != None
+            && rng.f32() < settings.probabilities.random_drop
+        {
+            let target_element_entity = world_map.element(*position);
+            commands.drop(ant_entity, *position, *target_element_entity);
 
-                    // if world_map.is_within_bounds(&ahead_position) {
-                    //     let target_element_entity = *world_map.element(ahead_position);
-
-                    //     let target_element = elements_query.get(target_element_entity);
-
-                    //     // TODO: Don't copy/paste this logic around - make it more local to the idea of digging.
-                    //     // The intent here is to prevent ants from digging through dirt such that they destroy their base by digging holes through walls.
-                    //     let dig_dirt =
-                    //         target_element.is_ok() && *target_element.unwrap() == Element::Dirt;
-                    //     let mut allow_dig = true;
-
-                    //     if dig_dirt {
-                    //         // Don't allow digging through dirt underground if it would break through into another tunnel or break through the surface.
-                    //         let ahead_ahead_position =
-                    //             orientation.get_ahead_position(&ahead_position);
-
-                    //         if world_map.is_within_bounds(&ahead_ahead_position) {
-                    //             let forward_target_element_entity =
-                    //                 world_map.element(ahead_ahead_position);
-
-                    //             let Ok(forward_target_element) =
-                    //                 elements_query.get(*forward_target_element_entity)
-                    //             else {
-                    //                 panic!("act - expected entity to exist")
-                    //             };
-
-                    //             // If the check here is for air then digging up through surface with sand stacked ontop is allowed
-                    //             // which can result in ants undermining their own nest.
-                    //             if *forward_target_element != Element::Dirt {
-                    //                 allow_dig = false;
-                    //             }
-                    //         }
-                    //     }
-
-                    //     if allow_dig {
-                    //         commands.dig(ant_entity, ahead_position, target_element_entity);
-
-                    //         initiative.consume_action();
-                    //         continue;
-                    //     }
-                    // }
-                }
-            } else {
-                if rng.f32() < settings.probabilities.random_drop {
-                    let target_element_entity = world_map.element(*position);
-                    commands.drop(ant_entity, *position, *target_element_entity);
-
-                    initiative.consume_action();
-                    continue;
-                }
-            }
+            initiative.consume_action();
+            continue;
         }
 
         let ahead_position = orientation.get_ahead_position(position);
-
         if !world_map.is_within_bounds(&ahead_position) {
-            // Hit an edge - need to turn.
             continue;
         }
 
@@ -127,32 +72,6 @@ pub fn ants_act(
                 let dig_sand = *element == Element::Sand
                     && world_map.is_underground(&position)
                     && birthing.is_none();
-                // If digging would break through into an open area then don't do that.
-                // IRL this would be done by sensing pressure on the dirt, but in game we allow ants to look one unit ahead.
-                // let mut dig_dirt = *element == Element::Dirt
-                //     && world_map.is_underground(&position)
-                //     && rng.f32() < settings.probabilities.below_surface_dirt_dig
-                //     && birthing.is_none();
-
-                // if dig_dirt {
-                //     // Don't allow digging through dirt underground if it would break through into another tunnel or break through the surface.
-                //     let ahead_ahead_position = orientation.get_ahead_position(&ahead_position);
-                //     let ahead_ahead_element_entity = world_map.get_element(ahead_ahead_position);
-
-                //     if ahead_ahead_element_entity.is_some() {
-                //         let Ok(next_forward_element) =
-                //             elements_query.get(*ahead_ahead_element_entity.unwrap())
-                //         else {
-                //             panic!("act - expected entity to exist")
-                //         };
-
-                //         // If the check here is for air then digging up through surface with sand stacked ontop is allowed
-                //         // which can result in ants undermining their own nest.
-                //         if *next_forward_element != Element::Dirt {
-                //             dig_dirt = false;
-                //         }
-                //     }
-                // }
 
                 if dig_food || dig_sand {
                     let dig_position = orientation.get_ahead_position(position);

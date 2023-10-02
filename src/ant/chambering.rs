@@ -34,7 +34,8 @@ pub fn ants_chamber_pheromone_act(
     //  3) Either step forward or turn around
     //  4) Repeat while covered in pheromone
 
-    for (orientation, inventory, mut initiative, ant_position, ant_entity) in ants_query.iter_mut()
+    for (ant_orientation, inventory, mut initiative, ant_position, ant_entity) in
+        ants_query.iter_mut()
     {
         if !initiative.can_act() {
             continue;
@@ -44,29 +45,34 @@ pub fn ants_chamber_pheromone_act(
         if inventory.0 != None {
             continue;
         }
-        if try_dig(
-            &ant_entity,
-            &orientation.get_ahead_position(ant_position),
-            &elements_query,
-            &world_map,
-            &mut commands,
-        ) {
+
+        // Don't dig chambers northward because it can break through the surface.
+        if !ant_orientation.is_facing_north()
+            && try_dig(
+                &ant_entity,
+                &ant_orientation.get_ahead_position(ant_position),
+                &elements_query,
+                &world_map,
+                &mut commands,
+            )
+        {
             initiative.consume_action();
             continue;
         }
 
-        if try_dig(
-            &ant_entity,
-            &orientation.get_above_position(ant_position),
-            &elements_query,
-            &world_map,
-            &mut commands,
-        ) {
+        // Don't dig chambers northward because it can break through the surface.
+        if !ant_orientation.is_rightside_up()
+            && try_dig(
+                &ant_entity,
+                &ant_orientation.get_above_position(ant_position),
+                &elements_query,
+                &world_map,
+                &mut commands,
+            )
+        {
             initiative.consume_action();
             continue;
         }
-
-        // TODO: maybe take control of walking here? idk.
     }
 }
 

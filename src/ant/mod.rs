@@ -272,6 +272,14 @@ impl AntOrientation {
             (Angle::TwoHundredSeventy, Facing::Left) => true,
             _ => false,
         }
+    }    
+    
+    pub fn is_facing_south(&self) -> bool {
+        match (self.angle, self.facing) {
+            (Angle::TwoHundredSeventy, Facing::Right) => true,
+            (Angle::Ninety, Facing::Left) => true,
+            _ => false,
+        }
     }
 
     pub fn turn_around(&self) -> Self {
