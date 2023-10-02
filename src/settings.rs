@@ -14,10 +14,8 @@ pub struct Probabilities {
     pub below_surface_dirt_dig: f32,  // chance to dig dirt when below surface level
     pub above_surface_sand_drop: f32, // chance to randomly drop sand when at-or-above surface level
     pub below_surface_food_drop: f32, // chance to randomly drop food when below surface level
-
     pub above_surface_queen_nest_dig: f32,
     pub below_surface_queen_nest_dig: f32,
-
     pub expand_nest: f32,
 }
 
@@ -28,8 +26,6 @@ pub struct Settings {
     pub save_interval: isize,
     pub world_width: isize,
     pub world_height: isize,
-    // sand turns to dirt when stacked this high
-    pub compact_sand_depth: isize,
     pub minimum_nest_depth: isize,
     pub initial_dirt_percent: f32,
     pub initial_ant_worker_count: isize,
@@ -59,7 +55,6 @@ impl Default for Settings {
             snapshot_interval: 5, // TODO: prefer 1 here but it's too slow (in debug at least), kills FPS
             world_width: 144,
             world_height: 81,
-            compact_sand_depth: 15,
             minimum_nest_depth: 8,
             initial_dirt_percent: 3.0 / 4.0,
             initial_ant_worker_count: 0,
@@ -76,10 +71,8 @@ impl Default for Settings {
                 below_surface_dirt_dig: 0.05,
                 above_surface_sand_drop: 0.05,
                 below_surface_food_drop: 0.20,
-
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,
-
                 // TODO: play with this value
                 expand_nest: 0.50,
             },
