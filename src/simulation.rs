@@ -226,6 +226,7 @@ impl Plugin for SimulationPlugin {
                 teardown_background,
                 teardown_ant,
                 teardown_element,
+                teardown_pheromone,
                 teardown_world_map,
                 #[cfg(target_arch = "wasm32")]
                 teardown_save,

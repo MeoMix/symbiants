@@ -6,7 +6,7 @@ use std::time::Duration;
 use crate::common::register;
 
 pub const DEFAULT_TICKS_PER_SECOND: isize = 6;
-pub const MAX_USER_TICKS_PER_SECOND: isize = 600;
+pub const MAX_USER_TICKS_PER_SECOND: isize = 1_200;
 pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 12_000;
 pub const SECONDS_PER_HOUR: isize = 3_600;
 pub const SECONDS_PER_DAY: isize = 86_400;

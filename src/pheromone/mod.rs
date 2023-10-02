@@ -45,3 +45,7 @@ pub fn setup_pheromone(
 
     commands.insert_resource(PheromoneMap(pheromone_map));
 }
+
+pub fn teardown_pheromone(mut commands: Commands) {
+    commands.remove_resource::<PheromoneMap>();
+}
