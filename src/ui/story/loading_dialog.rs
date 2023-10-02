@@ -4,22 +4,18 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::story_time::{
-    RemainingPendingTicks, StoryPlaybackState, TicksPerSecond, TotalPendingTicks,
-};
+use crate::story_time::{FastForwardingStateInfo, StoryPlaybackState, DEFAULT_TICKS_PER_SECOND};
 
 // Don't flicker the dialogs visibility when processing a small number of ticks
-const MIN_PENDING_TICKS: isize = 1000;
+const MIN_PENDING_TICKS: isize = 6000;
 
 pub fn update_loading_dialog(
     mut contexts: EguiContexts,
-    remaining_pending_ticks: Res<RemainingPendingTicks>,
-    total_pending_ticks: Res<TotalPendingTicks>,
+    fast_forwarding_state_info: Res<FastForwardingStateInfo>,
     story_playback_state: ResMut<State<StoryPlaybackState>>,
-    ticks_per_second: Res<TicksPerSecond>,
 ) {
     if story_playback_state.get() != &StoryPlaybackState::FastForwarding
-        || total_pending_ticks.0 < MIN_PENDING_TICKS
+        || fast_forwarding_state_info.initial_pending_ticks < MIN_PENDING_TICKS
     {
         return;
     }
@@ -29,10 +25,14 @@ pub fn update_loading_dialog(
         .collapsible(false)
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
-            let minutes_gone = (total_pending_ticks.0 as f32) / (60.0 / ticks_per_second.0 * 60.0);
+            let minutes_gone = (fast_forwarding_state_info.initial_pending_ticks as f32)
+                / (60.0 / DEFAULT_TICKS_PER_SECOND * 60.0);
 
             ui.label(&format!("You were gone for {:.0} minutes.", minutes_gone));
             ui.label("Please wait while this time is simulated.");
-            ui.label(&format!("Remaining ticks: {}", remaining_pending_ticks.0));
+            ui.label(&format!(
+                "Remaining ticks: {}",
+                fast_forwarding_state_info.pending_ticks
+            ));
         });
 }

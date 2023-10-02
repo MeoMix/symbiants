@@ -7,7 +7,7 @@ use crate::common::register;
 
 pub const DEFAULT_TICKS_PER_SECOND: f32 = 6.0;
 pub const MAX_USER_TICKS_PER_SECOND: f32 = 600.0;
-pub const MAX_SYSTEM_TICKS_PER_SECOND: f32 = 6000.0;
+pub const MAX_SYSTEM_TICKS_PER_SECOND: f32 = 12000.0;
 pub const SECONDS_PER_HOUR: i64 = 3600;
 pub const SECONDS_PER_DAY: i64 = 86_400;
 
@@ -39,10 +39,10 @@ impl StoryTime {
 pub struct TicksPerSecond(pub f32);
 
 #[derive(Resource, Default)]
-pub struct RemainingPendingTicks(pub isize);
-
-#[derive(Resource, Default)]
-pub struct TotalPendingTicks(pub isize);
+pub struct FastForwardingStateInfo {
+    pub initial_pending_ticks: isize,
+    pub pending_ticks: isize,
+}
 
 #[derive(States, Default, Hash, Clone, Copy, Eq, PartialEq, Debug)]
 pub enum StoryPlaybackState {
@@ -63,8 +63,7 @@ pub fn register_story_time(
 // TODO: awkward timing for this - need to have resources available before calling try_load_from_save
 pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryTime>();
-    commands.init_resource::<RemainingPendingTicks>();
-    commands.init_resource::<TotalPendingTicks>();
+    commands.init_resource::<FastForwardingStateInfo>();
 
     // Control the speed of the simulation by defining how many simulation ticks occur per second.
     commands.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND));
@@ -100,8 +99,7 @@ pub fn teardown_story_time(
     mut ticks_per_second: ResMut<TicksPerSecond>,
 ) {
     commands.remove_resource::<StoryTime>();
-    commands.remove_resource::<RemainingPendingTicks>();
-    commands.remove_resource::<TotalPendingTicks>();
+    commands.remove_resource::<FastForwardingStateInfo>();
 
     // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
     fixed_time.period = Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND);
@@ -113,18 +111,17 @@ pub fn teardown_story_time(
 /// Once compensated tick rate has been processed then reset back to default tick rate.
 pub fn set_rate_of_time(
     mut fixed_time: ResMut<FixedTime>,
-    mut remaining_pending_ticks: ResMut<RemainingPendingTicks>,
-    mut total_pending_ticks: ResMut<TotalPendingTicks>,
+    mut fast_forward_state_info: ResMut<FastForwardingStateInfo>,
     ticks_per_second: Res<TicksPerSecond>,
     story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
 ) {
-    if remaining_pending_ticks.0 == 0 {
+    if fast_forward_state_info.pending_ticks == 0 {
         if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
             fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0);
 
             next_story_playback_state.set(StoryPlaybackState::Playing);
-            total_pending_ticks.0 = 0;
+            fast_forward_state_info.initial_pending_ticks = 0;
         } else {
             let accumulated_time = fixed_time.accumulated();
 
@@ -138,13 +135,13 @@ pub fn set_rate_of_time(
 
                 next_story_playback_state.set(StoryPlaybackState::FastForwarding);
 
-                remaining_pending_ticks.0 =
-                    (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
-                total_pending_ticks.0 = remaining_pending_ticks.0;
+                let ticks = (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
+                fast_forward_state_info.pending_ticks = ticks;
+                fast_forward_state_info.initial_pending_ticks = ticks;
             }
         }
     } else {
-        remaining_pending_ticks.0 -= 1;
+        fast_forward_state_info.pending_ticks -= 1;
     }
 }
 
