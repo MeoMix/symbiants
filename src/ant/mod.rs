@@ -195,12 +195,10 @@ impl Angle {
         (self as isize as f32) * PI / 180.0
     }
 
-    /**
-     * Rotation is a value from 0 to 3. A value of 1 is a 90 degree counter-clockwise rotation. Negative values are accepted.
-     * Examples:
-     *  rotate(0, -1); // 270
-     *  rotate(0, 1); // 90
-     */
+    /// Rotation is a value from 0 to 3. A value of 1 is a 90 degree counter-clockwise rotation. Negative values are accepted.
+    /// Examples:
+    ///     rotate(0, -1); // 270
+    ///     rotate(0, 1); // 90
     pub fn rotate(self, rotation: i32) -> Self {
         let angles = [
             Angle::Zero,
