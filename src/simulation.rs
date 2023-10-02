@@ -30,16 +30,14 @@ use crate::{
         ui::on_spawn_pheromone,
     },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
+    save::{load, save, setup_save, teardown_save},
     settings::{pre_setup_settings, register_settings, teardown_settings},
     story_state::{check_story_over, on_story_cleanup, StoryState},
     story_time::{
         pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
         teardown_story_time, update_story_time, update_time_scale, StoryPlaybackState,
     },
-    world_map::{
-        save::{load_existing_world, periodic_save_world_state, setup_save, teardown_save},
-        setup_world_map, teardown_world_map,
-    },
+    world_map::{setup_world_map, teardown_world_map},
 };
 
 pub struct SimulationPlugin;
@@ -180,12 +178,8 @@ impl Plugin for SimulationPlugin {
                 // This would result in a panic due to missing Element entity unless the render command was rewritten manually
                 // to safeguard against missing entity at time of command application.
                 apply_deferred,
-                // Provide an opportunity to write world state to disk.
-                // This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
-                // to avoid losing too much state in the event of a crash.
-                #[cfg(target_arch = "wasm32")]
-                periodic_save_world_state,
                 // Ensure render state reflects simulation state after having applied movements and command updates.
+                // Must run in FixedUpdate otherwise change detection won't properly work if FixedUpdate loop runs multiple times in a row.
                 (
                     on_update_ant_position,
                     on_update_ant_orientation,
@@ -201,9 +195,20 @@ impl Plugin for SimulationPlugin {
                 set_rate_of_time,
             )
                 .run_if(
-                    in_state(StoryState::Telling).and_then(in_state(StoryPlaybackState::Playing)),
+                    in_state(StoryState::Telling)
+                        .and_then(not(in_state(StoryPlaybackState::Paused))),
                 )
                 .chain(),
+        );
+
+        // Saving in WASM writes to local storage which requires dedicated support.
+        #[cfg(target_arch = "wasm32")]
+        app.add_systems(
+            PostUpdate,
+            // Saving is an expensive operation. Skip while fast-forwarding for performance.
+            save.run_if(
+                in_state(StoryState::Telling).and_then(in_state(StoryPlaybackState::Playing)),
+            ),
         );
 
         app.add_systems(
@@ -225,7 +230,7 @@ impl Plugin for SimulationPlugin {
 }
 
 pub fn try_load_from_save(world: &mut World) {
-    let is_loaded = load_existing_world(world);
+    let is_loaded = load(world);
 
     let mut story_state = world.resource_mut::<NextState<StoryState>>();
     if is_loaded {

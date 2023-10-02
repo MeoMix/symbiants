@@ -7,24 +7,20 @@ use std::{cell::RefCell, ops::Deref, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
-use crate::{settings::Settings, story_time::IsFastForwarding};
+use crate::settings::Settings;
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
 static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
 
-// TODO: no way this should be here - it's like a separate module entirely?
-
-pub fn periodic_save_world_state(
+/// Provide an opportunity to write world state to disk.
+/// This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
+/// to avoid losing too much state in the event of a crash.
+pub fn save(
     world: &mut World,
     mut last_snapshot_time: Local<f32>,
     mut last_save_time: Local<f32>,
 ) {
-    // Don't save while state is fast forwarding because it will cause a lot of lag.
-    if world.resource::<IsFastForwarding>().0 {
-        return;
-    }
-
     let current_time = world.resource::<Time>().raw_elapsed_seconds();
     let snapshot_interval = world.resource::<Settings>().snapshot_interval;
     if *last_snapshot_time != 0.0 && current_time - *last_snapshot_time < snapshot_interval as f32 {
@@ -117,7 +113,7 @@ pub fn teardown_save() {
     });
 }
 
-pub fn load_existing_world(world: &mut World) -> bool {
+pub fn load(world: &mut World) -> bool {
     LocalStorage::get::<String>(LOCAL_STORAGE_KEY)
         .map_err(|e| {
             error!("Failed to load world state from local storage: {:?}", e);

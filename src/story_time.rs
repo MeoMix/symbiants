@@ -38,10 +38,6 @@ impl StoryTime {
 #[derive(Resource, Default)]
 pub struct TicksPerSecond(pub f32);
 
-// TODO: IsFastForwarding should be expressed as a derived property of PendingTicks.0 > 0
-#[derive(Resource, Default)]
-pub struct IsFastForwarding(pub bool);
-
 #[derive(Resource, Default)]
 pub struct RemainingPendingTicks(pub isize);
 
@@ -67,7 +63,6 @@ pub fn register_story_time(
 // TODO: awkward timing for this - need to have resources available before calling try_load_from_save
 pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryTime>();
-    commands.init_resource::<IsFastForwarding>();
     commands.init_resource::<RemainingPendingTicks>();
     commands.init_resource::<TotalPendingTicks>();
 
@@ -83,7 +78,7 @@ pub fn pre_setup_story_time(mut commands: Commands) {
 pub fn setup_story_time(
     mut story_time: ResMut<StoryTime>,
     mut fixed_time: ResMut<FixedTime>,
-    mut story_playback_state: ResMut<NextState<StoryPlaybackState>>,
+    mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
 ) {
     // Setup story_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
     if story_time.0 == 0 {
@@ -96,8 +91,7 @@ pub fn setup_story_time(
         fixed_time.tick(Duration::from_secs(delta_seconds as u64));
     }
 
-    story_playback_state.set(StoryPlaybackState::Playing);
-    info!("changed state to playing");
+    next_story_playback_state.set(StoryPlaybackState::Playing);
 }
 
 pub fn teardown_story_time(
@@ -106,7 +100,6 @@ pub fn teardown_story_time(
     mut ticks_per_second: ResMut<TicksPerSecond>,
 ) {
     commands.remove_resource::<StoryTime>();
-    commands.remove_resource::<IsFastForwarding>();
     commands.remove_resource::<RemainingPendingTicks>();
     commands.remove_resource::<TotalPendingTicks>();
 
@@ -120,13 +113,19 @@ pub fn teardown_story_time(
 /// Once compensated tick rate has been processed then reset back to default tick rate.
 pub fn set_rate_of_time(
     mut fixed_time: ResMut<FixedTime>,
-    mut is_fast_forwarding: ResMut<IsFastForwarding>,
     mut remaining_pending_ticks: ResMut<RemainingPendingTicks>,
     mut total_pending_ticks: ResMut<TotalPendingTicks>,
     ticks_per_second: Res<TicksPerSecond>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
+    mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
 ) {
     if remaining_pending_ticks.0 == 0 {
-        if !is_fast_forwarding.0 {
+        if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
+            fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0);
+
+            next_story_playback_state.set(StoryPlaybackState::Playing);
+            total_pending_ticks.0 = 0;
+        } else {
             let accumulated_time = fixed_time.accumulated();
 
             if accumulated_time.as_secs() > 1 {
@@ -135,18 +134,14 @@ pub fn set_rate_of_time(
                 fixed_time.period = accumulated_time;
                 let _ = fixed_time.expend();
                 fixed_time.period = Duration::from_secs_f32(1.0 / MAX_SYSTEM_TICKS_PER_SECOND);
-                // NOTE: intentionally do not update TicksPerSecond.
+                // Rely on FastForwarding state, rather than updating TicksPerSecond, so when exiting FastForwarding it's possible to restore to user-defined TicksPerSecond.
 
-                is_fast_forwarding.0 = true;
+                next_story_playback_state.set(StoryPlaybackState::FastForwarding);
 
                 remaining_pending_ticks.0 =
                     (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
                 total_pending_ticks.0 = remaining_pending_ticks.0;
             }
-        } else {
-            fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0);
-            is_fast_forwarding.0 = false;
-            total_pending_ticks.0 = 0;
         }
     } else {
         remaining_pending_ticks.0 -= 1;
@@ -164,9 +159,9 @@ pub fn update_story_time(mut story_time: ResMut<StoryTime>, ticks_per_second: Re
 pub fn update_time_scale(
     mut fixed_time: ResMut<FixedTime>,
     ticks_per_second: Res<TicksPerSecond>,
-    is_fast_forwarding: Res<IsFastForwarding>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
 ) {
-    if is_fast_forwarding.0 {
+    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
         return;
     }
 

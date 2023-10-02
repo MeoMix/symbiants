@@ -4,8 +4,8 @@ use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntR
 use crate::{
     common::{get_entity_from_id, Id, TranslationOffset},
     element::{ui::get_element_sprite, Element},
+    story_time::StoryPlaybackState,
     world_map::{position::Position, WorldMap},
-    story_time::IsFastForwarding,
 };
 use bevy::prelude::*;
 
@@ -135,14 +135,14 @@ pub fn on_update_ant_inventory(
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
-    is_fast_forwarding: Res<IsFastForwarding>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
 ) {
-    if is_fast_forwarding.0 {
+    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
         return;
     }
 
     for (entity, inventory, children) in query.iter_mut() {
-        if is_fast_forwarding.is_changed() || inventory.is_changed() {
+        if story_playback_state.is_changed() || inventory.is_changed() {
             if let Some(inventory_item_bundle) =
                 get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query)
             {
@@ -213,15 +213,15 @@ pub fn on_update_ant_position(
         (&mut Transform, &TranslationOffset, &AntLabel),
         (Without<Ant>, With<AntLabel>),
     >,
-    is_fast_forwarding: Res<IsFastForwarding>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
     world_map: Res<WorldMap>,
 ) {
-    if is_fast_forwarding.0 {
+    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
         return;
     }
 
     for (position, mut transform, translation_offset) in ant_query.iter_mut() {
-        if is_fast_forwarding.is_changed() || position.is_changed() {
+        if story_playback_state.is_changed() || position.is_changed() {
             transform.translation = position
                 .as_world_position(&world_map)
                 .add(translation_offset.0);
@@ -232,7 +232,7 @@ pub fn on_update_ant_position(
     for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
         let (position, _, _) = ant_query.get(label.0).unwrap();
 
-        if is_fast_forwarding.is_changed() || position.is_changed() {
+        if story_playback_state.is_changed() || position.is_changed() {
             transform.translation = position
                 .as_world_position(&world_map)
                 .add(translation_offset.0);
@@ -242,14 +242,14 @@ pub fn on_update_ant_position(
 
 pub fn on_update_ant_orientation(
     mut query: Query<(&mut Transform, Ref<AntOrientation>)>,
-    is_fast_forwarding: Res<IsFastForwarding>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
 ) {
-    if is_fast_forwarding.0 {
+    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
         return;
     }
 
     for (mut transform, orientation) in query.iter_mut() {
-        if is_fast_forwarding.is_changed() || orientation.is_changed() {
+        if story_playback_state.is_changed() || orientation.is_changed() {
             transform.scale = orientation.as_world_scale();
             transform.rotation = orientation.as_world_rotation();
         }

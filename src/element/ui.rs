@@ -1,7 +1,7 @@
 use super::Element;
 use crate::{
+    story_time::StoryPlaybackState,
     world_map::{position::Position, WorldMap},
-    story_time::IsFastForwarding,
 };
 use bevy::prelude::*;
 
@@ -33,15 +33,15 @@ pub fn on_spawn_element(
 
 pub fn on_update_element_position(
     mut element_query: Query<(Ref<Position>, &mut Transform), With<Element>>,
-    is_fast_forwarding: Res<IsFastForwarding>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
     world_map: Res<WorldMap>,
 ) {
-    if is_fast_forwarding.0 {
+    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
         return;
     }
 
     for (position, mut transform) in element_query.iter_mut() {
-        if is_fast_forwarding.is_changed() || position.is_changed() {
+        if story_playback_state.is_changed() || position.is_changed() {
             transform.translation = position.as_world_position(&world_map);
         }
     }
