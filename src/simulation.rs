@@ -31,7 +31,7 @@ use crate::{
         ui::{on_spawn_element, on_update_element_position},
     },
     gravity::{gravity_ants, gravity_elements, gravity_stability},
-    pheromone::{register_pheromone, setup_pheromone, ui::on_spawn_pheromone},
+    pheromone::{register_pheromone, setup_pheromone, ui::on_spawn_pheromone, teardown_pheromone},
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     save::{load, save, setup_save, teardown_save},
     settings::{pre_setup_settings, register_settings, teardown_settings},
