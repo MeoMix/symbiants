@@ -4,9 +4,9 @@ use super::{
 };
 use crate::{
     common::register,
-    world_map::position::Position,
     name_list::get_random_name,
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
+    world_map::position::Position,
 };
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
@@ -79,8 +79,7 @@ pub fn ants_birthing(
         initiative.consume_movement();
 
         // Create offspring once per full real-world hour.
-        let rate_of_birthing =
-            birthing.max() / (SECONDS_PER_HOUR as f32 * DEFAULT_TICKS_PER_SECOND);
+        let rate_of_birthing = birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
         birthing.tick(rate_of_birthing);
 
         if birthing.is_ready() && initiative.can_act() {

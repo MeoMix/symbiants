@@ -26,7 +26,7 @@ pub fn update_loading_dialog(
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
             let minutes_gone = (fast_forwarding_state_info.initial_pending_ticks as f32)
-                / (60.0 / DEFAULT_TICKS_PER_SECOND * 60.0);
+                / (60.0 / (DEFAULT_TICKS_PER_SECOND * 60) as f32);
 
             ui.label(&format!("You were gone for {:.0} minutes.", minutes_gone));
             ui.label("Please wait while this time is simulated.");

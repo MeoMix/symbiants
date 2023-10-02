@@ -5,11 +5,11 @@ use std::time::Duration;
 
 use crate::common::register;
 
-pub const DEFAULT_TICKS_PER_SECOND: f32 = 6.0;
-pub const MAX_USER_TICKS_PER_SECOND: f32 = 600.0;
-pub const MAX_SYSTEM_TICKS_PER_SECOND: f32 = 12000.0;
-pub const SECONDS_PER_HOUR: i64 = 3600;
-pub const SECONDS_PER_DAY: i64 = 86_400;
+pub const DEFAULT_TICKS_PER_SECOND: isize = 6;
+pub const MAX_USER_TICKS_PER_SECOND: isize = 600;
+pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 12_000;
+pub const SECONDS_PER_HOUR: isize = 3_600;
+pub const SECONDS_PER_DAY: isize = 86_400;
 
 // NOTE: `bevy_reflect` doesn't support DateTime<Utc> without manually implement Reflect (which is hard)
 // So, use a timestamp instead and convert to DateTime<Utc> when needed.
@@ -36,7 +36,7 @@ impl StoryTime {
 /// This allows us to reset back to a user-defined ticks-per-second (adjusted via UI) rather than the default ticks-per-second.
 // TODO: probably shouldn't be an f32 (integer) and should maybe be combined with some of these other resources into a single time management resource
 #[derive(Resource, Default)]
-pub struct TicksPerSecond(pub f32);
+pub struct TicksPerSecond(pub isize);
 
 #[derive(Resource, Default)]
 pub struct FastForwardingStateInfo {
@@ -66,7 +66,7 @@ pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<FastForwardingStateInfo>();
 
     // Control the speed of the simulation by defining how many simulation ticks occur per second.
-    commands.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND));
+    commands.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND as f32));
     commands.insert_resource(TicksPerSecond(DEFAULT_TICKS_PER_SECOND));
 }
 
@@ -102,7 +102,7 @@ pub fn teardown_story_time(
     commands.remove_resource::<FastForwardingStateInfo>();
 
     // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
-    fixed_time.period = Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND);
+    fixed_time.period = Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND as f32);
     ticks_per_second.0 = DEFAULT_TICKS_PER_SECOND;
 }
 
@@ -118,7 +118,7 @@ pub fn set_rate_of_time(
 ) {
     if fast_forward_state_info.pending_ticks == 0 {
         if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
-            fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0);
+            fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0 as f32);
 
             next_story_playback_state.set(StoryPlaybackState::Playing);
             fast_forward_state_info.initial_pending_ticks = 0;
@@ -130,12 +130,12 @@ pub fn set_rate_of_time(
                 // The UI becomes unresponsive because the FixedUpdate schedule, when behind, will run in a loop without yielding until it catches up.
                 fixed_time.period = accumulated_time;
                 let _ = fixed_time.expend();
-                fixed_time.period = Duration::from_secs_f32(1.0 / MAX_SYSTEM_TICKS_PER_SECOND);
+                fixed_time.period = Duration::from_secs_f32(1.0 / MAX_SYSTEM_TICKS_PER_SECOND as f32);
                 // Rely on FastForwarding state, rather than updating TicksPerSecond, so when exiting FastForwarding it's possible to restore to user-defined TicksPerSecond.
 
                 next_story_playback_state.set(StoryPlaybackState::FastForwarding);
 
-                let ticks = (ticks_per_second.0 * accumulated_time.as_secs() as f32) as isize;
+                let ticks = (ticks_per_second.0 as u64 * accumulated_time.as_secs()) as isize;
                 fast_forward_state_info.pending_ticks = ticks;
                 fast_forward_state_info.initial_pending_ticks = ticks;
             }
@@ -150,7 +150,7 @@ pub fn set_rate_of_time(
 /// If app is fast-forwarding time then this system will be called more frequently and will
 /// reduce the delta difference between game time and real-world time.
 pub fn update_story_time(mut story_time: ResMut<StoryTime>, ticks_per_second: Res<TicksPerSecond>) {
-    story_time.0 += (1000.0 / ticks_per_second.0) as i64;
+    story_time.0 += (1000.0 / ticks_per_second.0 as f32) as i64;
 }
 
 pub fn update_time_scale(
@@ -162,5 +162,5 @@ pub fn update_time_scale(
         return;
     }
 
-    fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0);
+    fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0 as f32);
 }
