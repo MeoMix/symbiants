@@ -33,8 +33,7 @@ impl StoryTime {
 }
 
 /// Store TicksPerSecond separately from FixedTime because when we're fast forwarding time we won't update TicksPerSecond.
-/// This allows us to reset back to a user-defined ticks-per-second (adjusted via UI) rather than the default ticks-per-second.
-// TODO: probably shouldn't be an f32 (integer) and should maybe be combined with some of these other resources into a single time management resource
+/// This enables resetting back to a user-defined ticks-per-second (adjusted via UI) rather than the default ticks-per-second.
 #[derive(Resource, Default)]
 pub struct TicksPerSecond(pub isize);
 

@@ -105,5 +105,3 @@ pub fn ants_birthing(
         }
     }
 }
-
-// TODO: Don't I need to register Birthing?
