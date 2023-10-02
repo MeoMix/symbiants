@@ -8,6 +8,8 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
+use super::birthing::Birthing;
+
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Chambering(pub isize);
@@ -79,7 +81,7 @@ pub fn ants_chamber_pheromone_act(
 /// Apply chambering to ants which walk over tiles covered in chamber pheromone.
 /// Chambering is set to Chambering(2). This encourages ants to dig for the next 2 steps.
 pub fn ants_add_chamber_pheromone(
-    mut ants_query: Query<(Entity, &Position), Without<Dead>>,
+    mut ants_query: Query<(Entity, &Position), (Without<Dead>, Without<Birthing>)>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,

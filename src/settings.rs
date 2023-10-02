@@ -24,7 +24,6 @@ pub struct Settings {
     pub save_interval: isize,
     pub world_width: isize,
     pub world_height: isize,
-    pub minimum_nest_depth: isize,
     pub initial_dirt_percent: f32,
     pub initial_ant_worker_count: isize,
     pub ant_color: Color,
@@ -53,19 +52,18 @@ impl Default for Settings {
             snapshot_interval: 5, // TODO: prefer 1 here but it's too slow (in debug at least), kills FPS
             world_width: 144,
             world_height: 81,
-            minimum_nest_depth: 8,
             initial_dirt_percent: 3.0 / 4.0,
             initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
             probabilities: Probabilities {
                 random_drop: 0.003,
                 random_turn: 0.005,
-                // Ants that are upside down have a high likelihood of falling to gravity
-                // Ants that are vertical have a low likelihood of falling to gravity and will probably catch themselves when they fall
+                // Ants slip/fall due to gravity when upside down or vertical.
                 // These settings help prevent scenarios where ants dig themselves onto islands and become trapped.
-                random_fall: 0.005,
+                // If these settings are set too high then it will become difficult to haul sand out of nest.
+                random_fall: 0.002,
                 random_slip: 0.001,
-                above_surface_sand_drop: 0.05,
+                above_surface_sand_drop: 0.04,
                 below_surface_food_drop: 0.20,
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,

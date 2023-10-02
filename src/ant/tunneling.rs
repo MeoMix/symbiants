@@ -12,6 +12,8 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
+use super::birthing::Birthing;
+
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Tunneling(pub isize);
@@ -153,7 +155,7 @@ pub fn ants_tunnel_pheromone_act(
 /// Tunneling is set to Tunneling(8). This encourages ants to prioritize digging for the next 8 steps.
 /// Ants walking north avoid tunneling pheromone to ensure tunnels are always dug downward.
 pub fn ants_add_tunnel_pheromone(
-    mut ants_query: Query<(Entity, &Position, &AntOrientation), Without<Dead>>,
+    mut ants_query: Query<(Entity, &Position, &AntOrientation), (Without<Dead>, Without<Birthing>)>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
