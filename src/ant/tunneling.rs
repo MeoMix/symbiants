@@ -166,11 +166,8 @@ pub fn ants_add_tunnel_pheromone(
         if let Some(pheromone_entity) = pheromone_map.0.get(ant_position) {
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
 
-            match pheromone {
-                Pheromone::Tunnel => {
-                    commands.entity(ant_entity).insert(Tunneling(8));
-                }
-                _ => {}
+            if *pheromone == Pheromone::Tunnel {
+                commands.entity(ant_entity).insert(Tunneling(8));
             }
         }
     }
@@ -185,19 +182,14 @@ pub fn ants_remove_tunnel_pheromone(
         if inventory.0 != None {
             // Ants lose tunneling when they start carrying anything.
             commands.entity(entity).remove::<Tunneling>();
-            info!("Removed tunneling because ant is carrying something")
         } else if world_map.is_aboveground(position.as_ref()) {
             // Ants lose tunneling when they emerge on the surface.
             commands.entity(entity).remove::<Tunneling>();
-            info!("Removed tunneling because ant is aboveground")
         } else if position.is_changed() {
             tunneling.0 -= 1;
 
-            info!("Decremented tunneling to {}", tunneling.0);
             if tunneling.0 <= 0 {
                 commands.entity(entity).remove::<Tunneling>();
-                info!("Removed tunneling!");
-
                 // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
                 commands.spawn_pheromone(*position, Pheromone::Chamber);
             }

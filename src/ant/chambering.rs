@@ -104,17 +104,13 @@ pub fn ants_remove_chamber_pheromone(
         if inventory.0 != None {
             // Ants lose chambering when they start carrying anything.
             commands.entity(entity).remove::<Chambering>();
-            info!("Removed chambering because ant is carrying something")
         } else if world_map.is_aboveground(position.as_ref()) {
             // Ants lose chambering when they emerge on the surface.
             commands.entity(entity).remove::<Chambering>();
-            info!("Removed chambering because ant is aboveground")
         } else if position.is_changed() {
             chambering.0 -= 1;
-            info!("Decremented chambering to {}", chambering.0);
             if chambering.0 <= 0 {
                 commands.entity(entity).remove::<Chambering>();
-                info!("Removed chambering!");
             }
         }
     }
