@@ -149,7 +149,7 @@ pub fn ants_tunnel_pheromone_act(
     }
 }
 
-pub fn ants_tunnel_pheromone(
+pub fn ants_add_tunnel_pheromone(
     mut ants_query: Query<
         (Entity, Ref<Position>, &AntInventory, Option<&mut Tunneling>),
         Without<Dead>,
@@ -157,33 +157,9 @@ pub fn ants_tunnel_pheromone(
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
 ) {
-    for (entity, position, inventory, tunneling) in ants_query.iter_mut() {
-        if inventory.0 != None && tunneling.is_some() {
-            // Ants lose tunneling when they start carrying anything.
-            commands.entity(entity).remove::<Tunneling>();
-            info!("Removed tunneling because ant is carrying something")
-        } else if world_map.is_aboveground(position.as_ref()) && tunneling.is_some() {
-            // Ants lose tunneling when they emerge on the surface.
-            commands.entity(entity).remove::<Tunneling>();
-            info!("Removed tunneling because ant is aboveground")
-        } else if position.is_changed() {
-            if let Some(mut tunneling) = tunneling {
-                tunneling.0 -= 1;
-                info!("Decremented tunneling to {}", tunneling.0);
-                if tunneling.0 <= 0 {
-                    commands.entity(entity).remove::<Tunneling>();
-                    info!("Removed tunneling!");
-
-                    // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
-                    commands.spawn_pheromone(*position, Pheromone::Chamber);
-                }
-            }
-        }
-    }
-
-    // Whenever an ant walks over a tile which has a pheromone, it will gain a Component representing that Pheromone.
+    // TODO: Check if ant is facing upward
+    // Whenever an ant walks over a Tunneling pheromone, and it's not heading up out of the nest, it will gain the pheromone.
     for (ant_entity, ant_position, _, tunneling) in ants_query.iter_mut() {
         if let Some(pheromone_entity) = pheromone_map.0.get(ant_position.as_ref()) {
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
@@ -199,6 +175,35 @@ pub fn ants_tunnel_pheromone(
                     }
                 }
                 _ => {}
+            }
+        }
+    }
+}
+
+pub fn ants_remove_tunnel_pheromone(
+    mut ants_query: Query<(Entity, Ref<Position>, &AntInventory, &mut Tunneling), Without<Dead>>,
+    mut commands: Commands,
+    world_map: Res<WorldMap>,
+) {
+    for (entity, position, inventory, mut tunneling) in ants_query.iter_mut() {
+        if inventory.0 != None {
+            // Ants lose tunneling when they start carrying anything.
+            commands.entity(entity).remove::<Tunneling>();
+            info!("Removed tunneling because ant is carrying something")
+        } else if world_map.is_aboveground(position.as_ref()) {
+            // Ants lose tunneling when they emerge on the surface.
+            commands.entity(entity).remove::<Tunneling>();
+            info!("Removed tunneling because ant is aboveground")
+        } else if position.is_changed() {
+            tunneling.0 -= 1;
+
+            info!("Decremented tunneling to {}", tunneling.0);
+            if tunneling.0 <= 0 {
+                commands.entity(entity).remove::<Tunneling>();
+                info!("Removed tunneling!");
+
+                // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
+                commands.spawn_pheromone(*position, Pheromone::Chamber);
             }
         }
     }

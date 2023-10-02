@@ -2,9 +2,10 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ant::{AntInventory, AntOrientation, Dead, Initiative, commands::AntCommandsExt},
+    ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Dead, Initiative},
     element::Element,
-    world_map::{position::Position, WorldMap}, pheromone::{Pheromone, PheromoneMap},
+    pheromone::{Pheromone, PheromoneMap},
+    world_map::{position::Position, WorldMap},
 };
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -72,7 +73,7 @@ pub fn ants_chamber_pheromone_act(
     }
 }
 
-pub fn ants_chamber_pheromone(
+pub fn ants_add_chamber_pheromone(
     mut ants_query: Query<
         (
             Entity,
@@ -85,32 +86,7 @@ pub fn ants_chamber_pheromone(
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
 ) {
-    for (entity, position, inventory, chambering) in ants_query.iter_mut() {
-        // Ant gets Chamber pheromone on it, Chamber pheromone decrements by 1 each step it takes
-        // While covered in Chamber pheromone, ant will aggressively dig at anything it sees that is at-or-(above?) it.
-        // Ants need the ability to dig diagonally (?) or they need to not always dig the same direction when covered in pheromone.
-        if inventory.0 != None && chambering.is_some() {
-            // Ants lose chambering when they start carrying anything.
-            commands.entity(entity).remove::<Chambering>();
-            info!("Removed chambering because ant is carrying something")
-        } else if world_map.is_aboveground(position.as_ref()) && chambering.is_some() {
-            // Ants lose chambering when they emerge on the surface.
-            commands.entity(entity).remove::<Chambering>();
-            info!("Removed chambering because ant is aboveground")
-        } else if position.is_changed() {
-            if let Some(mut chambering) = chambering {
-                chambering.0 -= 1;
-                info!("Decremented chambering to {}", chambering.0);
-                if chambering.0 <= 0 {
-                    commands.entity(entity).remove::<Chambering>();
-                    info!("Removed chambering!");
-                }
-            }
-        }
-    }
-
     // Whenever an ant walks over a tile which has a pheromone, it will gain a Component representing that Pheromone.
     for (ant_entity, ant_position, _, chambering) in ants_query.iter_mut() {
         if let Some(pheromone_entity) = pheromone_map.0.get(ant_position.as_ref()) {
@@ -127,6 +103,34 @@ pub fn ants_chamber_pheromone(
                     }
                 }
                 _ => {}
+            }
+        }
+    }
+}
+
+pub fn ants_remove_chamber_pheromone(
+    mut ants_query: Query<(Entity, Ref<Position>, &AntInventory, &mut Chambering), Without<Dead>>,
+    mut commands: Commands,
+    world_map: Res<WorldMap>,
+) {
+    for (entity, position, inventory, mut chambering) in ants_query.iter_mut() {
+        // Ant gets Chamber pheromone on it, Chamber pheromone decrements by 1 each step it takes
+        // While covered in Chamber pheromone, ant will aggressively dig at anything it sees that is at-or-(above?) it.
+        // Ants need the ability to dig diagonally (?) or they need to not always dig the same direction when covered in pheromone.
+        if inventory.0 != None {
+            // Ants lose chambering when they start carrying anything.
+            commands.entity(entity).remove::<Chambering>();
+            info!("Removed chambering because ant is carrying something")
+        } else if world_map.is_aboveground(position.as_ref()) {
+            // Ants lose chambering when they emerge on the surface.
+            commands.entity(entity).remove::<Chambering>();
+            info!("Removed chambering because ant is aboveground")
+        } else if position.is_changed() {
+            chambering.0 -= 1;
+            info!("Decremented chambering to {}", chambering.0);
+            if chambering.0 <= 0 {
+                commands.entity(entity).remove::<Chambering>();
+                info!("Removed chambering!");
             }
         }
     }
