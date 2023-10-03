@@ -5,7 +5,7 @@ use crate::{
     story_state::StoryState,
     story_time::{
         StoryPlaybackState, TicksPerSecond, DEFAULT_TICKS_PER_SECOND, MAX_USER_TICKS_PER_SECOND,
-    },
+    }, pheromone::PheromoneVisibility,
 };
 
 pub fn update_settings_menu(
@@ -15,6 +15,7 @@ pub fn update_settings_menu(
     mut ticks_per_second: ResMut<TicksPerSecond>,
     story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
+    mut pheromone_visibility: ResMut<PheromoneVisibility>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -38,6 +39,16 @@ pub fn update_settings_menu(
                 )
                 .text("Speed"),
             );
+
+            if pheromone_visibility.0 == Visibility::Hidden {
+                if ui.button("Show Pheromones").clicked() {
+                    pheromone_visibility.0 = Visibility::Visible;
+                }
+            } else if pheromone_visibility.0 == Visibility::Visible {
+                if ui.button("Hide Pheromones").clicked() {
+                    pheromone_visibility.0 = Visibility::Hidden;
+                }
+            }
 
             match story_playback_state.get() {
                 StoryPlaybackState::Playing => {

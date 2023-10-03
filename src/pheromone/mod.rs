@@ -15,6 +15,9 @@ pub enum Pheromone {
     Chamber,
 }
 
+#[derive(Resource)]
+pub struct PheromoneVisibility(pub Visibility);
+
 /// Note the intentional omission of reflection/serialization.
 /// This is because PheromoneMap is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]
@@ -44,8 +47,12 @@ pub fn setup_pheromone(
         .collect::<HashMap<_, _>>();
 
     commands.insert_resource(PheromoneMap(pheromone_map));
+
+    // TODO: better separate model/view
+    commands.insert_resource(PheromoneVisibility(Visibility::Hidden));
 }
 
 pub fn teardown_pheromone(mut commands: Commands) {
     commands.remove_resource::<PheromoneMap>();
+    commands.remove_resource::<PheromoneVisibility>();
 }
