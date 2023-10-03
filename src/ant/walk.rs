@@ -99,6 +99,13 @@ pub fn ants_walk(
             }
 
             initiative.consume_movement();
+        } else {
+            // SPECIAL CASE: if underground then an out-of-bounds location is considered dirt to walk on
+            if world_map.is_underground(&foot_position) {
+                // Just move forward
+                *position = ahead_position;
+                initiative.consume_movement();
+            }
         }
     }
 }
@@ -161,6 +168,11 @@ fn is_valid_location(
     // Get the location beneath the ants' feet and check for air
     let below_position = orientation.get_below_position(&position);
     let Some(entity) = world_map.get_element(below_position) else {
+        // SPECIAL CASE: if underground then an out-of-bounds location is considered dirt to walk on
+        if world_map.is_underground(&below_position) {
+            return true;
+        }
+
         return false;
     };
     let Ok(element) = elements_query.get(*entity) else {

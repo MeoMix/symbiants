@@ -135,7 +135,8 @@ pub fn gravity_ants(
         let is_air_beneath_feet =
             world_map.is_all_element(&elements_query, &[below_position], Element::Air);
 
-        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_position);
+        // SPECIAL CASE: out of bounds underground is considered dirt not air
+        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_position) && world_map.is_aboveground(&below_position);
 
         let is_chance_falling =
             orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
