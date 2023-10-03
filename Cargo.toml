@@ -1,10 +1,10 @@
 [package]
-name = "antfarmpkg"
+name = "symbiants_pkg"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "antfarm"
+name = "symbiants_lib"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]

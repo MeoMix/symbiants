@@ -192,26 +192,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "antfarmpkg"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "bevy_egui",
- "bevy_save",
- "bevy_turborand",
- "chrono",
- "console_error_panic_hook",
- "gloo-storage",
- "js-sys",
- "serde",
- "serde_json",
- "uuid",
- "wasm-bindgen",
- "wasm-bindgen-test",
- "web-sys",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3256,6 +3236,26 @@ name = "svg_fmt"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fb1df15f412ee2e9dfc1c504260fa695c1c3f10fe9f4a6ee2d2184d7d6450e2"
+
+[[package]]
+name = "symbiants_pkg"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
+ "bevy_save",
+ "bevy_turborand",
+ "chrono",
+ "console_error_panic_hook",
+ "gloo-storage",
+ "js-sys",
+ "serde",
+ "serde_json",
+ "uuid",
+ "wasm-bindgen",
+ "wasm-bindgen-test",
+ "web-sys",
+]
 
 [[package]]
 name = "syn"

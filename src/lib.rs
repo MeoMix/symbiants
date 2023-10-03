@@ -26,9 +26,9 @@ use camera::CameraPlugin;
 use simulation::SimulationPlugin;
 use ui::UIPlugin;
 
-pub struct AntfarmPlugin;
+pub struct SymbiantsPlugin;
 
-impl Plugin for AntfarmPlugin {
+impl Plugin for SymbiantsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
