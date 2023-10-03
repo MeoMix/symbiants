@@ -1,4 +1,4 @@
-use symbiants::SymbiantsPlugin;
+use symbiants_lib::SymbiantsPlugin;
 use bevy::app::App;
 
 fn main() {
