@@ -65,7 +65,9 @@ pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<FastForwardingStateInfo>();
 
     // Control the speed of the simulation by defining how many simulation ticks occur per second.
-    commands.insert_resource(FixedTime::new_from_secs(1.0 / DEFAULT_TICKS_PER_SECOND as f32));
+    commands.insert_resource(FixedTime::new_from_secs(
+        1.0 / DEFAULT_TICKS_PER_SECOND as f32,
+    ));
     commands.insert_resource(TicksPerSecond(DEFAULT_TICKS_PER_SECOND));
 }
 
@@ -101,7 +103,7 @@ pub fn teardown_story_time(
     commands.remove_resource::<FastForwardingStateInfo>();
 
     // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
-    fixed_time.period = Duration::from_secs_f32(1.0 / DEFAULT_TICKS_PER_SECOND as f32);
+    fixed_time.period = Duration::from_secs_f32(1.0 / (DEFAULT_TICKS_PER_SECOND as f32));
     ticks_per_second.0 = DEFAULT_TICKS_PER_SECOND;
 }
 
@@ -117,7 +119,7 @@ pub fn set_rate_of_time(
 ) {
     if fast_forward_state_info.pending_ticks == 0 {
         if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
-            fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0 as f32);
+            fixed_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
 
             next_story_playback_state.set(StoryPlaybackState::Playing);
             fast_forward_state_info.initial_pending_ticks = 0;
@@ -129,7 +131,8 @@ pub fn set_rate_of_time(
                 // The UI becomes unresponsive because the FixedUpdate schedule, when behind, will run in a loop without yielding until it catches up.
                 fixed_time.period = accumulated_time;
                 let _ = fixed_time.expend();
-                fixed_time.period = Duration::from_secs_f32(1.0 / MAX_SYSTEM_TICKS_PER_SECOND as f32);
+                fixed_time.period =
+                    Duration::from_secs_f32(1.0 / (MAX_SYSTEM_TICKS_PER_SECOND as f32));
                 // Rely on FastForwarding state, rather than updating TicksPerSecond, so when exiting FastForwarding it's possible to restore to user-defined TicksPerSecond.
 
                 next_story_playback_state.set(StoryPlaybackState::FastForwarding);
@@ -155,11 +158,12 @@ pub fn update_story_time(mut story_time: ResMut<StoryTime>, ticks_per_second: Re
 pub fn update_time_scale(
     mut fixed_time: ResMut<FixedTime>,
     ticks_per_second: Res<TicksPerSecond>,
-    story_playback_state: Res<State<StoryPlaybackState>>,
+    next_story_playback_state: Res<NextState<StoryPlaybackState>>,
 ) {
-    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
+    // Don't unintentionally overwrite fixed_time.period when shifting into FastForwarding.
+    if next_story_playback_state.0 == Some(StoryPlaybackState::FastForwarding) {
         return;
     }
 
-    fixed_time.period = Duration::from_secs_f32(1.0 / ticks_per_second.0 as f32);
+    fixed_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
 }

@@ -116,7 +116,10 @@ impl Plugin for SimulationPlugin {
 
         app.add_systems(
             Update,
-            update_time_scale.run_if(in_state(StoryState::Telling)),
+            update_time_scale.run_if(
+                in_state(StoryState::Telling)
+                    .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
+            ),
         );
 
         app.add_systems(
