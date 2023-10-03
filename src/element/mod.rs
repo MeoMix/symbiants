@@ -164,7 +164,7 @@ pub fn setup_element(settings: Res<Settings>, mut commands: Commands) {
 }
 
 pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {
-    for element in element_query.iter() {
-        commands.entity(element).despawn_recursive();
+    for element_entity in element_query.iter() {
+        commands.entity(element_entity).despawn_recursive();
     }
 }

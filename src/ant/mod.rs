@@ -460,8 +460,8 @@ pub fn teardown_ant(
         commands.entity(entity).despawn_recursive();
     }
 
-    for ant in ant_query.iter() {
-        commands.entity(ant).despawn_recursive();
+    for ant_entity in ant_query.iter() {
+        commands.entity(ant_entity).despawn_recursive();
     }
 }
 

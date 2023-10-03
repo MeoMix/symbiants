@@ -52,7 +52,11 @@ pub fn setup_pheromone(
     commands.insert_resource(PheromoneVisibility(Visibility::Hidden));
 }
 
-pub fn teardown_pheromone(mut commands: Commands) {
+pub fn teardown_pheromone(pheromone_query: Query<Entity, With<Pheromone>>, mut commands: Commands) {
+    for pheromone_entity in pheromone_query.iter() {
+        commands.entity(pheromone_entity).despawn_recursive();
+    }
+
     commands.remove_resource::<PheromoneMap>();
     commands.remove_resource::<PheromoneVisibility>();
 }

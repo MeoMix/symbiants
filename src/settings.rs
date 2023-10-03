@@ -67,8 +67,8 @@ impl Default for Settings {
                 below_surface_food_drop: 0.20,
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,
-                // TODO: play with this value
-                expand_nest: 0.50,
+                // TODO: keep playing with this value. lower chance = more cramped nest, but less sand to manage.
+                expand_nest: 0.33,
             },
         }
     }
