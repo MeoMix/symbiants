@@ -8,7 +8,7 @@ use crate::{
         ants_initiative,
         birthing::{ants_birthing, register_birthing},
         chambering::{
-            ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_remove_chamber_pheromone,
+            ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_remove_chamber_pheromone, ants_fade_chamber_pheromone,
         },
         hunger::ants_hunger,
         nest_expansion::ants_nest_expansion,
@@ -16,7 +16,7 @@ use crate::{
         register_ant, setup_ant, teardown_ant,
         tunneling::{
             ants_add_tunnel_pheromone, ants_remove_tunnel_pheromone, ants_tunnel_pheromone_act,
-            ants_tunnel_pheromone_move,
+            ants_tunnel_pheromone_move, ants_fade_tunnel_pheromone,
         },
         ui::{
             on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
@@ -163,6 +163,7 @@ impl Plugin for SimulationPlugin {
                             // Apply Tunneling Logic
                             ants_tunnel_pheromone_move,
                             ants_tunnel_pheromone_act,
+                            ants_fade_tunnel_pheromone,
                             apply_deferred,
                         )
                             .chain(),
@@ -170,6 +171,7 @@ impl Plugin for SimulationPlugin {
                             // Apply Chambering Logic
                             // TODO: ants_chamber_pheromone_move
                             ants_chamber_pheromone_act,
+                            ants_fade_chamber_pheromone,
                             apply_deferred,
                         )
                             .chain(),

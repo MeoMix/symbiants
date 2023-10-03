@@ -4,15 +4,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ant::{
-        commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Dead,
+        commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
         Initiative,
     },
     element::Element,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap},
     world_map::{position::Position, WorldMap},
 };
-
-use super::birthing::Birthing;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -24,10 +22,7 @@ pub struct Tunneling(pub isize);
 // and when they hit that marker, they will look around them in all directions and, if they see any adjacent dirt, they will dig one piece of it and go back into "haul dirt" mode
 // if they do not see any adjacent dirt, they clean up the pheromone and, in the case of the queen, shift to giving birth
 pub fn ants_tunnel_pheromone_move(
-    mut ants_query: Query<
-        (&mut AntOrientation, &mut Initiative, &mut Position),
-        (Without<Dead>, With<Tunneling>),
-    >,
+    mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), With<Tunneling>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     mut rng: ResMut<GlobalRng>,
@@ -107,7 +102,7 @@ pub fn ants_tunnel_pheromone_act(
             &Position,
             Entity,
         ),
-        (Without<Dead>, With<Tunneling>),
+        With<Tunneling>,
     >,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
@@ -155,12 +150,16 @@ pub fn ants_tunnel_pheromone_act(
 /// Tunneling is set to Tunneling(8). This encourages ants to prioritize digging for the next 8 steps.
 /// Ants walking north avoid tunneling pheromone to ensure tunnels are always dug downward.
 pub fn ants_add_tunnel_pheromone(
-    ants_query: Query<(Entity, &Position, &AntOrientation), (Without<Dead>, Without<Birthing>)>,
+    ants_query: Query<(Entity, &Position, &AntInventory, &AntOrientation), Changed<Position>>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
 ) {
-    for (ant_entity, ant_position, ant_orientation) in ants_query.iter() {
+    for (ant_entity, ant_position, inventory, ant_orientation) in ants_query.iter() {
+        if inventory.0 != None {
+            continue;
+        }
+
         if ant_orientation.is_facing_north() {
             continue;
         }
@@ -175,26 +174,33 @@ pub fn ants_add_tunnel_pheromone(
     }
 }
 
+/// Whenever an ant takes a step it loses 1 Tunneling pheromone.
+pub fn ants_fade_tunnel_pheromone(mut ants_query: Query<&mut Tunneling, Changed<Position>>) {
+    for mut tunneling in ants_query.iter_mut() {
+        tunneling.0 -= 1;
+    }
+}
+
+/// Ants lose Tunneling when they begin carrying anything because they've fulfilled the pheromones action.
+/// Ants lose Tunneling when they emerge on the surface because tunnels aren't dug aboveground.
+/// Ants lose Tunneling when they've exhausted their pheromone by taking sufficient steps.
 pub fn ants_remove_tunnel_pheromone(
-    mut ants_query: Query<(Entity, Ref<Position>, &AntInventory, &mut Tunneling), Without<Dead>>,
+    mut ants_query: Query<
+        (Entity, &Position, &AntInventory, &Tunneling),
+        Or<(Changed<Position>, Changed<AntInventory>)>,
+    >,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
-    for (entity, position, inventory, mut tunneling) in ants_query.iter_mut() {
+    for (entity, position, inventory, tunneling) in ants_query.iter_mut() {
         if inventory.0 != None {
-            // Ants lose tunneling when they start carrying anything.
             commands.entity(entity).remove::<Tunneling>();
-        } else if world_map.is_aboveground(position.as_ref()) {
-            // Ants lose tunneling when they emerge on the surface.
+        } else if world_map.is_aboveground(position) {
             commands.entity(entity).remove::<Tunneling>();
-        } else if position.is_changed() {
-            tunneling.0 -= 1;
-
-            if tunneling.0 <= 0 {
-                commands.entity(entity).remove::<Tunneling>();
-                // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
-                commands.spawn_pheromone(*position, Pheromone::Chamber);
-            }
+        } else if tunneling.0 <= 0 {
+            commands.entity(entity).remove::<Tunneling>();
+            // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
+            commands.spawn_pheromone(*position, Pheromone::Chamber);
         }
     }
 }

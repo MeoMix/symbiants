@@ -25,12 +25,8 @@ impl Command for SpawnPheromoneCommand {
     /// Spawn a new Pheromone entity and update the associate PheromoneMap cache.
     /// Performed in a custom command to provide a transactional wrapper around issuing command + updating cache.
     fn apply(self, world: &mut World) {
-        // TODO: maybe overwrite existing pheromone instead?
-        if let Some(existing_entity) = world.resource::<PheromoneMap>().0.get(&self.position) {
-            info!(
-                "Pheromone Entity {:?} already exists at position {:?}",
-                existing_entity, self.position
-            );
+        // TODO: maybe overwrite existing pheromone instead of noop?
+        if let Some(_) = world.resource::<PheromoneMap>().0.get(&self.position) {
             return;
         }
 

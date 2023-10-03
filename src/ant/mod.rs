@@ -369,10 +369,11 @@ impl AntOrientation {
 // This adds a little realism by varying when movements occur and allows for flexibility
 // in the simulation run speed.
 pub fn ants_initiative(
-    mut ants_query: Query<&mut Initiative, Without<Dead>>,
+    mut alive_ants_query: Query<&mut Initiative, Without<Dead>>,
+    mut recently_dead_ants_query: Query<&mut Initiative, Added<Dead>>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    for mut initiative in ants_query.iter_mut() {
+    for mut initiative in alive_ants_query.iter_mut() {
         if initiative.timer > 0 {
             initiative.timer -= 1;
 
@@ -386,6 +387,12 @@ pub fn ants_initiative(
 
         *initiative = Initiative::new(&mut rng.reborrow());
     }
+
+    // Dead ants never regain initiative.
+    for mut initiative in recently_dead_ants_query.iter_mut() {
+        *initiative = Initiative::new(&mut rng.reborrow());
+    }
+
 }
 
 pub fn register_ant(
