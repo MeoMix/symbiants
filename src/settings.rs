@@ -11,7 +11,11 @@ pub struct Probabilities {
     pub random_fall: f32,             // fall while upside down
     pub random_slip: f32,             // fall while vertical
     pub above_surface_sand_drop: f32, // chance to randomly drop sand when at-or-above surface level
+    pub above_surface_food_dig: f32,
+    pub below_surface_food_dig: f32,
     pub below_surface_food_drop: f32, // chance to randomly drop food when below surface level
+    pub below_surface_food_adjacent_food_drop: f32,
+    pub above_surface_queen_food_drop: f32,
     pub above_surface_queen_nest_dig: f32,
     pub below_surface_queen_nest_dig: f32,
     pub expand_nest: f32,
@@ -68,7 +72,11 @@ impl Default for Settings {
                 random_fall: 0.002,
                 random_slip: 0.001,
                 above_surface_sand_drop: 0.04,
-                below_surface_food_drop: 0.20,
+                above_surface_food_dig: 0.50,
+                below_surface_food_dig: 0.10,
+                below_surface_food_drop: 0.10,
+                below_surface_food_adjacent_food_drop: 0.50,
+                above_surface_queen_food_drop: 0.50,
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,
                 // TODO: keep playing with this value. lower chance = more cramped nest, but less sand to manage.

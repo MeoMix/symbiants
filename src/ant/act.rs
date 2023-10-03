@@ -65,9 +65,16 @@ pub fn ants_act(
             // Consider digging / picking up the element under various circumstances.
             if inventory.0 == None {
                 // When above ground, prioritize picking up food
-                let dig_food = *element == Element::Food
-                    && world_map.is_aboveground(&position)
-                    && *role == AntRole::Worker;
+                let mut dig_food = false;
+
+                if *element == Element::Food && *role == AntRole::Worker  {
+                    if world_map.is_aboveground(&position){
+                        dig_food = rng.f32() < settings.probabilities.above_surface_food_dig;
+                    } else {
+                        dig_food = rng.f32() < settings.probabilities.below_surface_food_dig;
+                    }
+                }
+
                 // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
                 let dig_sand = *element == Element::Sand
                     && world_map.is_underground(&position)
@@ -101,9 +108,24 @@ pub fn ants_act(
                 && world_map.is_aboveground(&ahead_position)
                 && rng.f32() < settings.probabilities.above_surface_sand_drop;
 
-            let drop_food = *inventory_item_element == Element::Food
-                && world_map.is_underground(&ahead_position)
-                && rng.f32() < settings.probabilities.below_surface_food_drop;
+            let mut drop_food = false;
+            if *inventory_item_element == Element::Food {
+                if world_map.is_underground(&ahead_position) {
+                    drop_food = rng.f32() < settings.probabilities.below_surface_food_drop;
+
+                    // If ant is adjacent to food then strongly consider dropping food (creates food piles)
+                    let is_food_below = world_map.is_element(&elements_query, orientation.get_below_position(position), Element::Food);
+                    let is_food_ahead_below = world_map.is_element(&elements_query, orientation.get_below_position(&ahead_position), Element::Food);
+
+                    if (is_food_below || is_food_ahead_below) && rng.f32() < settings.probabilities.below_surface_food_adjacent_food_drop {
+                        drop_food = true;
+                    }
+                } else {
+                    if *role == AntRole::Queen {
+                        drop_food = rng.f32() < settings.probabilities.above_surface_queen_food_drop;
+                    }
+                }
+            }
 
             if drop_sand || drop_food {
                 // Drop inventory in front of ant

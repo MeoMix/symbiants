@@ -392,7 +392,6 @@ pub fn ants_initiative(
     for mut initiative in recently_dead_ants_query.iter_mut() {
         *initiative = Initiative::new(&mut rng.reborrow());
     }
-
 }
 
 pub fn register_ant(
