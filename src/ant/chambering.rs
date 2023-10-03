@@ -5,6 +5,7 @@ use crate::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
     element::Element,
     pheromone::{Pheromone, PheromoneMap},
+    settings::Settings,
     world_map::{position::Position, WorldMap},
 };
 
@@ -75,12 +76,13 @@ pub fn ants_chamber_pheromone_act(
 }
 
 /// Apply chambering to ants which walk over tiles covered in chamber pheromone.
-/// Chambering is set to Chambering(2). This encourages ants to dig for the next 2 steps.
+/// Chambering is set to Chambering(3). This encourages ants to dig for the next 3 steps.
 pub fn ants_add_chamber_pheromone(
     ants_query: Query<(Entity, &Position, &AntInventory), Changed<Position>>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
+    settings: Res<Settings>,
 ) {
     for (ant_entity, ant_position, inventory) in ants_query.iter() {
         if inventory.0 != None {
@@ -91,7 +93,9 @@ pub fn ants_add_chamber_pheromone(
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
 
             if *pheromone == Pheromone::Chamber {
-                commands.entity(ant_entity).insert(Chambering(2));
+                commands
+                    .entity(ant_entity)
+                    .insert(Chambering(settings.chamber_size));
             }
         }
     }

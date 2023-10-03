@@ -27,6 +27,8 @@ pub struct Settings {
     pub initial_dirt_percent: f32,
     pub initial_ant_worker_count: isize,
     pub ant_color: Color,
+    pub chamber_size: isize,
+    pub tunnel_length: isize,
     pub probabilities: Probabilities,
 }
 
@@ -55,6 +57,8 @@ impl Default for Settings {
             initial_dirt_percent: 3.0 / 4.0,
             initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
+            chamber_size: 3,
+            tunnel_length: 8,
             probabilities: Probabilities {
                 random_drop: 0.003,
                 random_turn: 0.005,

@@ -9,6 +9,7 @@ use crate::{
     },
     element::Element,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap},
+    settings::Settings,
     world_map::{position::Position, WorldMap},
 };
 
@@ -154,6 +155,7 @@ pub fn ants_add_tunnel_pheromone(
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
+    settings: Res<Settings>,
 ) {
     for (ant_entity, ant_position, inventory, ant_orientation) in ants_query.iter() {
         if inventory.0 != None {
@@ -168,7 +170,9 @@ pub fn ants_add_tunnel_pheromone(
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
 
             if *pheromone == Pheromone::Tunnel {
-                commands.entity(ant_entity).insert(Tunneling(8));
+                commands
+                    .entity(ant_entity)
+                    .insert(Tunneling(settings.tunnel_length));
             }
         }
     }
