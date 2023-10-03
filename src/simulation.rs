@@ -31,7 +31,10 @@ use crate::{
         ui::{on_spawn_element, on_update_element_position},
     },
     gravity::{gravity_ants, gravity_elements, gravity_stability},
-    pheromone::{register_pheromone, setup_pheromone, ui::{on_spawn_pheromone, on_update_pheromone_visibility}, teardown_pheromone},
+    pheromone::{
+        register_pheromone, setup_pheromone, teardown_pheromone,
+        ui::{on_spawn_pheromone, on_update_pheromone_visibility},
+    },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     save::{load, save, setup_save, teardown_save},
     settings::{pre_setup_settings, register_settings, teardown_settings},
@@ -119,7 +122,7 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                (
+                ((
                     (
                         // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
                         // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
@@ -175,8 +178,11 @@ impl Plugin for SimulationPlugin {
                     )
                         .chain(),
                     check_story_over,
+                    update_story_time,
+                    set_rate_of_time,
                 )
-                    .chain(),
+                    .chain())
+                .run_if(not(in_state(StoryPlaybackState::Paused))),
                 // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
                 // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
                 // when moving out of the Update stage and into the PostUpdate stage.
@@ -199,13 +205,8 @@ impl Plugin for SimulationPlugin {
                     on_spawn_pheromone,
                 )
                     .chain(),
-                update_story_time,
-                set_rate_of_time,
             )
-                .run_if(
-                    in_state(StoryState::Telling)
-                        .and_then(not(in_state(StoryPlaybackState::Paused))),
-                )
+                .run_if(in_state(StoryState::Telling))
                 .chain(),
         );
 
