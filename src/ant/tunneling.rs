@@ -155,12 +155,12 @@ pub fn ants_tunnel_pheromone_act(
 /// Tunneling is set to Tunneling(8). This encourages ants to prioritize digging for the next 8 steps.
 /// Ants walking north avoid tunneling pheromone to ensure tunnels are always dug downward.
 pub fn ants_add_tunnel_pheromone(
-    mut ants_query: Query<(Entity, &Position, &AntOrientation), (Without<Dead>, Without<Birthing>)>,
+    ants_query: Query<(Entity, &Position, &AntOrientation), (Without<Dead>, Without<Birthing>)>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
 ) {
-    for (ant_entity, ant_position, ant_orientation) in ants_query.iter_mut() {
+    for (ant_entity, ant_position, ant_orientation) in ants_query.iter() {
         if ant_orientation.is_facing_north() {
             continue;
         }

@@ -81,12 +81,12 @@ pub fn ants_chamber_pheromone_act(
 /// Apply chambering to ants which walk over tiles covered in chamber pheromone.
 /// Chambering is set to Chambering(2). This encourages ants to dig for the next 2 steps.
 pub fn ants_add_chamber_pheromone(
-    mut ants_query: Query<(Entity, &Position), (Without<Dead>, Without<Birthing>)>,
+    ants_query: Query<(Entity, &Position), (Without<Dead>, Without<Birthing>)>,
     pheromone_query: Query<&Pheromone>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
 ) {
-    for (ant_entity, ant_position) in ants_query.iter_mut() {
+    for (ant_entity, ant_position) in ants_query.iter() {
         if let Some(pheromone_entity) = pheromone_map.0.get(ant_position) {
             let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
 
