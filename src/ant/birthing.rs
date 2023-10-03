@@ -78,8 +78,8 @@ pub fn ants_birthing(
         // Once an ant starts giving birth - they're incapacitated and cannot move.
         initiative.consume_movement();
 
-        // Create offspring once per full real-world half-hour.
-        let rate_of_birthing = birthing.max() / (SECONDS_PER_HOUR / 2 * DEFAULT_TICKS_PER_SECOND) as f32;
+        // Create offspring once per full real-world hour.
+        let rate_of_birthing = birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
         birthing.tick(rate_of_birthing);
 
         if birthing.is_ready() && initiative.can_act() {
