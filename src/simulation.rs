@@ -33,7 +33,7 @@ use crate::{
     gravity::{gravity_ants, gravity_elements, gravity_stability},
     pheromone::{
         register_pheromone, setup_pheromone, teardown_pheromone,
-        ui::{on_spawn_pheromone, on_update_pheromone_visibility},
+        ui::{on_spawn_pheromone, on_update_pheromone_visibility}, pheromone_duration_tick,
     },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     save::{load, save, setup_save, teardown_save},
@@ -150,6 +150,7 @@ impl Plugin for SimulationPlugin {
                         )
                             .chain(),
                         (ants_nest_expansion, apply_deferred).chain(),
+                        (pheromone_duration_tick, apply_deferred).chain(),
                         (
                             // Apply/Remove Pheromones
                             ants_add_tunnel_pheromone,
