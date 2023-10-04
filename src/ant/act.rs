@@ -39,10 +39,7 @@ pub fn ants_act(
             continue;
         }
 
-        if *role == AntRole::Worker
-            && inventory.0 != None
-            && rng.f32() < settings.probabilities.random_drop
-        {
+        if inventory.0 != None && rng.f32() < settings.probabilities.random_drop {
             let target_element_entity = world_map.element(*position);
             commands.drop(ant_entity, *position, *target_element_entity);
 
@@ -67,8 +64,8 @@ pub fn ants_act(
                 // When above ground, prioritize picking up food
                 let mut dig_food = false;
 
-                if *element == Element::Food && *role == AntRole::Worker  {
-                    if world_map.is_aboveground(&position){
+                if *element == Element::Food && *role == AntRole::Worker {
+                    if world_map.is_aboveground(&position) {
                         dig_food = rng.f32() < settings.probabilities.above_surface_food_dig;
                     } else {
                         dig_food = rng.f32() < settings.probabilities.below_surface_food_dig;
@@ -114,15 +111,26 @@ pub fn ants_act(
                     drop_food = rng.f32() < settings.probabilities.below_surface_food_drop;
 
                     // If ant is adjacent to food then strongly consider dropping food (creates food piles)
-                    let is_food_below = world_map.is_element(&elements_query, orientation.get_below_position(position), Element::Food);
-                    let is_food_ahead_below = world_map.is_element(&elements_query, orientation.get_below_position(&ahead_position), Element::Food);
+                    let is_food_below = world_map.is_element(
+                        &elements_query,
+                        orientation.get_below_position(position),
+                        Element::Food,
+                    );
+                    let is_food_ahead_below = world_map.is_element(
+                        &elements_query,
+                        orientation.get_below_position(&ahead_position),
+                        Element::Food,
+                    );
 
-                    if (is_food_below || is_food_ahead_below) && rng.f32() < settings.probabilities.below_surface_food_adjacent_food_drop {
+                    if (is_food_below || is_food_ahead_below)
+                        && rng.f32() < settings.probabilities.below_surface_food_adjacent_food_drop
+                    {
                         drop_food = true;
                     }
                 } else {
                     if *role == AntRole::Queen {
-                        drop_food = rng.f32() < settings.probabilities.above_surface_queen_food_drop;
+                        drop_food =
+                            rng.f32() < settings.probabilities.above_surface_queen_food_drop;
                     }
                 }
             }

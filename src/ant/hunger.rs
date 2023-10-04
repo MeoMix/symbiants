@@ -1,4 +1,4 @@
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, Dead, Initiative};
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
 use crate::{
     common::{get_entity_from_id, Id},
     element::Element,
