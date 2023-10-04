@@ -1,6 +1,6 @@
 # Symbiants
 
-![image](https://github.com/MeoMix/symbiants/assets/1380995/dda710c1-5aba-4d47-b1ea-685560aff254)
+![image](https://github.com/MeoMix/symbiants/assets/1380995/100e85bd-47a1-472e-afbd-4fc4824b65c9)
 
 What is this? A project for ANTS?
 
