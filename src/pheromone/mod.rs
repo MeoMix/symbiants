@@ -92,6 +92,7 @@ pub fn register_pheromone(
 ) {
     register::<Pheromone>(&app_type_registry, &mut saveable_registry);
     register::<PheromoneStrength>(&app_type_registry, &mut saveable_registry);
+    register::<PheromoneDuration>(&app_type_registry, &mut saveable_registry);
 }
 
 /// Called after creating a new story, or loading an existing story from storage.
