@@ -3,7 +3,7 @@ use crate::{
     common::register,
     element::Element,
     world_map::{position::Position, WorldMap},
-    pheromone::{Pheromone, commands::PheromoneCommandsExt},
+    pheromone::{Pheromone, commands::PheromoneCommandsExt, PheromoneStrength},
     settings::Settings,
 };
 use bevy_save::SaveableRegistry;
@@ -126,6 +126,7 @@ pub fn ants_nesting_action(
                 &mut nesting,
                 &world_map,
                 &mut commands,
+                &settings,
             );
             continue;
         }
@@ -181,7 +182,7 @@ fn can_start_nesting(
     let has_valid_dig_site = world_map.is_aboveground(&ant_position) && !is_too_near_world_edge;
 
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *world_map.element(dig_position);
+    let dig_target_entity = *world_map.element_entity(dig_position);
 
     let is_element_diggable = elements_query
         .get(dig_target_entity)
@@ -202,17 +203,16 @@ fn start_digging_nest(
     nesting: &mut Nesting,
     world_map: &WorldMap,
     commands: &mut Commands,
+    settings: &Settings,
 ) {
     // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *world_map.element(dig_position);
+    let dig_target_entity = *world_map.element_entity(dig_position);
     commands.dig(ant_entity, dig_position, dig_target_entity);
 
-    // TODO: maybe consume movement here too since it looks weird when digging down and moving forward in same frame?
-    initiative.consume_action();
+    initiative.consume();
     *nesting = Nesting::Started(dig_position);
-    
-    commands.spawn_pheromone(dig_position, Pheromone::Tunnel);
+    commands.spawn_pheromone(dig_position, Pheromone::Tunnel, PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length));
 }
 
 /// Returns true if ant is at a valid location to settle down and begin giving birth.
@@ -290,7 +290,7 @@ fn finish_digging_nest(
 
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);
-        let drop_target_entity = world_map.element(drop_position);
+        let drop_target_entity = world_map.element_entity(drop_position);
         commands.drop(ant_entity, drop_position, *drop_target_entity);
     }
 

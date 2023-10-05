@@ -4,9 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
     element::Element,
-    pheromone::{Pheromone, PheromoneMap},
-    settings::Settings,
-    world_map::{position::Position, WorldMap},
+    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+    world_map::{position::Position, WorldMap}, settings::Settings,
 };
 
 use super::{birthing::Birthing, Dead};
@@ -21,21 +20,20 @@ pub struct Chambering(pub isize);
 ///  3) Either step forward or turn around
 ///  4) Repeat while covered in pheromone
 pub fn ants_chamber_pheromone_act(
-    mut ants_query: Query<
-        (
-            &AntOrientation,
-            &AntInventory,
-            &mut Initiative,
-            &Position,
-            Entity,
-        ),
-        With<Chambering>,
-    >,
+    mut ants_query: Query<(
+        &AntOrientation,
+        &AntInventory,
+        &mut Initiative,
+        &Position,
+        Entity,
+        &Chambering,
+    )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     mut commands: Commands,
+    settings: Res<Settings>,
 ) {
-    for (ant_orientation, inventory, mut initiative, ant_position, ant_entity) in
+    for (ant_orientation, inventory, mut initiative, ant_position, ant_entity, chambering) in
         ants_query.iter_mut()
     {
         if !initiative.can_act() {
@@ -47,32 +45,29 @@ pub fn ants_chamber_pheromone_act(
             continue;
         }
 
-        // Don't dig chambers northward because it can break through the surface.
-        if !ant_orientation.is_facing_north()
-            && try_dig(
-                &ant_entity,
-                &ant_orientation.get_ahead_position(ant_position),
-                &elements_query,
-                &world_map,
-                &mut commands,
-            )
-        {
-            initiative.consume_action();
-            continue;
-        }
+        // TODO: maybe shuffle positions to make things more interesting
+        let positions = ant_orientation.get_valid_nonnorth_positions(ant_position);
 
-        // Don't dig chambers northward because it can break through the surface.
-        if !ant_orientation.is_rightside_up()
-            && try_dig(
+        for position in positions {
+            if try_dig(
                 &ant_entity,
-                &ant_orientation.get_above_position(ant_position),
+                &position,
                 &elements_query,
                 &world_map,
                 &mut commands,
-            )
-        {
-            initiative.consume_action();
-            continue;
+            ) {
+                // TODO: why do I need to subtract 1 here? shouldn't the ant movement reducing on-body pheromone strength be sufficient?
+                if chambering.0 - 1 > 0 {
+                    commands.spawn_pheromone(
+                        position,
+                        Pheromone::Chamber,
+                        PheromoneStrength::new(chambering.0 - 1, settings.chamber_size),
+                    );
+                }
+
+                initiative.consume();
+                return;
+            }
         }
     }
 }
@@ -84,10 +79,9 @@ pub fn ants_add_chamber_pheromone(
         (Entity, &Position, &AntInventory),
         (Changed<Position>, Without<Dead>, Without<Birthing>),
     >,
-    pheromone_query: Query<&Pheromone>,
+    pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
-    settings: Res<Settings>,
 ) {
     for (ant_entity, ant_position, inventory) in ants_query.iter() {
         if inventory.0 != None {
@@ -95,12 +89,12 @@ pub fn ants_add_chamber_pheromone(
         }
 
         if let Some(pheromone_entity) = pheromone_map.0.get(ant_position) {
-            let pheromone = pheromone_query.get(*pheromone_entity).unwrap();
+            let (pheromone, pheromone_strength) = pheromone_query.get(*pheromone_entity).unwrap();
 
             if *pheromone == Pheromone::Chamber {
                 commands
                     .entity(ant_entity)
-                    .insert(Chambering(settings.chamber_size));
+                    .insert(Chambering(pheromone_strength.value()));
             }
         }
     }
@@ -148,11 +142,8 @@ fn try_dig(
     }
 
     // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = world_map.get_element(*dig_position).unwrap();
-    let Ok(element) = elements_query.get(*element_entity) else {
-        panic!("act - expected entity to exist")
-    };
-
+    let element_entity = world_map.element_entity(*dig_position);
+    let element = elements_query.get(*element_entity).unwrap();
     if *element == Element::Air {
         return false;
     }

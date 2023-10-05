@@ -8,15 +8,16 @@ use crate::{
         ants_initiative,
         birthing::{ants_birthing, register_birthing},
         chambering::{
-            ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_remove_chamber_pheromone, ants_fade_chamber_pheromone,
+            ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_fade_chamber_pheromone,
+            ants_remove_chamber_pheromone,
         },
         hunger::ants_hunger,
         nest_expansion::ants_nest_expansion,
         nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
         register_ant, setup_ant, teardown_ant,
         tunneling::{
-            ants_add_tunnel_pheromone, ants_remove_tunnel_pheromone, ants_tunnel_pheromone_act,
-            ants_tunnel_pheromone_move, ants_fade_tunnel_pheromone,
+            ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone, ants_remove_tunnel_pheromone,
+            ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
         },
         ui::{
             on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
@@ -32,8 +33,8 @@ use crate::{
     },
     gravity::{gravity_ants, gravity_elements, gravity_stability},
     pheromone::{
-        register_pheromone, setup_pheromone, teardown_pheromone,
-        ui::{on_spawn_pheromone, on_update_pheromone_visibility}, pheromone_duration_tick,
+        pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
+        ui::{on_spawn_pheromone, on_update_pheromone_visibility},
     },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     save::{load, save, setup_save, teardown_save},
@@ -151,28 +152,33 @@ impl Plugin for SimulationPlugin {
                             .chain(),
                         (ants_nest_expansion, apply_deferred).chain(),
                         (pheromone_duration_tick, apply_deferred).chain(),
+                        // Tunneling Pheromone:
                         (
-                            // Apply/Remove Pheromones
+                            // Fade first (or last) to ensure that if movement occurs that resulting position is reflective
+                            // of that tiles PheromoneStrength. If fade is applied after movement, but before action, then
+                            // there will be an off-by-one between PheromoneStrength of tile being stood on and what is applied to ant.
+                            ants_fade_tunnel_pheromone,
+                            // Move first, then sync state with current tile, then take action reflecting current state.
+                            ants_tunnel_pheromone_move,
+                            // Now apply pheromone onto ant. Call apply_deferred after each to ensure remove enforces
+                            // constraints immediately on any applied pheromone so move/act work on current assumptions.
                             ants_add_tunnel_pheromone,
+                            apply_deferred,
                             ants_remove_tunnel_pheromone,
+                            apply_deferred,
+                            ants_tunnel_pheromone_act,
+                            apply_deferred,
+                        )
+                            .chain(),
+                        // Chambering Pheromone:
+                        (
+                            ants_fade_chamber_pheromone,
+                            // TODO: ants_chamber_pheromone_move
                             ants_add_chamber_pheromone,
+                            apply_deferred,
                             ants_remove_chamber_pheromone,
                             apply_deferred,
-                        )
-                            .chain(),
-                        (
-                            // Apply Tunneling Logic
-                            ants_tunnel_pheromone_move,
-                            ants_tunnel_pheromone_act,
-                            ants_fade_tunnel_pheromone,
-                            apply_deferred,
-                        )
-                            .chain(),
-                        (
-                            // Apply Chambering Logic
-                            // TODO: ants_chamber_pheromone_move
                             ants_chamber_pheromone_act,
-                            ants_fade_chamber_pheromone,
                             apply_deferred,
                         )
                             .chain(),

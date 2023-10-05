@@ -101,7 +101,7 @@ pub fn ants_birthing(
             ));
 
             birthing.reset();
-            initiative.consume_action();
+            initiative.consume();
         }
     }
 }

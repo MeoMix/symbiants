@@ -60,7 +60,7 @@ impl Command for ReplaceElementCommand {
         // So, we anticipate the entity to be destroyed and confirm it still exists in the position expected. Otherwise, no-op.
         let world_map = world.resource::<WorldMap>();
 
-        let existing_entity = match world_map.get_element(self.position) {
+        let existing_entity = match world_map.get_element_entity(self.position) {
             Some(entity) => entity,
             None => {
                 info!("No entity found at position {:?}", self.position);
@@ -89,7 +89,7 @@ struct SpawnElementCommand {
 
 impl Command for SpawnElementCommand {
     fn apply(self, world: &mut World) {
-        if let Some(existing_entity) = world.resource::<WorldMap>().get_element(self.position) {
+        if let Some(existing_entity) = world.resource::<WorldMap>().get_element_entity(self.position) {
             info!(
                 "Entity {:?} already exists at position {:?}",
                 existing_entity, self.position
@@ -136,7 +136,7 @@ struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
 impl<C: Component + Send + Sync + 'static> Command for ToggleElementCommand<C> {
     fn apply(self, world: &mut World) {
         let world_map = world.resource::<WorldMap>();
-        let element_entity = match world_map.get_element(self.position) {
+        let element_entity = match world_map.get_element_entity(self.position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.position);

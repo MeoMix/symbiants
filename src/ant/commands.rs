@@ -59,7 +59,7 @@ struct DigElementCommand {
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
         let world_map = world.resource::<WorldMap>();
-        let element_entity = match world_map.get_element(self.target_position) {
+        let element_entity = match world_map.get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -128,7 +128,7 @@ struct DropElementCommand {
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
         let world_map = world.resource::<WorldMap>();
-        let air_entity = match world_map.get_element(self.target_position) {
+        let air_entity = match world_map.get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);

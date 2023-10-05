@@ -155,10 +155,6 @@ impl Initiative {
         self.has_movement = false;
     }
 
-    pub fn consume_action(&mut self) {
-        self.has_action = false;
-    }
-
     pub fn consume_movement(&mut self) {
         self.has_movement = false;
     }
@@ -362,6 +358,31 @@ impl AntOrientation {
             .iter()
             .flat_map(|facing| angles.iter().map(move |angle| Self::new(*facing, *angle)))
             .collect::<Vec<_>>()
+    }
+
+    pub fn get_valid_nonnorth_positions(&self, ant_position: &Position) -> Vec<Position> {
+        let mut positions = Vec::new();
+        
+        if self.is_rightside_up() {
+            // If ant is rightside up then it can dig forward (east/west) or below it (south).
+            positions.push(self.get_ahead_position(ant_position));
+            positions.push(self.get_below_position(ant_position));
+        } else if self.is_upside_down() {
+            // If ant is upside down then ant can dig forward (east/west) or above it (south).
+            positions.push(self.get_ahead_position(ant_position));
+            positions.push(self.get_above_position(ant_position));
+        } else {
+            // If ant is vertical pointing up then ant can dig above (east/west) or below it (east/west).
+            // If ant is vertical pointing down then ant can dig forward (south) above it (east/west) or below it (east/west).
+            positions.push(self.get_above_position(ant_position));
+            positions.push(self.get_below_position(ant_position));
+    
+            if self.is_facing_south() {
+                positions.push(self.get_ahead_position(ant_position));
+            }
+        }
+    
+        positions
     }
 }
 

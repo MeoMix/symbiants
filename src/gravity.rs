@@ -85,8 +85,8 @@ pub fn gravity_elements(
             get_element_fall_position(position, &world_map, &elements_query, &mut rng.reborrow())
                 .and_then(|air_position| {
                     Some((
-                        *world_map.get_element(position)?,
-                        *world_map.get_element(air_position)?,
+                        *world_map.get_element_entity(position)?,
+                        *world_map.get_element_entity(air_position)?,
                     ))
                 })
         })
@@ -159,8 +159,7 @@ pub fn gravity_ants(
                 position.y = below_position.y;
 
                 // Ant falling through the air loses the ability to move or act.
-                initiative.consume_movement();
-                initiative.consume_action();
+                initiative.consume();
             }
         }
     }
@@ -185,7 +184,7 @@ pub fn gravity_stability(
         // Iterate over all the calculated positions
         for &adjacent_position in &adjacent_positions {
             // If the current position contains a sand or food element, mark it as unstable
-            if let Some(entity) = world_map.get_element(adjacent_position) {
+            if let Some(entity) = world_map.get_element_entity(adjacent_position) {
                 if let Ok(element) = elements_query.get(*entity) {
                     if matches!(*element, Element::Sand | Element::Food) {
                         commands.toggle_element_command(*entity, adjacent_position, true, Unstable);

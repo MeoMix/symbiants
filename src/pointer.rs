@@ -67,24 +67,24 @@ pub fn handle_pointer_tap(
 
     if *pointer_action == PointerAction::Food {
         if world_map.is_element(&elements_query, grid_position, Element::Air) {
-            if let Some(entity) = world_map.get_element(grid_position) {
+            if let Some(entity) = world_map.get_element_entity(grid_position) {
                 commands.replace_element(grid_position, Element::Food, *entity);
             }
         }
     } else if *pointer_action == PointerAction::Sand {
         if world_map.is_element(&elements_query, grid_position, Element::Air) {
-            if let Some(entity) = world_map.get_element(grid_position) {
+            if let Some(entity) = world_map.get_element_entity(grid_position) {
                 commands.replace_element(grid_position, Element::Sand, *entity);
             }
         }
     } else if *pointer_action == PointerAction::Dirt {
         if world_map.is_element(&elements_query, grid_position, Element::Air) {
-            if let Some(entity) = world_map.get_element(grid_position) {
+            if let Some(entity) = world_map.get_element_entity(grid_position) {
                 commands.replace_element(grid_position, Element::Dirt, *entity);
             }
         }
     } else if *pointer_action == PointerAction::DespawnElement {
-        if let Some(entity) = world_map.get_element(grid_position) {
+        if let Some(entity) = world_map.get_element_entity(grid_position) {
             commands.replace_element(grid_position, Element::Air, *entity);
         }
     } else if *pointer_action == PointerAction::SpawnWorkerAnt {
@@ -108,7 +108,7 @@ pub fn handle_pointer_tap(
             if inventory.0 != None {
                 // If the ant is standing on air then drop element where standing otherwise despawn element.
                 // TODO: in the future maybe try to find an adjacent place to drop element.
-                let element_entity = world_map.get_element(grid_position).unwrap();
+                let element_entity = world_map.get_element_entity(grid_position).unwrap();
 
                 if world_map.is_element(&elements_query, grid_position, Element::Air) {
                     commands.drop(entity, grid_position, *element_entity);
@@ -129,7 +129,7 @@ pub fn handle_pointer_tap(
             if inventory.0 != None {
                 // If the ant is standing on air then drop element where standing otherwise despawn element.
                 // TODO: in the future maybe try to find an adjacent place to drop element.
-                let element_entity = world_map.get_element(grid_position).unwrap();
+                let element_entity = world_map.get_element_entity(grid_position).unwrap();
 
                 if world_map.is_element(&elements_query, grid_position, Element::Air) {
                     commands.drop(entity, grid_position, *element_entity);

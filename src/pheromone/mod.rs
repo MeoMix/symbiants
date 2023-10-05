@@ -21,6 +21,31 @@ pub enum Pheromone {
     Chamber,
 }
 
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
+pub struct PheromoneStrength {
+    value: isize,
+    max: isize
+}
+
+impl PheromoneStrength {
+    pub fn new(value: isize, max: isize) -> Self {
+        if value > max {
+            panic!("PheromoneStrength value cannot be greater than max");
+        }
+
+        Self { value, max }
+    }
+
+    pub fn value(&self) -> isize {
+        self.value
+    }
+
+    pub fn max(&self) -> isize {
+        self.max
+    }
+}
+
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct PheromoneDuration {
@@ -66,6 +91,7 @@ pub fn register_pheromone(
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
     register::<Pheromone>(&app_type_registry, &mut saveable_registry);
+    register::<PheromoneStrength>(&app_type_registry, &mut saveable_registry);
 }
 
 /// Called after creating a new story, or loading an existing story from storage.
@@ -85,7 +111,7 @@ pub fn setup_pheromone(
     commands.insert_resource(PheromoneMap(pheromone_map));
 
     // TODO: better separate model/view
-    commands.insert_resource(PheromoneVisibility(Visibility::Hidden));
+    commands.insert_resource(PheromoneVisibility(Visibility::Visible));
 }
 
 pub fn teardown_pheromone(pheromone_query: Query<Entity, With<Pheromone>>, mut commands: Commands) {

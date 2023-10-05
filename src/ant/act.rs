@@ -39,11 +39,12 @@ pub fn ants_act(
             continue;
         }
 
+        // TODO: drop ahead not where at?
         if inventory.0 != None && rng.f32() < settings.probabilities.random_drop {
-            let target_element_entity = world_map.element(*position);
+            let target_element_entity = world_map.element_entity(*position);
             commands.drop(ant_entity, *position, *target_element_entity);
 
-            initiative.consume_action();
+            initiative.consume();
             continue;
         }
 
@@ -53,7 +54,7 @@ pub fn ants_act(
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = world_map.get_element(ahead_position).unwrap();
+        let entity = world_map.get_element_entity(ahead_position).unwrap();
         let Ok(element) = elements_query.get(*entity) else {
             panic!("act - expected entity to exist")
         };
@@ -79,10 +80,10 @@ pub fn ants_act(
 
                 if dig_food || dig_sand {
                     let dig_position = orientation.get_ahead_position(position);
-                    let dig_target_entity = *world_map.element(dig_position);
+                    let dig_target_entity = *world_map.element_entity(dig_position);
                     commands.dig(ant_entity, dig_position, dig_target_entity);
 
-                    initiative.consume_action();
+                    initiative.consume();
                     continue;
                 }
             }
@@ -137,10 +138,10 @@ pub fn ants_act(
 
             if drop_sand || drop_food {
                 // Drop inventory in front of ant
-                let target_element_entity = world_map.element(ahead_position);
+                let target_element_entity = world_map.element_entity(ahead_position);
                 commands.drop(ant_entity, ahead_position, *target_element_entity);
 
-                initiative.consume_action();
+                initiative.consume();
                 continue;
             }
         }

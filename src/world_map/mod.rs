@@ -86,14 +86,14 @@ impl WorldMap {
         position.x >= 0 && position.x < self.width && position.y >= 0 && position.y < self.height
     }
 
-    pub fn get_element(&self, position: Position) -> Option<&Entity> {
+    pub fn get_element_entity(&self, position: Position) -> Option<&Entity> {
         self.elements_cache
             .get(position.y as usize)
             .and_then(|row| row.get(position.x as usize))
     }
 
-    pub fn element(&self, position: Position) -> &Entity {
-        self.get_element(position).expect(&format!(
+    pub fn element_entity(&self, position: Position) -> &Entity {
+        self.get_element_entity(position).expect(&format!(
             "Element entity not found at the position: {:?}",
             position
         ))
@@ -109,7 +109,7 @@ impl WorldMap {
         position: Position,
         search_element: Element,
     ) -> bool {
-        self.get_element(position).map_or(false, |&element| {
+        self.get_element_entity(position).map_or(false, |&element| {
             elements_query
                 .get(element)
                 .map_or(false, |queried_element| *queried_element == search_element)

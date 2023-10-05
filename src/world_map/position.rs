@@ -46,6 +46,16 @@ impl Position {
     pub fn distance(&self, other: &Position) -> isize {
         (self.x - other.x).abs() + (self.y - other.y).abs()
     }
+
+    // Returns all positions adjacent to this position. May include out-of-bounds positions.
+    pub fn get_adjacent_positions(&self) -> Vec<Position> {
+        vec![
+            *self + Self::X,
+            *self + Self::NEG_X,
+            *self + Self::Y,
+            *self + Self::NEG_Y,
+        ]
+    }
 }
 
 impl Add for Position {

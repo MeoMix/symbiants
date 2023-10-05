@@ -1,4 +1,4 @@
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, Dead, Initiative};
 use crate::{
     common::{get_entity_from_id, Id},
     element::Element,
@@ -85,9 +85,9 @@ pub fn ants_hunger(
             if inventory.0 == None {
                 let ahead_position = orientation.get_ahead_position(position);
                 if world_map.is_element(&elements_query, ahead_position, Element::Food) {
-                    let food_entity = world_map.get_element(ahead_position).unwrap();
+                    let food_entity = world_map.get_element_entity(ahead_position).unwrap();
                     commands.dig(entity, ahead_position, *food_entity);
-                    initiative.consume_action();
+                    initiative.consume();
                 }
             } else {
                 let id = inventory.0.clone().unwrap();
@@ -97,7 +97,7 @@ pub fn ants_hunger(
                 if *element == Element::Food {
                     inventory.0 = None;
                     hunger.reset();
-                    initiative.consume_action();
+                    initiative.consume();
                 }
             }
         }
