@@ -8,12 +8,13 @@ FROM rust:1.71-bookworm
 # I tested GWSL and it worked out of the box on Windows - https://opticos.github.io/gwsl/
 
 # clang is needed to compile Rust more quickly
-# lld and mold are both Rust linkers - one is used for linux and other is used for non-linux
+# lld and mold are both Rust linkers. mold is faster, but does not support WASM.
+# mold (xorg/weston) are needed for native builds.
 RUN apt-get update && \
-  apt-get install -y libasound2-dev libudev-dev clang lld
+  apt-get install -y libasound2-dev libudev-dev clang lld mold xorg
 
-# these are needed for native builds
-# mold xorg weston
+# NOTE: you'll need something like GWSL installed on host machine to work as an xorg server
+# xorg weston
 
 # Need to manually ensure nightly is configured when using bookworm
 RUN rustup toolchain install nightly

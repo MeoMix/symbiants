@@ -95,7 +95,6 @@ impl Plugin for SimulationPlugin {
                 (setup_world_map, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
                 (setup_background, apply_deferred).chain(),
-                #[cfg(target_arch = "wasm32")]
                 setup_save,
                 begin_story,
             )
@@ -223,7 +222,6 @@ impl Plugin for SimulationPlugin {
         );
 
         // Saving in WASM writes to local storage which requires dedicated support.
-        #[cfg(target_arch = "wasm32")]
         app.add_systems(
             PostUpdate,
             // Saving is an expensive operation. Skip while fast-forwarding for performance.
@@ -242,7 +240,6 @@ impl Plugin for SimulationPlugin {
                 teardown_element,
                 teardown_pheromone,
                 teardown_world_map,
-                #[cfg(target_arch = "wasm32")]
                 teardown_save,
                 restart_story,
             )

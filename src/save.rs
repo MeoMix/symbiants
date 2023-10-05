@@ -13,9 +13,14 @@ const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
 static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
 
+// TODO: Support saving on non-WASM targets.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn save() {}
+
 /// Provide an opportunity to write world state to disk.
 /// This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
 /// to avoid losing too much state in the event of a crash.
+#[cfg(target_arch = "wasm32")]
 pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save_time: Local<f32>) {
     let current_time = world.resource::<Time>().raw_elapsed_seconds();
     let snapshot_interval = world.resource::<Settings>().snapshot_interval;
@@ -57,7 +62,6 @@ fn create_save_snapshot(world: &mut World) -> Option<String> {
     None
 }
 
-// TODO: Support saving on non-WASM targets.
 fn write_save_snapshot() -> bool {
     let save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
     let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, save_snapshot.deref().clone());
@@ -76,6 +80,10 @@ thread_local! {
     static ON_BEFORE_UNLOAD: RefCell<Option<Closure<dyn FnMut(BeforeUnloadEvent) -> bool>>> = RefCell::new(None);
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub fn setup_save() {}
+
+#[cfg(target_arch = "wasm32")]
 pub fn setup_save() {
     let window = web_sys::window().expect("window not available");
 
@@ -94,6 +102,10 @@ pub fn setup_save() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub fn teardown_save() {}
+
+#[cfg(target_arch = "wasm32")]
 pub fn teardown_save() {
     LocalStorage::delete(LOCAL_STORAGE_KEY);
 
@@ -111,6 +123,12 @@ pub fn teardown_save() {
     });
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub fn load(world: &mut World) -> bool {
+    false
+}
+
+#[cfg(target_arch = "wasm32")]
 pub fn load(world: &mut World) -> bool {
     LocalStorage::get::<String>(LOCAL_STORAGE_KEY)
         .map_err(|e| {
