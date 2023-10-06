@@ -185,7 +185,14 @@ impl Plugin for SimulationPlugin {
                             .chain(),
                         // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
                         // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
-                        (ants_walk, ants_dig, ants_drop, apply_deferred).chain(),
+                        (
+                            ants_walk,
+                            ants_dig,
+                            apply_deferred,
+                            ants_drop,
+                            apply_deferred,
+                        )
+                            .chain(),
                         // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                         ants_initiative,
                     )
