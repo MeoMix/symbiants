@@ -264,9 +264,9 @@ impl AntOrientation {
         self.angle
     }
 
-    pub fn is_horizontal(&self) -> bool {
-        self.angle == Angle::Zero || self.angle == Angle::OneHundredEighty
-    }
+    // pub fn is_horizontal(&self) -> bool {
+    //     self.angle == Angle::Zero || self.angle == Angle::OneHundredEighty
+    // }
 
     pub fn is_vertical(&self) -> bool {
         self.angle == Angle::Ninety || self.angle == Angle::TwoHundredSeventy

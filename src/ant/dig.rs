@@ -42,37 +42,74 @@ pub fn ants_dig(
             continue;
         }
 
-        let ahead_position = orientation.get_ahead_position(position);
-        if !world_map.is_within_bounds(&ahead_position) {
-            continue;
-        }
+        let positions = [
+            orientation.get_ahead_position(position),
+            orientation.get_below_position(position),
+            // TODO: idk, above is less necessary than below
+            orientation.get_above_position(position)
+        ];
 
-        // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = world_map.get_element_entity(ahead_position).unwrap();
-        let element = elements_query.get(*entity).unwrap();
-        if *element == Element::Air {
-            continue;
-        }
-
-        // When above ground, prioritize picking up food
-        let mut dig_food = false;
-
-        if *element == Element::Food && *role == AntRole::Worker {
-            if world_map.is_aboveground(&position) {
-                dig_food = rng.f32() < settings.probabilities.above_surface_food_dig;
-            } else {
-                dig_food = rng.f32() < settings.probabilities.below_surface_food_dig;
+        for position in positions {
+            if try_dig(
+                ant_entity,
+                role,
+                birthing,
+                position,
+                &elements_query,
+                &world_map,
+                &mut commands,
+                &settings,
+                &mut rng,
+            ) {
+                return;
             }
         }
+    }
+}
 
-        // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
-        let dig_sand =
-            *element == Element::Sand && world_map.is_underground(&position) && birthing.is_none();
+fn try_dig(
+    ant_entity: Entity,
+    ant_role: &AntRole,
+    ant_birthing: Option<&Birthing>,
+    dig_position: Position,
+    elements_query: &Query<&Element>,
+    world_map: &Res<WorldMap>,
+    commands: &mut Commands,
+    settings: &Res<Settings>,
+    rng: &mut ResMut<GlobalRng>,
+) -> bool {
+    if !world_map.is_within_bounds(&dig_position) {
+        return false;
+    }
 
-        if dig_food || dig_sand {
-            let dig_position = orientation.get_ahead_position(position);
-            let dig_target_entity = *world_map.element_entity(dig_position);
-            commands.dig(ant_entity, dig_position, dig_target_entity);
+    // Check if hitting a solid element and, if so, consider digging through it.
+    let element_entity = world_map.get_element_entity(dig_position).unwrap();
+    let element = elements_query.get(*element_entity).unwrap();
+    if *element == Element::Air {
+        return false;
+    }
+
+    // When above ground, prioritize picking up food
+    let mut dig_food = false;
+
+    if *element == Element::Food && *ant_role == AntRole::Worker {
+        if world_map.is_aboveground(&dig_position) {
+            dig_food = rng.f32() < settings.probabilities.above_surface_food_dig;
+        } else {
+            dig_food = rng.f32() < settings.probabilities.below_surface_food_dig;
         }
     }
+
+    // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
+    let dig_sand = *element == Element::Sand
+        && world_map.is_underground(&dig_position)
+        && ant_birthing.is_none();
+
+    if dig_food || dig_sand {
+        commands.dig(ant_entity, dig_position, *element_entity);
+
+        return true;
+    }
+
+    return false;
 }

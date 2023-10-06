@@ -6,7 +6,7 @@ use crate::{
 };
 
 use super::{
-    birthing::Birthing, commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead,
+    commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead,
     Initiative,
 };
 use bevy::prelude::*;
