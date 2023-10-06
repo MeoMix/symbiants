@@ -61,8 +61,8 @@ impl Default for Settings {
             initial_dirt_percent: 3.0 / 4.0,
             initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
-            chamber_size: 3,
-            tunnel_length: 8,
+            chamber_size: 5,
+            tunnel_length: 12,
             probabilities: Probabilities {
                 random_drop: 0.003,
                 random_turn: 0.005,
