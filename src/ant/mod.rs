@@ -151,12 +151,29 @@ impl Initiative {
     }
 
     pub fn consume(&mut self) {
-        self.has_action = false;
-        self.has_movement = false;
+        self.consume_action();
+
+        if self.can_move() {
+            self.consume_movement();
+        }
     }
 
     pub fn consume_movement(&mut self) {
+        if !self.has_movement {
+            panic!("Movement already consumed.")
+        }
+
         self.has_movement = false;
+    }
+
+    /// This is very intentionally kept private. Movement must be consumed with action.
+    /// Otherwise, systems lose their "source of truth" as to whether actions or movements occur first.
+    fn consume_action(&mut self) {
+        if !self.has_action {
+            panic!("Action already consumed.")
+        }
+
+        self.has_action = false;
     }
 }
 

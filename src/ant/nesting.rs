@@ -2,9 +2,9 @@ use crate::{
     ant::birthing::Birthing,
     common::register,
     element::Element,
-    world_map::{position::Position, WorldMap},
-    pheromone::{Pheromone, commands::PheromoneCommandsExt, PheromoneStrength},
+    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     settings::Settings,
+    world_map::{position::Position, WorldMap},
 };
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
@@ -122,7 +122,6 @@ pub fn ants_nesting_action(
                 &position,
                 &orientation,
                 ant_entity,
-                &mut initiative,
                 &mut nesting,
                 &world_map,
                 &mut commands,
@@ -199,7 +198,6 @@ fn start_digging_nest(
     ant_position: &Position,
     ant_orientation: &AntOrientation,
     ant_entity: Entity,
-    initiative: &mut Initiative,
     nesting: &mut Nesting,
     world_map: &WorldMap,
     commands: &mut Commands,
@@ -210,9 +208,12 @@ fn start_digging_nest(
     let dig_target_entity = *world_map.element_entity(dig_position);
     commands.dig(ant_entity, dig_position, dig_target_entity);
 
-    initiative.consume();
     *nesting = Nesting::Started(dig_position);
-    commands.spawn_pheromone(dig_position, Pheromone::Tunnel, PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length));
+    commands.spawn_pheromone(
+        dig_position,
+        Pheromone::Tunnel,
+        PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
+    );
 }
 
 /// Returns true if ant is at a valid location to settle down and begin giving birth.
@@ -292,8 +293,9 @@ fn finish_digging_nest(
         let drop_position = ant_orientation.get_ahead_position(ant_position);
         let drop_target_entity = world_map.element_entity(drop_position);
         commands.drop(ant_entity, drop_position, *drop_target_entity);
+    } else {
+        // TODO: This seems wrong. Everywhere else initiative is hidden behind custom action commands.
+        // Ensure that ant doesn't try to move or act after settling down
+        initiative.consume();
     }
-
-    // Ensure that ant doesn't try to move or act after settling down
-    initiative.consume();
 }

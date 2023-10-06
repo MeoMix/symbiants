@@ -87,7 +87,6 @@ pub fn ants_hunger(
                 if world_map.is_element(&elements_query, ahead_position, Element::Food) {
                     let food_entity = world_map.get_element_entity(ahead_position).unwrap();
                     commands.dig(entity, ahead_position, *food_entity);
-                    initiative.consume();
                 }
             } else {
                 let id = inventory.0.clone().unwrap();

@@ -159,7 +159,9 @@ pub fn gravity_ants(
                 position.y = below_position.y;
 
                 // Ant falling through the air loses the ability to move or act.
-                initiative.consume();
+                if initiative.can_act() {
+                    initiative.consume();
+                }
             }
         }
     }

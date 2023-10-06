@@ -97,22 +97,20 @@ pub fn ants_tunnel_pheromone_move(
 }
 
 pub fn ants_tunnel_pheromone_act(
-    mut ants_query: Query<
-        (
-            &AntOrientation,
-            &AntInventory,
-            &mut Initiative,
-            &Position,
-            Entity,
-            &Tunneling,
-        ),
-    >,
+    ants_query: Query<(
+        &AntOrientation,
+        &AntInventory,
+        &Initiative,
+        &Position,
+        Entity,
+        &Tunneling,
+    )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
-    for (orientation, inventory, mut initiative, position, ant_entity, tunneling) in ants_query.iter_mut() {
+    for (orientation, inventory, initiative, position, ant_entity, tunneling) in ants_query.iter() {
         if !initiative.can_act() {
             continue;
         }
@@ -151,10 +149,12 @@ pub fn ants_tunnel_pheromone_act(
         // If this didn't occur then either the ant would need to apply strength-1 to itself when stepping onto a tile, or
         // PheromoneStrength would never reduce.
         if tunneling.0 - 1 > 0 {
-            commands.spawn_pheromone(dig_position, Pheromone::Tunnel, PheromoneStrength::new(tunneling.0 - 1, settings.tunnel_length));
+            commands.spawn_pheromone(
+                dig_position,
+                Pheromone::Tunnel,
+                PheromoneStrength::new(tunneling.0 - 1, settings.tunnel_length),
+            );
         }
-
-        initiative.consume();
     }
 }
 
@@ -220,22 +220,31 @@ pub fn ants_remove_tunnel_pheromone(
         } else if tunneling.0 <= 0 {
             commands.entity(ant_entity).remove::<Tunneling>();
 
-            let adjacent_pheromones = ant_position.get_adjacent_positions()
+            let adjacent_pheromones = ant_position
+                .get_adjacent_positions()
                 .iter()
-                .filter_map(|position| 
-                    pheromone_map.0
-                    .get(position)
-                    .and_then(|pheromone_entity| pheromone_query.get(*pheromone_entity).ok())
-                )
+                .filter_map(|position| {
+                    pheromone_map
+                        .0
+                        .get(position)
+                        .and_then(|pheromone_entity| pheromone_query.get(*pheromone_entity).ok())
+                })
                 .collect::<Vec<(&Pheromone, &PheromoneStrength)>>();
 
-            let has_adjacant_low_strength_tunnel_pheromone = adjacent_pheromones
-                .iter()
-                .any(|(&pheromone, &pheromone_strength)| pheromone == Pheromone::Tunnel && pheromone_strength.value() == 1);
+            let has_adjacant_low_strength_tunnel_pheromone =
+                adjacent_pheromones
+                    .iter()
+                    .any(|(&pheromone, &pheromone_strength)| {
+                        pheromone == Pheromone::Tunnel && pheromone_strength.value() == 1
+                    });
 
             if has_adjacant_low_strength_tunnel_pheromone {
                 // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
-                commands.spawn_pheromone(*ant_position, Pheromone::Chamber, PheromoneStrength::new(settings.chamber_size, settings.chamber_size));
+                commands.spawn_pheromone(
+                    *ant_position,
+                    Pheromone::Chamber,
+                    PheromoneStrength::new(settings.chamber_size, settings.chamber_size),
+                );
             }
         }
     }

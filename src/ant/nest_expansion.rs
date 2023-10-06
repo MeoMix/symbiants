@@ -16,13 +16,13 @@ use crate::{
 use super::{hunger::Hunger, AntInventory, AntOrientation, AntRole, Dead, Initiative};
 
 pub fn ants_nest_expansion(
-    mut ants_query: Query<
+    ants_query: Query<
         (
             &AntRole,
             &Hunger,
             &AntOrientation,
             &AntInventory,
-            &mut Initiative,
+            &Initiative,
             &Position,
             Entity,
         ),
@@ -35,12 +35,12 @@ pub fn ants_nest_expansion(
     world_map: Res<WorldMap>,
 ) {
     let ant_entity_positions = ants_query
-        .iter_mut()
+        .iter()
         .map(|(_, _, _, _, _, position, entity)| (*position, entity))
         .collect::<Vec<_>>();
 
-    for (ant_role, hunger, ant_orientation, inventory, mut initiative, ant_position, ant_entity) in
-        ants_query.iter_mut()
+    for (ant_role, hunger, ant_orientation, inventory, initiative, ant_position, ant_entity) in
+        ants_query.iter()
     {
         if !initiative.can_act() {
             continue;
@@ -74,8 +74,11 @@ pub fn ants_nest_expansion(
             if let Some(dirt_position) = dirt_position {
                 let dig_target_entity = *world_map.element_entity(*dirt_position);
                 commands.dig(ant_entity, *dirt_position, dig_target_entity);
-                initiative.consume();
-                commands.spawn_pheromone(*dirt_position, Pheromone::Tunnel, PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length));
+                commands.spawn_pheromone(
+                    *dirt_position,
+                    Pheromone::Tunnel,
+                    PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
+                );
             }
         }
     }

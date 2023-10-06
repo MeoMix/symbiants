@@ -13,11 +13,11 @@ use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
 pub fn ants_act(
-    mut ants_query: Query<
+    ants_query: Query<
         (
             &AntOrientation,
             &AntInventory,
-            &mut Initiative,
+            &Initiative,
             &Position,
             &AntRole,
             Entity,
@@ -32,8 +32,8 @@ pub fn ants_act(
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
-    for (orientation, inventory, mut initiative, position, role, ant_entity, birthing) in
-        ants_query.iter_mut()
+    for (orientation, inventory, initiative, position, role, ant_entity, birthing) in
+        ants_query.iter()
     {
         if !initiative.can_act() {
             continue;
@@ -43,8 +43,6 @@ pub fn ants_act(
         if inventory.0 != None && rng.f32() < settings.probabilities.random_drop {
             let target_element_entity = world_map.element_entity(*position);
             commands.drop(ant_entity, *position, *target_element_entity);
-
-            initiative.consume();
             continue;
         }
 
@@ -82,8 +80,6 @@ pub fn ants_act(
                     let dig_position = orientation.get_ahead_position(position);
                     let dig_target_entity = *world_map.element_entity(dig_position);
                     commands.dig(ant_entity, dig_position, dig_target_entity);
-
-                    initiative.consume();
                     continue;
                 }
             }
@@ -140,8 +136,6 @@ pub fn ants_act(
                 // Drop inventory in front of ant
                 let target_element_entity = world_map.element_entity(ahead_position);
                 commands.drop(ant_entity, ahead_position, *target_element_entity);
-
-                initiative.consume();
                 continue;
             }
         }

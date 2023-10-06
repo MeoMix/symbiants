@@ -133,6 +133,7 @@ impl Plugin for SimulationPlugin {
                         gravity_ants,
                         // Gravity side-effects can run whenever with little difference.
                         gravity_stability,
+                        apply_deferred,
                     )
                         .chain(),
                     (

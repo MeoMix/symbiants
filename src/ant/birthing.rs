@@ -75,6 +75,10 @@ pub fn ants_birthing(
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()
     {
+        if !initiative.can_move(){
+            continue;
+        }
+
         // Once an ant starts giving birth - they're incapacitated and cannot move.
         initiative.consume_movement();
 

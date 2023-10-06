@@ -5,7 +5,8 @@ use crate::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
     element::Element,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
-    world_map::{position::Position, WorldMap}, settings::Settings,
+    settings::Settings,
+    world_map::{position::Position, WorldMap},
 };
 
 use super::{birthing::Birthing, Dead};
@@ -20,10 +21,10 @@ pub struct Chambering(pub isize);
 ///  3) Either step forward or turn around
 ///  4) Repeat while covered in pheromone
 pub fn ants_chamber_pheromone_act(
-    mut ants_query: Query<(
+    ants_query: Query<(
         &AntOrientation,
         &AntInventory,
-        &mut Initiative,
+        &Initiative,
         &Position,
         Entity,
         &Chambering,
@@ -33,8 +34,8 @@ pub fn ants_chamber_pheromone_act(
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
-    for (ant_orientation, inventory, mut initiative, ant_position, ant_entity, chambering) in
-        ants_query.iter_mut()
+    for (ant_orientation, inventory, initiative, ant_position, ant_entity, chambering) in
+        ants_query.iter()
     {
         if !initiative.can_act() {
             continue;
@@ -56,7 +57,7 @@ pub fn ants_chamber_pheromone_act(
                 &world_map,
                 &mut commands,
             ) {
-                // TODO: why do I need to subtract 1 here? shouldn't the ant movement reducing on-body pheromone strength be sufficient?
+                // Subtract 1 because not placing pheromone at ant_position but instead placing it at a position adjacent
                 if chambering.0 - 1 > 0 {
                     commands.spawn_pheromone(
                         position,
@@ -64,8 +65,6 @@ pub fn ants_chamber_pheromone_act(
                         PheromoneStrength::new(chambering.0 - 1, settings.chamber_size),
                     );
                 }
-
-                initiative.consume();
                 return;
             }
         }

@@ -9,7 +9,7 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
-use super::InventoryItemBundle;
+use super::{Initiative, InventoryItemBundle};
 
 pub trait AntCommandsExt {
     fn dig(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity);
@@ -111,10 +111,13 @@ impl Command for DigElementCommand {
         world.spawn(inventory_item_bundle);
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
-            Some(mut inventory) => {
-                inventory.0 = Some(inventory_item_element_id);
-            }
+            Some(mut inventory) => inventory.0 = Some(inventory_item_element_id),
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
+        };
+
+        match world.get_mut::<Initiative>(self.ant_entity) {
+            Some(mut initiative) => initiative.consume(),
+            None => panic!("Failed to get initiative for ant {:?}", self.ant_entity),
         };
     }
 }
@@ -176,6 +179,11 @@ impl Command for DropElementCommand {
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => inventory.0 = None,
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
+        };
+
+        match world.get_mut::<Initiative>(self.ant_entity) {
+            Some(mut initiative) => initiative.consume(),
+            None => panic!("Failed to get initiative for ant {:?}", self.ant_entity),
         };
     }
 }
