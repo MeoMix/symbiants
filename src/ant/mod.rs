@@ -18,10 +18,11 @@ use self::{
 use super::element::Element;
 use bevy::prelude::*;
 
-pub mod act;
 pub mod birthing;
 pub mod chambering;
 pub mod commands;
+pub mod dig;
+pub mod drop;
 pub mod hunger;
 pub mod nest_expansion;
 pub mod nesting;
@@ -285,8 +286,8 @@ impl AntOrientation {
             (Angle::TwoHundredSeventy, Facing::Left) => true,
             _ => false,
         }
-    }    
-    
+    }
+
     pub fn is_facing_south(&self) -> bool {
         match (self.angle, self.facing) {
             (Angle::TwoHundredSeventy, Facing::Right) => true,
@@ -379,7 +380,7 @@ impl AntOrientation {
 
     pub fn get_valid_nonnorth_positions(&self, ant_position: &Position) -> Vec<Position> {
         let mut positions = Vec::new();
-        
+
         if self.is_rightside_up() {
             // If ant is rightside up then it can dig forward (east/west) or below it (south).
             positions.push(self.get_ahead_position(ant_position));
@@ -393,12 +394,12 @@ impl AntOrientation {
             // If ant is vertical pointing down then ant can dig forward (south) above it (east/west) or below it (east/west).
             positions.push(self.get_above_position(ant_position));
             positions.push(self.get_below_position(ant_position));
-    
+
             if self.is_facing_south() {
                 positions.push(self.get_ahead_position(ant_position));
             }
         }
-    
+
         positions
     }
 }

@@ -4,13 +4,14 @@ use bevy_turborand::GlobalRng;
 
 use crate::{
     ant::{
-        act::ants_act,
         ants_initiative,
         birthing::{ants_birthing, register_birthing},
         chambering::{
             ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_fade_chamber_pheromone,
             ants_remove_chamber_pheromone,
         },
+        dig::ants_dig,
+        drop::ants_drop,
         hunger::ants_hunger,
         nest_expansion::ants_nest_expansion,
         nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
@@ -184,7 +185,7 @@ impl Plugin for SimulationPlugin {
                             .chain(),
                         // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
                         // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
-                        (ants_walk, ants_act, apply_deferred).chain(),
+                        (ants_walk, ants_dig, ants_drop, apply_deferred).chain(),
                         // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                         ants_initiative,
                     )
