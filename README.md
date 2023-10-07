@@ -31,8 +31,6 @@ This project expects to be developed within a VSCode devcontainer with a WASM co
 Inside .devcontainer you should see devcontainer.json and Dockerfile. The Dockerfile is minimal, but will setup a nightly rust build with *clang + lld* not *mold*. This is because the mold linker does not support WASM.
 If you are going to try and run this without Docker then you'll need to ensure your system is using a supported linker.
 
-Please note that Dockerfile contains git email/password logic which should be adjusted if you plan to make any commits.
-
 Once your environment is configured, run `trunk serve` to spin up a local server which hosts the WASM. Then, navigate to `127.0.0.1:8080` on your host machine.
 
 If you want to create a native build, rather than a WASM build, that is also supported but is not the default defined in .cargo/config.toml. The only native build officially supported is Linux, but feel free to try others.
