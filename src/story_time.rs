@@ -34,8 +34,14 @@ impl StoryTime {
 
 /// Store TicksPerSecond separately from FixedTime because when we're fast forwarding time we won't update TicksPerSecond.
 /// This enables resetting back to a user-defined ticks-per-second (adjusted via UI) rather than the default ticks-per-second.
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct TicksPerSecond(pub isize);
+
+impl Default for TicksPerSecond {
+    fn default() -> Self {
+        TicksPerSecond(DEFAULT_TICKS_PER_SECOND)
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct FastForwardingStateInfo {
@@ -59,16 +65,15 @@ pub fn register_story_time(
     register::<StoryTime>(&app_type_registry, &mut saveable_registry);
 }
 
+// TODO: Does FixedTime exist as a resource here already?
 // TODO: awkward timing for this - need to have resources available before calling try_load_from_save
 pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryTime>();
     commands.init_resource::<FastForwardingStateInfo>();
-
-    // Control the speed of the simulation by defining how many simulation ticks occur per second.
+    commands.init_resource::<TicksPerSecond>();
     commands.insert_resource(FixedTime::new_from_secs(
         1.0 / DEFAULT_TICKS_PER_SECOND as f32,
     ));
-    commands.insert_resource(TicksPerSecond(DEFAULT_TICKS_PER_SECOND));
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,
@@ -94,17 +99,13 @@ pub fn setup_story_time(
     next_story_playback_state.set(StoryPlaybackState::Playing);
 }
 
-pub fn teardown_story_time(
-    mut commands: Commands,
-    mut fixed_time: ResMut<FixedTime>,
-    mut ticks_per_second: ResMut<TicksPerSecond>,
-) {
+pub fn teardown_story_time(mut commands: Commands) {
     commands.remove_resource::<StoryTime>();
     commands.remove_resource::<FastForwardingStateInfo>();
+    commands.remove_resource::<TicksPerSecond>();
 
-    // HACK: This is resetting FixedTime to default, can't remove it entirely or program will crash (FIX?)
-    fixed_time.period = Duration::from_secs_f32(1.0 / (DEFAULT_TICKS_PER_SECOND as f32));
-    ticks_per_second.0 = DEFAULT_TICKS_PER_SECOND;
+    // `FixedTime` is managed by Bevy and can't be removed with panic occurring.
+    commands.insert_resource(FixedTime::default());
 }
 
 /// Control whether the app runs at the default or fast tick rate.
