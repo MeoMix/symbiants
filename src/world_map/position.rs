@@ -1,6 +1,6 @@
 use super::WorldMap;
 use bevy::prelude::*;
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Sub};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -65,6 +65,17 @@ impl Add for Position {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub for Position {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
         }
     }
 }

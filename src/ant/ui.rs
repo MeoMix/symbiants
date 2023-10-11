@@ -190,6 +190,7 @@ fn get_inventory_item_sprite_bundle(
         None => return None,
     };
 
+    // TODO: I am surprised this is working
     let inventory_item_element_entity =
         get_entity_from_id(inventory_item_element_id.clone(), &id_query).unwrap();
 

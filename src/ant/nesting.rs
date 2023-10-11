@@ -11,12 +11,11 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Dead,
-    Initiative,
+    Initiative, Facing,
 };
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
-// TODO: Maybe rename to NestCreation
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub enum Nesting {
@@ -35,8 +34,6 @@ pub fn register_nesting(
 /// Ants that are building the initial nest (usually just a queen) should prioritize making it back to the nest
 /// quickly rather than wandering aimlessly on the surface. They still need to wait until they drop their inventory
 /// otherwise they won't walk away from the nest their excavated dirt.
-/// TODO:
-///     * Code checks orientation.is_vertical() to simplify calculations, but should be possible to turn towards nest while vertical.
 pub fn ants_nesting_movement(
     mut ants_query: Query<
         (
@@ -57,12 +54,15 @@ pub fn ants_nesting_movement(
             continue;
         }
 
-        if world_map.is_underground(&position) || inventory.0 != None || orientation.is_vertical() {
+        if world_map.is_underground(&position) || inventory.0 != None {
             continue;
         }
 
         if let Nesting::Started(nest_position) = nesting {
-            let ahead_position = orientation.get_ahead_position(&position);
+            let ahead_position = match orientation.get_facing() {
+                Facing::Right => *position + Position::X,
+                Facing::Left => *position - Position::X,
+            };
 
             if position.distance(nest_position) > ahead_position.distance(nest_position) {
                 continue;

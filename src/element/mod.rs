@@ -118,7 +118,6 @@ impl FoodElementBundle {
 #[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub enum Element {
-    // TODO: IDK, I needed a default for Reflect (IDK why) but I don't necessarily feel like Air is the perfect choice?
     #[default]
     Air,
     Dirt,

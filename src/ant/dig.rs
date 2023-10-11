@@ -45,7 +45,6 @@ pub fn ants_dig(
         let positions = [
             orientation.get_ahead_position(position),
             orientation.get_below_position(position),
-            // TODO: idk, above is less necessary than below
             orientation.get_above_position(position)
         ];
 
