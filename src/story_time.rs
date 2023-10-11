@@ -65,7 +65,6 @@ pub fn register_story_time(
     register::<StoryTime>(&app_type_registry, &mut saveable_registry);
 }
 
-// TODO: Does FixedTime exist as a resource here already?
 // TODO: awkward timing for this - need to have resources available before calling try_load_from_save
 pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryTime>();
