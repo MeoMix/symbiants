@@ -20,6 +20,10 @@ pub fn setup_action_menu(mut commands: Commands) {
     commands.init_resource::<PointerAction>();
 }
 
+pub fn teardown_action_menu(mut commands: Commands) {
+    commands.remove_resource::<PointerAction>();
+}
+
 pub fn update_action_menu(
     mut contexts: EguiContexts,
     mut pointer_action: ResMut<PointerAction>,
@@ -55,8 +59,4 @@ pub fn update_action_menu(
                 "Remove Worker Ant",
             );
         });
-}
-
-pub fn teardown_action_menu(mut commands: Commands) {
-    commands.remove_resource::<PointerAction>();
 }

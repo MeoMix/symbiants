@@ -27,7 +27,7 @@ use crate::{
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{setup_background, teardown_background},
-    common::register_common,
+    common::{register_common, ui::on_add_selected},
     element::{
         register_element, setup_element, teardown_element,
         ui::{on_spawn_element, on_update_element_position},
@@ -223,6 +223,7 @@ impl Plugin for SimulationPlugin {
                     on_spawn_ant,
                     on_spawn_element,
                     on_spawn_pheromone,
+                    on_add_selected,
                 )
                     .chain(),
             )

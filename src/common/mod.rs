@@ -5,6 +5,8 @@ use uuid::Uuid;
 
 use crate::world_map::position::Position;
 
+pub mod ui;
+
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct Id(pub Uuid);

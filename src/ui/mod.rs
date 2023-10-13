@@ -1,5 +1,6 @@
 pub mod action_menu;
 mod main_menu;
+pub mod selection_menu;
 mod settings_menu;
 mod story;
 
@@ -7,6 +8,7 @@ use crate::story_state::StoryState;
 
 use self::action_menu::*;
 use self::main_menu::*;
+use self::selection_menu::update_selection_menu;
 use self::settings_menu::update_settings_menu;
 use self::story::info_panel::*;
 use self::story::loading_dialog::*;
@@ -42,6 +44,7 @@ impl Plugin for UIPlugin {
                 update_loading_dialog,
                 update_settings_menu,
                 update_action_menu,
+                update_selection_menu,
             )
                 .run_if(in_state(StoryState::Telling)),
         );
@@ -73,7 +76,10 @@ fn set_theme(mut contexts: EguiContexts) {
 
     // Redefine text_styles
     style.text_styles = [
-        (TextStyle::Heading, FontId::new(20.0 * scale_factor, Proportional)),
+        (
+            TextStyle::Heading,
+            FontId::new(20.0 * scale_factor, Proportional),
+        ),
         (
             TextStyle::Name("Heading2".into()),
             FontId::new(18.0 * scale_factor, Proportional),
@@ -83,9 +89,18 @@ fn set_theme(mut contexts: EguiContexts) {
             FontId::new(18.0 * scale_factor, Proportional),
         ),
         (TextStyle::Body, FontId::new(16.0, Proportional)),
-        (TextStyle::Monospace, FontId::new(14.0 * scale_factor, Proportional)),
-        (TextStyle::Button, FontId::new(14.0 * scale_factor, Proportional)),
-        (TextStyle::Small, FontId::new(10.0 * scale_factor, Proportional)),
+        (
+            TextStyle::Monospace,
+            FontId::new(14.0 * scale_factor, Proportional),
+        ),
+        (
+            TextStyle::Button,
+            FontId::new(14.0 * scale_factor, Proportional),
+        ),
+        (
+            TextStyle::Small,
+            FontId::new(10.0 * scale_factor, Proportional),
+        ),
     ]
     .into();
 

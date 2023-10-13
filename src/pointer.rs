@@ -1,9 +1,10 @@
+use crate::ant::commands::AntCommandsExt;
 use bevy::input::touch::Touch;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 use bevy_turborand::GlobalRng;
-use crate::ant::commands::AntCommandsExt;
 
+use crate::ui::selection_menu::Selected;
 use crate::{
     ant::{
         Angle, Ant, AntBundle, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole,
@@ -11,17 +12,17 @@ use crate::{
     },
     camera::MainCamera,
     element::{commands::ElementCommandsExt, Element},
-    world_map::{position::Position, WorldMap},
     name_list::get_random_name,
     settings::Settings,
     ui::action_menu::PointerAction,
+    world_map::{position::Position, WorldMap},
 };
 
 pub fn handle_pointer_tap(
     mouse_input: Res<Input<MouseButton>>,
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    mut query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    mut camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
     elements_query: Query<&Element>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
@@ -31,6 +32,7 @@ pub fn handle_pointer_tap(
     mut rng: ResMut<GlobalRng>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
     ant_label_query: Query<(Entity, &AntLabel)>,
+    selected_entity_query: Query<Entity, With<Selected>>,
 ) {
     if is_pointer_captured.0 {
         return;
@@ -57,7 +59,7 @@ pub fn handle_pointer_tap(
         return;
     }
 
-    let (camera, camera_transform) = query.single_mut();
+    let (camera, camera_transform) = camera_query.single_mut();
 
     let world_position = camera
         .viewport_to_world_2d(camera_transform, pointer_position)
@@ -65,7 +67,36 @@ pub fn handle_pointer_tap(
 
     let grid_position = world_to_grid_position(&world_map, world_position);
 
-    if *pointer_action == PointerAction::Food {
+    if *pointer_action == PointerAction::Default {
+        // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
+        let selected_ant_entity = ants_query
+            .iter()
+            .find(|(_, &position, _, _)| position == grid_position)
+            .map(|(entity, _, _, _)| entity);
+
+        let selected_element_entity = world_map.get_element_entity(grid_position);
+
+        let currently_selected_entity = selected_entity_query.get_single();
+
+        if let Ok(currently_selected_entity) = currently_selected_entity {
+            commands
+                .entity(currently_selected_entity)
+                .remove::<Selected>();
+        }
+
+        if let Some(ant_entity) = selected_ant_entity {
+            // If tapping on an already selected ant then consider selecting element underneath ant instead.
+            if selected_ant_entity == currently_selected_entity.ok() {
+                if let Some(element_entity) = selected_element_entity {
+                    commands.entity(*element_entity).insert(Selected);
+                }
+            } else {
+                commands.entity(ant_entity).insert(Selected);
+            }
+        } else if let Some(element_entity) = selected_element_entity {
+            commands.entity(*element_entity).insert(Selected);
+        }
+    } else if *pointer_action == PointerAction::Food {
         if world_map.is_element(&elements_query, grid_position, Element::Air) {
             if let Some(entity) = world_map.get_element_entity(grid_position) {
                 commands.replace_element(grid_position, Element::Food, *entity);
@@ -143,7 +174,7 @@ pub fn handle_pointer_tap(
             commands.entity(entity).despawn_recursive();
 
             // TODO: I tried using RemovedComponents in an attempt to react to any time an ant is despawned but it didn't seem to work
-            
+
             // Unfortunately, need to despawn label separately.
             let (label_entity, _) = ant_label_query
                 .iter()
