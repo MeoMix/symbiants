@@ -12,7 +12,7 @@ use crate::{
         },
         dig::ants_dig,
         drop::ants_drop,
-        hunger::ants_hunger,
+        hunger::{ants_hunger, ants_regurgitate},
         nest_expansion::ants_nest_expansion,
         nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
         register_ant, setup_ant, teardown_ant,
@@ -142,7 +142,7 @@ impl Plugin for SimulationPlugin {
                         // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
                         ants_stabilize_footing_movement,
                         // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
-                        (ants_hunger, apply_deferred).chain(),
+                        (ants_hunger, ants_regurgitate, apply_deferred).chain(),
                         (ants_birthing, apply_deferred).chain(),
                         (
                             // Apply Nesting Logic

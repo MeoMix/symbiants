@@ -1,4 +1,4 @@
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, Dead, Initiative};
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
 use crate::{
     common::{get_entity_from_id, Id},
     element::Element,
@@ -37,8 +37,20 @@ impl Hunger {
         self.value = (self.value + rate_of_hunger).min(self.max);
     }
 
+    pub fn is_full(&self) -> bool {
+        self.value < self.max * 0.25
+    }
+
+    pub fn is_peckish(&self) -> bool {
+        self.value >= self.max * 0.25
+    }
+
     pub fn is_hungry(&self) -> bool {
-        self.value >= self.max / 2.0
+        self.value >= self.max * 0.50
+    }
+
+    pub fn is_starving(&self) -> bool {
+        self.value >= self.max * 0.75
     }
 
     pub fn is_starved(&self) -> bool {
@@ -100,5 +112,80 @@ pub fn ants_hunger(
                 }
             }
         }
+    }
+}
+
+// If an ant is face-to-face with another ant then it is able to regurgitate food from itself to the other ant.
+// It will only do this if the other ant is hungry.
+// If the queen is starving then a worker will transfer food to it irrespective of the workers hunger level. The worker gives all it has up to 20%.
+// If the other ant is hungry, then a worker will transfer food if it is well fed. This ensures workers don't spend time transferring food to a hungry ant but, in the process, make themselves hungry.
+
+// Step 1: Find all ants which are hungry or worse.
+// Step 2: For each hungry-or-worse ant, look at the position directly in front of it.
+// Step 3: If there is an ant in that position, and if that ant is facing towards the hungry ant, then transfer food to the hungry ant.
+pub fn ants_regurgitate(
+    mut ants_hunger_query: Query<
+        (
+            Entity,
+            &mut Hunger,
+            &AntOrientation,
+            &Position,
+            &mut AntInventory,
+            &mut Initiative,
+            &mut AntRole,
+        ),
+        Without<Dead>,
+    >,
+) {
+    let peckish_ants = ants_hunger_query
+        .iter()
+        .filter(|(_, hunger, _, _, inventory, _, _)| hunger.is_peckish() && inventory.0 == None)
+        .collect::<Vec<_>>();
+
+    let mut results = vec![];
+
+    // TODO: initative consume?
+    for (ant_entity, ant_hunger, ant_orientation, ant_position, _, _, ant_role) in peckish_ants {
+        let ahead_position = ant_orientation.get_ahead_position(ant_position);
+
+        if let Some((other_ant_entity, other_ant_hunger, _, _, other_ant_inventory, _, _)) =
+            ants_hunger_query
+                .iter()
+                // Support ontop of as well as in front because its kinda challenging to ensure queen can have an ant directly in front of them.
+                .find(
+                    |(other_ant_entity, _, other_ant_orientation, &other_ant_position, _, _, _)| {
+                        (other_ant_position == ahead_position
+                            && other_ant_orientation.get_ahead_position(&other_ant_position)
+                                == *ant_position)
+                            || (other_ant_position == *ant_position
+                                && *other_ant_entity != ant_entity)
+                    },
+                )
+        {
+            // Ant must not be holding anything to be able to regurgitate food.
+            if other_ant_inventory.0 != None {
+                continue;
+            }
+
+            if *ant_role == AntRole::Queen
+                || (ant_hunger.is_starving() && !other_ant_hunger.is_hungry())
+                || (ant_hunger.is_hungry() && other_ant_hunger.is_full())
+            {
+                // Transfer up to 20% hunger from other_ant to ant.
+                let hunger_transfer_amount =
+                    (other_ant_hunger.max() * 0.20).min(other_ant_hunger.value());
+                results.push((ant_entity, other_ant_entity, hunger_transfer_amount));
+            }
+        }
+    }
+
+    for (ant_entity, other_ant_entity, hunger_transfer_amount) in results {
+        let [(_, mut hunger, _, _, _, _, _), (_, mut other_ant_hunger, _, _, _, _, _)] =
+            ants_hunger_query
+                .get_many_mut([ant_entity, other_ant_entity])
+                .unwrap();
+
+        hunger.value -= hunger_transfer_amount;
+        other_ant_hunger.value += hunger_transfer_amount;
     }
 }
