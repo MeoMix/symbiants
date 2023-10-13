@@ -6,7 +6,7 @@ use bevy_egui::{egui, EguiContexts};
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
 pub enum PointerAction {
     #[default]
-    Default,
+    Select,
     DespawnElement,
     Food,
     Dirt,
@@ -37,7 +37,7 @@ pub fn update_action_menu(
         .default_pos(egui::Pos2::new(window.width(), 0.0))
         .resizable(false)
         .show(ctx, |ui| {
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Default, "Default");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Select, "Select");
             ui.selectable_value(
                 pointer_action.as_mut(),
                 PointerAction::DespawnElement,

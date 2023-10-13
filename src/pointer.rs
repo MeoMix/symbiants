@@ -67,7 +67,7 @@ pub fn handle_pointer_tap(
 
     let grid_position = world_to_grid_position(&world_map, world_position);
 
-    if *pointer_action == PointerAction::Default {
+    if *pointer_action == PointerAction::Select {
         // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
         let selected_ant_entity = ants_query
             .iter()
