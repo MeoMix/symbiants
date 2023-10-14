@@ -3,7 +3,7 @@ use std::ops::Add;
 use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead};
 use crate::{
     common::{get_entity_from_id, Id},
-    element::{ui::get_element_sprite, Element},
+    element::{ui::get_element_texture, Element},
     story_time::StoryPlaybackState,
     world_map::{position::Position, WorldMap},
 };
@@ -66,9 +66,12 @@ pub fn on_spawn_ant(
                 },
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-                if let Some(bundle) =
-                    get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query)
-                {
+                if let Some(bundle) = get_inventory_item_sprite_bundle(
+                    inventory,
+                    &id_query,
+                    &elements_query,
+                    &asset_server,
+                ) {
                     parent.spawn(bundle);
                 }
 
@@ -139,6 +142,7 @@ pub fn on_update_ant_inventory(
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
     story_playback_state: Res<State<StoryPlaybackState>>,
+    asset_server: Res<AssetServer>,
 ) {
     if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
         return;
@@ -147,7 +151,7 @@ pub fn on_update_ant_inventory(
     for (entity, inventory, children) in query.iter_mut() {
         if story_playback_state.is_changed() || inventory.is_changed() {
             if let Some(inventory_item_bundle) =
-                get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query)
+                get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &asset_server)
             {
                 commands
                     .entity(entity)
@@ -184,6 +188,7 @@ fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
     id_query: &Query<(Entity, &Id)>,
     elements_query: &Query<&Element>,
+    asset_server: &Res<AssetServer>,
 ) -> Option<AntHeldElementSpriteBundle> {
     let inventory_item_element_id = match &inventory.0 {
         Some(inventory_item_element_id) => inventory_item_element_id,
@@ -198,7 +203,11 @@ fn get_inventory_item_sprite_bundle(
 
     let sprite_bundle = SpriteBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
-        sprite: get_element_sprite(inventory_item_element),
+        texture: get_element_texture(inventory_item_element, &asset_server),
+        sprite: Sprite {
+            custom_size: Some(Vec2::splat(1.0)),
+            ..default()
+        },
         ..default()
     };
 
