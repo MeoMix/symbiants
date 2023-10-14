@@ -57,8 +57,9 @@ impl Default for Settings {
             // Take snapshots aggressively because browser tab closes too quickly to JIT snapshot.
             snapshot_interval: 5, // TODO: prefer 1 here but it's too slow (in debug at least), kills FPS
             world_width: 144,
-            world_height: 81,
-            initial_dirt_percent: 3.0 / 4.0,
+            // TODO: I want this to be able to go to 400 without lag.
+            world_height: 196,
+            initial_dirt_percent: 2.0 / 4.0,
             initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
             chamber_size: 5,
