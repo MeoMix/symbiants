@@ -33,6 +33,7 @@ fn window_resize(
     }
 }
 
+// TODO: Instead of scaling to fit the world I want to zoom and focus on queen ant, but still enforce same max/min bounds.
 fn scale_to_world(
     mut commands: Commands,
     world_map: Res<WorldMap>,

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{asset::LoadState, prelude::*};
 use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
 
@@ -80,9 +80,14 @@ impl Plugin for SimulationPlugin {
                 register_pheromone,
                 (pre_setup_settings, apply_deferred).chain(),
                 (pre_setup_story_time, apply_deferred).chain(),
-                load.pipe(continue_startup),
+                load_textures,
             )
                 .chain(),
+        );
+
+        app.add_systems(
+            OnEnter(StoryState::LoadingSave),
+            load.pipe(continue_startup),
         );
 
         app.add_systems(
@@ -121,6 +126,11 @@ impl Plugin for SimulationPlugin {
                 in_state(StoryState::Telling)
                     .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
             ),
+        );
+
+        app.add_systems(
+            Update,
+            check_textures.run_if(in_state(StoryState::Initializing)),
         );
 
         app.add_systems(
@@ -255,5 +265,53 @@ impl Plugin for SimulationPlugin {
             )
                 .chain(),
         );
+    }
+}
+
+#[derive(Resource)]
+struct ElementSpriteHandles {
+    sheet: HandleUntyped,
+}
+
+#[derive(Resource)]
+pub struct SpriteSheets {
+    pub element: Handle<TextureAtlas>,
+}
+
+fn load_textures(asset_server: Res<AssetServer>, mut commands: Commands) {
+    // NOTE: `asset_server.load_folder() isn't supported in WASM`
+    let sheet_asset = asset_server.load_untyped("textures/element/sheet.png");
+
+    commands.insert_resource(ElementSpriteHandles { sheet: sheet_asset });
+}
+
+fn check_textures(
+    mut next_state: ResMut<NextState<StoryState>>,
+    element_sprite_handles: ResMut<ElementSpriteHandles>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut commands: Commands,
+) {
+    if let LoadState::Loaded = asset_server.get_load_state(element_sprite_handles.sheet.id()) {
+        let texture_handle = element_sprite_handles.sheet.typed_weak();
+
+        // BUG: https://github.com/bevyengine/bevy/issues/1949
+        // Need to use too small tile size + padding to prevent bleeding into adjacent sprites on sheet.
+        let texture_atlas = TextureAtlas::from_grid(
+            texture_handle,          // The texture we want to use
+            Vec2::new(126.0, 126.0), // The size of each image
+            3,                       // The number of columns
+            1,                       // The number of rows
+            Some(Vec2::splat(4.0)),  // Padding
+            None,                    // Offset
+        );
+
+        let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+        commands.insert_resource(SpriteSheets {
+            element: texture_atlas_handle,
+        });
+
+        next_state.set(StoryState::LoadingSave);
     }
 }

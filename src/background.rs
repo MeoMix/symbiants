@@ -12,7 +12,8 @@ fn create_air_sprites(
 ) -> Vec<(SpriteBundle, Background)> {
     let mut air_sprites = vec![];
 
-    let dark_blue = Color::rgba(0.0, 0.0, 0.2, 1.0); // Dark blue color
+    // TODO: I want this much blacker but need more sky to transition the gradient better and that's blocked by perf.
+    let dark_blue = Color::rgba(0.329, 0.608, 0.722, 1.0); // Dark blue color
     let sky_blue = Color::rgba(0.529, 0.808, 0.922, 1.0); // Sky blue color
     let power = 3.0; // You can experiment with different values
 
@@ -31,8 +32,12 @@ fn create_air_sprites(
             let b = sky_blue.b() + (dark_blue.b() - sky_blue.b()) * t_y;
             let a = sky_blue.a() + (dark_blue.a() - sky_blue.a()) * t_y;
 
+            let mut world_position = position.as_world_position(&world_map);
+            // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
+            world_position.z = 0.0;
+
             let air_sprite = SpriteBundle {
-                transform: Transform::from_translation(position.as_world_position(&world_map)),
+                transform: Transform::from_translation(world_position),
                 sprite: Sprite {
                     color: Color::rgba(r, g, b, a),
                     custom_size: Some(Vec2::splat(1.0)),
@@ -79,8 +84,12 @@ fn create_tunnel_sprites(
             let a = deepsoil_tunnel_brown.a()
                 + (topsoil_tunnel_brown.a() - deepsoil_tunnel_brown.a()) * t_y;
 
+            let mut world_position = position.as_world_position(&world_map);
+            // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
+            world_position.z = 0.0;
+
             let tunnel_sprite = SpriteBundle {
-                transform: Transform::from_translation(position.as_world_position(&world_map)),
+                transform: Transform::from_translation(world_position),
                 sprite: Sprite {
                     color: Color::rgba(r, g, b, a),
                     custom_size: Some(Vec2::splat(1.0)),

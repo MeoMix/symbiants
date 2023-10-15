@@ -3,7 +3,8 @@ use std::ops::Add;
 use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead};
 use crate::{
     common::{get_entity_from_id, Id},
-    element::{ui::get_element_texture, Element},
+    element::{ui::get_element_index, Element},
+    simulation::SpriteSheets,
     story_time::StoryPlaybackState,
     world_map::{position::Position, WorldMap},
 };
@@ -31,6 +32,7 @@ pub fn on_spawn_ant(
     id_query: Query<(Entity, &Id)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
+    sprite_sheets: Res<SpriteSheets>,
 ) {
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
@@ -70,7 +72,7 @@ pub fn on_spawn_ant(
                     inventory,
                     &id_query,
                     &elements_query,
-                    &asset_server,
+                    &sprite_sheets,
                 ) {
                     parent.spawn(bundle);
                 }
@@ -142,7 +144,7 @@ pub fn on_update_ant_inventory(
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
     story_playback_state: Res<State<StoryPlaybackState>>,
-    asset_server: Res<AssetServer>,
+    sprite_sheets: Res<SpriteSheets>,
 ) {
     if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
         return;
@@ -150,9 +152,12 @@ pub fn on_update_ant_inventory(
 
     for (entity, inventory, children) in query.iter_mut() {
         if story_playback_state.is_changed() || inventory.is_changed() {
-            if let Some(inventory_item_bundle) =
-                get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &asset_server)
-            {
+            if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
+                &inventory,
+                &id_query,
+                &elements_query,
+                &sprite_sheets,
+            ) {
                 commands
                     .entity(entity)
                     .with_children(|ant: &mut ChildBuilder| {
@@ -180,7 +185,7 @@ pub struct InventoryItemSprite;
 
 #[derive(Bundle)]
 pub struct AntHeldElementSpriteBundle {
-    sprite_bundle: SpriteBundle,
+    sprite_sheet_bundle: SpriteSheetBundle,
     inventory_item_sprite: InventoryItemSprite,
 }
 
@@ -188,7 +193,7 @@ fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
     id_query: &Query<(Entity, &Id)>,
     elements_query: &Query<&Element>,
-    asset_server: &Res<AssetServer>,
+    sprite_sheets: &Res<SpriteSheets>,
 ) -> Option<AntHeldElementSpriteBundle> {
     let inventory_item_element_id = match &inventory.0 {
         Some(inventory_item_element_id) => inventory_item_element_id,
@@ -201,18 +206,18 @@ fn get_inventory_item_sprite_bundle(
 
     let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
 
-    let sprite_bundle = SpriteBundle {
+    let mut sprite = TextureAtlasSprite::new(get_element_index(inventory_item_element));
+    sprite.custom_size = Some(Vec2::splat(1.0));
+
+    let sprite_sheet_bundle = SpriteSheetBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
-        texture: get_element_texture(inventory_item_element, &asset_server),
-        sprite: Sprite {
-            custom_size: Some(Vec2::splat(1.0)),
-            ..default()
-        },
+        sprite,
+        texture_atlas: sprite_sheets.element.clone(),
         ..default()
     };
 
     Some(AntHeldElementSpriteBundle {
-        sprite_bundle,
+        sprite_sheet_bundle,
         inventory_item_sprite: InventoryItemSprite,
     })
 }

@@ -21,6 +21,7 @@ use crate::ant::{AntRole, Dead};
 pub enum StoryState {
     #[default]
     Initializing,
+    LoadingSave,
     GatheringSettings,
     Creating,
     FinalizingStartup,
