@@ -31,7 +31,9 @@ use crate::{
     common::{register_common, ui::on_add_selected},
     element::{
         register_element, setup_element, teardown_element,
-        ui::{on_spawn_element, on_update_element_position, rerender_elements},
+        ui::{
+            on_spawn_element, on_update_element_position, rerender_elements, ElementSpriteHandles,
+        },
     },
     gravity::{gravity_ants, gravity_elements, gravity_stability},
     pheromone::{
@@ -280,23 +282,33 @@ impl Plugin for SimulationPlugin {
     }
 }
 
-#[derive(Resource)]
-struct ElementSpriteHandles(Vec<HandleUntyped>);
-
 fn load_textures(asset_server: Res<AssetServer>, mut commands: Commands) {
     // NOTE: `asset_server.load_folder() isn't supported in WASM`
     // BUG: https://github.com/bevyengine/bevy/issues/1949
     // Intentionally not using SpriteSheet/TextureAtlas due to subpixel rounding causing bleed artifacts.
-
-    let handles: Vec<_> = ["dirt", "food", "sand"]
-        .iter()
-        .flat_map(|&element| {
-            (0..=15).map(move |i| format!("textures/element/{}/{}.png", element, i))
-        })
+    let dirt_handles = (0..=15)
+        .map(|i| format!("textures/element/dirt/{}.png", i))
         .map(|path| asset_server.load_untyped(path))
         .collect();
 
-    commands.insert_resource(ElementSpriteHandles(handles));
+    let sand_handles = (0..=15)
+        .map(|i| format!("textures/element/sand/{}.png", i))
+        .map(|path| asset_server.load_untyped(path))
+        .collect();
+
+    let food_handles = (0..=15)
+        .map(|i| format!("textures/element/food/{}.png", i))
+        .map(|path| asset_server.load_untyped(path))
+        .collect();
+
+    let air_handle = asset_server.load_untyped("textures/element/air/air.png");
+
+    commands.insert_resource(ElementSpriteHandles {
+        dirt: dirt_handles,
+        sand: sand_handles,
+        food: food_handles,
+        air: air_handle,
+    });
 }
 
 fn check_textures(
@@ -305,7 +317,7 @@ fn check_textures(
     asset_server: Res<AssetServer>,
 ) {
     if let LoadState::Loaded =
-        asset_server.get_group_load_state(element_sprite_handles.0.iter().map(|handle| handle.id()))
+        asset_server.get_group_load_state(element_sprite_handles.handle_ids())
     {
         next_state.set(StoryState::LoadingSave);
     }

@@ -1,6 +1,26 @@
 use super::Element;
 use crate::world_map::{position::Position, WorldMap};
-use bevy::prelude::*;
+use bevy::{asset::HandleId, prelude::*};
+
+#[derive(Resource)]
+pub struct ElementSpriteHandles {
+    pub dirt: Vec<HandleUntyped>,
+    pub sand: Vec<HandleUntyped>,
+    pub food: Vec<HandleUntyped>,
+    pub air: HandleUntyped,
+}
+
+impl ElementSpriteHandles {
+    pub fn handle_ids(&self) -> Vec<HandleId> {
+        let handles = [&self.dirt, &self.sand, &self.food];
+
+        handles
+            .iter()
+            .flat_map(|handle_vec| handle_vec.iter().map(|handle| handle.id()))
+            .chain(std::iter::once(self.air.id()))
+            .collect()
+    }
+}
 
 pub struct ElementExposure {
     pub north: bool,
@@ -12,14 +32,14 @@ pub struct ElementExposure {
 pub fn get_element_texture(
     element: &Element,
     index: usize,
-    asset_server: &Res<AssetServer>,
+    element_sprite_handles: &Res<ElementSpriteHandles>,
 ) -> Handle<Image> {
     match element {
         // Air is transparent - reveals background color such as tunnel or sky
-        Element::Air => asset_server.load(format!("textures/element/air/air.png")),
-        Element::Dirt => asset_server.load(format!("textures/element/dirt/{}.png", index)),
-        Element::Sand => asset_server.load(format!("textures/element/sand/{}.png", index)),
-        Element::Food => asset_server.load(format!("textures/element/food/{}.png", index)),
+        Element::Air => element_sprite_handles.air.clone().typed(),
+        Element::Dirt => element_sprite_handles.dirt[index].clone().typed(),
+        Element::Sand => element_sprite_handles.sand[index].clone().typed(),
+        Element::Food => element_sprite_handles.food[index].clone().typed(),
     }
 }
 
@@ -146,7 +166,7 @@ pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
-    asset_server: Res<AssetServer>,
+    element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
     for (entity, position, element) in &added_elements_query {
@@ -154,7 +174,7 @@ pub fn on_spawn_element(
             entity,
             element,
             position,
-            &asset_server,
+            &element_sprite_handles,
             &elements_query,
             &world_map,
             &mut commands,
@@ -171,7 +191,7 @@ pub fn on_spawn_element(
                         *adjacent_element_entity,
                         adjacent_element,
                         &adjacent_position,
-                        &asset_server,
+                        &element_sprite_handles,
                         &elements_query,
                         &world_map,
                         &mut commands,
@@ -186,11 +206,12 @@ fn update_element_sprite(
     element_entity: Entity,
     element: &Element,
     element_position: &Position,
-    asset_server: &Res<AssetServer>,
+    element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
     world_map: &Res<WorldMap>,
     commands: &mut Commands,
 ) {
+    // TODO: maybe make this reactive rather than calculating all the time to avoid insert when no change in exposure is occurring?
     let element_exposure = ElementExposure {
         north: world_map.is_element(
             &elements_query,
@@ -219,7 +240,7 @@ fn update_element_sprite(
     // BUG: https://github.com/bevyengine/bevy/issues/1949
     // Intentionally not using SpriteSheetBundle due to subpixel rounding causing bleed artifacts.
     commands.entity(element_entity).insert(SpriteBundle {
-        texture: get_element_texture(element, element_index, &asset_server),
+        texture: get_element_texture(element, element_index, &element_sprite_handles),
         sprite: Sprite {
             custom_size: Some(Vec2::splat(1.0)),
             ..default()
@@ -233,7 +254,7 @@ pub fn rerender_elements(
     mut element_query: Query<(&Position, &mut Transform, &Element, Entity)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
-    asset_server: Res<AssetServer>,
+    element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
     for (position, mut transform, element, entity) in element_query.iter_mut() {
@@ -243,7 +264,7 @@ pub fn rerender_elements(
             entity,
             element,
             position,
-            &asset_server,
+            &element_sprite_handles,
             &elements_query,
             &world_map,
             &mut commands,
@@ -260,7 +281,7 @@ pub fn rerender_elements(
                         *adjacent_element_entity,
                         adjacent_element,
                         &adjacent_position,
-                        &asset_server,
+                        &element_sprite_handles,
                         &elements_query,
                         &world_map,
                         &mut commands,
@@ -275,7 +296,7 @@ pub fn on_update_element_position(
     mut element_query: Query<(&Position, &mut Transform, &Element, Entity), Changed<Position>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
-    asset_server: Res<AssetServer>,
+    element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
     for (position, mut transform, element, entity) in element_query.iter_mut() {
@@ -285,7 +306,7 @@ pub fn on_update_element_position(
             entity,
             element,
             position,
-            &asset_server,
+            &element_sprite_handles,
             &elements_query,
             &world_map,
             &mut commands,
@@ -302,7 +323,7 @@ pub fn on_update_element_position(
                         *adjacent_element_entity,
                         adjacent_element,
                         &adjacent_position,
-                        &asset_server,
+                        &element_sprite_handles,
                         &elements_query,
                         &world_map,
                         &mut commands,

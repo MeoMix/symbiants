@@ -4,7 +4,7 @@ use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntR
 use crate::{
     common::{get_entity_from_id, Id},
     element::{
-        ui::{get_element_index, ElementExposure, get_element_texture},
+        ui::{get_element_index, ElementExposure, get_element_texture, ElementSpriteHandles},
         Element,
     },
     world_map::{position::Position, WorldMap},
@@ -30,6 +30,7 @@ pub fn on_spawn_ant(
         Added<Ant>,
     >,
     asset_server: Res<AssetServer>,
+    element_sprite_handles: Res<ElementSpriteHandles>,
     id_query: Query<(Entity, &Id)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
@@ -69,7 +70,7 @@ pub fn on_spawn_ant(
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
                 if let Some(bundle) =
-                    get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query, &asset_server)
+                    get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query, &element_sprite_handles)
                 {
                     parent.spawn(bundle);
                 }
@@ -140,11 +141,11 @@ pub fn on_update_ant_inventory(
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
-    asset_server: Res<AssetServer>,
+    element_sprite_handles: Res<ElementSpriteHandles>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
         if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &asset_server)
+            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &element_sprite_handles)
         {
             commands
                 .entity(entity)
@@ -173,11 +174,11 @@ pub fn rerender_ant_inventory(
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
-    asset_server: Res<AssetServer>,
+    element_sprite_handles: Res<ElementSpriteHandles>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
         if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &asset_server)
+            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &element_sprite_handles)
         {
             commands
                 .entity(entity)
@@ -213,7 +214,7 @@ fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
     id_query: &Query<(Entity, &Id)>,
     elements_query: &Query<&Element>,
-    asset_server: &Res<AssetServer>,
+    element_sprite_handles: &Res<ElementSpriteHandles>,
 ) -> Option<AntHeldElementSpriteBundle> {
     let inventory_item_element_id = match &inventory.0 {
         Some(inventory_item_element_id) => inventory_item_element_id,
@@ -241,7 +242,7 @@ fn get_inventory_item_sprite_bundle(
             custom_size: Some(Vec2::splat(1.0)),
             ..default()
         },
-        texture: get_element_texture(inventory_item_element, element_index, &asset_server),
+        texture: get_element_texture(inventory_item_element, element_index, &element_sprite_handles),
         ..default()
     };
 

@@ -1,5 +1,7 @@
 use bevy::prelude::*;
-use bevy_save::{Snapshot, SnapshotSerializer, WorldSaveableExt};
+use bevy_save::DespawnMode;
+use bevy_save::MappingMode;
+use bevy_save::{Build, Snapshot, SnapshotSerializer, WorldSaveableExt};
 use brotli::{enc::BrotliEncoderInitParams, CompressorWriter, Decompressor};
 use gloo_storage::{LocalStorage, Storage};
 use serde::Serialize;
@@ -50,7 +52,12 @@ fn create_save_snapshot(world: &mut World) -> Option<String> {
     let mut writer: Vec<u8> = Vec::new();
     let mut serde = Serializer::new(&mut writer);
 
-    let snapshot = Snapshot::from_world(world);
+    let snapshot = Snapshot::builder(world)
+        .extract_all()
+        // Prevent serialization bloat by removing entities with no saveable components
+        .clear_empty()
+        .build();
+
     let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
 
     let result = SnapshotSerializer::new(&snapshot, registry).serialize(&mut serde);
@@ -158,9 +165,22 @@ pub fn load(world: &mut World) -> bool {
             })?;
 
             let mut serde = Deserializer::from_str(&saved_state);
-            world.deserialize(&mut serde).map_err(|e| {
-                error!("Deserialization error: {:?}", e);
-            })
+
+            if let Ok(applier) = world.deserialize_applier(&mut serde) {
+                return applier
+                    // Prefer these values because they're the Bevy default (rather than bevy_save),
+                    // and because they're necessary to be able to call `clear_empty()` on the snapshot serializer.
+                    // `clear_empty()` is useful because view-related entities don't need to have empty entries persisted, but
+                    // with the default AppDespawnMode setting - it would result in Window getting despawned.
+                    .despawn(DespawnMode::None)
+                    .mapping(MappingMode::Strict)
+                    .apply()
+                    .map_err(|e| {
+                        error!("Deserialization error: {:?}", e);
+                    });
+            }
+
+            Err(())
         })
         .is_ok()
 }
