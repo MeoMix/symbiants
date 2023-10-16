@@ -22,7 +22,8 @@ use crate::{
         },
         ui::{
             on_added_ant_dead, on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation,
-            on_update_ant_position, rerender_ant_orientation, rerender_ant_position, rerender_ant_inventory,
+            on_update_ant_position, rerender_ant_inventory, rerender_ant_orientation,
+            rerender_ant_position,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
@@ -280,83 +281,32 @@ impl Plugin for SimulationPlugin {
 }
 
 #[derive(Resource)]
-struct ElementSpriteHandles {
-    dirt: HandleUntyped,
-    food: HandleUntyped,
-    sand: HandleUntyped,
-}
-
-#[derive(Resource)]
-pub struct SpriteSheets {
-    pub food: Handle<TextureAtlas>,
-    pub dirt: Handle<TextureAtlas>,
-    pub sand: Handle<TextureAtlas>,
-}
+struct ElementSpriteHandles(Vec<HandleUntyped>);
 
 fn load_textures(asset_server: Res<AssetServer>, mut commands: Commands) {
     // NOTE: `asset_server.load_folder() isn't supported in WASM`
-    let sheet_dirt_asset = asset_server.load_untyped("textures/element/sheet_dirt.png");
-    let sheet_sand_asset = asset_server.load_untyped("textures/element/sheet_sand.png");
-    let sheet_food_asset = asset_server.load_untyped("textures/element/sheet_food.png");
+    // BUG: https://github.com/bevyengine/bevy/issues/1949
+    // Intentionally not using SpriteSheet/TextureAtlas due to subpixel rounding causing bleed artifacts.
 
-    commands.insert_resource(ElementSpriteHandles {
-        dirt: sheet_dirt_asset,
-        food: sheet_food_asset,
-        sand: sheet_sand_asset,
-    });
+    let handles: Vec<_> = ["dirt", "food", "sand"]
+        .iter()
+        .flat_map(|&element| {
+            (0..=15).map(move |i| format!("textures/element/{}/{}.png", element, i))
+        })
+        .map(|path| asset_server.load_untyped(path))
+        .collect();
+
+    commands.insert_resource(ElementSpriteHandles(handles));
 }
 
 fn check_textures(
     mut next_state: ResMut<NextState<StoryState>>,
     element_sprite_handles: ResMut<ElementSpriteHandles>,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut commands: Commands,
 ) {
-    let sheet_ids = [
-        element_sprite_handles.dirt.id(),
-        element_sprite_handles.food.id(),
-        element_sprite_handles.sand.id(),
-    ];
-
-    if let LoadState::Loaded = asset_server.get_group_load_state(sheet_ids) {
-        let dirt_texture_atlas_handle = add_texture_atlas_handle(
-            element_sprite_handles.dirt.typed_weak(),
-            &mut texture_atlases,
-        );
-
-        let food_texture_atlas_handle = add_texture_atlas_handle(
-            element_sprite_handles.food.typed_weak(),
-            &mut texture_atlases,
-        );
-
-        let sand_texture_atlas_handle = add_texture_atlas_handle(
-            element_sprite_handles.sand.typed_weak(),
-            &mut texture_atlases,
-        );
-
-        commands.insert_resource(SpriteSheets {
-            dirt: dirt_texture_atlas_handle,
-            food: food_texture_atlas_handle,
-            sand: sand_texture_atlas_handle,
-        });
-
+    if let LoadState::Loaded =
+        asset_server.get_group_load_state(element_sprite_handles.0.iter().map(|handle| handle.id()))
+    {
         next_state.set(StoryState::LoadingSave);
     }
-}
-
-fn add_texture_atlas_handle(
-    texture_handle: Handle<Image>,
-    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-) -> Handle<TextureAtlas> {
-    // BUG: https://github.com/bevyengine/bevy/issues/1949
-    // Need to use too small tile size + padding to prevent bleeding into adjacent sprites on sheet.
-    texture_atlases.add(TextureAtlas::from_grid(
-        texture_handle,
-        Vec2::splat(126.0),
-        1,
-        16,
-        Some(Vec2::splat(2.0)),
-        None,
-    ))
 }

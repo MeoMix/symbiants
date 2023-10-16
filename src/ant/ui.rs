@@ -4,10 +4,9 @@ use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntR
 use crate::{
     common::{get_entity_from_id, Id},
     element::{
-        ui::{get_element_index, ElementExposure},
+        ui::{get_element_index, ElementExposure, get_element_texture},
         Element,
     },
-    simulation::SpriteSheets,
     world_map::{position::Position, WorldMap},
 };
 use bevy::prelude::*;
@@ -34,7 +33,6 @@ pub fn on_spawn_ant(
     id_query: Query<(Entity, &Id)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
-    sprite_sheets: Res<SpriteSheets>,
 ) {
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
@@ -70,12 +68,9 @@ pub fn on_spawn_ant(
                 },
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-                if let Some(bundle) = get_inventory_item_sprite_bundle(
-                    inventory,
-                    &id_query,
-                    &elements_query,
-                    &sprite_sheets,
-                ) {
+                if let Some(bundle) =
+                    get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query, &asset_server)
+                {
                     parent.spawn(bundle);
                 }
 
@@ -145,11 +140,11 @@ pub fn on_update_ant_inventory(
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
-    sprite_sheets: Res<SpriteSheets>,
+    asset_server: Res<AssetServer>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
         if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &sprite_sheets)
+            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &asset_server)
         {
             commands
                 .entity(entity)
@@ -178,11 +173,11 @@ pub fn rerender_ant_inventory(
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
-    sprite_sheets: Res<SpriteSheets>,
+    asset_server: Res<AssetServer>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
         if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &sprite_sheets)
+            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &asset_server)
         {
             commands
                 .entity(entity)
@@ -210,7 +205,7 @@ pub struct InventoryItemSprite;
 
 #[derive(Bundle)]
 pub struct AntHeldElementSpriteBundle {
-    sprite_sheet_bundle: SpriteSheetBundle,
+    sprite_bundle: SpriteBundle,
     inventory_item_sprite: InventoryItemSprite,
 }
 
@@ -218,7 +213,7 @@ fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
     id_query: &Query<(Entity, &Id)>,
     elements_query: &Query<&Element>,
-    sprite_sheets: &Res<SpriteSheets>,
+    asset_server: &Res<AssetServer>,
 ) -> Option<AntHeldElementSpriteBundle> {
     let inventory_item_element_id = match &inventory.0 {
         Some(inventory_item_element_id) => inventory_item_element_id,
@@ -238,25 +233,20 @@ fn get_inventory_item_sprite_bundle(
         west: true,
     };
 
-    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure));
-    sprite.custom_size = Some(Vec2::splat(1.0));
+    let element_index = get_element_index(element_exposure);
 
-    let texture_atlas = match inventory_item_element {
-        Element::Air => panic!("Air element should not be rendered"),
-        Element::Dirt => sprite_sheets.dirt.clone(),
-        Element::Food => sprite_sheets.food.clone(),
-        Element::Sand => sprite_sheets.sand.clone(),
-    };
-
-    let sprite_sheet_bundle = SpriteSheetBundle {
+    let sprite_bundle = SpriteBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
-        sprite,
-        texture_atlas,
+        sprite: Sprite {
+            custom_size: Some(Vec2::splat(1.0)),
+            ..default()
+        },
+        texture: get_element_texture(inventory_item_element, element_index, &asset_server),
         ..default()
     };
 
     Some(AntHeldElementSpriteBundle {
-        sprite_sheet_bundle,
+        sprite_bundle,
         inventory_item_sprite: InventoryItemSprite,
     })
 }

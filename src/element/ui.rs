@@ -1,8 +1,5 @@
 use super::Element;
-use crate::{
-    simulation::SpriteSheets,
-    world_map::{position::Position, WorldMap},
-};
+use crate::world_map::{position::Position, WorldMap};
 use bevy::prelude::*;
 
 pub struct ElementExposure {
@@ -10,6 +7,20 @@ pub struct ElementExposure {
     pub east: bool,
     pub south: bool,
     pub west: bool,
+}
+
+pub fn get_element_texture(
+    element: &Element,
+    index: usize,
+    asset_server: &Res<AssetServer>,
+) -> Handle<Image> {
+    match element {
+        // Air is transparent - reveals background color such as tunnel or sky
+        Element::Air => panic!("Air element should not be rendered"),
+        Element::Dirt => asset_server.load(format!("textures/element/dirt/{}.png", index)),
+        Element::Sand => asset_server.load(format!("textures/element/sand/{}.png", index)),
+        Element::Food => asset_server.load(format!("textures/element/food/{}.png", index)),
+    }
 }
 
 // TODO: super hardcoded to the order they appear in sheet.png
@@ -135,7 +146,7 @@ pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
-    sprite_sheets: Res<SpriteSheets>,
+    asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
     for (entity, position, element) in &added_elements_query {
@@ -144,7 +155,7 @@ pub fn on_spawn_element(
                 entity,
                 element,
                 position,
-                &sprite_sheets,
+                &asset_server,
                 &elements_query,
                 &world_map,
                 &mut commands,
@@ -162,7 +173,7 @@ pub fn on_spawn_element(
                         *adjacent_element_entity,
                         adjacent_element,
                         &adjacent_position,
-                        &sprite_sheets,
+                        &asset_server,
                         &elements_query,
                         &world_map,
                         &mut commands,
@@ -177,7 +188,7 @@ fn update_element_sprite(
     element_entity: Entity,
     element: &Element,
     element_position: &Position,
-    sprite_sheets: &Res<SpriteSheets>,
+    asset_server: &Res<AssetServer>,
     elements_query: &Query<&Element>,
     world_map: &Res<WorldMap>,
     commands: &mut Commands,
@@ -205,19 +216,16 @@ fn update_element_sprite(
         ),
     };
 
-    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure));
-    sprite.custom_size = Some(Vec2::splat(1.0));
-
-    let texture_atlas = match element {
-        Element::Air => panic!("Air element should not be rendered"),
-        Element::Dirt => sprite_sheets.dirt.clone(),
-        Element::Food => sprite_sheets.food.clone(),
-        Element::Sand => sprite_sheets.sand.clone(),
-    };
-
-    commands.entity(element_entity).insert(SpriteSheetBundle {
-        sprite,
-        texture_atlas,
+    let element_index = get_element_index(element_exposure);
+    
+    // BUG: https://github.com/bevyengine/bevy/issues/1949
+    // Intentionally not using SpriteSheetBundle due to subpixel rounding causing bleed artifacts.
+    commands.entity(element_entity).insert(SpriteBundle {
+        texture: get_element_texture(element, element_index, &asset_server),
+        sprite: Sprite {
+            custom_size: Some(Vec2::splat(1.0)),
+            ..default()
+        },
         transform: Transform::from_translation(element_position.as_world_position(&world_map)),
         ..default()
     });
@@ -227,7 +235,7 @@ pub fn rerender_elements(
     mut element_query: Query<(&Position, Option<&mut Transform>, &Element, Entity)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
-    sprite_sheets: Res<SpriteSheets>,
+    asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
     for (position, transform, element, entity) in element_query.iter_mut() {
@@ -241,7 +249,7 @@ pub fn rerender_elements(
                 entity,
                 element,
                 position,
-                &sprite_sheets,
+                &asset_server,
                 &elements_query,
                 &world_map,
                 &mut commands,
@@ -259,7 +267,7 @@ pub fn rerender_elements(
                         *adjacent_element_entity,
                         adjacent_element,
                         &adjacent_position,
-                        &sprite_sheets,
+                        &asset_server,
                         &elements_query,
                         &world_map,
                         &mut commands,
@@ -277,7 +285,7 @@ pub fn on_update_element_position(
     >,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
-    sprite_sheets: Res<SpriteSheets>,
+    asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
     for (position, transform, element, entity) in element_query.iter_mut() {
@@ -291,7 +299,7 @@ pub fn on_update_element_position(
                 entity,
                 element,
                 position,
-                &sprite_sheets,
+                &asset_server,
                 &elements_query,
                 &world_map,
                 &mut commands,
@@ -309,7 +317,7 @@ pub fn on_update_element_position(
                         *adjacent_element_entity,
                         adjacent_element,
                         &adjacent_position,
-                        &sprite_sheets,
+                        &asset_server,
                         &elements_query,
                         &world_map,
                         &mut commands,
