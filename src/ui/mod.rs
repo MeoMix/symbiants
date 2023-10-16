@@ -5,6 +5,7 @@ mod settings_menu;
 mod story;
 
 use crate::story_state::StoryState;
+use crate::story_time::StoryPlaybackState;
 
 use self::action_menu::*;
 use self::main_menu::*;
@@ -41,7 +42,7 @@ impl Plugin for UIPlugin {
             Update,
             (
                 update_info_window,
-                update_loading_dialog,
+                update_loading_dialog.run_if(in_state(StoryPlaybackState::FastForwarding)),
                 update_settings_menu,
                 update_action_menu,
                 update_selection_menu,

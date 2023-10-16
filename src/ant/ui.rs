@@ -3,9 +3,11 @@ use std::ops::Add;
 use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead};
 use crate::{
     common::{get_entity_from_id, Id},
-    element::{ui::get_element_index, Element},
+    element::{
+        ui::{get_element_index, ElementExposure},
+        Element,
+    },
     simulation::SpriteSheets,
-    story_time::StoryPlaybackState,
     world_map::{position::Position, WorldMap},
 };
 use bevy::prelude::*;
@@ -139,41 +141,64 @@ pub fn on_spawn_ant(
 
 pub fn on_update_ant_inventory(
     mut commands: Commands,
-    mut query: Query<(Entity, Ref<AntInventory>, Option<&Children>)>,
+    mut query: Query<(Entity, &AntInventory, Option<&Children>), Changed<AntInventory>>,
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     id_query: Query<(Entity, &Id)>,
-    story_playback_state: Res<State<StoryPlaybackState>>,
     sprite_sheets: Res<SpriteSheets>,
 ) {
-    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
-        return;
-    }
-
     for (entity, inventory, children) in query.iter_mut() {
-        if story_playback_state.is_changed() || inventory.is_changed() {
-            if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
-                &inventory,
-                &id_query,
-                &elements_query,
-                &sprite_sheets,
-            ) {
-                commands
-                    .entity(entity)
-                    .with_children(|ant: &mut ChildBuilder| {
-                        // TODO: store entity somewhere and despawn using it rather than searching
-                        ant.spawn(inventory_item_bundle);
-                    });
-            } else {
-                if let Some(children) = children {
-                    for &child in children
-                        .iter()
-                        .filter(|&&child| inventory_item_sprite_query.get(child).is_ok())
-                    {
-                        // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-                        commands.entity(child).remove_parent();
-                        commands.entity(child).despawn();
-                    }
+        if let Some(inventory_item_bundle) =
+            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &sprite_sheets)
+        {
+            commands
+                .entity(entity)
+                .with_children(|ant: &mut ChildBuilder| {
+                    // TODO: store entity somewhere and despawn using it rather than searching
+                    ant.spawn(inventory_item_bundle);
+                });
+        } else {
+            if let Some(children) = children {
+                for &child in children
+                    .iter()
+                    .filter(|&&child| inventory_item_sprite_query.get(child).is_ok())
+                {
+                    // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+                    commands.entity(child).remove_parent();
+                    commands.entity(child).despawn();
+                }
+            }
+        }
+    }
+}
+
+pub fn rerender_ant_inventory(
+    mut commands: Commands,
+    mut query: Query<(Entity, &AntInventory, Option<&Children>)>,
+    inventory_item_sprite_query: Query<&InventoryItemSprite>,
+    elements_query: Query<&Element>,
+    id_query: Query<(Entity, &Id)>,
+    sprite_sheets: Res<SpriteSheets>,
+) {
+    for (entity, inventory, children) in query.iter_mut() {
+        if let Some(inventory_item_bundle) =
+            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &sprite_sheets)
+        {
+            commands
+                .entity(entity)
+                .with_children(|ant: &mut ChildBuilder| {
+                    // TODO: store entity somewhere and despawn using it rather than searching
+                    ant.spawn(inventory_item_bundle);
+                });
+        } else {
+            if let Some(children) = children {
+                for &child in children
+                    .iter()
+                    .filter(|&&child| inventory_item_sprite_query.get(child).is_ok())
+                {
+                    // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+                    commands.entity(child).remove_parent();
+                    commands.entity(child).despawn();
                 }
             }
         }
@@ -206,13 +231,27 @@ fn get_inventory_item_sprite_bundle(
 
     let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
 
-    let mut sprite = TextureAtlasSprite::new(get_element_index(inventory_item_element));
+    let element_exposure = ElementExposure {
+        north: true,
+        east: true,
+        south: true,
+        west: true,
+    };
+
+    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure));
     sprite.custom_size = Some(Vec2::splat(1.0));
+
+    let texture_atlas = match inventory_item_element {
+        Element::Air => panic!("Air element should not be rendered"),
+        Element::Dirt => sprite_sheets.dirt.clone(),
+        Element::Food => sprite_sheets.food.clone(),
+        Element::Sand => sprite_sheets.sand.clone(),
+    };
 
     let sprite_sheet_bundle = SpriteSheetBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
         sprite,
-        texture_atlas: sprite_sheets.element.clone(),
+        texture_atlas,
         ..default()
     };
 
@@ -224,57 +263,76 @@ fn get_inventory_item_sprite_bundle(
 
 pub fn on_update_ant_position(
     mut ant_query: Query<
-        (Ref<Position>, &mut Transform, &TranslationOffset),
+        (&Position, &mut Transform, &TranslationOffset),
+        (With<Ant>, Without<AntLabel>, Changed<Position>),
+    >,
+    mut ant_label_query: Query<
+        (&mut Transform, &TranslationOffset, &AntLabel),
+        (Without<Ant>, With<AntLabel>),
+    >,
+    world_map: Res<WorldMap>,
+) {
+    for (position, mut transform, translation_offset) in ant_query.iter_mut() {
+        transform.translation = position
+            .as_world_position(&world_map)
+            .add(translation_offset.0);
+    }
+
+    // TODO: This seems bad for performance because it iterates all labels each time rather than just focusing on which ant positions changed.
+    // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
+    for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
+        if let Ok((position, _, _)) = ant_query.get(label.0) {
+            transform.translation = position
+                .as_world_position(&world_map)
+                .add(translation_offset.0);
+        }
+    }
+}
+
+pub fn rerender_ant_position(
+    mut ant_query: Query<
+        (&Position, &mut Transform, &TranslationOffset),
         (With<Ant>, Without<AntLabel>),
     >,
     mut ant_label_query: Query<
         (&mut Transform, &TranslationOffset, &AntLabel),
         (Without<Ant>, With<AntLabel>),
     >,
-    story_playback_state: Res<State<StoryPlaybackState>>,
     world_map: Res<WorldMap>,
 ) {
-    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
-        return;
-    }
-
     for (position, mut transform, translation_offset) in ant_query.iter_mut() {
-        if story_playback_state.is_changed() || position.is_changed() {
-            transform.translation = position
-                .as_world_position(&world_map)
-                .add(translation_offset.0);
-        }
+        transform.translation = position
+            .as_world_position(&world_map)
+            .add(translation_offset.0);
     }
 
     // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
     for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
         let (position, _, _) = ant_query.get(label.0).unwrap();
 
-        if story_playback_state.is_changed() || position.is_changed() {
-            transform.translation = position
-                .as_world_position(&world_map)
-                .add(translation_offset.0);
-        }
+        transform.translation = position
+            .as_world_position(&world_map)
+            .add(translation_offset.0);
     }
 }
 
 pub fn on_update_ant_orientation(
-    mut query: Query<(&mut Transform, Ref<AntOrientation>)>,
-    story_playback_state: Res<State<StoryPlaybackState>>,
+    mut query: Query<(&mut Transform, &AntOrientation), Changed<AntOrientation>>,
 ) {
-    if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
-        return;
-    }
-
     for (mut transform, orientation) in query.iter_mut() {
-        if story_playback_state.is_changed() || orientation.is_changed() {
-            transform.scale = orientation.as_world_scale();
-            transform.rotation = orientation.as_world_rotation();
-        }
+        transform.scale = orientation.as_world_scale();
+        transform.rotation = orientation.as_world_rotation();
     }
 }
 
-pub fn on_update_ant_dead(
+pub fn rerender_ant_orientation(mut query: Query<(&mut Transform, &AntOrientation)>) {
+    for (mut transform, orientation) in query.iter_mut() {
+        transform.scale = orientation.as_world_scale();
+        transform.rotation = orientation.as_world_rotation();
+    }
+}
+
+pub fn on_added_ant_dead(
     mut query: Query<(&mut Handle<Image>, &mut Sprite), Added<Dead>>,
     asset_server: Res<AssetServer>,
 ) {

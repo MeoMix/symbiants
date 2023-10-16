@@ -21,8 +21,8 @@ use crate::{
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
         },
         ui::{
-            on_spawn_ant, on_update_ant_dead, on_update_ant_inventory, on_update_ant_orientation,
-            on_update_ant_position,
+            on_added_ant_dead, on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation,
+            on_update_ant_position, rerender_ant_orientation, rerender_ant_position, rerender_ant_inventory,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
@@ -30,7 +30,7 @@ use crate::{
     common::{register_common, ui::on_add_selected},
     element::{
         register_element, setup_element, teardown_element,
-        ui::{on_spawn_element, on_update_element_position},
+        ui::{on_spawn_element, on_update_element_position, rerender_elements},
     },
     gravity::{gravity_ants, gravity_elements, gravity_stability},
     pheromone::{
@@ -224,11 +224,11 @@ impl Plugin for SimulationPlugin {
                 // Ensure render state reflects simulation state after having applied movements and command updates.
                 // Must run in FixedUpdate otherwise change detection won't properly work if FixedUpdate loop runs multiple times in a row.
                 (
-                    on_update_ant_position,
-                    on_update_ant_orientation,
-                    on_update_ant_dead,
-                    on_update_ant_inventory,
-                    on_update_element_position,
+                    on_update_ant_position.run_if(in_state(StoryPlaybackState::Playing)),
+                    on_update_ant_orientation.run_if(in_state(StoryPlaybackState::Playing)),
+                    on_added_ant_dead,
+                    on_update_ant_inventory.run_if(in_state(StoryPlaybackState::Playing)),
+                    on_update_element_position.run_if(in_state(StoryPlaybackState::Playing)),
                     on_update_pheromone_visibility,
                     on_spawn_ant,
                     on_spawn_element,
@@ -238,6 +238,17 @@ impl Plugin for SimulationPlugin {
                     .chain(),
             )
                 .run_if(in_state(StoryState::Telling))
+                .chain(),
+        );
+
+        app.add_systems(
+            OnExit(StoryPlaybackState::FastForwarding),
+            (
+                rerender_ant_position,
+                rerender_ant_orientation,
+                rerender_ant_inventory,
+                rerender_elements,
+            )
                 .chain(),
         );
 
@@ -270,19 +281,29 @@ impl Plugin for SimulationPlugin {
 
 #[derive(Resource)]
 struct ElementSpriteHandles {
-    sheet: HandleUntyped,
+    dirt: HandleUntyped,
+    food: HandleUntyped,
+    sand: HandleUntyped,
 }
 
 #[derive(Resource)]
 pub struct SpriteSheets {
-    pub element: Handle<TextureAtlas>,
+    pub food: Handle<TextureAtlas>,
+    pub dirt: Handle<TextureAtlas>,
+    pub sand: Handle<TextureAtlas>,
 }
 
 fn load_textures(asset_server: Res<AssetServer>, mut commands: Commands) {
     // NOTE: `asset_server.load_folder() isn't supported in WASM`
-    let sheet_asset = asset_server.load_untyped("textures/element/sheet.png");
+    let sheet_dirt_asset = asset_server.load_untyped("textures/element/sheet_dirt.png");
+    let sheet_sand_asset = asset_server.load_untyped("textures/element/sheet_sand.png");
+    let sheet_food_asset = asset_server.load_untyped("textures/element/sheet_food.png");
 
-    commands.insert_resource(ElementSpriteHandles { sheet: sheet_asset });
+    commands.insert_resource(ElementSpriteHandles {
+        dirt: sheet_dirt_asset,
+        food: sheet_food_asset,
+        sand: sheet_sand_asset,
+    });
 }
 
 fn check_textures(
@@ -292,26 +313,50 @@ fn check_textures(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut commands: Commands,
 ) {
-    if let LoadState::Loaded = asset_server.get_load_state(element_sprite_handles.sheet.id()) {
-        let texture_handle = element_sprite_handles.sheet.typed_weak();
+    let sheet_ids = [
+        element_sprite_handles.dirt.id(),
+        element_sprite_handles.food.id(),
+        element_sprite_handles.sand.id(),
+    ];
 
-        // BUG: https://github.com/bevyengine/bevy/issues/1949
-        // Need to use too small tile size + padding to prevent bleeding into adjacent sprites on sheet.
-        let texture_atlas = TextureAtlas::from_grid(
-            texture_handle,          // The texture we want to use
-            Vec2::new(126.0, 126.0), // The size of each image
-            3,                       // The number of columns
-            1,                       // The number of rows
-            Some(Vec2::splat(4.0)),  // Padding
-            None,                    // Offset
+    if let LoadState::Loaded = asset_server.get_group_load_state(sheet_ids) {
+        let dirt_texture_atlas_handle = add_texture_atlas_handle(
+            element_sprite_handles.dirt.typed_weak(),
+            &mut texture_atlases,
         );
 
-        let texture_atlas_handle = texture_atlases.add(texture_atlas);
+        let food_texture_atlas_handle = add_texture_atlas_handle(
+            element_sprite_handles.food.typed_weak(),
+            &mut texture_atlases,
+        );
+
+        let sand_texture_atlas_handle = add_texture_atlas_handle(
+            element_sprite_handles.sand.typed_weak(),
+            &mut texture_atlases,
+        );
 
         commands.insert_resource(SpriteSheets {
-            element: texture_atlas_handle,
+            dirt: dirt_texture_atlas_handle,
+            food: food_texture_atlas_handle,
+            sand: sand_texture_atlas_handle,
         });
 
         next_state.set(StoryState::LoadingSave);
     }
+}
+
+fn add_texture_atlas_handle(
+    texture_handle: Handle<Image>,
+    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
+) -> Handle<TextureAtlas> {
+    // BUG: https://github.com/bevyengine/bevy/issues/1949
+    // Need to use too small tile size + padding to prevent bleeding into adjacent sprites on sheet.
+    texture_atlases.add(TextureAtlas::from_grid(
+        texture_handle,
+        Vec2::splat(126.0),
+        1,
+        16,
+        Some(Vec2::splat(2.0)),
+        None,
+    ))
 }

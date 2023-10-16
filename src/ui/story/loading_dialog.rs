@@ -4,7 +4,7 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::story_time::{FastForwardingStateInfo, StoryPlaybackState, TicksPerSecond};
+use crate::story_time::{FastForwardingStateInfo, TicksPerSecond};
 
 // Don't flicker the dialogs visibility when processing a small number of ticks
 const MIN_PENDING_TICKS: isize = 6000;
@@ -12,12 +12,9 @@ const MIN_PENDING_TICKS: isize = 6000;
 pub fn update_loading_dialog(
     mut contexts: EguiContexts,
     fast_forwarding_state_info: Res<FastForwardingStateInfo>,
-    story_playback_state: ResMut<State<StoryPlaybackState>>,
     ticks_per_second: Res<TicksPerSecond>,
 ) {
-    if story_playback_state.get() != &StoryPlaybackState::FastForwarding
-        || fast_forwarding_state_info.initial_pending_ticks < MIN_PENDING_TICKS
-    {
+    if fast_forwarding_state_info.initial_pending_ticks < MIN_PENDING_TICKS {
         return;
     }
 
