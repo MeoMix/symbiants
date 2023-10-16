@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy_save::{Snapshot, SnapshotSerializer, WorldSaveableExt};
+use brotli::{enc::BrotliEncoderInitParams, CompressorWriter, Decompressor};
 use gloo_storage::{LocalStorage, Storage};
 use serde::Serialize;
 use serde_json::{Deserializer, Serializer};
-use std::{cell::RefCell, ops::Deref, sync::Mutex};
+use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
@@ -64,7 +65,17 @@ fn create_save_snapshot(world: &mut World) -> Option<String> {
 
 fn write_save_snapshot() -> bool {
     let save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
-    let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, save_snapshot.deref().clone());
+
+    // Compress snapshot using Brotli. In testing, this reduces a 4mb save file to 0.5mb with compression quality: 1.
+    let mut params = BrotliEncoderInitParams();
+    params.quality = 1; // Max compression (0-11 range)
+
+    let mut compressed_data = CompressorWriter::with_params(Vec::new(), 4096, &params);
+    compressed_data
+        .write_all(&save_snapshot.as_ref().unwrap().as_bytes())
+        .expect("Failed to write to compressor");
+
+    let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, compressed_data.into_inner());
 
     if save_result.is_err() {
         error!(
@@ -130,11 +141,22 @@ pub fn load(world: &mut World) -> bool {
 
 #[cfg(target_arch = "wasm32")]
 pub fn load(world: &mut World) -> bool {
-    LocalStorage::get::<String>(LOCAL_STORAGE_KEY)
+    LocalStorage::get::<Vec<u8>>(LOCAL_STORAGE_KEY)
         .map_err(|e| {
             error!("Failed to load world state from local storage: {:?}", e);
         })
-        .and_then(|saved_state| {
+        .and_then(|compressed_saved_state| {
+            let mut decompressor = Decompressor::new(&compressed_saved_state[..], 4096);
+            let mut decompressed_data = Vec::new();
+
+            if let Err(e) = decompressor.read_to_end(&mut decompressed_data) {
+                error!("Failed to decompress data: {:?}", e);
+            }
+
+            let saved_state = String::from_utf8(decompressed_data).map_err(|e| {
+                error!("Failed to convert decompressed bytes to string: {:?}", e);
+            })?;
+
             let mut serde = Deserializer::from_str(&saved_state);
             world.deserialize(&mut serde).map_err(|e| {
                 error!("Deserialization error: {:?}", e);

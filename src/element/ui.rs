@@ -16,7 +16,7 @@ pub fn get_element_texture(
 ) -> Handle<Image> {
     match element {
         // Air is transparent - reveals background color such as tunnel or sky
-        Element::Air => panic!("Air element should not be rendered"),
+        Element::Air => asset_server.load(format!("textures/element/air/air.png")),
         Element::Dirt => asset_server.load(format!("textures/element/dirt/{}.png", index)),
         Element::Sand => asset_server.load(format!("textures/element/sand/{}.png", index)),
         Element::Food => asset_server.load(format!("textures/element/food/{}.png", index)),
@@ -150,17 +150,15 @@ pub fn on_spawn_element(
     mut commands: Commands,
 ) {
     for (entity, position, element) in &added_elements_query {
-        if *element != Element::Air {
-            update_element_sprite(
-                entity,
-                element,
-                position,
-                &asset_server,
-                &elements_query,
-                &world_map,
-                &mut commands,
-            );
-        }
+        update_element_sprite(
+            entity,
+            element,
+            position,
+            &asset_server,
+            &elements_query,
+            &world_map,
+            &mut commands,
+        );
 
         let adjacent_positions = position.get_adjacent_positions();
 
@@ -217,7 +215,7 @@ fn update_element_sprite(
     };
 
     let element_index = get_element_index(element_exposure);
-    
+
     // BUG: https://github.com/bevyengine/bevy/issues/1949
     // Intentionally not using SpriteSheetBundle due to subpixel rounding causing bleed artifacts.
     commands.entity(element_entity).insert(SpriteBundle {
@@ -232,29 +230,24 @@ fn update_element_sprite(
 }
 
 pub fn rerender_elements(
-    mut element_query: Query<(&Position, Option<&mut Transform>, &Element, Entity)>,
+    mut element_query: Query<(&Position, &mut Transform, &Element, Entity)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
-    for (position, transform, element, entity) in element_query.iter_mut() {
-        // TODO: Air doesn't have a transform
-        if let Some(mut transform) = transform {
-            transform.translation = position.as_world_position(&world_map);
-        }
+    for (position, mut transform, element, entity) in element_query.iter_mut() {
+        transform.translation = position.as_world_position(&world_map);
 
-        if *element != Element::Air {
-            update_element_sprite(
-                entity,
-                element,
-                position,
-                &asset_server,
-                &elements_query,
-                &world_map,
-                &mut commands,
-            );
-        }
+        update_element_sprite(
+            entity,
+            element,
+            position,
+            &asset_server,
+            &elements_query,
+            &world_map,
+            &mut commands,
+        );
 
         let adjacent_positions = position.get_adjacent_positions();
 
@@ -279,32 +272,24 @@ pub fn rerender_elements(
 }
 
 pub fn on_update_element_position(
-    mut element_query: Query<
-        (&Position, Option<&mut Transform>, &Element, Entity),
-        Changed<Position>,
-    >,
+    mut element_query: Query<(&Position, &mut Transform, &Element, Entity), Changed<Position>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
 ) {
-    for (position, transform, element, entity) in element_query.iter_mut() {
-        // TODO: Air doesn't have a transform
-        if let Some(mut transform) = transform {
-            transform.translation = position.as_world_position(&world_map);
-        }
+    for (position, mut transform, element, entity) in element_query.iter_mut() {
+        transform.translation = position.as_world_position(&world_map);
 
-        if *element != Element::Air {
-            update_element_sprite(
-                entity,
-                element,
-                position,
-                &asset_server,
-                &elements_query,
-                &world_map,
-                &mut commands,
-            );
-        }
+        update_element_sprite(
+            entity,
+            element,
+            position,
+            &asset_server,
+            &elements_query,
+            &world_map,
+            &mut commands,
+        );
 
         let adjacent_positions = position.get_adjacent_positions();
 

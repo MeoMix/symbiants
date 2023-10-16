@@ -25,6 +25,7 @@ web-sys = { version = "0.3.64", features = [
   "BeforeUnloadEvent",
 ] }
 chrono = { version = "0.4.31", features = ["serde"] }
+brotli = { version = "3.4.0" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.37"
