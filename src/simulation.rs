@@ -28,7 +28,7 @@ use crate::{
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{setup_background, teardown_background},
-    common::{register_common, setup_common, ui::on_add_selected, pre_setup_common},
+    common::{pre_setup_common, register_common, setup_common, ui::on_add_selected},
     element::{
         register_element, setup_element, teardown_element,
         ui::{
@@ -208,6 +208,8 @@ impl Plugin for SimulationPlugin {
                             apply_deferred,
                         )
                             .chain(),
+                        // TODO: This isn't working well right now, causes panics
+                        // on_ants_add_dead,
                         // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                         ants_initiative,
                     )

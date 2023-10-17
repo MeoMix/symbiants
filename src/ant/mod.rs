@@ -21,6 +21,7 @@ use bevy::prelude::*;
 pub mod birthing;
 pub mod chambering;
 pub mod commands;
+pub mod death;
 pub mod dig;
 pub mod drop;
 pub mod hunger;

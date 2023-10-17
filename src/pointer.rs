@@ -7,8 +7,8 @@ use bevy_turborand::GlobalRng;
 use crate::ui::selection_menu::Selected;
 use crate::{
     ant::{
-        Angle, Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole,
-        Dead, Facing, Initiative,
+        Angle, Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead,
+        Facing, Initiative,
     },
     camera::MainCamera,
     element::{commands::ElementCommandsExt, Element},
@@ -135,20 +135,6 @@ pub fn handle_pointer_tap(
             .iter()
             .find(|(_, &position, _, _)| position == grid_position)
         {
-            // If the ant is carrying something - drop it first.
-            if inventory.0 != None {
-                // If the ant is standing on air then drop element where standing otherwise despawn element.
-                // TODO: in the future maybe try to find an adjacent place to drop element.
-                let element_entity = world_map.get_element_entity(grid_position).unwrap();
-
-                if world_map.is_element(&elements_query, grid_position, Element::Air) {
-                    commands.drop(entity, grid_position, *element_entity);
-                } else {
-                    // No room - despawn inventory.
-                    commands.entity(*element_entity).despawn();
-                }
-            }
-
             commands.entity(entity).insert(Dead);
         }
     } else if *pointer_action == PointerAction::DespawnWorkerAnt {
