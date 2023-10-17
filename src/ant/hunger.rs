@@ -1,6 +1,6 @@
 use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
 use crate::{
-    common::{get_entity_from_id, Id},
+    common::IdMap,
     element::Element,
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_DAY},
     world_map::{position::Position, WorldMap},
@@ -75,9 +75,9 @@ pub fn ants_hunger(
         Without<Dead>,
     >,
     elements_query: Query<&Element>,
-    id_query: Query<(Entity, &Id)>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
+    id_map: Res<IdMap>,
 ) {
     for (entity, mut hunger, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
@@ -101,9 +101,8 @@ pub fn ants_hunger(
                     commands.dig(entity, ahead_position, *food_entity);
                 }
             } else {
-                let id = inventory.0.clone().unwrap();
-                let entity = get_entity_from_id(id, &id_query).unwrap();
-                let element = elements_query.get(entity).unwrap();
+                let entity = id_map.0.get(inventory.0.as_ref().unwrap()).unwrap();
+                let element = elements_query.get(*entity).unwrap();
 
                 if *element == Element::Food {
                     inventory.0 = None;

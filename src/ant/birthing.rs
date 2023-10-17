@@ -1,6 +1,6 @@
 use super::{
-    Angle, AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
-    Initiative,
+    commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole,
+    Dead, Facing, Initiative,
 };
 use crate::{
     common::register,
@@ -75,7 +75,7 @@ pub fn ants_birthing(
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()
     {
-        if !initiative.can_move(){
+        if !initiative.can_move() {
             continue;
         }
 
@@ -83,7 +83,8 @@ pub fn ants_birthing(
         initiative.consume_movement();
 
         // Create offspring once per full real-world hour.
-        let rate_of_birthing = birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
+        let rate_of_birthing =
+            birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
         birthing.tick(rate_of_birthing);
 
         if birthing.is_ready() && initiative.can_act() {
@@ -94,7 +95,7 @@ pub fn ants_birthing(
             // Could introduce a custom command and prevent spawning if the tile is occupied and/or find nearest open tile
             // but since ants can get covered by sand already (when it falls on them) its low priority.
             // Spawn worker ant (TODO: egg instead)
-            commands.spawn(AntBundle::new(
+            commands.spawn_ant(
                 behind_position,
                 AntColor(color.0),
                 AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
@@ -102,7 +103,7 @@ pub fn ants_birthing(
                 AntRole::Worker,
                 AntName(get_random_name(&mut rng.reborrow())),
                 Initiative::new(&mut rng.reborrow()),
-            ));
+            );
 
             birthing.reset();
             initiative.consume();

@@ -4,14 +4,27 @@ use bevy::{ecs::system::Command, prelude::*};
 
 use crate::{
     ant::AntInventory,
-    common::Id,
+    common::{Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
     world_map::{position::Position, WorldMap},
 };
 
-use super::{Initiative, InventoryItemBundle};
+use super::{
+    nesting::Nesting, AntBundle, AntColor, AntName, AntOrientation, AntRole, Initiative,
+    InventoryItemBundle,
+};
 
 pub trait AntCommandsExt {
+    fn spawn_ant(
+        &mut self,
+        position: Position,
+        color: AntColor,
+        orientation: AntOrientation,
+        inventory: AntInventory,
+        role: AntRole,
+        name: AntName,
+        initiative: Initiative,
+    );
     fn dig(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity);
     fn drop(
         &mut self,
@@ -22,6 +35,27 @@ pub trait AntCommandsExt {
 }
 
 impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
+    fn spawn_ant(
+        &mut self,
+        position: Position,
+        color: AntColor,
+        orientation: AntOrientation,
+        inventory: AntInventory,
+        role: AntRole,
+        name: AntName,
+        initiative: Initiative,
+    ) {
+        self.add(SpawnAntCommand {
+            position,
+            color,
+            orientation,
+            inventory,
+            role,
+            name,
+            initiative,
+        });
+    }
+
     fn dig(
         &mut self,
         ant_entity: Entity,
@@ -108,7 +142,9 @@ impl Command for DigElementCommand {
         let inventory_item_bundle = InventoryItemBundle::new(inventory_element, ant_id.clone());
         let inventory_item_element_id = inventory_item_bundle.id.clone();
 
-        world.spawn(inventory_item_bundle);
+        let inventory_item_entity = world.spawn(inventory_item_bundle).id();
+
+        world.resource_mut::<IdMap>().0.insert(inventory_item_element_id.clone(), inventory_item_entity);
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => inventory.0 = Some(inventory_item_element_id),
@@ -185,5 +221,44 @@ impl Command for DropElementCommand {
             Some(mut initiative) => initiative.consume(),
             None => panic!("Failed to get initiative for ant {:?}", self.ant_entity),
         };
+    }
+}
+
+struct SpawnAntCommand {
+    position: Position,
+    color: AntColor,
+    orientation: AntOrientation,
+    inventory: AntInventory,
+    role: AntRole,
+    name: AntName,
+    initiative: Initiative,
+}
+
+impl Command for SpawnAntCommand {
+    fn apply(self, world: &mut World) {
+        let ant_bundle = AntBundle::new(
+            self.position,
+            self.color,
+            self.orientation,
+            self.inventory,
+            self.role,
+            self.name,
+            self.initiative,
+        );
+
+        let id = ant_bundle.id.clone();
+
+        let entity;
+        if self.role == AntRole::Queen {
+            // TODO: It's weird to have one special default property for Queen?
+            entity = world.spawn((ant_bundle, Nesting::default())).id();
+        } else {
+            entity = world.spawn(ant_bundle).id();
+        }
+        
+        world
+            .resource_mut::<IdMap>()
+            .0
+            .insert(id, entity);
     }
 }

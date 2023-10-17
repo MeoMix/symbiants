@@ -2,9 +2,9 @@ use std::ops::Add;
 
 use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead};
 use crate::{
-    common::{get_entity_from_id, Id},
+    common::IdMap,
     element::{
-        ui::{get_element_index, ElementExposure, get_element_texture, ElementSpriteHandles},
+        ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
         Element,
     },
     world_map::{position::Position, WorldMap},
@@ -31,9 +31,9 @@ pub fn on_spawn_ant(
     >,
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
-    id_query: Query<(Entity, &Id)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
+    id_map: Res<IdMap>,
 ) {
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
         // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
@@ -69,9 +69,12 @@ pub fn on_spawn_ant(
                 },
             ))
             .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-                if let Some(bundle) =
-                    get_inventory_item_sprite_bundle(inventory, &id_query, &elements_query, &element_sprite_handles)
-                {
+                if let Some(bundle) = get_inventory_item_sprite_bundle(
+                    inventory,
+                    &elements_query,
+                    &element_sprite_handles,
+                    &id_map,
+                ) {
                     parent.spawn(bundle);
                 }
 
@@ -140,13 +143,16 @@ pub fn on_update_ant_inventory(
     mut query: Query<(Entity, &AntInventory, Option<&Children>), Changed<AntInventory>>,
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
-    id_query: Query<(Entity, &Id)>,
     element_sprite_handles: Res<ElementSpriteHandles>,
+    id_map: Res<IdMap>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
-        if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &element_sprite_handles)
-        {
+        if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
+            &inventory,
+            &elements_query,
+            &element_sprite_handles,
+            &id_map,
+        ) {
             commands
                 .entity(entity)
                 .with_children(|ant: &mut ChildBuilder| {
@@ -173,13 +179,16 @@ pub fn rerender_ant_inventory(
     mut query: Query<(Entity, &AntInventory, Option<&Children>)>,
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
-    id_query: Query<(Entity, &Id)>,
     element_sprite_handles: Res<ElementSpriteHandles>,
+    id_map: Res<IdMap>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
-        if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &id_query, &elements_query, &element_sprite_handles)
-        {
+        if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
+            &inventory,
+            &elements_query,
+            &element_sprite_handles,
+            &id_map,
+        ) {
             commands
                 .entity(entity)
                 .with_children(|ant: &mut ChildBuilder| {
@@ -212,9 +221,9 @@ pub struct AntHeldElementSpriteBundle {
 
 fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
-    id_query: &Query<(Entity, &Id)>,
     elements_query: &Query<&Element>,
     element_sprite_handles: &Res<ElementSpriteHandles>,
+    id_map: &Res<IdMap>,
 ) -> Option<AntHeldElementSpriteBundle> {
     let inventory_item_element_id = match &inventory.0 {
         Some(inventory_item_element_id) => inventory_item_element_id,
@@ -222,10 +231,8 @@ fn get_inventory_item_sprite_bundle(
     };
 
     // TODO: I am surprised this is working
-    let inventory_item_element_entity =
-        get_entity_from_id(inventory_item_element_id.clone(), &id_query).unwrap();
-
-    let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
+    let inventory_item_element_entity = id_map.0.get(inventory_item_element_id).unwrap();
+    let inventory_item_element = elements_query.get(*inventory_item_element_entity).unwrap();
 
     let element_exposure = ElementExposure {
         north: true,
@@ -242,7 +249,11 @@ fn get_inventory_item_sprite_bundle(
             custom_size: Some(Vec2::splat(1.0)),
             ..default()
         },
-        texture: get_element_texture(inventory_item_element, element_index, &element_sprite_handles),
+        texture: get_element_texture(
+            inventory_item_element,
+            element_index,
+            &element_sprite_handles,
+        ),
         ..default()
     };
 

@@ -7,7 +7,7 @@ use bevy_turborand::GlobalRng;
 use crate::ui::selection_menu::Selected;
 use crate::{
     ant::{
-        Angle, Ant, AntBundle, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole,
+        Angle, Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole,
         Dead, Facing, Initiative,
     },
     camera::MainCamera,
@@ -120,7 +120,7 @@ pub fn handle_pointer_tap(
         }
     } else if *pointer_action == PointerAction::SpawnWorkerAnt {
         if world_map.is_element(&elements_query, grid_position, Element::Air) {
-            commands.spawn(AntBundle::new(
+            commands.spawn_ant(
                 grid_position,
                 AntColor(settings.ant_color),
                 AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
@@ -128,7 +128,7 @@ pub fn handle_pointer_tap(
                 AntRole::Worker,
                 AntName(get_random_name(&mut rng.reborrow())),
                 Initiative::new(&mut rng.reborrow()),
-            ));
+            );
         }
     } else if *pointer_action == PointerAction::KillAnt {
         if let Some((entity, _, _, inventory)) = ants_query

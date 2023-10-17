@@ -2,8 +2,8 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
 use crate::{
-    ant::{birthing::Birthing, hunger::Hunger, Ant, AntInventory, AntName, Dead, AntRole},
-    common::{get_entity_from_id, Id},
+    ant::{birthing::Birthing, hunger::Hunger, Ant, AntInventory, AntName, AntRole, Dead},
+    common::IdMap,
     element::Element,
     pheromone::{Pheromone, PheromoneStrength},
     world_map::position::Position,
@@ -30,7 +30,7 @@ pub fn update_selection_menu(
     selected_element_query: Query<(&Element, &Position), With<Selected>>,
     pheromone_query: Query<(&Position, &Pheromone, &PheromoneStrength)>,
     elements_query: Query<&Element>,
-    id_query: Query<(Entity, &Id)>,
+    id_map: Res<IdMap>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -63,9 +63,8 @@ pub fn update_selection_menu(
                 ui.label(&format!("Hunger: {:.0}%", hunger.value()));
 
                 if let Some(inventory_element_id) = &inventory.0 {
-                    let entity =
-                        get_entity_from_id(inventory_element_id.clone(), &id_query).unwrap();
-                    let element = elements_query.get(entity).unwrap();
+                    let entity = id_map.0.get(inventory_element_id).unwrap();
+                    let element = elements_query.get(*entity).unwrap();
 
                     ui.label(&format!("Carrying: {:?}", element));
                 }

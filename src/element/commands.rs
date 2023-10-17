@@ -1,5 +1,6 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
 use crate::{
+    common::IdMap,
     gravity::Unstable,
     world_map::{position::Position, WorldMap},
 };
@@ -89,7 +90,10 @@ struct SpawnElementCommand {
 
 impl Command for SpawnElementCommand {
     fn apply(self, world: &mut World) {
-        if let Some(existing_entity) = world.resource::<WorldMap>().get_element_entity(self.position) {
+        if let Some(existing_entity) = world
+            .resource::<WorldMap>()
+            .get_element_entity(self.position)
+        {
             info!(
                 "Entity {:?} already exists at position {:?}",
                 existing_entity, self.position
@@ -105,25 +109,53 @@ impl Command for SpawnElementCommand {
 }
 
 pub fn spawn_element(element: Element, position: Position, world: &mut World) -> Entity {
-    match element {
-        Element::Air => world.spawn(AirElementBundle::new(position)).id(),
+    let (id, entity) = match element {
+        Element::Air => {
+            let element_bundle = AirElementBundle::new(position);
+            let element_bundle_id = element_bundle.id.clone();
+
+            let entity = world.spawn(element_bundle).id();
+
+            (element_bundle_id, entity)
+        }
         Element::Dirt => {
             // HACK: Dirt that spawns below surface level is not unstable but dirt that is above is unstable.
             // It should be possible to do this is a more generic way, but performance issues abound. The main one is
             // is that using a Query which iterates over Element and filters on With<Added> still iterates all elements.
             let world_map = world.resource::<WorldMap>();
+            let element_bundle = DirtElementBundle::new(position);
+            let element_bundle_id = element_bundle.id.clone();
 
+            let entity;
             if world_map.is_underground(&position) {
-                world.spawn(DirtElementBundle::new(position)).id()
+                entity = world.spawn(element_bundle).id();
             } else {
-                world
-                    .spawn((DirtElementBundle::new(position), Unstable))
-                    .id()
+                entity = world.spawn((element_bundle, Unstable)).id();
             }
+
+            (element_bundle_id, entity)
         }
-        Element::Sand => world.spawn(SandElementBundle::new(position)).id(),
-        Element::Food => world.spawn(FoodElementBundle::new(position)).id(),
-    }
+        Element::Sand => {
+            let element_bundle = SandElementBundle::new(position);
+            let element_bundle_id = element_bundle.id.clone();
+
+            let entity = world.spawn(element_bundle).id();
+
+            (element_bundle_id, entity)
+        }
+        Element::Food => {
+            let element_bundle = FoodElementBundle::new(position);
+            let element_bundle_id = element_bundle.id.clone();
+
+            let entity = world.spawn(element_bundle).id();
+
+            (element_bundle_id, entity)
+        }
+    };
+
+    world.resource_mut::<IdMap>().0.insert(id.clone(), entity);
+
+    entity
 }
 
 struct ToggleElementCommand<C: Component + Send + Sync + 'static> {

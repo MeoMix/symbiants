@@ -28,7 +28,7 @@ use crate::{
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{setup_background, teardown_background},
-    common::{register_common, ui::on_add_selected},
+    common::{register_common, setup_common, ui::on_add_selected, pre_setup_common},
     element::{
         register_element, setup_element, teardown_element,
         ui::{
@@ -83,6 +83,7 @@ impl Plugin for SimulationPlugin {
                 register_pheromone,
                 (pre_setup_settings, apply_deferred).chain(),
                 (pre_setup_story_time, apply_deferred).chain(),
+                (pre_setup_common, apply_deferred).chain(),
                 load_textures,
             )
                 .chain(),
@@ -102,6 +103,7 @@ impl Plugin for SimulationPlugin {
             OnEnter(StoryState::FinalizingStartup),
             (
                 (setup_world_map, apply_deferred).chain(),
+                (setup_common, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
                 (setup_background, apply_deferred).chain(),
                 setup_save,
@@ -227,6 +229,8 @@ impl Plugin for SimulationPlugin {
                 // Ensure render state reflects simulation state after having applied movements and command updates.
                 // Must run in FixedUpdate otherwise change detection won't properly work if FixedUpdate loop runs multiple times in a row.
                 (
+                    // Some of these are conditional because they're heavy to run and slow down the fast-forward state.
+                    // TODO: Either disable all of the UI updates while fastforwarding or find a way to enable while skipping frames.
                     on_update_ant_position.run_if(in_state(StoryPlaybackState::Playing)),
                     on_update_ant_orientation.run_if(in_state(StoryPlaybackState::Playing)),
                     on_added_ant_dead,

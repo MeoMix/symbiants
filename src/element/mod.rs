@@ -153,6 +153,7 @@ pub fn setup_element(settings: Res<Settings>, mut commands: Commands) {
         for x in 0..settings.world_width {
             let position = Position::new(x, y);
 
+            // FIXME: These should be commands.spawn_element but need to fix circularity with expecting WorldMap to exist.
             if y <= settings.get_surface_level() {
                 commands.spawn(AirElementBundle::new(position));
             } else {

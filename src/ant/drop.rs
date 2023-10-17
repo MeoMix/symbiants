@@ -1,14 +1,11 @@
 use crate::{
-    common::{get_entity_from_id, Id},
+    common::IdMap,
     element::Element,
     settings::Settings,
     world_map::{position::Position, WorldMap},
 };
 
-use super::{
-    commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead,
-    Initiative,
-};
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -25,11 +22,11 @@ pub fn ants_drop(
         Without<Dead>,
     >,
     elements_query: Query<&Element>,
-    id_query: Query<(Entity, &Id)>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
+    id_map: Res<IdMap>,
 ) {
     for (orientation, inventory, initiative, position, role, ant_entity) in ants_query.iter() {
         if !initiative.can_act() {
@@ -65,11 +62,9 @@ pub fn ants_drop(
         }
 
         // There is an air gap directly ahead of the ant. Consider dropping inventory.
-        let inventory_item_element_id = inventory.0.clone().unwrap();
-        let inventory_item_element_entity =
-            get_entity_from_id(inventory_item_element_id, &id_query).unwrap();
+        let inventory_item_element_entity = id_map.0.get(inventory.0.as_ref().unwrap()).unwrap();
 
-        let inventory_item_element = elements_query.get(inventory_item_element_entity).unwrap();
+        let inventory_item_element = elements_query.get(*inventory_item_element_entity).unwrap();
 
         // Prioritize dropping sand above ground and food below ground.
         let drop_sand = *inventory_item_element == Element::Sand

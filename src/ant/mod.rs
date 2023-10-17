@@ -11,7 +11,7 @@ use crate::{
 };
 
 use self::{
-    birthing::Birthing, chambering::Chambering, hunger::Hunger, nesting::Nesting,
+    birthing::Birthing, chambering::Chambering, commands::AntCommandsExt, hunger::Hunger,
     tunneling::Tunneling,
 };
 
@@ -457,7 +457,8 @@ pub fn register_ant(
 pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut commands: Commands) {
     let mut rng = rng.reborrow();
 
-    let queen_ant = AntBundle::new(
+    // Newly created queens instinctively start building a nest.
+    commands.spawn_ant(
         settings.get_random_surface_position(&mut rng),
         AntColor(settings.ant_color),
         AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
@@ -467,24 +468,18 @@ pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut comman
         Initiative::new(&mut rng),
     );
 
-    // Newly created queens instinctively start building a nest.
-    commands.spawn((queen_ant, Nesting::default()));
-
-    let worker_ants = (0..settings.initial_ant_worker_count)
-        .map(|_| {
-            AntBundle::new(
-                settings.get_random_surface_position(&mut rng),
-                AntColor(settings.ant_color),
-                AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-                AntInventory::default(),
-                AntRole::Worker,
-                AntName(get_random_name(&mut rng)),
-                Initiative::new(&mut rng),
-            )
-        })
-        .collect::<Vec<_>>();
-
-    commands.spawn_batch(worker_ants);
+    for _ in 0..settings.initial_ant_worker_count {
+        // TODO: Prefer spawn_batch but would need to create custom command for spawning batch ants
+        commands.spawn_ant(
+            settings.get_random_surface_position(&mut rng),
+            AntColor(settings.ant_color),
+            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+            AntInventory::default(),
+            AntRole::Worker,
+            AntName(get_random_name(&mut rng)),
+            Initiative::new(&mut rng),
+        );
+    }
 }
 
 pub fn teardown_ant(
