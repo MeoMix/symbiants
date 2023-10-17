@@ -10,11 +10,12 @@ use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
+use crate::common::Id;
 use crate::settings::Settings;
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
-static SAVE_SNAPSHOT: Mutex<Option<String>> = Mutex::new(None);
+static SAVE_SNAPSHOT: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 
 // TODO: Support saving on non-WASM targets.
 #[cfg(not(target_arch = "wasm32"))]
@@ -48,14 +49,13 @@ pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save
     }
 }
 
-fn create_save_snapshot(world: &mut World) -> Option<String> {
+fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     let mut writer: Vec<u8> = Vec::new();
     let mut serde = Serializer::new(&mut writer);
+    let mut id_query = world.query_filtered::<Entity, With<Id>>();
 
     let snapshot = Snapshot::builder(world)
-        .extract_all()
-        // Prevent serialization bloat by removing entities with no saveable components
-        .clear_empty()
+        .extract_entities(id_query.iter(world))
         .build();
 
     let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
@@ -63,7 +63,7 @@ fn create_save_snapshot(world: &mut World) -> Option<String> {
     let result = SnapshotSerializer::new(&snapshot, registry).serialize(&mut serde);
 
     if result.is_ok() {
-        return Some(String::from_utf8(writer).unwrap());
+        return Some(writer);
     } else {
         error!("Failed to serialize snapshot: {:?}", result);
     }
@@ -79,7 +79,7 @@ fn write_save_snapshot() -> bool {
 
     let mut compressed_data = CompressorWriter::with_params(Vec::new(), 4096, &params);
     compressed_data
-        .write_all(&save_snapshot.as_ref().unwrap().as_bytes())
+        .write_all(&save_snapshot.as_ref().unwrap())
         .expect("Failed to write to compressor");
 
     let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, compressed_data.into_inner());
