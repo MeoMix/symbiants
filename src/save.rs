@@ -5,12 +5,11 @@ use bevy_save::{Build, Snapshot, SnapshotSerializer, WorldSaveableExt};
 use brotli::{enc::BrotliEncoderInitParams, CompressorWriter, Decompressor};
 use gloo_storage::{LocalStorage, Storage};
 use serde::Serialize;
-use serde_json::{Deserializer, Serializer};
 use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
+use rmp_serde::{Deserializer, Serializer};
 
-use crate::common::Id;
 use crate::settings::Settings;
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
@@ -50,12 +49,15 @@ pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save
 }
 
 fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
-    let mut writer: Vec<u8> = Vec::new();
-    let mut serde = Serializer::new(&mut writer);
-    let mut id_query = world.query_filtered::<Entity, With<Id>>();
+    let mut buffer: Vec<u8> = Vec::new();
+    let mut serde = Serializer::new(&mut buffer);
+    // TODO: I think I'd prefer extracting on id but Pheromones don't have id at the moment.
+    // let mut id_query = world.query_filtered::<Entity, With<Id>>();
 
     let snapshot = Snapshot::builder(world)
-        .extract_entities(id_query.iter(world))
+        // .extract_entities(id_query.iter(world))
+        .extract_all()
+        .clear_empty()
         .build();
 
     let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
@@ -63,7 +65,7 @@ fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     let result = SnapshotSerializer::new(&snapshot, registry).serialize(&mut serde);
 
     if result.is_ok() {
-        return Some(writer);
+        return Some(buffer);
     } else {
         error!("Failed to serialize snapshot: {:?}", result);
     }
@@ -160,11 +162,13 @@ pub fn load(world: &mut World) -> bool {
                 error!("Failed to decompress data: {:?}", e);
             }
 
-            let saved_state = String::from_utf8(decompressed_data).map_err(|e| {
-                error!("Failed to convert decompressed bytes to string: {:?}", e);
-            })?;
+            // let saved_state = String::from_utf8(decompressed_data).map_err(|e| {
+            //     error!("Failed to convert decompressed bytes to string: {:?}", e);
+            // })?;
 
-            let mut serde = Deserializer::from_str(&saved_state);
+            let mut serde = Deserializer::new(&decompressed_data[..]);
+
+            // let mut serde = Deserializer::from_str(&saved_state);
 
             if let Ok(applier) = world.deserialize_applier(&mut serde) {
                 return applier
