@@ -53,8 +53,8 @@ pub fn on_spawn_ant(
                     texture: asset_server.load(sprite_image),
                     sprite: Sprite {
                         color: sprite_color,
-                        // 1.2 is just a feel good number to make ants slightly larger than the elements they dig up
-                        custom_size: Some(Vec2::splat(1.2)),
+                        // 1.5 is just a feel good number to make ants slightly larger than the elements they dig up
+                        custom_size: Some(Vec2::splat(1.5)),
                         ..default()
                     },
                     transform: Transform {
@@ -81,7 +81,7 @@ pub fn on_spawn_ant(
                 if *role == AntRole::Queen {
                     parent.spawn(SpriteBundle {
                         texture: asset_server.load("images/crown.png"),
-                        transform: Transform::from_xyz(0.25, 0.5, 1.0),
+                        transform: Transform::from_xyz(0.5, 0.25, 1.0),
                         sprite: Sprite {
                             custom_size: Some(Vec2::splat(0.5)),
                             ..default()
@@ -108,7 +108,7 @@ pub fn on_spawn_ant(
                 text: Text::from_section(
                     name.0.as_str(),
                     TextStyle {
-                        color: Color::BLACK,
+                        color: Color::WHITE,
                         font_size: 60.0,
                         ..default()
                     },
