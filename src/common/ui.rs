@@ -25,9 +25,10 @@ pub fn on_add_selected(
             .with_children(|parent| {
                 parent.spawn((
                     SpriteBundle {
+                        transform: Transform::from_translation(Vec3::Z),
                         texture: asset_server.load("images/selection.png"),
                         sprite: Sprite {
-                            custom_size: Some(Vec2::splat(1.0)),
+                            custom_size: Some(Vec2::ONE),
                             ..default()
                         },
                         ..default()

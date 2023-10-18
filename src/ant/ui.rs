@@ -36,7 +36,7 @@ pub fn on_spawn_ant(
     id_map: Res<IdMap>,
 ) {
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
-        // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise. This isn't a good way of achieving this.
+        // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
         let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
 
         let (sprite_image, sprite_color) = if dead.is_some() {
@@ -91,7 +91,7 @@ pub fn on_spawn_ant(
                 }
             });
 
-        // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise. This isn't a good way of achieving this.
+        // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise.
         let translation_offset = TranslationOffset(Vec3::new(0.0, -1.0, 1.0));
 
         commands.spawn((
