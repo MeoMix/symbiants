@@ -9,6 +9,8 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
+use bevy_turborand::{DelegatedRng, GlobalRng};
+
 use super::{birthing::Birthing, Dead};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -33,6 +35,7 @@ pub fn ants_chamber_pheromone_act(
     world_map: Res<WorldMap>,
     mut commands: Commands,
     settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     for (ant_orientation, inventory, initiative, ant_position, ant_entity, chambering) in
         ants_query.iter()
@@ -46,27 +49,30 @@ pub fn ants_chamber_pheromone_act(
             continue;
         }
 
-        // TODO: maybe shuffle positions to make things more interesting
-        let positions = ant_orientation.get_valid_nonnorth_positions(ant_position);
+        let positions = vec![
+            ant_orientation.get_ahead_position(ant_position),
+            ant_orientation.get_below_position(ant_position),
+            ant_orientation.get_above_position(ant_position),
+        ];
 
-        for position in positions {
-            if try_dig(
-                &ant_entity,
-                &position,
-                &elements_query,
-                &world_map,
-                &mut commands,
-            ) {
-                // Subtract 1 because not placing pheromone at ant_position but instead placing it at a position adjacent
-                if chambering.0 - 1 > 0 {
-                    commands.spawn_pheromone(
-                        position,
-                        Pheromone::Chamber,
-                        PheromoneStrength::new(chambering.0 - 1, settings.chamber_size),
-                    );
-                }
-                return;
+        let position = rng.sample(&positions).unwrap();
+
+        if try_dig(
+            &ant_entity,
+            &position,
+            &elements_query,
+            &world_map,
+            &mut commands,
+        ) {
+            // Subtract 1 because not placing pheromone at ant_position but instead placing it at a position adjacent
+            if chambering.0 - 1 > 0 {
+                commands.spawn_pheromone(
+                    *position,
+                    Pheromone::Chamber,
+                    PheromoneStrength::new(chambering.0 - 1, settings.chamber_size),
+                );
             }
+            return;
         }
     }
 }

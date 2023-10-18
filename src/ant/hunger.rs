@@ -88,7 +88,7 @@ pub fn ants_hunger(
 
         if hunger.is_starved() {
             commands.entity(entity).insert(Dead);
-        } else if hunger.is_hungry() {
+        } else if hunger.is_peckish() {
             if !initiative.can_act() {
                 continue;
             }
@@ -106,6 +106,10 @@ pub fn ants_hunger(
 
                 if *element == Element::Food {
                     inventory.0 = None;
+
+                    // Reduce hunger by 20%
+                    hunger.value -= (hunger.max() * 0.20).min(hunger.value());
+
                     hunger.reset();
                     initiative.consume();
                 }

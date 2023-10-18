@@ -81,7 +81,7 @@ pub fn on_spawn_ant(
                 if *role == AntRole::Queen {
                     parent.spawn(SpriteBundle {
                         texture: asset_server.load("images/crown.png"),
-                        transform: Transform::from_xyz(0.5, 0.25, 1.0),
+                        transform: Transform::from_xyz(0.33, 0.33, 1.0),
                         sprite: Sprite {
                             custom_size: Some(Vec2::splat(0.5)),
                             ..default()

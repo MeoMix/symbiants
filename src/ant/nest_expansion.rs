@@ -50,6 +50,7 @@ pub fn ants_nest_expansion(
             || inventory.0 != None
             || hunger.is_hungry()
             || world_map.is_aboveground(ant_position)
+            || ant_orientation.is_facing_north()
         {
             continue;
         }
@@ -57,29 +58,34 @@ pub fn ants_nest_expansion(
         let is_crowded = ant_entity_positions
             .iter()
             .filter(|(other_ant_position, other_ant_entity)| {
-                *other_ant_entity != ant_entity && ant_position.distance(other_ant_position) <= 1
+                *other_ant_entity != ant_entity && ant_position.distance(other_ant_position) <= 2
             })
             .count()
             >= 2;
 
         if is_crowded && rng.f32() < settings.probabilities.expand_nest {
-            // Collect a set of positions to check for dirt.
-            // These positions are all East/South/West of the ant and are never behind the ant.
-            let positions = ant_orientation.get_valid_nonnorth_positions(ant_position);
+            let dirt_position = ant_orientation.get_ahead_position(ant_position);
 
-            let dirt_position = positions
-                .iter()
-                .find(|position| world_map.is_element(&elements_query, **position, Element::Dirt));
-
-            if let Some(dirt_position) = dirt_position {
-                let dig_target_entity = *world_map.element_entity(*dirt_position);
-                commands.dig(ant_entity, *dirt_position, dig_target_entity);
-                commands.spawn_pheromone(
-                    *dirt_position,
-                    Pheromone::Tunnel,
-                    PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
-                );
+            if !world_map.is_element(&elements_query, dirt_position, Element::Dirt) {
+                continue;
             }
+
+            // Must be attempting to dig a tunnel which means there needs to be dirt on either side of the dig site.
+            let dirt_adjacent_position_above = ant_orientation.get_above_position(&dirt_position);
+            let dirt_adjacent_position_below = ant_orientation.get_below_position(&dirt_position);
+            if world_map.is_element(&elements_query, dirt_adjacent_position_above, Element::Air)
+                || world_map.is_element(&elements_query, dirt_adjacent_position_below, Element::Air)
+            {
+                continue;
+            }
+
+            let dig_target_entity = *world_map.element_entity(dirt_position);
+            commands.dig(ant_entity, dirt_position, dig_target_entity);
+            commands.spawn_pheromone(
+                dirt_position,
+                Pheromone::Tunnel,
+                PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
+            );
         }
     }
 }

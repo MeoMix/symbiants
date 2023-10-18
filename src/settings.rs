@@ -55,7 +55,7 @@ impl Default for Settings {
             save_interval: 60,
             // Saving data to local storage is slow, but generating the snapshot of the world is also slow.
             // Take snapshots aggressively because browser tab closes too quickly to JIT snapshot.
-            snapshot_interval: 5, // TODO: prefer 1 here but it's too slow (in debug at least), kills FPS
+            snapshot_interval: 30, // TODO: prefer 1 here but it's too slow, makes sim stutter
             world_width: 144,
             // TODO: I want this to be able to go to 400 without lag and without breaking local storage
             world_height: 144,
@@ -81,7 +81,7 @@ impl Default for Settings {
                 above_surface_queen_nest_dig: 0.10,
                 below_surface_queen_nest_dig: 0.50,
                 // TODO: keep playing with this value. lower chance = more cramped nest, but less sand to manage.
-                expand_nest: 0.33,
+                expand_nest: 0.2,
             },
         }
     }

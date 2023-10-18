@@ -57,7 +57,7 @@ pub fn ants_drop(
         }
 
         // Avoid dropping inventory when facing upwards since it'll fall on the ant.
-        if orientation.is_vertical() {
+        if orientation.is_facing_north() {
             continue;
         }
 
@@ -74,24 +74,30 @@ pub fn ants_drop(
         let mut drop_food = false;
         if *inventory_item_element == Element::Food {
             if world_map.is_underground(&ahead_position) {
-                drop_food = rng.f32() < settings.probabilities.below_surface_food_drop;
-
-                // If ant is adjacent to food then strongly consider dropping food (creates food piles)
-                let is_food_below = world_map.is_element(
+                // Don't let ants drop food in tunnels that don't have space for them to navigate around dropped food.
+                if world_map.is_element(
                     &elements_query,
-                    orientation.get_below_position(position),
-                    Element::Food,
-                );
-                let is_food_ahead_below = world_map.is_element(
+                    orientation.get_above_position(&ahead_position),
+                    Element::Air,
+                ) && world_map.is_element(
                     &elements_query,
-                    orientation.get_below_position(&ahead_position),
-                    Element::Food,
-                );
+                    orientation.get_above_position(position),
+                    Element::Air,
+                ) {
+                    drop_food = rng.f32() < settings.probabilities.below_surface_food_drop;
 
-                if (is_food_below || is_food_ahead_below)
-                    && rng.f32() < settings.probabilities.below_surface_food_adjacent_food_drop
-                {
-                    drop_food = true;
+                    // If ant is adjacent to food then strongly consider dropping food (creates food piles)
+                    let is_food_below = world_map.is_element(
+                        &elements_query,
+                        orientation.get_below_position(position),
+                        Element::Food,
+                    );
+
+                    if is_food_below
+                        && rng.f32() < settings.probabilities.below_surface_food_adjacent_food_drop
+                    {
+                        drop_food = true;
+                    }
                 }
             } else {
                 if *role == AntRole::Queen {

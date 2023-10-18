@@ -45,23 +45,23 @@ pub fn ants_dig(
         let positions = [
             orientation.get_ahead_position(position),
             orientation.get_below_position(position),
-            orientation.get_above_position(position)
+            orientation.get_above_position(position),
         ];
 
-        for position in positions {
-            if try_dig(
-                ant_entity,
-                role,
-                birthing,
-                position,
-                &elements_query,
-                &world_map,
-                &mut commands,
-                &settings,
-                &mut rng,
-            ) {
-                return;
-            }
+        let position = rng.sample(&positions).unwrap();
+
+        if try_dig(
+            ant_entity,
+            role,
+            birthing,
+            *position,
+            &elements_query,
+            &world_map,
+            &mut commands,
+            &settings,
+            &mut rng,
+        ) {
+            return;
         }
     }
 }

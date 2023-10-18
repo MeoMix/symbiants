@@ -131,7 +131,7 @@ pub fn handle_pointer_tap(
             );
         }
     } else if *pointer_action == PointerAction::KillAnt {
-        if let Some((entity, _, _, inventory)) = ants_query
+        if let Some((entity, _, _, _)) = ants_query
             .iter()
             .find(|(_, &position, _, _)| position == grid_position)
         {

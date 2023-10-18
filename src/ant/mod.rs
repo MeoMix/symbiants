@@ -277,9 +277,9 @@ impl AntOrientation {
         self.angle == Angle::OneHundredEighty
     }
 
-    pub fn is_rightside_up(&self) -> bool {
-        self.angle == Angle::Zero
-    }
+    // pub fn is_rightside_up(&self) -> bool {
+    //     self.angle == Angle::Zero
+    // }
 
     pub fn is_facing_north(&self) -> bool {
         match (self.angle, self.facing) {
@@ -289,13 +289,13 @@ impl AntOrientation {
         }
     }
 
-    pub fn is_facing_south(&self) -> bool {
-        match (self.angle, self.facing) {
-            (Angle::TwoHundredSeventy, Facing::Right) => true,
-            (Angle::Ninety, Facing::Left) => true,
-            _ => false,
-        }
-    }
+    // pub fn is_facing_south(&self) -> bool {
+    //     match (self.angle, self.facing) {
+    //         (Angle::TwoHundredSeventy, Facing::Right) => true,
+    //         (Angle::Ninety, Facing::Left) => true,
+    //         _ => false,
+    //     }
+    // }
 
     pub fn turn_around(&self) -> Self {
         let facing = if self.facing == Facing::Left {
@@ -377,31 +377,6 @@ impl AntOrientation {
             .iter()
             .flat_map(|facing| angles.iter().map(move |angle| Self::new(*facing, *angle)))
             .collect::<Vec<_>>()
-    }
-
-    pub fn get_valid_nonnorth_positions(&self, ant_position: &Position) -> Vec<Position> {
-        let mut positions = Vec::new();
-
-        if self.is_rightside_up() {
-            // If ant is rightside up then it can dig forward (east/west) or below it (south).
-            positions.push(self.get_ahead_position(ant_position));
-            positions.push(self.get_below_position(ant_position));
-        } else if self.is_upside_down() {
-            // If ant is upside down then ant can dig forward (east/west) or above it (south).
-            positions.push(self.get_ahead_position(ant_position));
-            positions.push(self.get_above_position(ant_position));
-        } else {
-            // If ant is vertical pointing up then ant can dig above (east/west) or below it (east/west).
-            // If ant is vertical pointing down then ant can dig forward (south) above it (east/west) or below it (east/west).
-            positions.push(self.get_above_position(ant_position));
-            positions.push(self.get_below_position(ant_position));
-
-            if self.is_facing_south() {
-                positions.push(self.get_ahead_position(ant_position));
-            }
-        }
-
-        positions
     }
 }
 
