@@ -16,9 +16,9 @@ pub const SECONDS_PER_DAY: isize = 86_400;
 // Also, Time/Instant/Duration aren't serializable.
 #[derive(Resource, Clone, Reflect, Default)]
 #[reflect(Resource)]
-pub struct StoryTime(pub i64);
+pub struct StoryRealWorldTime(pub i64);
 
-impl StoryTime {
+impl StoryRealWorldTime {
     pub fn as_datetime(&self) -> DateTime<Utc> {
         match Utc.timestamp_millis_opt(self.0) {
             LocalResult::Single(datetime) => datetime,
@@ -31,6 +31,10 @@ impl StoryTime {
         }
     }
 }
+
+#[derive(Resource, Clone, Reflect, Default)]
+#[reflect(Resource)]
+pub struct StoryElapsedTicks(pub i64);
 
 /// Store TicksPerSecond separately from FixedTime because when we're fast forwarding time we won't update TicksPerSecond.
 /// This enables resetting back to a user-defined ticks-per-second (adjusted via UI) rather than the default ticks-per-second.
@@ -62,12 +66,14 @@ pub fn register_story_time(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
-    register::<StoryTime>(&app_type_registry, &mut saveable_registry);
+    register::<StoryRealWorldTime>(&app_type_registry, &mut saveable_registry);
+    register::<StoryElapsedTicks>(&app_type_registry, &mut saveable_registry);
 }
 
 // TODO: awkward timing for this - need to have resources available before calling try_load_from_save
 pub fn pre_setup_story_time(mut commands: Commands) {
-    commands.init_resource::<StoryTime>();
+    commands.init_resource::<StoryRealWorldTime>();
+    commands.init_resource::<StoryElapsedTicks>();
     commands.init_resource::<FastForwardingStateInfo>();
     commands.init_resource::<TicksPerSecond>();
     commands.insert_resource(FixedTime::new_from_secs(
@@ -80,16 +86,16 @@ pub fn pre_setup_story_time(mut commands: Commands) {
 /// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
 /// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
 pub fn setup_story_time(
-    mut story_time: ResMut<StoryTime>,
+    mut story_real_world_time: ResMut<StoryRealWorldTime>,
     mut fixed_time: ResMut<FixedTime>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
 ) {
-    // Setup story_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
-    if story_time.0 == 0 {
-        story_time.0 = Utc::now().timestamp_millis();
+    // Setup story_real_world_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
+    if story_real_world_time.0 == 0 {
+        story_real_world_time.0 = Utc::now().timestamp_millis();
     } else {
         let delta_seconds = Utc::now()
-            .signed_duration_since(story_time.as_datetime())
+            .signed_duration_since(story_real_world_time.as_datetime())
             .num_seconds();
 
         fixed_time.tick(Duration::from_secs(delta_seconds as u64));
@@ -99,7 +105,8 @@ pub fn setup_story_time(
 }
 
 pub fn teardown_story_time(mut commands: Commands) {
-    commands.remove_resource::<StoryTime>();
+    commands.remove_resource::<StoryRealWorldTime>();
+    commands.remove_resource::<StoryElapsedTicks>();
     commands.remove_resource::<FastForwardingStateInfo>();
     commands.remove_resource::<TicksPerSecond>();
 
@@ -147,12 +154,15 @@ pub fn set_rate_of_time(
     }
 }
 
-/// Increment StoryTime by the default tick rate.
-/// This is used to track how synchronized StoryTime is with real-world time.
-/// If app is fast-forwarding time then this system will be called more frequently and will
-/// reduce the delta difference between game time and real-world time.
-pub fn update_story_time(mut story_time: ResMut<StoryTime>, ticks_per_second: Res<TicksPerSecond>) {
-    story_time.0 += (1000.0 / ticks_per_second.0 as f32) as i64;
+// Track real-world time to be able to derive how much time elapsed while app was closed.
+// Keep this updated, rather than capture JIT, because running Bevy systems JIT as app closing isn't viable.
+pub fn update_story_real_world_time(mut story_real_world_time: ResMut<StoryRealWorldTime>) {
+    story_real_world_time.0 = Utc::now().timestamp_millis();
+}
+
+// Track in-game time by counting elapsed ticks.
+pub fn update_story_elapsed_ticks(mut story_elapsed_ticks: ResMut<StoryElapsedTicks>){
+    story_elapsed_ticks.0 += 1;
 }
 
 pub fn update_time_scale(

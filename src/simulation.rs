@@ -49,7 +49,8 @@ use crate::{
     },
     story_time::{
         pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
-        teardown_story_time, update_story_time, update_time_scale, StoryPlaybackState,
+        teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
+        update_time_scale, StoryPlaybackState,
     },
     world_map::{setup_world_map, teardown_world_map},
 };
@@ -215,7 +216,8 @@ impl Plugin for SimulationPlugin {
                     )
                         .chain(),
                     check_story_over,
-                    update_story_time,
+                    update_story_elapsed_ticks,
+                    update_story_real_world_time,
                     set_rate_of_time,
                 )
                     .chain())
@@ -259,6 +261,11 @@ impl Plugin for SimulationPlugin {
                 rerender_elements,
             )
                 .chain(),
+        );
+
+        app.add_systems(
+            Update,
+            update_story_real_world_time.run_if(in_state(StoryState::Telling)),
         );
 
         // Saving in WASM writes to local storage which requires dedicated support.
