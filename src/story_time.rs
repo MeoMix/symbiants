@@ -74,7 +74,7 @@ impl StoryElapsedTicks {
         let offset = if self.is_real_time {
             seconds_into_day() as isize
         } else {
-            6 * SECONDS_PER_HOUR
+            8 * SECONDS_PER_HOUR
         };
 
         let seconds_total =

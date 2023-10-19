@@ -25,7 +25,7 @@ fn interpolate_color(color_a: Color, color_b: Color, t: f32) -> Color {
     Color::rgba(r, g, b, a)
 }
 
-fn get_sky_gradient_color(hour: isize, minute: isize) -> Color {
+fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
     let current_time = hour as f32 + minute as f32 / 60.0;
 
     let midnight = Color::rgba(0.0471, 0.0353, 0.0392, 1.0);
@@ -65,11 +65,37 @@ fn get_sky_gradient_color(hour: isize, minute: isize) -> Color {
         key_moments[idx + 1]
     };
 
-    interpolate_color(
-        start_color,
-        end_color,
-        (current_time - start_time) / (end_time - start_time),
-    )
+    let progress = (current_time - start_time) / (end_time - start_time);
+
+    let north_color;
+    let south_color;
+    if end_time <= 12.0 {
+        north_color = interpolate_color(
+            start_color,
+            end_color,
+            progress,
+        );
+    
+        south_color = interpolate_color(
+            start_color,
+            end_color,
+            1.0 - (1.0 - progress).powf(2.0),
+        );
+    } else {
+        north_color = interpolate_color(
+            start_color,
+            end_color,
+            progress
+        );
+    
+        south_color = interpolate_color(
+            start_color,
+            end_color,
+            1.0 - (1.0 - progress).powf(2.0),
+        );
+    }
+
+    (north_color, south_color)
 }
 
 fn create_sky_sprites(
@@ -82,7 +108,7 @@ fn create_sky_sprites(
 
     let time_info = elapsed_ticks.as_time_info();
 
-    let color = get_sky_gradient_color(time_info.hours, time_info.minutes);
+    let (north_color, south_color) = get_sky_gradient_color(time_info.hours, time_info.minutes);
 
     for x in 0..width {
         for y in 0..height {
@@ -91,6 +117,9 @@ fn create_sky_sprites(
             let mut world_position = position.as_world_position(&world_map);
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
+
+            let t_y: f32 = position.y as f32 / *world_map.surface_level() as f32;
+            let color = interpolate_color(north_color, south_color, t_y);
 
             let sky_sprite = SpriteBundle {
                 transform: Transform::from_translation(world_position),
@@ -148,10 +177,13 @@ fn create_tunnel_sprites(
 }
 
 pub fn update_sky_background(
-    mut sky_sprite_query: Query<&mut Sprite, With<SkyBackground>>,
+    mut sky_sprite_query: Query<(&mut Sprite, &Position), With<SkyBackground>>,
     mut last_run_time_info: Local<TimeInfo>,
     elapsed_ticks: Res<StoryElapsedTicks>,
     story_state: Res<State<StoryState>>,
+    // TODO: Option because need to run during Initializing to reset but WorldMap is gone already.
+    // maybe could find a way to reset this at the same time WorldMap is getting despawned?
+    world_map: Option<Res<WorldMap>>,
 ) {
     // Reset local when in initializing to prevent data retention issue when clicking "Reset" in Sandbox Mode
     if *story_state == StoryState::Initializing {
@@ -159,19 +191,27 @@ pub fn update_sky_background(
         return;
     }
 
+    let world_map = match world_map {
+        Some(world_map) => world_map,
+        None => panic!("expected world map to exist at this point"),
+    };
+
     let time_info = elapsed_ticks.as_time_info();
 
-    // Update the sky's colors once every 10 minutes of elapsed *story time* not real-world time.
+    // Update the sky's colors once a minute of elapsed *story time* not real-world time.
     if time_info.days == last_run_time_info.days
         && time_info.hours == last_run_time_info.hours
-        // Check if difference between time_info and last_run_time_info minutes is 10
-        && (time_info.minutes - last_run_time_info.minutes).abs() < 10
+        // Check if difference between time_info and last_run_time_info minutes is 1
+        && (time_info.minutes - last_run_time_info.minutes).abs() < 1
     {
         return;
     }
 
-    let color = get_sky_gradient_color(time_info.hours, time_info.minutes);
-    for mut sprite in sky_sprite_query.iter_mut() {
+    let (north_color, south_color) = get_sky_gradient_color(time_info.hours, time_info.minutes);
+    for (mut sprite, position) in sky_sprite_query.iter_mut() {
+        let t_y: f32 = position.y as f32 / *world_map.surface_level() as f32;
+        let color = interpolate_color(north_color, south_color, t_y);
+
         sprite.color = color;
     }
 

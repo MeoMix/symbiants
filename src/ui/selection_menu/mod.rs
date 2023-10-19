@@ -2,7 +2,10 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
 use crate::{
-    ant::{birthing::Birthing, hunger::Hunger, Ant, AntInventory, AntName, AntRole, Dead},
+    ant::{
+        birthing::Birthing, hunger::Hunger, sleep::Asleep, Ant, AntInventory, AntName, AntRole,
+        Dead,
+    },
     common::IdMap,
     element::Element,
     pheromone::{Pheromone, PheromoneStrength},
@@ -24,6 +27,7 @@ pub fn update_selection_menu(
             &AntInventory,
             Option<&Birthing>,
             Option<&Dead>,
+            Option<&Asleep>,
         ),
         (With<Ant>, With<Selected>),
     >,
@@ -54,7 +58,7 @@ pub fn update_selection_menu(
                         pheromone_strength.value()
                     ));
                 }
-            } else if let Ok((hunger, name, ant_role, inventory, birthing, dead)) =
+            } else if let Ok((hunger, name, ant_role, inventory, birthing, dead, asleep)) =
                 selected_ant_query.get_single()
             {
                 ui.label("Ant");
@@ -71,6 +75,10 @@ pub fn update_selection_menu(
 
                 if let Some(birthing) = birthing {
                     ui.label(&format!("Birthing: {:.0}%", birthing.value()));
+                }
+
+                if let Some(_) = asleep {
+                    ui.label(&format!("Sleeping"));
                 }
 
                 if let Some(_) = dead {
