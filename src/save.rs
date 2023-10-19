@@ -4,12 +4,13 @@ use bevy_save::MappingMode;
 use bevy_save::{Build, Snapshot, SnapshotSerializer, WorldSaveableExt};
 use brotli::{enc::BrotliEncoderInitParams, CompressorWriter, Decompressor};
 use gloo_storage::{LocalStorage, Storage};
+use rmp_serde::{Deserializer, Serializer};
 use serde::Serialize;
 use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
-use rmp_serde::{Deserializer, Serializer};
 
+use crate::common::Id;
 use crate::settings::Settings;
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
@@ -51,13 +52,11 @@ pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save
 fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     let mut buffer: Vec<u8> = Vec::new();
     let mut serde = Serializer::new(&mut buffer);
-    // TODO: I think I'd prefer extracting on id but Pheromones don't have id at the moment.
-    // let mut id_query = world.query_filtered::<Entity, With<Id>>();
+    // Persistent entities must have an Id marker because Id is fit for uniquely identifying across sessions.
+    let mut id_query = world.query_filtered::<Entity, With<Id>>();
 
     let snapshot = Snapshot::builder(world)
-        // .extract_entities(id_query.iter(world))
-        .extract_all()
-        .clear_empty()
+        .extract_entities(id_query.iter(world))
         .build();
 
     let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
@@ -65,6 +64,7 @@ fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     let result = SnapshotSerializer::new(&snapshot, registry).serialize(&mut serde);
 
     if result.is_ok() {
+        // info!("buffer size: {}", buffer.len() / 1024);
         return Some(buffer);
     } else {
         error!("Failed to serialize snapshot: {:?}", result);

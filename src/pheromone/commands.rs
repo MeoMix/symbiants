@@ -1,4 +1,4 @@
-use crate::world_map::position::Position;
+use crate::{world_map::position::Position, common::Id};
 use bevy::{ecs::system::Command, prelude::*};
 
 use super::{Pheromone, PheromoneMap, PheromoneDuration, PheromoneStrength};
@@ -41,7 +41,7 @@ impl Command for SpawnPheromoneCommand {
         }
 
         let pheromone_entity = world
-            .spawn((self.position, self.pheromone, PheromoneDuration::default(), self.pheromone_strength))
+            .spawn((Id::default(), self.position, self.pheromone, PheromoneDuration::default(), self.pheromone_strength))
             .id();
         world
             .resource_mut::<PheromoneMap>()

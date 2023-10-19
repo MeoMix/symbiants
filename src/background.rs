@@ -77,7 +77,7 @@ fn create_sky_sprites(
     height: isize,
     world_map: &Res<WorldMap>,
     elapsed_ticks: &Res<StoryElapsedTicks>,
-) -> Vec<(SpriteBundle, SkyBackground)> {
+) -> Vec<(SpriteBundle, Position, SkyBackground)> {
     let mut sky_sprites = vec![];
 
     let time_info = elapsed_ticks.as_time_info();
@@ -86,7 +86,6 @@ fn create_sky_sprites(
 
     for x in 0..width {
         for y in 0..height {
-            // TODO: Careful, if position is spawned here then it'll get saved automatically even though this is a view-only concern.
             let position = Position::new(x, y);
 
             let mut world_position = position.as_world_position(&world_map);
@@ -103,7 +102,7 @@ fn create_sky_sprites(
                 ..default()
             };
 
-            sky_sprites.push((sky_sprite, SkyBackground));
+            sky_sprites.push((sky_sprite, position, SkyBackground));
         }
     }
 
@@ -115,7 +114,7 @@ fn create_tunnel_sprites(
     height: isize,
     y_offset: isize,
     world_map: &Res<WorldMap>,
-) -> Vec<(SpriteBundle, TunnelBackground)> {
+) -> Vec<(SpriteBundle, Position, TunnelBackground)> {
     let mut tunnel_sprites = vec![];
 
     let top_color: Color = Color::rgba(0.373, 0.290, 0.165, 1.0);
@@ -141,7 +140,7 @@ fn create_tunnel_sprites(
                 ..default()
             };
 
-            tunnel_sprites.push((tunnel_sprite, TunnelBackground));
+            tunnel_sprites.push((tunnel_sprite, position, TunnelBackground));
         }
     }
 
