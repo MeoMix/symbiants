@@ -57,6 +57,7 @@ fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
 
     let snapshot = Snapshot::builder(world)
         .extract_entities(id_query.iter(world))
+        .extract_all_resources()
         .build();
 
     let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
