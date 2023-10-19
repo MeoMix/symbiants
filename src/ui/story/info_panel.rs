@@ -22,6 +22,9 @@ pub fn update_info_window(
     let queen_ant_birthing = queen_ant
         .map(|(_, _, birthing_option)| birthing_option.map_or(0.0, |birthing| birthing.value()))
         .unwrap_or(0.0);
+    let colony_average_hunger = ant_query.iter().fold(0.0, |acc, (_, hunger, _)| {
+        acc + hunger.value()
+    }) / ant_query.iter().count() as f32; 
 
     egui::Window::new("Info")
         .default_pos(egui::Pos2::new(0.0, 0.0))
@@ -44,6 +47,7 @@ pub fn update_info_window(
             ));
 
             ui.label(&format!("Ants: {}", ant_query.iter().count()));
+            ui.label(&format!("Colony Average Hunger: {:.0}%", colony_average_hunger));
             ui.label(&format!("Queen Hunger: {:.0}%", queen_ant_hunger));
             ui.label(&format!("Queen Birthing: {:.0}%", queen_ant_birthing));
             ui.label(&format!("Food: {}", food_query.iter().count()));
