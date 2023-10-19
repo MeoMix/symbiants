@@ -43,7 +43,8 @@ pub fn update_info_window(
             // Construct the label string
             ui.label(&format!(
                 "Day: {:.0}, {:02.0}:{:02.0} {}",
-                time_info.days, hour_12, time_info.minutes, period
+                // Add one to the days label because days don't start at 0 in real life
+                time_info.days + 1, hour_12, time_info.minutes, period
             ));
 
             ui.label(&format!("Ants: {}", ant_query.iter().count()));
