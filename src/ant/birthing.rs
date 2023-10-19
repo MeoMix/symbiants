@@ -72,17 +72,17 @@ pub fn ants_birthing(
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()
     {
+        // Create offspring once per full in-story hour.
+        let rate_of_birthing =
+            birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
+        birthing.tick(rate_of_birthing);
+
         if !initiative.can_move() {
             continue;
         }
 
         // Once an ant starts giving birth - they're incapacitated and cannot move.
         initiative.consume_movement();
-
-        // Create offspring once per full real-world hour.
-        let rate_of_birthing =
-            birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
-        birthing.tick(rate_of_birthing);
 
         if birthing.is_ready() && initiative.can_act() {
             let behind_position = orientation.get_behind_position(position);
