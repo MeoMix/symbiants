@@ -5,22 +5,19 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
 pub fn ants_drop(
-    ants_query: Query<
-        (
-            &AntOrientation,
-            &AntInventory,
-            &Initiative,
-            &Position,
-            &AntRole,
-            Entity,
-        ),
-        Without<Dead>,
-    >,
+    ants_query: Query<(
+        &AntOrientation,
+        &AntInventory,
+        &Initiative,
+        &Position,
+        &AntRole,
+        Entity,
+    )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,

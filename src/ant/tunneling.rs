@@ -164,7 +164,7 @@ pub fn ants_tunnel_pheromone_act(
 pub fn ants_add_tunnel_pheromone(
     ants_query: Query<
         (Entity, &Position, &AntInventory, &AntOrientation),
-        (Changed<Position>, Without<Dead>, Without<Birthing>),
+        (Changed<Position>, With<Initiative>, Without<Birthing>),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,

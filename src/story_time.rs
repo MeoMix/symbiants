@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use chrono::{DateTime, LocalResult, TimeZone, Utc};
+use js_sys::Date;
 use std::time::Duration;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::common::register;
 
@@ -10,6 +12,19 @@ pub const MAX_USER_TICKS_PER_SECOND: isize = 1_200;
 pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 24_000;
 pub const SECONDS_PER_HOUR: isize = 3_600;
 pub const SECONDS_PER_DAY: isize = 86_400;
+
+#[wasm_bindgen]
+pub fn seconds_into_day() -> f64 {
+    let date = Date::new_0();
+
+    let hours = date.get_hours();
+    let minutes = date.get_minutes();
+    let seconds = date.get_seconds();
+
+    let total_seconds = (hours as f64 * 3600.0) + (minutes as f64 * 60.0) + seconds as f64;
+
+    total_seconds
+}
 
 // NOTE: `bevy_reflect` doesn't support DateTime<Utc> without manually implement Reflect (which is hard)
 // So, use a timestamp instead and convert to DateTime<Utc> when needed.
@@ -34,7 +49,50 @@ impl StoryRealWorldTime {
 
 #[derive(Resource, Clone, Reflect, Default)]
 #[reflect(Resource)]
-pub struct StoryElapsedTicks(pub i64);
+pub struct StoryElapsedTicks {
+    value: i64,
+    pub is_real_time: bool,
+}
+
+#[derive(Default)]
+pub struct TimeInfo {
+    pub days: isize,
+    pub hours: isize,
+    pub minutes: isize,
+}
+
+impl StoryElapsedTicks {
+    // TODO: Could use an enum or something
+    pub fn is_nighttime(&self) -> bool {
+        let time_info = self.as_time_info();
+
+        time_info.hours < 6 || time_info.hours >= 22 
+    }
+
+    pub fn as_time_info(&self) -> TimeInfo {
+        // Offset by an assumption that, for Sandbox Mode, the story starts at 6AM the first day not at Midnight.
+        let offset = if self.is_real_time {
+            seconds_into_day() as isize
+        } else {
+            0 * SECONDS_PER_HOUR
+        };
+
+        let seconds_total =
+            self.value as f32 / DEFAULT_TICKS_PER_SECOND as f32 + offset as f32;
+        let days = (seconds_total / SECONDS_PER_DAY as f32).floor() as isize;
+
+        // Calculate hours and minutes
+        let hours_total = (seconds_total % SECONDS_PER_DAY as f32) / SECONDS_PER_HOUR as f32;
+        let hours = hours_total.floor() as isize;
+        let minutes = ((hours_total - hours as f32) * 60.0).floor() as isize;
+
+        TimeInfo {
+            days,
+            hours,
+            minutes,
+        }
+    }
+}
 
 /// Store TicksPerSecond separately from FixedTime because when we're fast forwarding time we won't update TicksPerSecond.
 /// This enables resetting back to a user-defined ticks-per-second (adjusted via UI) rather than the default ticks-per-second.
@@ -125,7 +183,7 @@ pub fn set_rate_of_time(
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
 ) {
     if fast_forward_state_info.pending_ticks == 0 {
-        if story_playback_state.get() == &StoryPlaybackState::FastForwarding {
+        if *story_playback_state == StoryPlaybackState::FastForwarding {
             fixed_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
 
             next_story_playback_state.set(StoryPlaybackState::Playing);
@@ -142,11 +200,14 @@ pub fn set_rate_of_time(
                     Duration::from_secs_f32(1.0 / (MAX_SYSTEM_TICKS_PER_SECOND as f32));
                 // Rely on FastForwarding state, rather than updating TicksPerSecond, so when exiting FastForwarding it's possible to restore to user-defined TicksPerSecond.
 
-                next_story_playback_state.set(StoryPlaybackState::FastForwarding);
+                // There's nothing to fast forward through if the simulation wasn't playing while tab wasn't focused.
+                if *story_playback_state == StoryPlaybackState::Playing {
+                    next_story_playback_state.set(StoryPlaybackState::FastForwarding);
 
-                let ticks = (ticks_per_second.0 as u64 * accumulated_time.as_secs()) as isize;
-                fast_forward_state_info.pending_ticks = ticks;
-                fast_forward_state_info.initial_pending_ticks = ticks;
+                    let ticks = (ticks_per_second.0 as u64 * accumulated_time.as_secs()) as isize;
+                    fast_forward_state_info.pending_ticks = ticks;
+                    fast_forward_state_info.initial_pending_ticks = ticks;
+                }
             }
         }
     } else {
@@ -161,8 +222,8 @@ pub fn update_story_real_world_time(mut story_real_world_time: ResMut<StoryRealW
 }
 
 // Track in-game time by counting elapsed ticks.
-pub fn update_story_elapsed_ticks(mut story_elapsed_ticks: ResMut<StoryElapsedTicks>){
-    story_elapsed_ticks.0 += 1;
+pub fn update_story_elapsed_ticks(mut story_elapsed_ticks: ResMut<StoryElapsedTicks>) {
+    story_elapsed_ticks.value += 1;
 }
 
 pub fn update_time_scale(

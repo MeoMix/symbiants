@@ -27,6 +27,7 @@ pub mod drop;
 pub mod hunger;
 pub mod nest_expansion;
 pub mod nesting;
+pub mod sleep;
 pub mod tunneling;
 pub mod ui;
 pub mod walk;
@@ -277,9 +278,9 @@ impl AntOrientation {
         self.angle == Angle::OneHundredEighty
     }
 
-    // pub fn is_rightside_up(&self) -> bool {
-    //     self.angle == Angle::Zero
-    // }
+    pub fn is_rightside_up(&self) -> bool {
+        self.angle == Angle::Zero
+    }
 
     pub fn is_facing_north(&self) -> bool {
         match (self.angle, self.facing) {
@@ -383,11 +384,7 @@ impl AntOrientation {
 // Each ant maintains an internal timer that determines when it will act next.
 // This adds a little realism by varying when movements occur and allows for flexibility
 // in the simulation run speed.
-pub fn ants_initiative(
-    mut alive_ants_query: Query<&mut Initiative, Without<Dead>>,
-    mut recently_dead_ants_query: Query<&mut Initiative, Added<Dead>>,
-    mut rng: ResMut<GlobalRng>,
-) {
+pub fn ants_initiative(mut alive_ants_query: Query<&mut Initiative>, mut rng: ResMut<GlobalRng>) {
     for mut initiative in alive_ants_query.iter_mut() {
         if initiative.timer > 0 {
             initiative.timer -= 1;
@@ -400,11 +397,6 @@ pub fn ants_initiative(
             continue;
         }
 
-        *initiative = Initiative::new(&mut rng.reborrow());
-    }
-
-    // Dead ants never regain initiative.
-    for mut initiative in recently_dead_ants_query.iter_mut() {
         *initiative = Initiative::new(&mut rng.reborrow());
     }
 }

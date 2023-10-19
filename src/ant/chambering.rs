@@ -11,7 +11,7 @@ use crate::{
 
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use super::{birthing::Birthing, Dead};
+use super::birthing::Birthing;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -82,7 +82,7 @@ pub fn ants_chamber_pheromone_act(
 pub fn ants_add_chamber_pheromone(
     ants_query: Query<
         (Entity, &Position, &AntInventory),
-        (Changed<Position>, Without<Dead>, Without<Birthing>),
+        (Changed<Position>, With<Initiative>, Without<Birthing>),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,

@@ -10,8 +10,8 @@ use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Dead,
-    Initiative, Facing,
+    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Facing,
+    Initiative,
 };
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
@@ -35,16 +35,13 @@ pub fn register_nesting(
 /// quickly rather than wandering aimlessly on the surface. They still need to wait until they drop their inventory
 /// otherwise they won't walk away from the nest their excavated dirt.
 pub fn ants_nesting_movement(
-    mut ants_query: Query<
-        (
-            &mut Initiative,
-            &Position,
-            &mut AntOrientation,
-            &AntInventory,
-            &Nesting,
-        ),
-        Without<Dead>,
-    >,
+    mut ants_query: Query<(
+        &mut Initiative,
+        &Position,
+        &mut AntOrientation,
+        &AntInventory,
+        &Nesting,
+    )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     mut rng: ResMut<GlobalRng>,
@@ -84,17 +81,14 @@ pub fn ants_nesting_movement(
 }
 
 pub fn ants_nesting_action(
-    mut ants_query: Query<
-        (
-            &mut Nesting,
-            &AntOrientation,
-            &AntInventory,
-            &mut Initiative,
-            &Position,
-            Entity,
-        ),
-        Without<Dead>,
-    >,
+    mut ants_query: Query<(
+        &mut Nesting,
+        &AntOrientation,
+        &AntInventory,
+        &mut Initiative,
+        &Position,
+        Entity,
+    )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,

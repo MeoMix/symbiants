@@ -5,25 +5,22 @@ use crate::{
 };
 
 use super::{
-    birthing::Birthing, commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead,
+    birthing::Birthing, commands::AntCommandsExt, AntInventory, AntOrientation, AntRole,
     Initiative,
 };
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
 pub fn ants_dig(
-    ants_query: Query<
-        (
-            &AntOrientation,
-            &AntInventory,
-            &Initiative,
-            &Position,
-            &AntRole,
-            Entity,
-            Option<&Birthing>,
-        ),
-        Without<Dead>,
-    >,
+    ants_query: Query<(
+        &AntOrientation,
+        &AntInventory,
+        &Initiative,
+        &Position,
+        &AntRole,
+        Entity,
+        Option<&Birthing>,
+    )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,

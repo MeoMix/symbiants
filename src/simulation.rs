@@ -25,9 +25,9 @@ use crate::{
             on_update_ant_position, rerender_ant_inventory, rerender_ant_orientation,
             rerender_ant_position,
         },
-        walk::{ants_stabilize_footing_movement, ants_walk},
+        walk::{ants_stabilize_footing_movement, ants_walk}, sleep::{ants_sleep, ants_wake},
     },
-    background::{setup_background, teardown_background},
+    background::{setup_background, teardown_background, update_sky_background},
     common::{pre_setup_common, register_common, setup_common, ui::on_add_selected},
     element::{
         register_element, setup_element, teardown_element,
@@ -160,6 +160,7 @@ impl Plugin for SimulationPlugin {
                         // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
                         (ants_hunger, ants_regurgitate, apply_deferred).chain(),
                         (ants_birthing, apply_deferred).chain(),
+                        (ants_sleep, ants_wake, apply_deferred).chain(),
                         (
                             // Apply Nesting Logic
                             ants_nesting_movement,
@@ -266,6 +267,12 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             Update,
             update_story_real_world_time.run_if(in_state(StoryState::Telling)),
+        );
+
+        app.add_systems(
+            Update,
+            update_sky_background
+                .run_if(in_state(StoryState::Telling).or_else(in_state(StoryState::Initializing))),
         );
 
         // Saving in WASM writes to local storage which requires dedicated support.

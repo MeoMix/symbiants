@@ -135,7 +135,7 @@ pub fn handle_pointer_tap(
             .iter()
             .find(|(_, &position, _, _)| position == grid_position)
         {
-            commands.entity(entity).insert(Dead);
+            commands.entity(entity).insert(Dead).remove::<Initiative>();
         }
     } else if *pointer_action == PointerAction::DespawnWorkerAnt {
         if let Some((entity, _, _, inventory)) = ants_query

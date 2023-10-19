@@ -4,7 +4,7 @@ use bevy_egui::{egui, EguiContexts};
 use crate::{
     ant::{birthing::Birthing, hunger::Hunger, AntRole},
     element::Food,
-    story_time::{StoryElapsedTicks, DEFAULT_TICKS_PER_SECOND, SECONDS_PER_DAY, SECONDS_PER_HOUR},
+    story_time::StoryElapsedTicks,
 };
 
 pub fn update_info_window(
@@ -27,28 +27,20 @@ pub fn update_info_window(
         .default_pos(egui::Pos2::new(0.0, 0.0))
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
-            let seconds_total = elapsed_ticks.0 as f32 / DEFAULT_TICKS_PER_SECOND as f32;
-            let days = seconds_total / SECONDS_PER_DAY as f32;
-
-            // Calculate hours and minutes
-            let hours_total = (seconds_total % SECONDS_PER_DAY as f32) / SECONDS_PER_HOUR as f32;
-            let hours = hours_total.floor();
-            let minutes = ((hours_total - hours) * 60.0).floor();
+            let time_info = elapsed_ticks.as_time_info();
 
             // Determine AM/PM and adjust hour to 12-hour format
-            let (period, hour_12) = if hours < 12.0 {
-                ("AM", if hours == 0.0 { 12.0 } else { hours })
+            let hours = time_info.hours;
+            let (period, hour_12) = if hours < 12 {
+                ("AM", if hours == 0 { 12 } else { hours })
             } else {
-                ("PM", if hours > 12.0 { hours - 12.0 } else { hours })
+                ("PM", if hours > 12 { hours - 12 } else { hours })
             };
 
             // Construct the label string
             ui.label(&format!(
                 "Day: {:.0}, {:02.0}:{:02.0} {}",
-                days.floor(),
-                hour_12,
-                minutes,
-                period
+                time_info.days, hour_12, time_info.minutes, period
             ));
 
             ui.label(&format!("Ants: {}", ant_query.iter().count()));

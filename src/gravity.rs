@@ -120,7 +120,7 @@ pub fn gravity_ants(
     mut ants_query: Query<(
         &AntOrientation,
         &mut Position,
-        &mut Initiative,
+        Option<&mut Initiative>,
         Option<&Dead>,
     )>,
     elements_query: Query<&Element>,
@@ -128,7 +128,7 @@ pub fn gravity_ants(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    for (orientation, mut position, mut initiative, dead) in ants_query.iter_mut() {
+    for (orientation, mut position, initiative, dead) in ants_query.iter_mut() {
         // Figure out foot direction
         let below_position = orientation.get_below_position(&position);
 
@@ -136,7 +136,8 @@ pub fn gravity_ants(
             world_map.is_all_element(&elements_query, &[below_position], Element::Air);
 
         // SPECIAL CASE: out of bounds underground is considered dirt not air
-        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_position) && world_map.is_aboveground(&below_position);
+        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_position)
+            && world_map.is_aboveground(&below_position);
 
         let is_chance_falling =
             orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
@@ -159,8 +160,11 @@ pub fn gravity_ants(
                 position.y = below_position.y;
 
                 // Ant falling through the air loses the ability to move or act.
-                if initiative.can_act() {
-                    initiative.consume();
+                // Ants that are asleep don't have initiative
+                if let Some(mut initiative) = initiative {
+                    if initiative.can_act() {
+                        initiative.consume();
+                    }
                 }
             }
         }

@@ -1,10 +1,10 @@
 use crate::{
     element::Element,
-    world_map::{position::Position, WorldMap},
     settings::Settings,
+    world_map::{position::Position, WorldMap},
 };
 
-use super::{AntOrientation, Dead, Initiative};
+use super::{AntOrientation, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
@@ -15,7 +15,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 ///     * I think there's a bug where ant standing adjacent to the edge of the world map will not fall because it's not air.
 ///     * Code could be written better such that movement initiative isn't consumed if there's not a valid orientation to turn to.
 pub fn ants_stabilize_footing_movement(
-    mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation), Without<Dead>>,
+    mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     mut rng: ResMut<GlobalRng>,
@@ -45,7 +45,7 @@ pub fn ants_stabilize_footing_movement(
 
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
-    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), Without<Dead>>,
+    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     settings: Res<Settings>,

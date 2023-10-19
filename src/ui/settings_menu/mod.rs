@@ -2,10 +2,12 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
 use crate::{
+    pheromone::PheromoneVisibility,
     story_state::StoryState,
     story_time::{
-        StoryPlaybackState, TicksPerSecond, DEFAULT_TICKS_PER_SECOND, MAX_USER_TICKS_PER_SECOND,
-    }, pheromone::PheromoneVisibility,
+        StoryElapsedTicks, StoryPlaybackState, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,
+        MAX_USER_TICKS_PER_SECOND,
+    },
 };
 
 pub fn update_settings_menu(
@@ -16,6 +18,7 @@ pub fn update_settings_menu(
     story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
     mut pheromone_visibility: ResMut<PheromoneVisibility>,
+    mut story_elapsed_ticks: ResMut<StoryElapsedTicks>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -50,6 +53,8 @@ pub fn update_settings_menu(
                 }
             }
 
+            ui.checkbox(&mut story_elapsed_ticks.is_real_time, "Start From Real Time");
+
             match story_playback_state.get() {
                 StoryPlaybackState::Playing => {
                     if ui.button("Pause").clicked() {
@@ -63,11 +68,10 @@ pub fn update_settings_menu(
                 }
                 StoryPlaybackState::FastForwarding => {
                     ui.add_enabled(false, egui::Button::new("Fast Forwarding"));
-                },
+                }
                 StoryPlaybackState::Stopped => {
                     ui.add_enabled(false, egui::Button::new("Stopped"));
                 }
             }
-
         });
 }

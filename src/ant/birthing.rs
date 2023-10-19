@@ -1,6 +1,6 @@
 use super::{
     commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole,
-    Dead, Facing, Initiative,
+    Facing, Initiative,
 };
 use crate::{
     common::register,
@@ -59,16 +59,13 @@ pub fn register_birthing(
 }
 
 pub fn ants_birthing(
-    mut ants_birthing_query: Query<
-        (
-            &mut Birthing,
-            &Position,
-            &AntColor,
-            &AntOrientation,
-            &mut Initiative,
-        ),
-        Without<Dead>,
-    >,
+    mut ants_birthing_query: Query<(
+        &mut Birthing,
+        &Position,
+        &AntColor,
+        &AntOrientation,
+        &mut Initiative,
+    )>,
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
 ) {

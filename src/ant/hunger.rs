@@ -63,17 +63,14 @@ impl Hunger {
 }
 
 pub fn ants_hunger(
-    mut ants_hunger_query: Query<
-        (
-            Entity,
-            &mut Hunger,
-            &AntOrientation,
-            &Position,
-            &mut AntInventory,
-            &mut Initiative,
-        ),
-        Without<Dead>,
-    >,
+    mut ants_hunger_query: Query<(
+        Entity,
+        &mut Hunger,
+        &AntOrientation,
+        &Position,
+        &mut AntInventory,
+        &mut Initiative,
+    )>,
     elements_query: Query<&Element>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
@@ -87,7 +84,7 @@ pub fn ants_hunger(
         hunger.tick(rate_of_hunger);
 
         if hunger.is_starved() {
-            commands.entity(entity).insert(Dead);
+            commands.entity(entity).insert(Dead).remove::<Initiative>();
         } else if hunger.is_peckish() {
             if !initiative.can_act() {
                 continue;
@@ -127,18 +124,15 @@ pub fn ants_hunger(
 // Step 2: For each hungry-or-worse ant, look at the position directly in front of it.
 // Step 3: If there is an ant in that position, and if that ant is facing towards the hungry ant, then transfer food to the hungry ant.
 pub fn ants_regurgitate(
-    mut ants_hunger_query: Query<
-        (
-            Entity,
-            &mut Hunger,
-            &AntOrientation,
-            &Position,
-            &mut AntInventory,
-            &mut Initiative,
-            &mut AntRole,
-        ),
-        Without<Dead>,
-    >,
+    mut ants_hunger_query: Query<(
+        Entity,
+        &mut Hunger,
+        &AntOrientation,
+        &Position,
+        &mut AntInventory,
+        &mut Initiative,
+        &mut AntRole,
+    )>,
 ) {
     let peckish_ants = ants_hunger_query
         .iter()

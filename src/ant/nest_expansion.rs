@@ -13,21 +13,18 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
-use super::{hunger::Hunger, AntInventory, AntOrientation, AntRole, Dead, Initiative};
+use super::{hunger::Hunger, AntInventory, AntOrientation, AntRole, Initiative};
 
 pub fn ants_nest_expansion(
-    ants_query: Query<
-        (
-            &AntRole,
-            &Hunger,
-            &AntOrientation,
-            &AntInventory,
-            &Initiative,
-            &Position,
-            Entity,
-        ),
-        Without<Dead>,
-    >,
+    ants_query: Query<(
+        &AntRole,
+        &Hunger,
+        &AntOrientation,
+        &AntInventory,
+        &Initiative,
+        &Position,
+        Entity,
+    )>,
     elements_query: Query<&Element>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
