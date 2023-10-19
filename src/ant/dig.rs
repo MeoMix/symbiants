@@ -23,9 +23,7 @@ pub fn ants_dig(
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
-    for (orientation, inventory, initiative, position, role, ant_entity) in
-        ants_query.iter()
-    {
+    for (orientation, inventory, initiative, position, role, ant_entity) in ants_query.iter() {
         if !initiative.can_act() {
             continue;
         }
@@ -48,6 +46,7 @@ pub fn ants_dig(
             role,
             *position,
             &elements_query,
+            &ants_query,
             &world_map,
             &mut commands,
             &settings,
@@ -63,6 +62,14 @@ fn try_dig(
     ant_role: &AntRole,
     dig_position: Position,
     elements_query: &Query<&Element>,
+    ants_query: &Query<(
+        &AntOrientation,
+        &AntInventory,
+        &Initiative,
+        &Position,
+        &AntRole,
+        Entity,
+    )>,
     world_map: &Res<WorldMap>,
     commands: &mut Commands,
     settings: &Res<Settings>,
@@ -79,21 +86,41 @@ fn try_dig(
         return false;
     }
 
-    // When above ground, prioritize picking up food
-    let mut dig_food = false;
+    // NOTE: can remove this in the future when adding more elements
+    if *element != Element::Sand && *element != Element::Food {
+        return false;
+    }
 
-    if *element == Element::Food && *ant_role == AntRole::Worker {
-        if world_map.is_aboveground(&dig_position) {
-            dig_food = rng.f32() < settings.probabilities.above_surface_food_dig;
-        } else {
-            dig_food = rng.f32() < settings.probabilities.below_surface_food_dig;
+    // For workers, check if digging near queen and if so prioritize it because it's immersion breaking
+    // seeing stuff stacked on the queen and her not moving to respond to it.
+    if *ant_role == AntRole::Worker {
+        let adjacent_queen = ants_query
+            .iter()
+            .find(|(_, _, _,position, &role, _)| role == AntRole::Queen && dig_position.distance(position) <= 1);
+
+        if adjacent_queen.is_some() {
+            commands.dig(ant_entity, dig_position, *element_entity);
+
+            return true;
         }
     }
 
-    // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
-    let dig_sand = *element == Element::Sand && world_map.is_underground(&dig_position);
+    let mut dig = false;
 
-    if dig_food || dig_sand {
+    if *element == Element::Food && *ant_role == AntRole::Worker {
+        // When above ground, workers prioritize picking up food. Queen needs to focus on nest construction.
+        if world_map.is_aboveground(&dig_position) {
+            dig = rng.f32() < settings.probabilities.above_surface_food_dig;
+        } else {
+            dig = rng.f32() < settings.probabilities.below_surface_food_dig;
+        }
+    } else if *element == Element::Sand && world_map.is_underground(&dig_position) {
+        // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
+        // It's OK for queen to pick up sand because sometimes it'll get in the way of nest building.
+        dig = *element == Element::Sand && world_map.is_underground(&dig_position);
+    }
+
+    if dig {
         commands.dig(ant_entity, dig_position, *element_entity);
 
         return true;

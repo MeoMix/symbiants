@@ -7,14 +7,14 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
-use super::{AntOrientation, AntRole, Initiative};
+use super::{AntInventory, AntOrientation, Initiative};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Asleep;
 
 pub fn ants_sleep(
-    ants_query: Query<(Entity, &AntRole, &Position, &AntOrientation), With<Initiative>>,
+    ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), With<Initiative>>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
     story_elapsed_ticks: Res<StoryElapsedTicks>,
@@ -23,24 +23,16 @@ pub fn ants_sleep(
         return;
     }
 
-    for (ant_entity, ant_role, ant_position, ant_orientation) in ants_query.iter() {
-        // If ant is a worker, underground, horizontal, and its night time, then add the sleep component to them.
-        if *ant_role == AntRole::Queen {
-            continue;
+    for (ant_entity, ant_position, ant_orientation, ant_inventory) in ants_query.iter() {
+        if world_map.is_underground(ant_position)
+            && ant_orientation.is_rightside_up()
+            && ant_inventory.0 == None
+        {
+            commands
+                .entity(ant_entity)
+                .insert(Asleep)
+                .remove::<Initiative>();
         }
-
-        if world_map.is_aboveground(ant_position) {
-            continue;
-        }
-
-        if !ant_orientation.is_rightside_up() {
-            continue;
-        }
-
-        commands
-            .entity(ant_entity)
-            .insert(Asleep)
-            .remove::<Initiative>();
     }
 }
 

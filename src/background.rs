@@ -79,7 +79,7 @@ fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
         south_color = interpolate_color(
             start_color,
             end_color,
-            1.0 - (1.0 - progress).powf(2.0),
+            1.0 - (1.0 - progress).powf(3.0),
         );
     } else {
         north_color = interpolate_color(
@@ -91,7 +91,7 @@ fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
         south_color = interpolate_color(
             start_color,
             end_color,
-            1.0 - (1.0 - progress).powf(2.0),
+            1.0 - (1.0 - progress).powf(3.0),
         );
     }
 
