@@ -1,21 +1,20 @@
 use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     story_time::StoryElapsedTicks,
     world_map::{position::Position, WorldMap},
 };
 
-use super::{AntOrientation, AntRole, Dead, Initiative};
+use super::{AntOrientation, AntRole, Initiative};
 
-#[derive(Component)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
 pub struct Asleep;
 
 pub fn ants_sleep(
-    ants_query: Query<
-        (Entity, &AntRole, &Position, &AntOrientation),
-        (Without<Dead>, Without<Asleep>),
-    >,
+    ants_query: Query<(Entity, &AntRole, &Position, &AntOrientation), With<Initiative>>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
     story_elapsed_ticks: Res<StoryElapsedTicks>,

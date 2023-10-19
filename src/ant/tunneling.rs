@@ -13,7 +13,7 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
-use super::{birthing::Birthing, Dead};
+use super::birthing::Birthing;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

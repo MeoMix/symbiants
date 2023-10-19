@@ -12,7 +12,7 @@ use crate::{
 
 use self::{
     birthing::Birthing, chambering::Chambering, commands::AntCommandsExt, hunger::Hunger,
-    tunneling::Tunneling,
+    tunneling::Tunneling, sleep::Asleep,
 };
 
 use super::element::Element;
@@ -409,6 +409,7 @@ pub fn register_ant(
     register::<AntName>(&app_type_registry, &mut saveable_registry);
     register::<AntColor>(&app_type_registry, &mut saveable_registry);
     register::<Dead>(&app_type_registry, &mut saveable_registry);
+    register::<Asleep>(&app_type_registry, &mut saveable_registry);
     register::<Initiative>(&app_type_registry, &mut saveable_registry);
     register::<AntOrientation>(&app_type_registry, &mut saveable_registry);
     register::<Facing>(&app_type_registry, &mut saveable_registry);
