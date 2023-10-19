@@ -15,7 +15,9 @@ use crate::{
         hunger::{ants_hunger, ants_regurgitate},
         nest_expansion::ants_nest_expansion,
         nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
-        register_ant, setup_ant, teardown_ant,
+        register_ant, setup_ant,
+        sleep::{ants_sleep, ants_wake},
+        teardown_ant,
         tunneling::{
             ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone, ants_remove_tunnel_pheromone,
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
@@ -25,7 +27,7 @@ use crate::{
             on_update_ant_position, rerender_ant_inventory, rerender_ant_orientation,
             rerender_ant_position,
         },
-        walk::{ants_stabilize_footing_movement, ants_walk}, sleep::{ants_sleep, ants_wake},
+        walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{setup_background, teardown_background, update_sky_background},
     common::{pre_setup_common, register_common, setup_common, ui::on_add_selected},
@@ -218,11 +220,13 @@ impl Plugin for SimulationPlugin {
                         .chain(),
                     check_story_over,
                     update_story_elapsed_ticks,
-                    update_story_real_world_time,
-                    set_rate_of_time,
                 )
                     .chain())
                 .run_if(not(in_state(StoryPlaybackState::Paused))),
+                // real-world time should update even if the story is paused because real-world time doesn't pause
+                // rate_of_time needs to run when app is paused because fixed_time accumulations need to be cleared while app is paused
+                // to prevent running FixedUpdate schedule repeatedly (while no-oping) when coming back to a hidden tab with a paused sim.
+                (update_story_real_world_time, set_rate_of_time).chain(),
                 // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
                 // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
                 // when moving out of the Update stage and into the PostUpdate stage.

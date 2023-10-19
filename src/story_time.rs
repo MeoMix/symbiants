@@ -200,8 +200,8 @@ pub fn set_rate_of_time(
                     Duration::from_secs_f32(1.0 / (MAX_SYSTEM_TICKS_PER_SECOND as f32));
                 // Rely on FastForwarding state, rather than updating TicksPerSecond, so when exiting FastForwarding it's possible to restore to user-defined TicksPerSecond.
 
-                // There's nothing to fast forward through if the simulation wasn't playing while tab wasn't focused.
-                if *story_playback_state == StoryPlaybackState::Playing {
+                // There's nothing to fast forward through if the simulation was paused while tab wasn't focused.
+                if *story_playback_state != StoryPlaybackState::Paused {
                     next_story_playback_state.set(StoryPlaybackState::FastForwarding);
 
                     let ticks = (ticks_per_second.0 as u64 * accumulated_time.as_secs()) as isize;
