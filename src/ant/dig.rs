@@ -4,10 +4,7 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
-use super::{
-    birthing::Birthing, commands::AntCommandsExt, AntInventory, AntOrientation, AntRole,
-    Initiative,
-};
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -19,7 +16,6 @@ pub fn ants_dig(
         &Position,
         &AntRole,
         Entity,
-        Option<&Birthing>,
     )>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
@@ -27,7 +23,7 @@ pub fn ants_dig(
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
-    for (orientation, inventory, initiative, position, role, ant_entity, birthing) in
+    for (orientation, inventory, initiative, position, role, ant_entity) in
         ants_query.iter()
     {
         if !initiative.can_act() {
@@ -50,7 +46,6 @@ pub fn ants_dig(
         if try_dig(
             ant_entity,
             role,
-            birthing,
             *position,
             &elements_query,
             &world_map,
@@ -66,7 +61,6 @@ pub fn ants_dig(
 fn try_dig(
     ant_entity: Entity,
     ant_role: &AntRole,
-    ant_birthing: Option<&Birthing>,
     dig_position: Position,
     elements_query: &Query<&Element>,
     world_map: &Res<WorldMap>,
@@ -97,9 +91,7 @@ fn try_dig(
     }
 
     // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
-    let dig_sand = *element == Element::Sand
-        && world_map.is_underground(&dig_position)
-        && ant_birthing.is_none();
+    let dig_sand = *element == Element::Sand && world_map.is_underground(&dig_position);
 
     if dig_food || dig_sand {
         commands.dig(ant_entity, dig_position, *element_entity);

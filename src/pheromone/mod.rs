@@ -129,9 +129,9 @@ pub fn pheromone_duration_tick(
     mut commands: Commands,
 ) {
     for (mut pheromone_duration, position, pheromone_entity) in pheromone_query.iter_mut() {
-        // Get 100% expired once real-world hour.
+        // Get 100% expired once every 4 story hours.
         let rate_of_pheromone_expiration =
-            pheromone_duration.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
+            pheromone_duration.max() / (SECONDS_PER_HOUR * 4 * DEFAULT_TICKS_PER_SECOND) as f32;
 
         pheromone_duration.tick(rate_of_pheromone_expiration);
 

@@ -55,7 +55,7 @@ impl Default for Settings {
             save_interval: 60,
             // Saving data to local storage is slow, but generating the snapshot of the world is also slow.
             // Take snapshots aggressively because browser tab closes too quickly to JIT snapshot.
-            snapshot_interval: 10, // TODO: prefer 1 here but it's too slow, makes sim stutter
+            snapshot_interval: 5, // TODO: prefer 1 here but it's too slow, makes sim stutter
             world_width: 144,
             // TODO: I want this to be able to go to 400 without lag and without breaking local storage
             world_height: 144,

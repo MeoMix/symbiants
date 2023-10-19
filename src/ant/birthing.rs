@@ -77,12 +77,12 @@ pub fn ants_birthing(
             birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
         birthing.tick(rate_of_birthing);
 
-        if !initiative.can_move() {
+        if !initiative.can_act() {
             continue;
         }
 
-        // Once an ant starts giving birth - they're incapacitated and cannot move.
-        initiative.consume_movement();
+        // Once an ant starts giving birth - they're incapacitated and cannot do anything low priority.
+        initiative.consume();
 
         if birthing.is_ready() && initiative.can_act() {
             let behind_position = orientation.get_behind_position(position);
@@ -103,7 +103,6 @@ pub fn ants_birthing(
             );
 
             birthing.reset();
-            initiative.consume();
         }
     }
 }
