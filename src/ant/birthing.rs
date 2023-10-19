@@ -84,16 +84,14 @@ pub fn ants_birthing(
         // Once an ant starts giving birth - they're incapacitated and cannot do anything low priority.
         initiative.consume();
 
-        if birthing.is_ready() && initiative.can_act() {
-            let behind_position = orientation.get_behind_position(position);
-
+        if birthing.is_ready() {
             // NOTE: As written, this could spawn directly into a piece of dirt/food/etc.
             // This isn't going to cause the application to panic, but isn't visually appealing, either.
             // Could introduce a custom command and prevent spawning if the tile is occupied and/or find nearest open tile
             // but since ants can get covered by sand already (when it falls on them) its low priority.
             // Spawn worker ant (TODO: egg instead)
             commands.spawn_ant(
-                behind_position,
+                orientation.get_behind_position(position),
                 AntColor(color.0),
                 AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
                 AntInventory::default(),
