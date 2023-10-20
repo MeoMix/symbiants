@@ -218,7 +218,7 @@ pub fn set_rate_of_time(
 
                 // There's nothing to fast forward through if the simulation was paused while tab wasn't focused.
                 if *story_playback_state != StoryPlaybackState::Paused {
-=                    next_story_playback_state.set(StoryPlaybackState::FastForwarding);
+                    next_story_playback_state.set(StoryPlaybackState::FastForwarding);
 
                     let ticks = (ticks_per_second.0 as u64 * accumulated_time.as_secs()) as isize;
                     fast_forward_state_info.pending_ticks = ticks;
