@@ -56,6 +56,11 @@ pub fn ants_nesting_movement(
         }
 
         if let Nesting::Started(nest_position) = nesting {
+            // Don't fuss with distance logic when close to the nest entrance because it's naive and edge cases can cause infinite loops
+            if position.distance(nest_position) <= 1 {
+                continue;
+            }
+
             let ahead_position = match orientation.get_facing() {
                 Facing::Right => *position + Position::X,
                 Facing::Left => *position - Position::X,
