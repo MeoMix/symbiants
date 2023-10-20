@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::common::register;
 
-pub const DEFAULT_TICKS_PER_SECOND: isize = 6;
+pub const DEFAULT_TICKS_PER_SECOND: isize = 12;
 pub const MAX_USER_TICKS_PER_SECOND: isize = 1_200;
 pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 24_000;
 pub const SECONDS_PER_HOUR: isize = 3_600;
