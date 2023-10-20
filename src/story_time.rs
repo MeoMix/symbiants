@@ -47,11 +47,26 @@ impl StoryRealWorldTime {
     }
 }
 
-#[derive(Resource, Clone, Reflect, Default)]
+#[derive(Resource, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct StoryElapsedTicks {
     value: i64,
     pub is_real_time: bool,
+    real_time_offset: isize,
+    demo_time_offset: isize,
+}
+
+impl Default for StoryElapsedTicks {
+    fn default() -> Self {
+        StoryElapsedTicks {
+            value: 0,
+            is_real_time: false,
+            // Offset by an assumption that, for Sandbox Mode, the story starts at 8AM the first day not at Midnight.
+            // Real time wants to know how many seconds into the real world day have passed when the story started.
+            real_time_offset: seconds_into_day() as isize,
+            demo_time_offset: 8 * SECONDS_PER_HOUR,
+        }
+    }
 }
 
 #[derive(Default)]
@@ -66,19 +81,20 @@ impl StoryElapsedTicks {
     pub fn is_nighttime(&self) -> bool {
         let time_info = self.as_time_info();
 
-        time_info.hours < 6 || time_info.hours >= 22 
+        time_info.hours < 6 || time_info.hours >= 22
+    }
+
+    fn offset(&self) -> isize {
+        if self.is_real_time {
+            self.real_time_offset
+        } else {
+            self.demo_time_offset
+        }
     }
 
     pub fn as_time_info(&self) -> TimeInfo {
-        // Offset by an assumption that, for Sandbox Mode, the story starts at 6AM the first day not at Midnight.
-        let offset = if self.is_real_time {
-            seconds_into_day() as isize
-        } else {
-            8 * SECONDS_PER_HOUR
-        };
-
         let seconds_total =
-            self.value as f32 / DEFAULT_TICKS_PER_SECOND as f32 + offset as f32;
+            self.value as f32 / DEFAULT_TICKS_PER_SECOND as f32 + self.offset() as f32;
         let days = (seconds_total / SECONDS_PER_DAY as f32).floor() as isize;
 
         // Calculate hours and minutes
