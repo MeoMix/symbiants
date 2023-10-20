@@ -25,10 +25,12 @@ pub fn save() {}
 /// This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
 /// to avoid losing too much state in the event of a crash.
 #[cfg(target_arch = "wasm32")]
+/// NOTE: intentionally don't run immediately on first run because it's expensive and nothing has changed.
+/// Let the full interval pass before creating anything rather than initializing on first run then waiting.
 pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save_time: Local<f32>) {
     let current_time = world.resource::<Time>().raw_elapsed_seconds();
     let snapshot_interval = world.resource::<Settings>().snapshot_interval;
-    if *last_snapshot_time != 0.0 && current_time - *last_snapshot_time < snapshot_interval as f32 {
+    if current_time - *last_snapshot_time < snapshot_interval as f32 {
         return;
     }
 
@@ -40,7 +42,7 @@ pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save
     }
 
     let save_interval = world.resource::<Settings>().save_interval;
-    if *last_save_time != 0.0 && current_time - *last_save_time < save_interval as f32 {
+    if current_time - *last_save_time < save_interval as f32 {
         return;
     }
 

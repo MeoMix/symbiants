@@ -252,6 +252,7 @@ impl Plugin for SimulationPlugin {
                     on_add_selected,
                 )
                     .chain(),
+                    // Run these even when simulation is paused so that user interactions are visualized.
             )
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
