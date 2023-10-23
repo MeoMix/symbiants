@@ -39,7 +39,7 @@ use crate::{
     gravity::{gravity_ants, gravity_elements, gravity_stability},
     pheromone::{
         pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
-        ui::{on_spawn_pheromone, on_update_pheromone_visibility},
+        ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
     },
     pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
     save::{load, save, setup_save, teardown_save},
@@ -237,20 +237,19 @@ impl Plugin for SimulationPlugin {
                 // Ensure render state reflects simulation state after having applied movements and command updates.
                 // Must run in FixedUpdate otherwise change detection won't properly work if FixedUpdate loop runs multiple times in a row.
                 (
-                    // Some of these are conditional because they're heavy to run and slow down the fast-forward state.
-                    // TODO: Either disable all of the UI updates while fastforwarding or find a way to enable while skipping frames.
-                    on_update_ant_position.run_if(in_state(StoryPlaybackState::Playing)),
-                    on_update_ant_orientation.run_if(in_state(StoryPlaybackState::Playing)),
-                    on_added_ant_dead.run_if(in_state(StoryPlaybackState::Playing)),
-                    on_update_ant_inventory.run_if(in_state(StoryPlaybackState::Playing)),
-                    on_update_element_position.run_if(in_state(StoryPlaybackState::Playing)),
+                    on_update_ant_position,
+                    on_update_ant_orientation,
+                    on_added_ant_dead,
+                    on_update_ant_inventory,
+                    on_update_element_position,
                     on_update_pheromone_visibility,
-                    on_spawn_ant.run_if(in_state(StoryPlaybackState::Playing)),
+                    on_spawn_ant,
                     on_spawn_element,
                     on_spawn_pheromone,
-                    on_add_selected,
                 )
-                    .chain(),
+                    .chain()
+                    .run_if(not(in_state(StoryPlaybackState::FastForwarding))),
+                on_add_selected,
                 // Run these even when simulation is paused so that user interactions are visualized.
             )
                 .run_if(in_state(StoryState::Telling))
@@ -259,8 +258,15 @@ impl Plugin for SimulationPlugin {
 
         app.add_systems(
             OnExit(StoryPlaybackState::FastForwarding),
-            (rerender_ants, rerender_elements).chain(),
+            (rerender_ants, rerender_elements, render_pheromones).chain(),
         );
+
+        // app.add_systems(
+        //     Update,
+        //     (rerender_ants, rerender_elements, render_pheromones)
+        //         .chain()
+        //         .run_if(in_state(StoryPlaybackState::FastForwarding).and_then(time_passed(1.0))),
+        // );
 
         app.add_systems(
             Update,
@@ -338,5 +344,22 @@ fn check_textures(
         asset_server.get_group_load_state(element_sprite_handles.handle_ids())
     {
         next_state.set(StoryState::LoadingSave);
+    }
+}
+
+fn time_passed(t: f32) -> impl FnMut(Local<f32>, Res<Time>) -> bool {
+    move |mut timer: Local<f32>, time: Res<Time>| {
+        // Tick the timer
+        *timer += time.delta_seconds();
+
+        if *timer >= t {
+            // Reset timer so it runs multiple times
+            *timer -= t;
+
+            // Return true if the timer has passed the time
+            return true;
+        }
+
+        return false;
     }
 }

@@ -14,7 +14,7 @@ use bevy::prelude::*;
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
 
-fn spawn_ant_sprite(
+fn insert_ant_sprite(
     commands: &mut Commands,
     entity: Entity,
     position: &Position,
@@ -142,7 +142,7 @@ pub fn on_spawn_ant(
     id_map: Res<IdMap>,
 ) {
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
-        spawn_ant_sprite(
+        insert_ant_sprite(
             &mut commands,
             entity,
             position,
@@ -184,23 +184,15 @@ pub fn rerender_ants(
     world_map: Res<WorldMap>,
     id_map: Res<IdMap>,
 ) {
-    // Despawn all existing ant sprites
-    for (ant_entity, _, _, _, _, _, _, _) in ants_query.iter() {
-        // Remove TranslationOffset, SpriteBundle, children, and AntLabel
-        // TODO: Do I need to remove Children?
-        commands
-            .entity(ant_entity)
-            .remove::<(TranslationOffset, SpriteBundle)>()
-            .despawn_descendants();
-    }
-
+    // TODO: This wouldn't be necessary if Ant maintained LabelEntity somewhere?
     for label_entity in label_query.iter() {
         commands.entity(label_entity).despawn();
     }
 
     // Render all ants with sprites
-    for (ant_entity, position, color, orientation, name, role, inventory, dead) in ants_query.iter() {
-        spawn_ant_sprite(
+    for (ant_entity, position, color, orientation, name, role, inventory, dead) in ants_query.iter()
+    {
+        insert_ant_sprite(
             &mut commands,
             ant_entity,
             position,

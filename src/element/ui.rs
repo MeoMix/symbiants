@@ -251,15 +251,13 @@ fn update_element_sprite(
 }
 
 pub fn rerender_elements(
-    mut element_query: Query<(&Position, &mut Transform, &Element, Entity)>,
+    mut element_query: Query<(&Position, &Element, Entity)>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
-    for (position, mut transform, element, entity) in element_query.iter_mut() {
-        transform.translation = position.as_world_position(&world_map);
-
+    for (position, element, entity) in element_query.iter_mut() {
         update_element_sprite(
             entity,
             element,
@@ -269,26 +267,6 @@ pub fn rerender_elements(
             &world_map,
             &mut commands,
         );
-
-        let adjacent_positions = position.get_adjacent_positions();
-
-        for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) = world_map.get_element_entity(adjacent_position) {
-                let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
-
-                if *adjacent_element != Element::Air {
-                    update_element_sprite(
-                        *adjacent_element_entity,
-                        adjacent_element,
-                        &adjacent_position,
-                        &element_sprite_handles,
-                        &elements_query,
-                        &world_map,
-                        &mut commands,
-                    );
-                }
-            }
-        }
     }
 }
 
