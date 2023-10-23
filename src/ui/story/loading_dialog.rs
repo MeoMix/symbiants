@@ -26,8 +26,18 @@ pub fn update_loading_dialog(
             let seconds_gone = (fast_forwarding_state_info.initial_pending_ticks as f32)
                 / ticks_per_second.0 as f32;
 
-            if seconds_gone > 60.0 {
-                let minutes_gone = seconds_gone / 60.0;
+            let minutes_gone = seconds_gone / 60.0;
+            let hours_gone = minutes_gone / 60.0;
+
+            if hours_gone >= 1.0 {
+                ui.label(&format!(
+                    "You were gone for {:.0} hour{} and {:.0} minute{}.",
+                    hours_gone,
+                    pluralize(hours_gone / 60.0),
+                    minutes_gone / 60.0,
+                    pluralize(minutes_gone / 60.0)
+                ));
+            } else if minutes_gone >= 1.0 {
                 ui.label(&format!(
                     "You were gone for {:.0} minute{}.",
                     minutes_gone,
