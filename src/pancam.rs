@@ -28,7 +28,7 @@ impl Plugin for PanCamPlugin {
                 camera_mouse_pan,
                 camera_mouse_zoom,
                 camera_touch_pan_zoom,
-                auto_clamp_translation,
+                on_change_projection,
             )
                 .in_set(PanCamSystemSet)
                 .run_if(resource_equals(IsPointerCaptured(false))),
@@ -37,23 +37,28 @@ impl Plugin for PanCamPlugin {
     }
 }
 
-// Whenever the orthographic projection area size changes - reclamp the camera translation
-// NOTE: I added this because when the game starts, user is clicking a button to start the game,
-// and this pancam logic races against the button click logic. This can result in a mismeasurement
-// because a command hasn't been applied yet.
-
-// This workaround wouldn't be hacky if there was no visual delay, but I still see a slight stutter in the UI
-// so I assume this isn't a great solution. Better than having the camera be misaligned though.
-fn auto_clamp_translation(
+fn on_change_projection(
     mut query: Query<
-        (&PanCam, &mut Transform, &OrthographicProjection),
+        (
+            &PanCam,
+            &mut Transform,
+            &mut OrthographicProjection,
+            &Camera,
+        ),
         Changed<OrthographicProjection>,
     >,
     mut last_size: Local<Option<Vec2>>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
     if let Ok(query_result) = query.get_single_mut() {
-        let (cam, mut transform, projection) = query_result;
+        let (pancam, mut transform, mut projection, camera) = query_result;
+
+        // Changes to OrtographicProjection will be applied to Project at end of frame, but a desire
+        // to react to the changes early requires updating the project now otherwise `clamp_translation`
+        // will run, in response to a change, but without a current projection area.
+        if let Some(size) = camera.logical_viewport_size() {
+            projection.update(size.x, size.y);
+        }
 
         let proj_size = projection.area.size();
 
@@ -64,7 +69,7 @@ fn auto_clamp_translation(
         let window = primary_window.single();
         let window_size = Vec2::new(window.width(), window.height());
 
-        clamp_translation(cam, projection, &mut transform, Vec2::ZERO, window_size);
+        clamp_translation(pancam, &projection, &mut transform, Vec2::ZERO, window_size);
 
         *last_size = Some(proj_size);
     }
@@ -512,7 +517,7 @@ fn camera_touch_pan_zoom(
                 let last_a = tracker.last_touch_a.unwrap_or(touches[0].position());
                 let delta = touches[0].position() - last_a;
                 let delta_device_pixels = config.drag_sensitivity * Vec2::new(delta.x, -delta.y);
-        
+
                 clamp_translation(cam, &mut proj, &mut pos, delta_device_pixels, window_size);
             }
         }
