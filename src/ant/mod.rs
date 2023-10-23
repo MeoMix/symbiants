@@ -428,7 +428,8 @@ pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut comman
 
     // Newly created queens instinctively start building a nest.
     commands.spawn_ant(
-        settings.get_random_surface_position(&mut rng),
+        // Queen always spawns in the center. She'll fall from the sky in the future.
+        Position::new(settings.world_width / 2, settings.get_surface_level()),
         AntColor(settings.ant_color),
         AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
         AntInventory::default(),
