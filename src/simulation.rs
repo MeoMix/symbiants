@@ -24,8 +24,7 @@ use crate::{
         },
         ui::{
             on_added_ant_dead, on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation,
-            on_update_ant_position, rerender_ant_inventory, rerender_ant_orientation,
-            rerender_ant_position,
+            on_update_ant_position, rerender_ants,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
@@ -242,17 +241,17 @@ impl Plugin for SimulationPlugin {
                     // TODO: Either disable all of the UI updates while fastforwarding or find a way to enable while skipping frames.
                     on_update_ant_position.run_if(in_state(StoryPlaybackState::Playing)),
                     on_update_ant_orientation.run_if(in_state(StoryPlaybackState::Playing)),
-                    on_added_ant_dead,
+                    on_added_ant_dead.run_if(in_state(StoryPlaybackState::Playing)),
                     on_update_ant_inventory.run_if(in_state(StoryPlaybackState::Playing)),
                     on_update_element_position.run_if(in_state(StoryPlaybackState::Playing)),
                     on_update_pheromone_visibility,
-                    on_spawn_ant,
+                    on_spawn_ant.run_if(in_state(StoryPlaybackState::Playing)),
                     on_spawn_element,
                     on_spawn_pheromone,
                     on_add_selected,
                 )
                     .chain(),
-                    // Run these even when simulation is paused so that user interactions are visualized.
+                // Run these even when simulation is paused so that user interactions are visualized.
             )
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
@@ -260,13 +259,7 @@ impl Plugin for SimulationPlugin {
 
         app.add_systems(
             OnExit(StoryPlaybackState::FastForwarding),
-            (
-                rerender_ant_position,
-                rerender_ant_orientation,
-                rerender_ant_inventory,
-                rerender_elements,
-            )
-                .chain(),
+            (rerender_ants, rerender_elements).chain(),
         );
 
         app.add_systems(
