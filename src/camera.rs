@@ -1,6 +1,6 @@
 use crate::{
-    world_map::WorldMap,
     pancam::{PanCam, PanCamPlugin},
+    settings::{Settings, pre_setup_settings},
     story_state::{restart_story, StoryState},
 };
 use bevy::{
@@ -17,7 +17,7 @@ fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
     mut query: Query<&mut OrthographicProjection, With<MainCamera>>,
-    world_map: Res<WorldMap>,
+    settings: Res<Settings>,
 ) {
     for resize_event in resize_events.iter() {
         let Ok(entity) = primary_window_query.get_single() else {
@@ -25,8 +25,8 @@ fn window_resize(
         };
 
         if resize_event.window == entity {
-            let max_ratio = (resize_event.width / *world_map.width() as f32)
-                .max(resize_event.height / *world_map.height() as f32);
+            let max_ratio = (resize_event.width / settings.world_width as f32)
+                .max(resize_event.height / settings.world_height as f32);
 
             query.single_mut().scale = 1.0 / max_ratio;
         }
@@ -36,7 +36,7 @@ fn window_resize(
 // TODO: Instead of scaling to fit the world I want to zoom and focus on queen ant, but still enforce same max/min bounds.
 fn scale_to_world(
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    settings: Res<Settings>,
     mut main_camera_query: Query<(Entity, &mut OrthographicProjection), With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
@@ -44,18 +44,18 @@ fn scale_to_world(
 
     // NOTE: This calculation is "wrong" on first load because resize has yet to occur.
     // This calculation is correct when resetting world state post-load, though.
-    let max_ratio = (primary_window.width() / *world_map.width() as f32)
-        .max(primary_window.height() / *world_map.height() as f32);
+    let max_ratio = (primary_window.width() / settings.world_width as f32)
+        .max(primary_window.height() / settings.world_height as f32);
 
     let (main_camera_entity, mut projection) = main_camera_query.single_mut();
 
     projection.scale = 1.0 / max_ratio;
 
     commands.entity(main_camera_entity).insert(PanCam {
-        min_x: Some(-world_map.width() as f32 / 2.0),
-        min_y: Some(-world_map.height() as f32 / 2.0),
-        max_x: Some(*world_map.width() as f32 / 2.0),
-        max_y: Some(*world_map.height() as f32 / 2.0),
+        min_x: Some(-settings.world_width as f32 / 2.0),
+        min_y: Some(-settings.world_height as f32 / 2.0),
+        max_x: Some(settings.world_width as f32 / 2.0),
+        max_y: Some(settings.world_height as f32 / 2.0),
         min_scale: 0.01,
         ..default()
     });
@@ -78,16 +78,18 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(PanCamPlugin::default());
 
-        app.add_systems(OnEnter(StoryState::Initializing), setup);
-
-        app.add_systems(OnEnter(StoryState::Telling), scale_to_world);
-
+        // TODO: This is still wrong because waiting for predefined settings isn't useful if loaded settings are different.
         app.add_systems(
-            OnEnter(StoryState::Cleanup),
-            teardown.before(restart_story),
+            OnEnter(StoryState::Initializing),
+            (
+                setup,
+                apply_deferred,
+                scale_to_world.after(pre_setup_settings),
+            )
+                .chain(),
         );
 
-        // TODO: This should probably include "Over" until I split states out
-        app.add_systems(Update, window_resize.run_if(in_state(StoryState::Telling)));
+        app.add_systems(OnEnter(StoryState::Cleanup), teardown.before(restart_story));
+        app.add_systems(Update, window_resize.run_if(resource_exists::<Settings>()));
     }
 }
