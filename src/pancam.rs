@@ -17,14 +17,19 @@ pub struct PanCamPlugin;
 #[derive(Debug, Clone, Copy, SystemSet, PartialEq, Eq, Hash)]
 pub struct PanCamSystemSet;
 
+#[derive(Event)]
+pub struct Pan(pub Vec2);
+
 impl Plugin for PanCamPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(TouchTracker::default())
-            .insert_resource(TouchCameraConfig::default());
+            .insert_resource(TouchCameraConfig::default())
+            .add_event::<Pan>();
 
         app.add_systems(
             Update,
             (
+                event_pan,
                 camera_mouse_pan,
                 camera_mouse_zoom,
                 camera_touch_pan_zoom,
@@ -241,6 +246,33 @@ fn max_scale_within_bounds(
     p.update(window_size.x, window_size.y);
     let base_world_size = p.area.size();
     bounds_size / base_world_size
+}
+
+fn event_pan(
+    primary_window: Query<&Window, With<PrimaryWindow>>,
+    mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection, &Camera, &GlobalTransform)>,
+    mut events: EventReader<Pan>,
+) {
+    for event in events.iter() {
+        let window = primary_window.single();
+        let window_size = Vec2::new(window.width(), window.height());
+
+        for (pancam, mut transform, projection, camera, global_transform) in &mut query {
+            let center = camera.world_to_viewport(global_transform, global_transform.translation()).unwrap();
+            let target = camera.world_to_viewport(global_transform, event.0.extend(global_transform.translation().z)).unwrap();
+            let delta_device_pixels = target - center;
+
+            if pancam.enabled {
+                clamp_translation(
+                    pancam,
+                    projection,
+                    &mut transform,
+                    delta_device_pixels,
+                    window_size,
+                );
+            }
+        }
+    }
 }
 
 fn camera_mouse_pan(

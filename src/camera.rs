@@ -1,6 +1,6 @@
 use crate::{
     pancam::{PanCam, PanCamPlugin},
-    settings::{Settings, pre_setup_settings},
+    settings::{pre_setup_settings, Settings},
     story_state::{restart_story, StoryState},
 };
 use bevy::{
@@ -16,7 +16,7 @@ pub struct MainCamera;
 fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
-    mut query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     settings: Res<Settings>,
 ) {
     for resize_event in resize_events.iter() {
@@ -28,7 +28,7 @@ fn window_resize(
             let max_ratio = (resize_event.width / settings.world_width as f32)
                 .max(resize_event.height / settings.world_height as f32);
 
-            query.single_mut().scale = 1.0 / max_ratio;
+            main_camera_query.single_mut().scale = 1.0 / max_ratio;
         }
     }
 }
@@ -61,6 +61,25 @@ fn scale_to_world(
     });
 }
 
+// TODO: Make this more loosely coupled so I can just tell camera to focus a specific position.
+/// Find the queen ant, center camera position over queen ant, do so at a scale that is visually pleasing for focusing on the queen.
+// fn focus_queen(
+//     ant_query: Query<(&Position, &AntRole)>,
+//     mut events: EventWriter<Pan>,
+//     world_map: Res<WorldMap>,
+// ) {
+//     let queen_ant_position = ant_query
+//         .iter()
+//         .find(|(_, role)| **role == AntRole::Queen)
+//         .map(|(position, _)| position);
+
+//     if let Some(queen_ant_position) = queen_ant_position {
+//         let queen_world_position = queen_ant_position.as_world_position(&world_map);
+
+//         events.send(Pan(queen_world_position.truncate()));
+//     }
+// }
+
 pub fn setup(mut commands: Commands) {
     // This needs to run early so main menu is visible even without a WorldMap created.
     commands.spawn((Camera2dBundle::default(), MainCamera));
@@ -88,6 +107,11 @@ impl Plugin for CameraPlugin {
             )
                 .chain(),
         );
+
+        // app.add_systems(
+        //     OnEnter(StoryState::Telling),
+        //     (focus_queen).chain(),
+        // );
 
         app.add_systems(OnEnter(StoryState::Cleanup), teardown.before(restart_story));
         app.add_systems(Update, window_resize.run_if(resource_exists::<Settings>()));
