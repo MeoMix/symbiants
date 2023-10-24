@@ -61,9 +61,9 @@ impl Default for StoryElapsedTicks {
         StoryElapsedTicks {
             value: 0,
             is_real_time: false,
-            // Offset by an assumption that, for Sandbox Mode, the story starts at 8AM the first day not at Midnight.
             // Real time wants to know how many seconds into the real world day have passed when the story started.
             real_time_offset: seconds_into_day() as isize,
+            // Offset by an assumption that, for Sandbox Mode, the story starts at 8AM the first day not at Midnight.
             demo_time_offset: 8 * SECONDS_PER_HOUR,
         }
     }
@@ -144,7 +144,7 @@ pub fn register_story_time(
     register::<StoryElapsedTicks>(&app_type_registry, &mut saveable_registry);
 }
 
-// TODO: awkward timing for this - need to have resources available before calling try_load_from_save
+// TODO: awkward timing for this - need to have resources available before calling load (why?)
 pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryRealWorldTime>();
     commands.init_resource::<StoryElapsedTicks>();
@@ -163,15 +163,32 @@ pub fn setup_story_time(
     mut story_real_world_time: ResMut<StoryRealWorldTime>,
     mut fixed_time: ResMut<FixedTime>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
+    mut story_elapsed_ticks: ResMut<StoryElapsedTicks>,
+    ticks_per_second: Res<TicksPerSecond>,
 ) {
     // Setup story_real_world_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
     if story_real_world_time.0 == 0 {
         story_real_world_time.0 = Utc::now().timestamp_millis();
     } else {
-        let delta_seconds = Utc::now()
+        let mut delta_seconds = Utc::now()
             .signed_duration_since(story_real_world_time.as_datetime())
             .num_seconds();
 
+        let seconds_past_max = delta_seconds as isize - SECONDS_PER_DAY;
+
+        if seconds_past_max > 0 {
+            // Increment elapsed ticks by the amount not being simulated to keep game clock synced with real-world clock
+            if story_elapsed_ticks.is_real_time {
+                let missed_ticks = seconds_past_max * ticks_per_second.0;
+                story_elapsed_ticks.value += missed_ticks as i64;
+            }
+
+            // Enforce a max of 24 hours because it's impossible to quickly simulate an arbitrary amount of time missed.
+            delta_seconds = SECONDS_PER_DAY as i64;
+        }
+
+        // If we are tracking real world time then determine how many ticks the time past 24hrs represents
+        // add that to the "elapsed ticks" tracker so that real-world time in game advances.
         fixed_time.tick(Duration::from_secs(delta_seconds as u64));
     }
 

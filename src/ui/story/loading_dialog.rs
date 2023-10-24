@@ -4,7 +4,7 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::story_time::{FastForwardingStateInfo, TicksPerSecond};
+use crate::story_time::{FastForwardingStateInfo, TicksPerSecond, SECONDS_PER_DAY};
 
 // Don't flicker the dialogs visibility when processing a small number of ticks
 const MIN_PENDING_TICKS: isize = 6000;
@@ -51,7 +51,13 @@ pub fn update_loading_dialog(
                 ));
             }
 
-            ui.label("Please wait while this time is simulated.");
+            if seconds_gone >= SECONDS_PER_DAY as f32 {
+                ui.label("Please wait while 24 hours are simulated.");
+                ui.label("IMPORTANT: Your Symbiant simulation stops if you don't check in daily.");
+            } else {
+                ui.label("Please wait while this time is simulated.");
+            }
+
             ui.label(&format!(
                 "Remaining ticks: {}",
                 fast_forwarding_state_info.pending_ticks
