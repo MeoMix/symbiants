@@ -75,6 +75,8 @@ fn set_theme(mut contexts: EguiContexts) {
     style.spacing.item_spacing = egui::Vec2::new(8.0, 12.0);
     style.spacing.button_padding = egui::Vec2::new(8.0, 8.0);
 
+    style.visuals.window_fill = egui::Color32::from_black_alpha(192);
+
     // Redefine text_styles
     style.text_styles = [
         (

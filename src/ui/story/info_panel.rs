@@ -2,14 +2,14 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::{
-    ant::{birthing::Birthing, hunger::Hunger, AntRole},
+    ant::{birthing::Birthing, hunger::Hunger, AntRole, Dead},
     element::Food,
     story_time::StoryElapsedTicks,
 };
 
 pub fn update_info_window(
     mut contexts: EguiContexts,
-    ant_query: Query<(&AntRole, &Hunger, Option<&Birthing>)>,
+    ant_query: Query<(&AntRole, &Hunger, Option<&Birthing>), Without<Dead>>,
     food_query: Query<&Food>,
     elapsed_ticks: Res<StoryElapsedTicks>,
 ) {
@@ -47,7 +47,7 @@ pub fn update_info_window(
                 time_info.days() + 1, hour_12, time_info.minutes(), period
             ));
 
-            ui.label(&format!("Ants: {}", ant_query.iter().count()));
+            ui.label(&format!("Alive Ants: {}", ant_query.iter().count()));
             ui.label(&format!("Colony Average Hunger: {:.0}%", colony_average_hunger));
             ui.label(&format!("Queen Hunger: {:.0}%", queen_ant_hunger));
             ui.label(&format!("Queen Birthing: {:.0}%", queen_ant_birthing));

@@ -27,13 +27,7 @@ pub fn update_settings_menu(
         .default_pos(egui::Pos2::new(window.width() - 400.0, 0.0))
         .resizable(false)
         .show(ctx, |ui| {
-            if ui.button("Reset Story").clicked() {
-                next_story_state.set(StoryState::Cleanup);
-            }
-
-            if ui.button("End Story").clicked() {
-                next_story_state.set(StoryState::Over);
-            }
+            ui.checkbox(&mut story_elapsed_ticks.is_real_time, "Start From Real Time");
 
             ui.add(
                 egui::Slider::new(
@@ -42,18 +36,6 @@ pub fn update_settings_menu(
                 )
                 .text("Speed"),
             );
-
-            if pheromone_visibility.0 == Visibility::Hidden {
-                if ui.button("Show Pheromones").clicked() {
-                    pheromone_visibility.0 = Visibility::Visible;
-                }
-            } else if pheromone_visibility.0 == Visibility::Visible {
-                if ui.button("Hide Pheromones").clicked() {
-                    pheromone_visibility.0 = Visibility::Hidden;
-                }
-            }
-
-            ui.checkbox(&mut story_elapsed_ticks.is_real_time, "Start From Real Time");
 
             match story_playback_state.get() {
                 StoryPlaybackState::Playing => {
@@ -72,6 +54,21 @@ pub fn update_settings_menu(
                 StoryPlaybackState::Stopped => {
                     ui.add_enabled(false, egui::Button::new("Stopped"));
                 }
+            }
+
+            if pheromone_visibility.0 == Visibility::Hidden {
+                if ui.button("Show Pheromones").clicked() {
+                    pheromone_visibility.0 = Visibility::Visible;
+                }
+            } else if pheromone_visibility.0 == Visibility::Visible {
+                if ui.button("Hide Pheromones").clicked() {
+                    pheromone_visibility.0 = Visibility::Hidden;
+                }
+            }
+
+
+            if ui.button("Reset Story").clicked() {
+                next_story_state.set(StoryState::Cleanup);
             }
         });
 }

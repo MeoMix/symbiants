@@ -38,16 +38,15 @@ pub fn update_action_menu(
         .resizable(false)
         .show(ctx, |ui| {
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Select, "Select");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Place Sand");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Place Food");
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Place Dirt");
             ui.selectable_value(
                 pointer_action.as_mut(),
                 PointerAction::DespawnElement,
                 "Remove Element",
             );
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Place Food");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Place Dirt");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Place Sand");
 
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
             ui.selectable_value(
                 pointer_action.as_mut(),
                 PointerAction::SpawnWorkerAnt,
@@ -58,5 +57,7 @@ pub fn update_action_menu(
                 PointerAction::DespawnWorkerAnt,
                 "Remove Worker Ant",
             );
+            
+            ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
         });
 }
