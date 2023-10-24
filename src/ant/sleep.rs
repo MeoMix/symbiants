@@ -19,7 +19,7 @@ pub fn ants_sleep(
     world_map: Res<WorldMap>,
     story_elapsed_ticks: Res<StoryElapsedTicks>,
 ) {
-    if !story_elapsed_ticks.is_nighttime() {
+    if !story_elapsed_ticks.as_time_info().is_nighttime() {
         return;
     }
 
@@ -42,7 +42,7 @@ pub fn ants_wake(
     story_elapsed_ticks: Res<StoryElapsedTicks>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    if story_elapsed_ticks.is_nighttime() {
+    if story_elapsed_ticks.as_time_info().is_nighttime() {
         return;
     }
 

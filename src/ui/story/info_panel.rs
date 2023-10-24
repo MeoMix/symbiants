@@ -33,7 +33,7 @@ pub fn update_info_window(
             let time_info = elapsed_ticks.as_time_info();
 
             // Determine AM/PM and adjust hour to 12-hour format
-            let hours = time_info.hours;
+            let hours = time_info.hours();
             let (period, hour_12) = if hours < 12 {
                 ("AM", if hours == 0 { 12 } else { hours })
             } else {
@@ -44,7 +44,7 @@ pub fn update_info_window(
             ui.label(&format!(
                 "Day: {:.0}, {:02.0}:{:02.0} {}",
                 // Add one to the days label because days don't start at 0 in real life
-                time_info.days + 1, hour_12, time_info.minutes, period
+                time_info.days() + 1, hour_12, time_info.minutes(), period
             ));
 
             ui.label(&format!("Ants: {}", ant_query.iter().count()));

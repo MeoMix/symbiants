@@ -47,6 +47,32 @@ impl StoryRealWorldTime {
     }
 }
 
+#[derive(Default)]
+pub struct TimeInfo {
+    days: isize,
+    hours: isize,
+    minutes: isize,
+}
+
+impl TimeInfo {
+    pub fn days(&self) -> isize {
+        self.days
+    }
+
+    pub fn hours(&self) -> isize {
+        self.hours
+    }
+
+    pub fn minutes(&self) -> isize {
+        self.minutes
+    }
+
+    // TODO: Could use an enum or something
+    pub fn is_nighttime(&self) -> bool {
+        self.hours < 6 || self.hours >= 22
+    }
+}
+
 #[derive(Resource, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct StoryElapsedTicks {
@@ -69,32 +95,16 @@ impl Default for StoryElapsedTicks {
     }
 }
 
-#[derive(Default)]
-pub struct TimeInfo {
-    pub days: isize,
-    pub hours: isize,
-    pub minutes: isize,
-}
-
 impl StoryElapsedTicks {
-    // TODO: Could use an enum or something
-    pub fn is_nighttime(&self) -> bool {
-        let time_info = self.as_time_info();
-
-        time_info.hours < 6 || time_info.hours >= 22
-    }
-
-    fn offset(&self) -> isize {
-        if self.is_real_time {
+    pub fn as_time_info(&self) -> TimeInfo {
+        let start_time_offset = if self.is_real_time {
             self.real_time_offset
         } else {
             self.demo_time_offset
-        }
-    }
+        };
 
-    pub fn as_time_info(&self) -> TimeInfo {
         let seconds_total =
-            self.value as f32 / DEFAULT_TICKS_PER_SECOND as f32 + self.offset() as f32;
+            self.value as f32 / DEFAULT_TICKS_PER_SECOND as f32 + start_time_offset as f32;
         let days = (seconds_total / SECONDS_PER_DAY as f32).floor() as isize;
 
         // Calculate hours and minutes

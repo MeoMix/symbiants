@@ -70,29 +70,13 @@ fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
     let north_color;
     let south_color;
     if end_time <= 12.0 {
-        north_color = interpolate_color(
-            start_color,
-            end_color,
-            progress,
-        );
-    
-        south_color = interpolate_color(
-            start_color,
-            end_color,
-            1.0 - (1.0 - progress).powf(3.0),
-        );
+        north_color = interpolate_color(start_color, end_color, progress);
+
+        south_color = interpolate_color(start_color, end_color, 1.0 - (1.0 - progress).powf(3.0));
     } else {
-        north_color = interpolate_color(
-            start_color,
-            end_color,
-            progress
-        );
-    
-        south_color = interpolate_color(
-            start_color,
-            end_color,
-            1.0 - (1.0 - progress).powf(3.0),
-        );
+        north_color = interpolate_color(start_color, end_color, progress);
+
+        south_color = interpolate_color(start_color, end_color, 1.0 - (1.0 - progress).powf(3.0));
     }
 
     (north_color, south_color)
@@ -108,7 +92,7 @@ fn create_sky_sprites(
 
     let time_info = elapsed_ticks.as_time_info();
 
-    let (north_color, south_color) = get_sky_gradient_color(time_info.hours, time_info.minutes);
+    let (north_color, south_color) = get_sky_gradient_color(time_info.hours(), time_info.minutes());
 
     for x in 0..width {
         for y in 0..height {
@@ -199,15 +183,15 @@ pub fn update_sky_background(
     let time_info = elapsed_ticks.as_time_info();
 
     // Update the sky's colors once a minute of elapsed *story time* not real-world time.
-    if time_info.days == last_run_time_info.days
-        && time_info.hours == last_run_time_info.hours
+    if time_info.days() == last_run_time_info.days()
+        && time_info.hours() == last_run_time_info.hours()
         // Check if difference between time_info and last_run_time_info minutes is 1
-        && (time_info.minutes - last_run_time_info.minutes).abs() < 1
+        && (time_info.minutes() - last_run_time_info.minutes()).abs() < 1
     {
         return;
     }
 
-    let (north_color, south_color) = get_sky_gradient_color(time_info.hours, time_info.minutes);
+    let (north_color, south_color) = get_sky_gradient_color(time_info.hours(), time_info.minutes());
     for (mut sprite, position) in sky_sprite_query.iter_mut() {
         let t_y: f32 = position.y as f32 / *world_map.surface_level() as f32;
         let color = interpolate_color(north_color, south_color, t_y);
