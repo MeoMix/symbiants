@@ -174,7 +174,7 @@ pub fn gravity_ants(
 // FIXME: There are bugs in the sand fall logic because gravity isn't processed from the bottom row up.
 // A column of sand, floating in the air, may have some sand be marked stable while floating in the air due to having sand directly beneath.
 pub fn gravity_stability(
-    air_query: Query<Ref<Position>, (With<Air>, Changed<Position>, Added<Position>)>,
+    air_query: Query<Ref<Position>, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
     unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>)>,
     elements_query: Query<&Element>,
     mut commands: Commands,
