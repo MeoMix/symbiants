@@ -261,13 +261,6 @@ impl Plugin for SimulationPlugin {
             (rerender_ants, rerender_elements, render_pheromones).chain(),
         );
 
-        // app.add_systems(
-        //     Update,
-        //     (rerender_ants, rerender_elements, render_pheromones)
-        //         .chain()
-        //         .run_if(in_state(StoryPlaybackState::FastForwarding).and_then(time_passed(1.0))),
-        // );
-
         app.add_systems(
             Update,
             update_story_real_world_time.run_if(in_state(StoryState::Telling)),
@@ -275,8 +268,11 @@ impl Plugin for SimulationPlugin {
 
         app.add_systems(
             Update,
-            update_sky_background
-                .run_if(in_state(StoryState::Telling).or_else(in_state(StoryState::Initializing))),
+            update_sky_background.run_if(
+                not(in_state(StoryPlaybackState::FastForwarding)).and_then(
+                    in_state(StoryState::Telling).or_else(in_state(StoryState::Initializing)),
+                ),
+            ),
         );
 
         // Saving in WASM writes to local storage which requires dedicated support.
@@ -344,22 +340,5 @@ fn check_textures(
         asset_server.get_group_load_state(element_sprite_handles.handle_ids())
     {
         next_state.set(StoryState::LoadingSave);
-    }
-}
-
-fn time_passed(t: f32) -> impl FnMut(Local<f32>, Res<Time>) -> bool {
-    move |mut timer: Local<f32>, time: Res<Time>| {
-        // Tick the timer
-        *timer += time.delta_seconds();
-
-        if *timer >= t {
-            // Reset timer so it runs multiple times
-            *timer -= t;
-
-            // Return true if the timer has passed the time
-            return true;
-        }
-
-        return false;
     }
 }

@@ -174,14 +174,14 @@ pub fn gravity_ants(
 // FIXME: There are bugs in the sand fall logic because gravity isn't processed from the bottom row up.
 // A column of sand, floating in the air, may have some sand be marked stable while floating in the air due to having sand directly beneath.
 pub fn gravity_stability(
-    air_query: Query<Ref<Position>, (With<Air>, With<Element>)>,
+    air_query: Query<Ref<Position>, (With<Air>, Changed<Position>, Added<Position>)>,
     unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>)>,
     elements_query: Query<&Element>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
     // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
-    for position in air_query.iter().filter(|p| p.is_added() || p.is_changed()) {
+    for position in air_query.iter() {
         // Calculate the positions of the elements above the current air element
         let adjacent_positions = (-1..=1)
             .map(|x_offset| *position + Position::new(x_offset, -1))
