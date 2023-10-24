@@ -173,17 +173,17 @@ pub fn gravity_ants(
 
 // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
 pub fn gravity_mark_unstable(
-    air_query: Query<Ref<Position>, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
+    air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
     elements_query: Query<&Element, Without<Air>>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
     let mut positions = HashSet::new();
 
-    for position in air_query.iter() {
-        (-1..=1).for_each(|x_offset| {
-            positions.insert(*position + Position::new(x_offset, -1));
-        });
+    for &position in air_query.iter() {
+        positions.insert(position + Position::new(-1, -1));
+        positions.insert(position + Position::new(0, -1));
+        positions.insert(position + Position::new(1, -1));
     }
 
     for &position in &positions {
