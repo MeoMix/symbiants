@@ -271,13 +271,13 @@ pub fn rerender_elements(
 }
 
 pub fn on_update_element_position(
-    mut element_query: Query<(&Position, &mut Transform, &Element, Entity), Changed<Position>>,
+    mut element_query: Query<(&Position, &Element, Entity), Changed<Position>>,
     elements_query: Query<&Element>,
     world_map: Res<WorldMap>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
-    for (position, mut transform, element, entity) in element_query.iter_mut() {
+    for (position, element, entity) in element_query.iter_mut() {
         update_element_sprite(
             entity,
             element,
