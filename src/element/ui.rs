@@ -278,8 +278,6 @@ pub fn on_update_element_position(
     mut commands: Commands,
 ) {
     for (position, mut transform, element, entity) in element_query.iter_mut() {
-        transform.translation = position.as_world_position(&world_map);
-
         update_element_sprite(
             entity,
             element,
