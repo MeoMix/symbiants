@@ -136,34 +136,50 @@ pub fn ants_regurgitate(
 ) {
     let peckish_ants = ants_hunger_query
         .iter()
-        .filter(|(_, hunger, _, _, inventory, _, _)| hunger.is_peckish() && inventory.0 == None)
+        .filter(|(_, hunger, _, _, inventory, initiative, _)| {
+            initiative.can_act() && hunger.is_peckish() && inventory.0 == None
+        })
         .collect::<Vec<_>>();
 
     let mut results = vec![];
 
-    // TODO: initative consume?
     for (ant_entity, ant_hunger, ant_orientation, ant_position, _, _, ant_role) in peckish_ants {
         let ahead_position = ant_orientation.get_ahead_position(ant_position);
 
-        if let Some((other_ant_entity, other_ant_hunger, _, _, other_ant_inventory, _, _)) =
-            ants_hunger_query
-                .iter()
-                // Support ontop of as well as in front because its kinda challenging to ensure queen can have an ant directly in front of them.
-                .find(
-                    |(other_ant_entity, _, other_ant_orientation, &other_ant_position, _, _, _)| {
-                        (other_ant_position == ahead_position
-                            && other_ant_orientation.get_ahead_position(&other_ant_position)
-                                == *ant_position)
-                            || (other_ant_position == *ant_position
-                                && *other_ant_entity != ant_entity)
-                    },
-                )
-        {
-            // Ant must not be holding anything to be able to regurgitate food.
-            if other_ant_inventory.0 != None {
-                continue;
-            }
+        if let Some((other_ant_entity, other_ant_hunger, _, _, _, _, _)) = ants_hunger_query
+            .iter()
+            // Support ontop of as well as in front because its kinda challenging to ensure queen can have an ant directly in front of them.
+            .find(
+                |(
+                    other_ant_entity,
+                    _,
+                    other_ant_orientation,
+                    &other_ant_position,
+                    other_ant_inventory,
+                    other_ant_initative,
+                    _,
+                )| {
+                    if !other_ant_initative.can_act() || other_ant_inventory.0 != None {
+                        return false;
+                    }
 
+                    // If ants are adjacent and facing one another - allow regurgitation.
+                    if other_ant_position == ahead_position
+                        && other_ant_orientation.get_ahead_position(&other_ant_position)
+                            == *ant_position
+                    {
+                        return true;
+                    }
+
+                    // If ants are standing ontop of one another (and not the same ant) - allow regurgitation
+                    if other_ant_position == *ant_position && *other_ant_entity != ant_entity {
+                        return true;
+                    }
+
+                    return false;
+                },
+            )
+        {
             if *ant_role == AntRole::Queen
                 || (ant_hunger.is_starving() && !other_ant_hunger.is_hungry())
                 || (ant_hunger.is_hungry() && other_ant_hunger.is_full())
@@ -177,12 +193,22 @@ pub fn ants_regurgitate(
     }
 
     for (ant_entity, other_ant_entity, hunger_transfer_amount) in results {
-        let [(_, mut hunger, _, _, _, _, _), (_, mut other_ant_hunger, _, _, _, _, _)] =
+        let [(_, mut hunger, _, _, _, mut ant_initiative, _), (_, mut other_ant_hunger, _, _, _, mut other_ant_initiative, _)] =
             ants_hunger_query
                 .get_many_mut([ant_entity, other_ant_entity])
                 .unwrap();
+        
+        // Although initiative was checked early on in this system (when filtering entities) it's checked again here to handle an edge case of overlapping ants.
+        // As an example, if there are three ants standing all in one spot, then, technically, they could all swap food.
+        // However, practically, two swap food, expend their action, and the third is left without a swap partner.
+        if !ant_initiative.can_act() || !other_ant_initiative.can_act() {
+            continue;
+        }
 
         hunger.value -= hunger_transfer_amount;
         other_ant_hunger.value += hunger_transfer_amount;
+
+        ant_initiative.consume();
+        other_ant_initiative.consume();
     }
 }
