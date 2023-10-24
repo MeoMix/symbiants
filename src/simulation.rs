@@ -36,7 +36,7 @@ use crate::{
             on_spawn_element, on_update_element_position, rerender_elements, ElementSpriteHandles,
         },
     },
-    gravity::{gravity_ants, gravity_elements, gravity_stability},
+    gravity::{gravity_ants, gravity_elements, gravity_mark_unstable, gravity_mark_stable},
     pheromone::{
         pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
         ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
@@ -150,7 +150,8 @@ impl Plugin for SimulationPlugin {
                         gravity_elements,
                         gravity_ants,
                         // Gravity side-effects can run whenever with little difference.
-                        gravity_stability,
+                        gravity_mark_stable,
+                        gravity_mark_unstable,
                         apply_deferred,
                     )
                         .chain(),

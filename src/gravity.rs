@@ -8,7 +8,7 @@ use super::{
     settings::Settings,
     world_map::{position::Position, WorldMap},
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
@@ -171,45 +171,48 @@ pub fn gravity_ants(
     }
 }
 
-// FIXME: There are bugs in the sand fall logic because gravity isn't processed from the bottom row up.
-// A column of sand, floating in the air, may have some sand be marked stable while floating in the air due to having sand directly beneath.
-pub fn gravity_stability(
+// If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
+pub fn gravity_mark_unstable(
     air_query: Query<Ref<Position>, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
-    unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>)>,
-    elements_query: Query<&Element>,
+    elements_query: Query<&Element, Without<Air>>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
 ) {
-    // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
+    let mut positions = HashSet::new();
+
     for position in air_query.iter() {
-        // Calculate the positions of the elements above the current air element
-        let adjacent_positions = (-1..=1)
-            .map(|x_offset| *position + Position::new(x_offset, -1))
-            .collect::<Vec<_>>();
+        (-1..=1).for_each(|x_offset| {
+            positions.insert(*position + Position::new(x_offset, -1));
+        });
+    }
 
-        // Iterate over all the calculated positions
-        for &adjacent_position in &adjacent_positions {
-            // If the current position contains a sand or food element, mark it as unstable
-            if let Some(entity) = world_map.get_element_entity(adjacent_position) {
-                if let Ok(element) = elements_query.get(*entity) {
-                    if matches!(*element, Element::Sand | Element::Food) {
-                        commands.toggle_element_command(*entity, adjacent_position, true, Unstable);
-                    }
+    for &position in &positions {
+        // If the current position contains a sand or food element, mark it as unstable
+        if let Some(entity) = world_map.get_element_entity(position) {
+            if let Ok(element) = elements_query.get(*entity) {
+                if matches!(*element, Element::Sand | Element::Food) {
+                    commands.toggle_element_command(*entity, position, true, Unstable);
+                }
 
-                    if *element == Element::Dirt && world_map.is_aboveground(&adjacent_position) {
-                        commands.toggle_element_command(*entity, adjacent_position, true, Unstable);
-                    }
+                // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
+                if *element == Element::Dirt && world_map.is_aboveground(&position) {
+                    commands.toggle_element_command(*entity, position, true, Unstable);
                 }
             }
         }
     }
+}
 
-    // Iterate over all unstable elements that have not changed position
-    for (position, entity) in unstable_element_query
-        .iter()
-        .filter(|(p, _)| !p.is_changed())
-    {
-        commands.toggle_element_command(entity, *position, false, Unstable);
+/// Elements which were Unstable, but didn't move this frame, are marked Stable by removing their Unstable marker.
+/// FIXME: floating column of sand can result in sand being marked stable while in the air due to having sand directly beneath.
+pub fn gravity_mark_stable(
+    unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>)>,
+    mut commands: Commands,
+) {
+    for (position, entity) in unstable_element_query.iter() {
+        if !position.is_changed() {
+            commands.toggle_element_command(entity, *position, false, Unstable);
+        }
     }
 }
 
