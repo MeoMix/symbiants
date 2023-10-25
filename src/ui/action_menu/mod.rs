@@ -16,17 +16,23 @@ pub enum PointerAction {
     DespawnWorkerAnt,
 }
 
+#[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
+pub struct IsShowingBreathDialog(pub bool);
+
 pub fn setup_action_menu(mut commands: Commands) {
     commands.init_resource::<PointerAction>();
+    commands.init_resource::<IsShowingBreathDialog>();
 }
 
 pub fn teardown_action_menu(mut commands: Commands) {
     commands.remove_resource::<PointerAction>();
+    commands.remove_resource::<IsShowingBreathDialog>();
 }
 
 pub fn update_action_menu(
     mut contexts: EguiContexts,
     mut pointer_action: ResMut<PointerAction>,
+    mut is_showing_breath_dialog: ResMut<IsShowingBreathDialog>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let window = primary_window_query.single();
@@ -57,7 +63,11 @@ pub fn update_action_menu(
                 PointerAction::DespawnWorkerAnt,
                 "Remove Worker Ant",
             );
-            
+
             ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
+
+            if ui.button("Breathe for Food").clicked() {
+                is_showing_breath_dialog.0 = true;
+            }
         });
 }

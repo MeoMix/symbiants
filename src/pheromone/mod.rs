@@ -112,7 +112,7 @@ pub fn setup_pheromone(
     commands.insert_resource(PheromoneMap(pheromone_map));
 
     // TODO: better separate model/view
-    commands.insert_resource(PheromoneVisibility(Visibility::Hidden));
+    commands.insert_resource(PheromoneVisibility(Visibility::Visible));
 }
 
 pub fn teardown_pheromone(pheromone_query: Query<Entity, With<Pheromone>>, mut commands: Commands) {

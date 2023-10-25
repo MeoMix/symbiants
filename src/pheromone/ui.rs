@@ -15,7 +15,7 @@ pub fn get_pheromone_sprite(
 
     let color = match pheromone {
         Pheromone::Chamber => Color::rgba(1.0, 0.08, 0.58, pheromone_opacity),
-        Pheromone::Tunnel => Color::rgba(0.0, 0.5, 0.5, pheromone_opacity),
+        Pheromone::Tunnel => Color::rgba(0.25, 0.88, 0.82, pheromone_opacity),
     };
 
     Sprite { color, ..default() }

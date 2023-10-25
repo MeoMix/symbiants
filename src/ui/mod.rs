@@ -1,4 +1,5 @@
 pub mod action_menu;
+mod breath_dialog;
 mod main_menu;
 pub mod selection_menu;
 mod settings_menu;
@@ -8,6 +9,7 @@ use crate::story_state::StoryState;
 use crate::story_time::StoryPlaybackState;
 
 use self::action_menu::*;
+use self::breath_dialog::update_breath_dialog;
 use self::main_menu::*;
 use self::selection_menu::update_selection_menu;
 use self::settings_menu::update_settings_menu;
@@ -47,14 +49,25 @@ impl Plugin for UIPlugin {
                 update_action_menu,
                 update_selection_menu,
             )
-                .run_if(in_state(StoryState::Telling)),
+                .run_if(
+                    in_state(StoryState::Telling)
+                        .and_then(not(resource_exists_and_equals(IsShowingBreathDialog(true)))),
+                ),
+        );
+
+        app.add_systems(
+            Update,
+            update_breath_dialog.run_if(resource_exists_and_equals(IsShowingBreathDialog(true))),
         );
 
         app.add_systems(OnExit(StoryState::Telling), teardown_action_menu);
 
         app.add_systems(
             Update,
-            update_story_over_dialog.run_if(in_state(StoryState::Over)),
+            update_story_over_dialog.run_if(
+                in_state(StoryState::Over)
+                    .and_then(not(resource_exists_and_equals(IsShowingBreathDialog(true)))),
+            ),
         );
     }
 }
@@ -75,7 +88,7 @@ fn set_theme(mut contexts: EguiContexts) {
     style.spacing.item_spacing = egui::Vec2::new(8.0, 12.0);
     style.spacing.button_padding = egui::Vec2::new(8.0, 8.0);
 
-    style.visuals.window_fill = egui::Color32::from_black_alpha(192);
+    style.visuals.window_fill = egui::Color32::from_black_alpha(224);
 
     // Redefine text_styles
     style.text_styles = [
