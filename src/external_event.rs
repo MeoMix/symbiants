@@ -46,12 +46,12 @@ pub fn process_external_event(
 
         if pointer_action == PointerAction::Select {
             // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
-            let selected_ant_entity = ants_query
+            let ant_entity_at_position = ants_query
                 .iter()
                 .find(|(_, &position, _, _, _)| position == grid_position)
                 .map(|(entity, _, _, _, _)| entity);
 
-            let selected_element_entity = world_map.get_element_entity(grid_position);
+            let element_entity_at_position = world_map.get_element_entity(grid_position);
 
             let currently_selected_entity = selected_entity_query.get_single();
 
@@ -61,17 +61,23 @@ pub fn process_external_event(
                     .remove::<Selected>();
             }
 
-            if let Some(ant_entity) = selected_ant_entity {
+            if let Some(ant_entity) = ant_entity_at_position {
                 // If tapping on an already selected ant then consider selecting element underneath ant instead.
-                if selected_ant_entity == currently_selected_entity.ok() {
-                    if let Some(element_entity) = selected_element_entity {
+                if ant_entity_at_position == currently_selected_entity.ok() {
+                    if let Some(element_entity) = element_entity_at_position {
                         commands.entity(*element_entity).insert(Selected);
+                    } else {
+                        commands.entity(ant_entity).remove::<Selected>();
                     }
                 } else {
                     commands.entity(ant_entity).insert(Selected);
                 }
-            } else if let Some(element_entity) = selected_element_entity {
-                commands.entity(*element_entity).insert(Selected);
+            } else if let Some(element_entity) = element_entity_at_position {
+                if element_entity_at_position == currently_selected_entity.ok().as_ref() {
+                    commands.entity(*element_entity).remove::<Selected>();
+                } else {
+                    commands.entity(*element_entity).insert(Selected);
+                }
             }
         } else if pointer_action == PointerAction::Food {
             if world_map.is_element(&elements_query, grid_position, Element::Air) {
@@ -127,6 +133,7 @@ pub fn process_external_event(
                     let element_entity = world_map.get_element_entity(grid_position).unwrap();
 
                     // TODO: Feels weird to need to care about initative when the user is forcing actions to occur.
+                    // Need to consider initative because ants don't regain the ability to act every tick - it takes ~3-5.
                     let can_act = initiative.is_some() && initiative.unwrap().can_act();
 
                     if world_map.is_element(&elements_query, grid_position, Element::Air) && can_act
