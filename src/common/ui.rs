@@ -8,7 +8,7 @@ pub struct SelectionSprite {
 }
 
 /// When Selection is added to a component, decorate that component with a white outline sprite.
-pub fn on_add_selected(
+pub fn on_added_selected(
     newly_selected_entity_query: Query<Entity, Added<Selected>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -36,7 +36,7 @@ pub fn on_add_selected(
 }
 
 /// When Selection is removed from a component, find the white outline sprite and remove it.
-pub fn on_selected_removed(
+pub fn on_removed_selected(
     mut removed: RemovedComponents<Selected>,
     selection_sprite_query: Query<(Entity, &SelectionSprite)>,
     mut commands: Commands,

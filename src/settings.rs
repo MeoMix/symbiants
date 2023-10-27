@@ -34,6 +34,7 @@ pub struct Settings {
     pub ant_color: Color,
     pub chamber_size: isize,
     pub tunnel_length: isize,
+    pub emote_duration: isize,
     pub probabilities: Probabilities,
 }
 
@@ -65,6 +66,7 @@ impl Default for Settings {
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
             chamber_size: 5,
             tunnel_length: 12,
+            emote_duration: 30,
             probabilities: Probabilities {
                 random_drop: 0.003,
                 random_turn: 0.005,

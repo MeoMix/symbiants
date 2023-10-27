@@ -10,6 +10,7 @@ use crate::{
         ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
         Element,
     },
+    settings::Settings,
     story_time::DEFAULT_TICKS_PER_SECOND,
     world_map::{position::Position, WorldMap},
 };
@@ -370,33 +371,42 @@ pub fn on_added_ant_dead(
     }
 }
 
-pub fn on_tick_emote(
-    mut ant_query: Query<(Entity, &mut Emote)>,
-    emote_ui_query: Query<(Entity, &EmoteUI)>,
+pub fn on_removed_emote(
+    mut removed: RemovedComponents<Emote>,
+    emote_ui_query: Query<(Entity, &EmoteSprite)>,
     mut commands: Commands,
 ) {
-    for (ant_entity, mut emote) in ant_query.iter_mut() {
-        // Show for 30s at default tick rate
-        let rate_of_emote_expire = emote.max() / (30 * DEFAULT_TICKS_PER_SECOND) as f32;
-        emote.tick(rate_of_emote_expire);
-
-        if emote.is_expired() {
-            commands.entity(ant_entity).remove::<Emote>();
-
-            if let Some((emote_ui_entity, _)) =
-                emote_ui_query.iter().find(|&(_, ui)| ui.0 == ant_entity)
-            {
-                // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-                commands.entity(emote_ui_entity).remove_parent();
-                commands.entity(emote_ui_entity).despawn();
-            }
+    for entity in &mut removed {
+        if let Some((emote_ui_entity, _)) = emote_ui_query
+            .iter()
+            .find(|&(_, ui)| ui.parent_entity == entity)
+        {
+            // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+            commands.entity(emote_ui_entity).remove_parent().despawn();
         }
     }
 }
 
-// TODO: This is weird
+pub fn on_tick_emote(
+    mut ant_query: Query<(Entity, &mut Emote)>,
+    mut commands: Commands,
+    settings: Res<Settings>,
+) {
+    for (ant_entity, mut emote) in ant_query.iter_mut() {
+        let rate_of_emote_expire =
+            emote.max() / (settings.emote_duration * DEFAULT_TICKS_PER_SECOND) as f32;
+        emote.tick(rate_of_emote_expire);
+
+        if emote.is_expired() {
+            commands.entity(ant_entity).remove::<Emote>();
+        }
+    }
+}
+
 #[derive(Component)]
-pub struct EmoteUI(pub Entity);
+pub struct EmoteSprite {
+    parent_entity: Entity,
+}
 
 pub fn on_added_ant_emote(
     mut ant_query: Query<(Entity, &Emote), Added<Emote>>,
@@ -411,7 +421,9 @@ pub fn on_added_ant_emote(
             };
 
             parent.spawn((
-                EmoteUI(ant_entity),
+                EmoteSprite {
+                    parent_entity: ant_entity,
+                },
                 SpriteBundle {
                     transform: Transform::from_xyz(0.75, 1.0, 1.0),
                     sprite: Sprite {

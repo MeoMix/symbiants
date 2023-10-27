@@ -23,14 +23,17 @@ use crate::{
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
         },
         ui::{
-            on_added_ant_dead, on_added_ant_emote, on_despawn_ant, on_spawn_ant, on_tick_emote,
-            on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position,
-            rerender_ants,
+            on_added_ant_dead, on_added_ant_emote, on_despawn_ant, on_removed_emote, on_spawn_ant,
+            on_tick_emote, on_update_ant_inventory, on_update_ant_orientation,
+            on_update_ant_position, rerender_ants,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{setup_background, teardown_background, update_sky_background},
-    common::{pre_setup_common, register_common, setup_common, ui::{on_add_selected, on_selected_removed}},
+    common::{
+        pre_setup_common, register_common, setup_common,
+        ui::{on_added_selected, on_removed_selected},
+    },
     element::{
         register_element, setup_element, teardown_element,
         ui::{
@@ -247,25 +250,34 @@ impl Plugin for SimulationPlugin {
                 apply_deferred,
                 // Ensure render state reflects simulation state after having applied movements and command updates.
                 // Must run in FixedUpdate otherwise change detection won't properly work if FixedUpdate loop runs multiple times in a row.
+                // Must run even when simulation is paused to reflect user input.
                 (
-                    on_update_ant_position,
-                    on_update_ant_orientation,
+                    // Spawn
+                    on_spawn_ant,
+                    on_spawn_element,
+                    on_spawn_pheromone,
+
+                    // Despawn
+                    on_despawn_ant,
+
+                    // Added
                     on_added_ant_dead,
                     on_added_ant_emote,
+                    on_added_selected,
+
+                    // Removed
+                    on_removed_selected,
+                    on_removed_emote,
+
+                    // Updated
+                    on_update_ant_position,
+                    on_update_ant_orientation,
                     on_update_ant_inventory,
                     on_update_element_position,
                     on_update_pheromone_visibility,
-                    on_spawn_ant,
-                    on_despawn_ant,
-                    on_spawn_element,
-                    on_spawn_pheromone,
-                    on_selected_removed,
                 )
                     .chain()
                     .run_if(not(in_state(StoryPlaybackState::FastForwarding))),
-                // TODO: I don't remember why I put this here rather than with the other UI stuff
-                on_add_selected,
-                // Run these even when simulation is paused so that user interactions are visualized.
             )
                 .run_if(in_state(StoryState::Telling))
                 .chain(),
