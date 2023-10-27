@@ -12,7 +12,7 @@ use crate::{
 
 use self::{
     birthing::Birthing, chambering::Chambering, commands::AntCommandsExt, hunger::Hunger,
-    tunneling::Tunneling, sleep::Asleep,
+    sleep::Asleep, tunneling::Tunneling,
 };
 
 use super::element::Element;
@@ -24,6 +24,7 @@ pub mod commands;
 pub mod death;
 pub mod dig;
 pub mod drop;
+pub mod emote;
 pub mod hunger;
 pub mod nest_expansion;
 pub mod nesting;

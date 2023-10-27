@@ -19,6 +19,7 @@ pub struct Probabilities {
     pub above_surface_queen_nest_dig: f32,
     pub below_surface_queen_nest_dig: f32,
     pub expand_nest: f32,
+    pub sleep_emote: f32,
 }
 
 #[derive(Resource, Copy, Clone, Reflect, Debug)]
@@ -82,6 +83,7 @@ impl Default for Settings {
                 below_surface_queen_nest_dig: 0.50,
                 // TODO: keep playing with this value. lower chance = more cramped nest, but less sand to manage.
                 expand_nest: 0.2,
+                sleep_emote: 0.001,
             },
         }
     }

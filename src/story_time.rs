@@ -76,7 +76,7 @@ impl TimeInfo {
 #[derive(Resource, Clone, Reflect)]
 #[reflect(Resource)]
 pub struct StoryElapsedTicks {
-    value: i64,
+    value: isize,
     pub is_real_time: bool,
     real_time_offset: isize,
     demo_time_offset: isize,
@@ -90,12 +90,16 @@ impl Default for StoryElapsedTicks {
             // Real time wants to know how many seconds into the real world day have passed when the story started.
             real_time_offset: seconds_into_day() as isize,
             // Offset by an assumption that, for Sandbox Mode, the story starts at 8AM the first day not at Midnight.
-            demo_time_offset: 8 * SECONDS_PER_HOUR,
+            demo_time_offset: 5 * SECONDS_PER_HOUR,
         }
     }
 }
 
 impl StoryElapsedTicks {
+    pub fn value(&self) -> isize {
+        self.value
+    }
+
     pub fn as_time_info(&self) -> TimeInfo {
         let start_time_offset = if self.is_real_time {
             self.real_time_offset
@@ -190,7 +194,7 @@ pub fn setup_story_time(
             // Increment elapsed ticks by the amount not being simulated to keep game clock synced with real-world clock
             if story_elapsed_ticks.is_real_time {
                 let missed_ticks = seconds_past_max * ticks_per_second.0;
-                story_elapsed_ticks.value += missed_ticks as i64;
+                story_elapsed_ticks.value += missed_ticks;
             }
 
             // Enforce a max of 24 hours because it's impossible to quickly simulate an arbitrary amount of time missed.

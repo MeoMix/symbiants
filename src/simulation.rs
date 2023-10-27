@@ -16,15 +16,16 @@ use crate::{
         nest_expansion::ants_nest_expansion,
         nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
         register_ant, setup_ant,
-        sleep::{ants_sleep, ants_wake},
+        sleep::{ants_sleep, ants_sleep_emote, ants_wake},
         teardown_ant,
         tunneling::{
             ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone, ants_remove_tunnel_pheromone,
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
         },
         ui::{
-            on_added_ant_dead, on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation,
-            on_update_ant_position, rerender_ants,
+            on_added_ant_dead, on_added_ant_emote, on_spawn_ant, on_tick_emote,
+            on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position,
+            rerender_ants,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
@@ -36,7 +37,7 @@ use crate::{
             on_spawn_element, on_update_element_position, rerender_elements, ElementSpriteHandles,
         },
     },
-    gravity::{gravity_ants, gravity_elements, gravity_mark_unstable, gravity_mark_stable},
+    gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable},
     pheromone::{
         pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
         ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
@@ -51,7 +52,7 @@ use crate::{
     story_time::{
         pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
         teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
-        update_time_scale, StoryPlaybackState,
+        update_time_scale, StoryElapsedTicks, StoryPlaybackState, DEFAULT_TICKS_PER_SECOND,
     },
     world_map::{setup_world_map, teardown_world_map},
 };
@@ -162,7 +163,13 @@ impl Plugin for SimulationPlugin {
                         // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
                         (ants_hunger, ants_regurgitate, apply_deferred).chain(),
                         (ants_birthing, apply_deferred).chain(),
-                        (ants_sleep, ants_wake, apply_deferred).chain(),
+                        (ants_sleep, ants_wake, ants_sleep_emote, apply_deferred).chain(),
+                        (
+                            ants_sleep_emote.run_if(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
+                            on_tick_emote,
+                            apply_deferred,
+                        )
+                            .chain(),
                         (
                             // Apply Nesting Logic
                             ants_nesting_movement,
@@ -241,6 +248,7 @@ impl Plugin for SimulationPlugin {
                     on_update_ant_position,
                     on_update_ant_orientation,
                     on_added_ant_dead,
+                    on_added_ant_emote,
                     on_update_ant_inventory,
                     on_update_element_position,
                     on_update_pheromone_visibility,
@@ -341,5 +349,17 @@ fn check_textures(
         asset_server.get_group_load_state(element_sprite_handles.handle_ids())
     {
         next_state.set(StoryState::LoadingSave);
+    }
+}
+
+// TODO: Maybe do this according to time rather than number of ticks elapsing to keep things consistent
+fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryElapsedTicks>) -> bool {
+    move |mut last_run_tick_count: Local<isize>, elapsed_ticks: Res<StoryElapsedTicks>| {
+        if *last_run_tick_count + ticks <= elapsed_ticks.value() {
+            *last_run_tick_count = elapsed_ticks.value();
+            true
+        } else {
+            false
+        }
     }
 }

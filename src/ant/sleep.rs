@@ -1,13 +1,13 @@
 use bevy::prelude::*;
-use bevy_turborand::GlobalRng;
+use bevy_turborand::{GlobalRng, DelegatedRng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     story_time::StoryElapsedTicks,
-    world_map::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap}, settings::Settings, ant::emote::EmoteType,
 };
 
-use super::{AntInventory, AntOrientation, Initiative};
+use super::{AntInventory, AntOrientation, Initiative, emote::Emote};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -36,6 +36,20 @@ pub fn ants_sleep(
     }
 }
 
+// TODO: This actually seems like a view-only concern
+pub fn ants_sleep_emote(
+    ants_query: Query<Entity, (With<Asleep>, Without<Emote>)>,
+    mut commands: Commands,
+    mut rng: ResMut<GlobalRng>,
+    settings: Res<Settings>,
+) {
+    for ant_entity in ants_query.iter() {
+        if rng.f32() < settings.probabilities.sleep_emote {
+            commands.entity(ant_entity).insert(Emote::new(EmoteType::Asleep));
+        }
+    }
+}
+
 pub fn ants_wake(
     ants_query: Query<Entity, With<Asleep>>,
     mut commands: Commands,
@@ -50,6 +64,8 @@ pub fn ants_wake(
         commands
             .entity(ant_entity)
             .remove::<Asleep>()
-            .insert(Initiative::new(&mut rng.reborrow()));
+            .insert(Initiative::new(&mut rng.reborrow()))
+            // Probably not great architecture but clear the Asleep emote when waking
+            .remove::<Emote>();
     }
 }

@@ -17,6 +17,7 @@ pub struct IsOpen(bool);
 
 impl Default for IsOpen {
     fn default() -> Self {
+        // default to true because need true for egui::Window to show "close" X icon
         Self(true)
     }
 }
@@ -44,7 +45,6 @@ pub fn update_breath_dialog(
     let ant_food_needed = isize::max(total_ant_food_needed as isize - food_count as isize, 0);
     let labels = ["Inhale", "Hold", "Exhale", "Hold"];
     let duration = 4.;
-
 
     if !is_open.0 {
         // TODO: eww. resetting this to true since this is resetting it to its default? :s

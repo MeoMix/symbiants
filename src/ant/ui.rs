@@ -1,12 +1,16 @@
 use std::ops::Add;
 
-use super::{Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead};
+use super::{
+    emote::{Emote, EmoteType},
+    Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead,
+};
 use crate::{
     common::IdMap,
     element::{
         ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
         Element,
     },
+    story_time::DEFAULT_TICKS_PER_SECOND,
     world_map::{position::Position, WorldMap},
 };
 use bevy::prelude::*;
@@ -208,27 +212,28 @@ pub fn rerender_ants(
             &id_map,
         );
 
+        // FIXME: This isn't working in some scenario. I've seen all labels disappear twice when loading in from a long fast-forward.
         spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &world_map);
     }
 }
 
 // TODO: This doesn't seem to work when used inside of a FixedUpdate loop?
-// pub fn on_despawn_ant(
-//     mut removed: RemovedComponents<Ant>,
-//     mut label_query: Query<(Entity, &AntLabel)>,
-//     mut commands: Commands,
-// ) {
-//     for ant_entity in &mut removed {
-//         info!("ant entity removed:'{:?}'", ant_entity);
+pub fn on_despawn_ant(
+    mut removed: RemovedComponents<Ant>,
+    mut label_query: Query<(Entity, &AntLabel)>,
+    mut commands: Commands,
+) {
+    for ant_entity in &mut removed {
+        info!("ant entity removed:'{:?}'", ant_entity);
 
-//         // let (label_entity, _) = label_query
-//         //     .iter()
-//         //     .find(|(_, label)| label.0 == ant_entity)
-//         //     .unwrap();
+        // let (label_entity, _) = label_query
+        //     .iter()
+        //     .find(|(_, label)| label.0 == ant_entity)
+        //     .unwrap();
 
-//         // commands.entity(label_entity).despawn();
-//     }
-// }
+        // commands.entity(label_entity).despawn();
+    }
+}
 
 pub fn on_update_ant_inventory(
     mut commands: Commands,
@@ -365,5 +370,61 @@ pub fn on_added_ant_dead(
 
         // Apply gray tint to dead ants.
         sprite.color = Color::GRAY;
+    }
+}
+
+pub fn on_tick_emote(
+    mut ant_query: Query<(Entity, &mut Emote)>,
+    emote_ui_query: Query<(Entity, &EmoteUI)>,
+    mut commands: Commands,
+) {
+    for (ant_entity, mut emote) in ant_query.iter_mut() {
+        // Show for 30s at default tick rate
+        let rate_of_emote_expire = emote.max() / (30 * DEFAULT_TICKS_PER_SECOND) as f32;
+        emote.tick(rate_of_emote_expire);
+
+        if emote.is_expired() {
+            commands.entity(ant_entity).remove::<Emote>();
+
+            if let Some((emote_ui_entity, _)) =
+                emote_ui_query.iter().find(|&(_, ui)| ui.0 == ant_entity)
+            {
+                // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+                commands.entity(emote_ui_entity).remove_parent();
+                commands.entity(emote_ui_entity).despawn();
+            }
+        }
+    }
+}
+
+// TODO: This is weird
+#[derive(Component)]
+pub struct EmoteUI(pub Entity);
+
+pub fn on_added_ant_emote(
+    mut ant_query: Query<(Entity, &Emote), Added<Emote>>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    for (ant_entity, emote) in ant_query.iter_mut() {
+        commands.entity(ant_entity).with_children(|parent| {
+            let texture = match emote.emote_type {
+                EmoteType::Asleep => asset_server.load("images/zzz.png"),
+                _ => panic!("Unexpected emote: {:?}", emote),
+            };
+
+            parent.spawn((
+                EmoteUI(ant_entity),
+                SpriteBundle {
+                    transform: Transform::from_xyz(0.75, 1.0, 1.0),
+                    sprite: Sprite {
+                        custom_size: Some(Vec2::splat(1.0)),
+                        ..default()
+                    },
+                    texture,
+                    ..default()
+                },
+            ));
+        });
     }
 }
