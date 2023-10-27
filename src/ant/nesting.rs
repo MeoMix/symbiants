@@ -138,6 +138,7 @@ pub fn ants_nesting_action(
                 &mut initiative,
                 &world_map,
                 &mut commands,
+                &settings,
             );
             continue;
         }
@@ -280,13 +281,14 @@ fn finish_digging_nest(
     ant_entity: Entity,
     ant_inventory: &AntInventory,
     initiative: &mut Initiative,
-    world_map: &WorldMap,
+    world_map: &Res<WorldMap>,
     commands: &mut Commands,
+    settings: &Res<Settings>,
 ) {
     commands
         .entity(ant_entity)
         .remove::<Nesting>()
-        .insert(Birthing::default());
+        .insert(Birthing::new(settings.max_birthing_time));
 
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);

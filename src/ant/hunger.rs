@@ -2,7 +2,7 @@ use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dea
 use crate::{
     common::IdMap,
     element::Element,
-    story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_DAY},
+    story_time::DEFAULT_TICKS_PER_SECOND,
     world_map::{position::Position, WorldMap},
 };
 use bevy::prelude::*;
@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 pub struct Hunger {
     value: f32,
     max: f32,
+    rate: f32,
 }
 
 impl Default for Hunger {
@@ -20,11 +21,23 @@ impl Default for Hunger {
         Self {
             value: 0.0,
             max: 100.0,
+            rate: 1.0,
         }
     }
 }
 
 impl Hunger {
+    pub fn new(max_time_seconds: isize) -> Self {
+        let max = 100.0;
+        let rate = max / (max_time_seconds * DEFAULT_TICKS_PER_SECOND) as f32;
+
+        Self {
+            value: 0.0,
+            max,
+            rate,
+        }
+    }
+
     pub fn value(&self) -> f32 {
         self.value
     }
@@ -33,8 +46,8 @@ impl Hunger {
         self.max
     }
 
-    pub fn tick(&mut self, rate_of_hunger: f32) {
-        self.value = (self.value + rate_of_hunger).min(self.max);
+    pub fn tick(&mut self) {
+        self.value = (self.value + self.rate).min(self.max);
     }
 
     pub fn is_full(&self) -> bool {
@@ -79,9 +92,7 @@ pub fn ants_hunger(
     for (entity, mut hunger, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
-        // Get 100% hungry once per full real-world day.
-        let rate_of_hunger = hunger.max() / (SECONDS_PER_DAY * DEFAULT_TICKS_PER_SECOND) as f32;
-        hunger.tick(rate_of_hunger);
+        hunger.tick();
 
         if hunger.is_starved() {
             commands.entity(entity).insert(Dead).remove::<Initiative>();
@@ -197,7 +208,7 @@ pub fn ants_regurgitate(
             ants_hunger_query
                 .get_many_mut([ant_entity, other_ant_entity])
                 .unwrap();
-        
+
         // Although initiative was checked early on in this system (when filtering entities) it's checked again here to handle an edge case of overlapping ants.
         // As an example, if there are three ants standing all in one spot, then, technically, they could all swap food.
         // However, practically, two swap food, expend their action, and the third is left without a swap partner.

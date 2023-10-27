@@ -35,6 +35,8 @@ pub struct Settings {
     pub chamber_size: isize,
     pub tunnel_length: isize,
     pub emote_duration: isize,
+    pub max_hunger_time: isize,
+    pub max_birthing_time: isize,
     pub probabilities: Probabilities,
 }
 
@@ -67,6 +69,8 @@ impl Default for Settings {
             chamber_size: 5,
             tunnel_length: 12,
             emote_duration: 30,
+            max_hunger_time: 86_400, // 1 day
+            max_birthing_time: 3_600, // 1 hour
             probabilities: Probabilities {
                 random_drop: 0.003,
                 random_turn: 0.005,

@@ -3,9 +3,7 @@ use super::{
     Facing, Initiative,
 };
 use crate::{
-    common::register,
-    name_list::get_random_name,
-    story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
+    common::register, name_list::get_random_name, story_time::DEFAULT_TICKS_PER_SECOND,
     world_map::position::Position,
 };
 use bevy::prelude::*;
@@ -18,6 +16,7 @@ use serde::{Deserialize, Serialize};
 pub struct Birthing {
     value: f32,
     max: f32,
+    rate: f32,
 }
 
 impl Default for Birthing {
@@ -25,21 +24,29 @@ impl Default for Birthing {
         Self {
             value: 0.0,
             max: 100.0,
+            rate: 1.0,
         }
     }
 }
 
 impl Birthing {
+    pub fn new(max_time_seconds: isize) -> Self {
+        let max = 100.0;
+        let rate = max / (max_time_seconds * DEFAULT_TICKS_PER_SECOND) as f32;
+
+        Self {
+            value: 0.0,
+            max,
+            rate,
+        }
+    }
+
     pub fn value(&self) -> f32 {
         self.value
     }
 
-    pub fn max(&self) -> f32 {
-        self.max
-    }
-
-    pub fn tick(&mut self, rate_of_birthing: f32) {
-        self.value = (self.value + rate_of_birthing).min(self.max);
+    pub fn tick(&mut self) {
+        self.value = (self.value + self.rate).min(self.max);
     }
 
     pub fn is_ready(&self) -> bool {
@@ -72,10 +79,7 @@ pub fn ants_birthing(
     for (mut birthing, position, color, orientation, mut initiative) in
         ants_birthing_query.iter_mut()
     {
-        // Create offspring once per full in-story hour.
-        let rate_of_birthing =
-            birthing.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
-        birthing.tick(rate_of_birthing);
+        birthing.tick();
 
         if !initiative.can_act() {
             continue;

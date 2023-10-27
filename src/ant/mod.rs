@@ -56,6 +56,7 @@ impl AntBundle {
         role: AntRole,
         name: AntName,
         initiative: Initiative,
+        hunger: Hunger,
     ) -> Self {
         AntBundle {
             id: Id::default(),
@@ -67,7 +68,7 @@ impl AntBundle {
             initiative,
             name,
             color,
-            hunger: Hunger::default(),
+            hunger,
         }
     }
 }

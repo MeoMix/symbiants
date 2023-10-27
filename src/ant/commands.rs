@@ -6,12 +6,12 @@ use crate::{
     ant::AntInventory,
     common::{Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
-    world_map::{position::Position, WorldMap},
+    world_map::{position::Position, WorldMap}, settings::Settings,
 };
 
 use super::{
     nesting::Nesting, AntBundle, AntColor, AntName, AntOrientation, AntRole, Initiative,
-    InventoryItemBundle,
+    InventoryItemBundle, hunger::Hunger,
 };
 
 pub trait AntCommandsExt {
@@ -238,6 +238,8 @@ struct SpawnAntCommand {
 
 impl Command for SpawnAntCommand {
     fn apply(self, world: &mut World) {
+        let settings = world.resource::<Settings>();
+
         let ant_bundle = AntBundle::new(
             self.position,
             self.color,
@@ -246,6 +248,7 @@ impl Command for SpawnAntCommand {
             self.role,
             self.name,
             self.initiative,
+            Hunger::new(settings.max_hunger_time),
         );
 
         let id = ant_bundle.id.clone();
