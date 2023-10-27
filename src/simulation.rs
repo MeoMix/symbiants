@@ -30,7 +30,7 @@ use crate::{
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{setup_background, teardown_background, update_sky_background},
-    common::{pre_setup_common, register_common, setup_common, ui::on_add_selected},
+    common::{pre_setup_common, register_common, setup_common, ui::{on_add_selected, on_selected_removed}},
     element::{
         register_element, setup_element, teardown_element,
         ui::{
@@ -259,9 +259,11 @@ impl Plugin for SimulationPlugin {
                     on_despawn_ant,
                     on_spawn_element,
                     on_spawn_pheromone,
+                    on_selected_removed,
                 )
                     .chain()
                     .run_if(not(in_state(StoryPlaybackState::FastForwarding))),
+                // TODO: I don't remember why I put this here rather than with the other UI stuff
                 on_add_selected,
                 // Run these even when simulation is paused so that user interactions are visualized.
             )

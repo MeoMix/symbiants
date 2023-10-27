@@ -7,8 +7,8 @@ use bevy_turborand::GlobalRng;
 use crate::ui::selection_menu::Selected;
 use crate::{
     ant::{
-        Angle, Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead,
-        Facing, Initiative,
+        Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
+        Initiative,
     },
     element::{commands::ElementCommandsExt, Element},
     name_list::get_random_name,
@@ -17,6 +17,9 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
+/// Process user input events at the start of the FixedUpdate simulation loop.
+/// Need to process them manually because they'd be cleared at the end of the next Update
+/// which might occur before the next time FixedUpdate runs.
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
@@ -34,7 +37,6 @@ pub fn process_external_event(
         ),
         With<Ant>,
     >,
-    ant_label_query: Query<(Entity, &AntLabel)>,
     selected_entity_query: Query<Entity, With<Selected>>,
     id_map: Res<IdMap>,
 ) {
@@ -139,18 +141,9 @@ pub fn process_external_event(
                     }
                 }
 
+                // TODO: I wanted to give ant an "emote" child, need to keep this in mind here since despawn recursive affects it, seems OK tho.
                 // despawn_recursive to clean up any existing inventory UI since ant inventory system won't work since ant is gone.
                 commands.entity(ant_entity).despawn_recursive();
-
-                // TODO: I tried using RemovedComponents in an attempt to react to any time an ant is despawned but it didn't seem to work
-
-                // Unfortunately, need to despawn label separately.
-                let (label_entity, _) = ant_label_query
-                    .iter()
-                    .find(|(_, label)| label.0 == ant_entity)
-                    .unwrap();
-
-                commands.entity(label_entity).despawn();
             }
         } else {
             info!("Not yet supported");

@@ -3,23 +3,17 @@ use bevy::prelude::*;
 use crate::ui::selection_menu::Selected;
 
 #[derive(Component)]
-pub struct SelectionSprite;
+pub struct SelectionSprite {
+    pub parent_entity: Entity,
+}
 
+/// When Selection is added to a component, decorate that component with a white outline sprite.
 pub fn on_add_selected(
     newly_selected_entity_query: Query<Entity, Added<Selected>>,
-    selection_sprite_query: Query<(Entity, &SelectionSprite)>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
     if let Ok(newly_selected_entity) = newly_selected_entity_query.get_single() {
-        // JIT cleanup existing sprite because waiting until PostUpdate to access RemovedComponents results in UI flicker
-        if let Ok((selection_sprite_entity, _)) = selection_sprite_query.get_single() {
-            // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-            commands.entity(selection_sprite_entity).remove_parent();
-            commands.entity(selection_sprite_entity).despawn();
-        }
-
-        // Insert a NodeBundle that is transparent, sized to fit the cell, and has a white border.
         commands
             .entity(newly_selected_entity)
             .with_children(|parent| {
@@ -33,26 +27,30 @@ pub fn on_add_selected(
                         },
                         ..default()
                     },
-                    SelectionSprite,
+                    SelectionSprite {
+                        parent_entity: newly_selected_entity,
+                    },
                 ));
             });
     }
 }
 
-// TODO: I would prefer this to use this system, but I need to run it from within FixedUpdate and Bevy doesn't support RemovedComponents from within FixedUpdate.
-// pub fn on_selected_removed(
-//     mut removed: RemovedComponents<Selected>,
-//     selection_sprite_query: Query<(Entity, &SelectionSprite)>,
-//     mut commands: Commands,
-// ) {
-//     for entity in &mut removed {
-//         let (selection_sprite_entity, _) = selection_sprite_query
-//             .iter()
-//             .find(|(_, selection_sprite)| selection_sprite.parent_entity == entity)
-//             .unwrap();
+/// When Selection is removed from a component, find the white outline sprite and remove it.
+pub fn on_selected_removed(
+    mut removed: RemovedComponents<Selected>,
+    selection_sprite_query: Query<(Entity, &SelectionSprite)>,
+    mut commands: Commands,
+) {
+    for entity in &mut removed {
+        let (selection_sprite_entity, _) = selection_sprite_query
+            .iter()
+            .find(|(_, selection_sprite)| selection_sprite.parent_entity == entity)
+            .unwrap();
 
-//         // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-//         commands.entity(selection_sprite_entity).remove_parent();
-//         commands.entity(selection_sprite_entity).despawn();
-//     }
-// }
+        // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+        commands
+            .entity(selection_sprite_entity)
+            .remove_parent()
+            .despawn();
+    }
+}
