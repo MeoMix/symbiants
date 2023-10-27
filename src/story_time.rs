@@ -90,7 +90,7 @@ impl Default for StoryElapsedTicks {
             // Real time wants to know how many seconds into the real world day have passed when the story started.
             real_time_offset: seconds_into_day() as isize,
             // Offset by an assumption that, for Sandbox Mode, the story starts at 8AM the first day not at Midnight.
-            demo_time_offset: 5 * SECONDS_PER_HOUR,
+            demo_time_offset: 8 * SECONDS_PER_HOUR,
         }
     }
 }
