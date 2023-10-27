@@ -156,10 +156,10 @@ pub fn ants_regurgitate(
                     other_ant_orientation,
                     &other_ant_position,
                     other_ant_inventory,
-                    other_ant_initative,
+                    other_ant_initiative,
                     _,
                 )| {
-                    if !other_ant_initative.can_act() || other_ant_inventory.0 != None {
+                    if !other_ant_initiative.can_act() || other_ant_inventory.0 != None {
                         return false;
                     }
 

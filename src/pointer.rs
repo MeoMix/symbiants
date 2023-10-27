@@ -1,4 +1,5 @@
 use crate::ant::commands::AntCommandsExt;
+use crate::common::IdMap;
 use bevy::input::touch::Touch;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
@@ -30,9 +31,10 @@ pub fn handle_pointer_tap(
     pointer_action: Res<PointerAction>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
-    ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
+    ants_query: Query<(Entity, &Position, &AntRole, &AntInventory, Option<&Initiative>), With<Ant>>,
     ant_label_query: Query<(Entity, &AntLabel)>,
     selected_entity_query: Query<Entity, With<Selected>>,
+    id_map: Res<IdMap>,
 ) {
     if is_pointer_captured.0 {
         return;
@@ -71,8 +73,8 @@ pub fn handle_pointer_tap(
         // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
         let selected_ant_entity = ants_query
             .iter()
-            .find(|(_, &position, _, _)| position == grid_position)
-            .map(|(entity, _, _, _)| entity);
+            .find(|(_, &position, _, _, _)| position == grid_position)
+            .map(|(entity, _, _, _, _)| entity);
 
         let selected_element_entity = world_map.get_element_entity(grid_position);
 
@@ -131,16 +133,16 @@ pub fn handle_pointer_tap(
             );
         }
     } else if *pointer_action == PointerAction::KillAnt {
-        if let Some((entity, _, _, _)) = ants_query
+        if let Some((entity, _, _, _, _)) = ants_query
             .iter()
-            .find(|(_, &position, _, _)| position == grid_position)
+            .find(|(_, &position, _, _, _)| position == grid_position)
         {
             commands.entity(entity).insert(Dead).remove::<Initiative>();
         }
     } else if *pointer_action == PointerAction::DespawnWorkerAnt {
-        if let Some((entity, _, _, inventory)) = ants_query
+        if let Some((ant_entity, _, _, inventory, initiative)) = ants_query
             .iter()
-            .find(|(_, &position, &role, _)| position == grid_position && role == AntRole::Worker)
+            .find(|(_, &position, &role, _, _)| position == grid_position && role == AntRole::Worker)
         {
             // If the ant is carrying something - drop it first.
             if inventory.0 != None {
@@ -148,23 +150,29 @@ pub fn handle_pointer_tap(
                 // TODO: in the future maybe try to find an adjacent place to drop element.
                 let element_entity = world_map.get_element_entity(grid_position).unwrap();
 
-                if world_map.is_element(&elements_query, grid_position, Element::Air) {
-                    commands.drop(entity, grid_position, *element_entity);
+                // TODO: Feels weird to need to care about initative when the user is forcing actions to occur.
+                let can_act = initiative.is_some() && initiative.unwrap().can_act();
+
+                if world_map.is_element(&elements_query, grid_position, Element::Air) && can_act {
+                    commands.drop(ant_entity, grid_position, *element_entity);
                 } else {
                     // No room - despawn inventory.
-                    commands.entity(*element_entity).despawn();
+                    if let Some(inventory_element_id) = &inventory.0 {
+                        let element_entity = id_map.0.get(inventory_element_id).unwrap();
+                        commands.entity(*element_entity).despawn();
+                    }
                 }
             }
 
             // despawn_recursive to clean up any existing inventory UI since ant inventory system won't work since ant is gone.
-            commands.entity(entity).despawn_recursive();
+            commands.entity(ant_entity).despawn_recursive();
 
             // TODO: I tried using RemovedComponents in an attempt to react to any time an ant is despawned but it didn't seem to work
 
             // Unfortunately, need to despawn label separately.
             let (label_entity, _) = ant_label_query
                 .iter()
-                .find(|(_, label)| label.0 == entity)
+                .find(|(_, label)| label.0 == ant_entity)
                 .unwrap();
 
             commands.entity(label_entity).despawn();
