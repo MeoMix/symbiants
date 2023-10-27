@@ -27,7 +27,7 @@ use crate::{
             on_tick_emote, on_update_ant_inventory, on_update_ant_orientation,
             on_update_ant_position, rerender_ants,
         },
-        walk::{ants_stabilize_footing_movement, ants_walk},
+        walk::{ants_stabilize_footing_movement, ants_walk}, death::on_ants_add_dead,
     },
     background::{setup_background, teardown_background, update_sky_background},
     common::{
@@ -225,8 +225,7 @@ impl Plugin for SimulationPlugin {
                             apply_deferred,
                         )
                             .chain(),
-                        // TODO: This isn't working well right now, causes panics
-                        // on_ants_add_dead,
+                        on_ants_add_dead,
                         // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                         ants_initiative,
                     )

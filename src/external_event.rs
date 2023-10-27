@@ -27,16 +27,7 @@ pub fn process_external_event(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
-    ants_query: Query<
-        (
-            Entity,
-            &Position,
-            &AntRole,
-            &AntInventory,
-            Option<&Initiative>,
-        ),
-        With<Ant>,
-    >,
+    ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
     selected_entity_query: Query<Entity, With<Selected>>,
     id_map: Res<IdMap>,
 ) {
@@ -48,8 +39,8 @@ pub fn process_external_event(
             // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
             let ant_entity_at_position = ants_query
                 .iter()
-                .find(|(_, &position, _, _, _)| position == grid_position)
-                .map(|(entity, _, _, _, _)| entity);
+                .find(|(_, &position, _, _)| position == grid_position)
+                .map(|(entity, _, _, _)| entity);
 
             let element_entity_at_position = world_map.get_element_entity(grid_position);
 
@@ -114,42 +105,24 @@ pub fn process_external_event(
                 );
             }
         } else if pointer_action == PointerAction::KillAnt {
-            if let Some((entity, _, _, _, _)) = ants_query
+            if let Some((entity, _, _, _)) = ants_query
                 .iter()
-                .find(|(_, &position, _, _, _)| position == grid_position)
+                .find(|(_, &position, _, _)| position == grid_position)
             {
                 commands.entity(entity).insert(Dead).remove::<Initiative>();
             }
         } else if pointer_action == PointerAction::DespawnWorkerAnt {
-            if let Some((ant_entity, _, _, inventory, initiative)) =
-                ants_query.iter().find(|(_, &position, &role, _, _)| {
+            if let Some((ant_entity, _, _, inventory)) =
+                ants_query.iter().find(|(_, &position, &role, _)| {
                     position == grid_position && role == AntRole::Worker
                 })
             {
-                // If the ant is carrying something - drop it first.
-                if inventory.0 != None {
-                    // If the ant is standing on air then drop element where standing otherwise despawn element.
-                    // TODO: in the future maybe try to find an adjacent place to drop element.
-                    let element_entity = world_map.get_element_entity(grid_position).unwrap();
-
-                    // TODO: Feels weird to need to care about initative when the user is forcing actions to occur.
-                    // Need to consider initative because ants don't regain the ability to act every tick - it takes ~3-5.
-                    let can_act = initiative.is_some() && initiative.unwrap().can_act();
-
-                    if world_map.is_element(&elements_query, grid_position, Element::Air) && can_act
-                    {
-                        commands.drop(ant_entity, grid_position, *element_entity);
-                    } else {
-                        // No room - despawn inventory.
-                        if let Some(inventory_element_id) = &inventory.0 {
-                            let element_entity = id_map.0.get(inventory_element_id).unwrap();
-                            commands.entity(*element_entity).despawn();
-                        }
-                    }
+                // TODO: This should happen automatically when an ant is despawned
+                if let Some(inventory_element_id) = &inventory.0 {
+                    let element_entity = id_map.0.get(inventory_element_id).unwrap();
+                    commands.entity(*element_entity).despawn();
                 }
 
-                // TODO: I wanted to give ant an "emote" child, need to keep this in mind here since despawn recursive affects it, seems OK tho.
-                // despawn_recursive to clean up any existing inventory UI since ant inventory system won't work since ant is gone.
                 commands.entity(ant_entity).despawn_recursive();
             }
         } else {

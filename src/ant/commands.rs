@@ -219,7 +219,9 @@ impl Command for DropElementCommand {
 
         match world.get_mut::<Initiative>(self.ant_entity) {
             Some(mut initiative) => initiative.consume(),
-            None => panic!("Failed to get initiative for ant {:?}", self.ant_entity),
+            // This isn't an exceptional scenario because ants which die lose initative entirely and must drop their inventory.
+            // Conceptually, placing an item takes initative but dropping from lack of ability does not.
+            None => info!("Failed to get initiative for ant {:?}", self.ant_entity),
         };
     }
 }
