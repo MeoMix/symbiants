@@ -3,6 +3,7 @@ mod background;
 mod camera;
 mod common;
 mod element;
+mod external_event;
 mod gravity;
 mod name_list;
 mod pancam;

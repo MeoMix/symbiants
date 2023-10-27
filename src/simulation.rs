@@ -23,7 +23,7 @@ use crate::{
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
         },
         ui::{
-            on_added_ant_dead, on_added_ant_emote, on_spawn_ant, on_tick_emote,
+            on_added_ant_dead, on_added_ant_emote, on_despawn_ant, on_spawn_ant, on_tick_emote,
             on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position,
             rerender_ants,
         },
@@ -37,12 +37,13 @@ use crate::{
             on_spawn_element, on_update_element_position, rerender_elements, ElementSpriteHandles,
         },
     },
+    external_event::process_external_event,
     gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable},
     pheromone::{
         pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
         ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
     },
-    pointer::{handle_pointer_tap, is_pointer_captured, IsPointerCaptured},
+    pointer::{handle_pointer_tap, is_pointer_captured, setup_pointer, IsPointerCaptured},
     save::{load, save, setup_save, teardown_save},
     settings::{pre_setup_settings, register_settings, teardown_settings},
     story_state::{
@@ -107,6 +108,7 @@ impl Plugin for SimulationPlugin {
             (
                 (setup_world_map, apply_deferred).chain(),
                 (setup_common, apply_deferred).chain(),
+                (setup_pointer, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
                 (setup_background, apply_deferred).chain(),
                 setup_save,
@@ -144,6 +146,7 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             FixedUpdate,
             (
+                (process_external_event, apply_deferred).chain(),
                 ((
                     (
                         // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
@@ -253,6 +256,7 @@ impl Plugin for SimulationPlugin {
                     on_update_element_position,
                     on_update_pheromone_visibility,
                     on_spawn_ant,
+                    on_despawn_ant,
                     on_spawn_element,
                     on_spawn_pheromone,
                 )
@@ -278,6 +282,8 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             Update,
             update_sky_background.run_if(
+                // `update_sky_background` is a view concern, and kinda heavy, so skip doing it while fast-forwarding.
+                // It has some local state within it which needs to be reset when clicking "Reset Story" so need to run in initializing, too.
                 not(in_state(StoryPlaybackState::FastForwarding)).and_then(
                     in_state(StoryState::Telling).or_else(in_state(StoryState::Initializing)),
                 ),

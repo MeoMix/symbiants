@@ -262,6 +262,7 @@ pub fn set_rate_of_time(
     }
 }
 
+// TODO: Consider also running this inside FixedUpdate to have it remain accurate under heavy sim load.
 // Track real-world time to be able to derive how much time elapsed while app was closed.
 // Keep this updated, rather than capture JIT, because running Bevy systems JIT as app closing isn't viable.
 pub fn update_story_real_world_time(mut story_real_world_time: ResMut<StoryRealWorldTime>) {
