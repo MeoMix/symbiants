@@ -13,12 +13,11 @@ use crate::{
     world_map::{position::Position, WorldMap},
 };
 
-use super::{hunger::Hunger, AntInventory, AntOrientation, AntRole, Initiative};
+use super::{AntInventory, AntOrientation, AntRole, Initiative};
 
 pub fn ants_nest_expansion(
     ants_query: Query<(
         &AntRole,
-        &Hunger,
         &AntOrientation,
         &AntInventory,
         &Initiative,
@@ -33,10 +32,10 @@ pub fn ants_nest_expansion(
 ) {
     let ant_entity_positions = ants_query
         .iter()
-        .map(|(_, _, _, _, _, position, entity)| (*position, entity))
+        .map(|(_, _, _, _, position, entity)| (*position, entity))
         .collect::<Vec<_>>();
 
-    for (ant_role, hunger, ant_orientation, inventory, initiative, ant_position, ant_entity) in
+    for (ant_role, ant_orientation, inventory, initiative, ant_position, ant_entity) in
         ants_query.iter()
     {
         if !initiative.can_act() {
@@ -45,7 +44,6 @@ pub fn ants_nest_expansion(
 
         if *ant_role != AntRole::Worker
             || inventory.0 != None
-            || hunger.is_hungry()
             || world_map.is_aboveground(ant_position)
             || ant_orientation.is_facing_north()
         {
