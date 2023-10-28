@@ -10,6 +10,7 @@ use crate::{
             ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_fade_chamber_pheromone,
             ants_remove_chamber_pheromone,
         },
+        death::on_ants_add_dead,
         dig::ants_dig,
         drop::ants_drop,
         hunger::{ants_hunger, ants_regurgitate},
@@ -27,7 +28,7 @@ use crate::{
             on_tick_emote, on_update_ant_inventory, on_update_ant_orientation,
             on_update_ant_position, rerender_ants,
         },
-        walk::{ants_stabilize_footing_movement, ants_walk}, death::on_ants_add_dead,
+        walk::{ants_stabilize_footing_movement, ants_walk},
     },
     background::{setup_background, teardown_background, update_sky_background},
     common::{
@@ -171,7 +172,10 @@ impl Plugin for SimulationPlugin {
                         (ants_birthing, apply_deferred).chain(),
                         (ants_sleep, ants_wake, ants_sleep_emote, apply_deferred).chain(),
                         (
-                            ants_sleep_emote.run_if(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
+                            ants_sleep_emote.run_if(
+                                resource_exists::<StoryElapsedTicks>()
+                                    .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
+                            ),
                             on_tick_emote,
                             apply_deferred,
                         )
@@ -255,19 +259,15 @@ impl Plugin for SimulationPlugin {
                     on_spawn_ant,
                     on_spawn_element,
                     on_spawn_pheromone,
-
                     // Despawn
                     on_despawn_ant,
-
                     // Added
                     on_added_ant_dead,
                     on_added_ant_emote,
                     on_added_selected,
-
                     // Removed
                     on_removed_selected,
                     on_removed_emote,
-
                     // Updated
                     on_update_ant_position,
                     on_update_ant_orientation,

@@ -168,19 +168,16 @@ pub fn on_spawn_ant(
 }
 
 pub fn rerender_ants(
-    ants_query: Query<
-        (
-            Entity,
-            &Position,
-            &AntColor,
-            &AntOrientation,
-            &AntName,
-            &AntRole,
-            &AntInventory,
-            Option<&Dead>,
-        ),
-        Added<Ant>,
-    >,
+    ants_query: Query<(
+        Entity,
+        &Position,
+        &AntColor,
+        &AntOrientation,
+        &AntName,
+        &AntRole,
+        &AntInventory,
+        Option<&Dead>,
+    )>,
     label_query: Query<Entity, With<AntLabel>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -194,7 +191,6 @@ pub fn rerender_ants(
         commands.entity(label_entity).despawn();
     }
 
-    // Render all ants with sprites
     for (ant_entity, position, color, orientation, name, role, inventory, dead) in ants_query.iter()
     {
         insert_ant_sprite(
@@ -213,7 +209,6 @@ pub fn rerender_ants(
             &id_map,
         );
 
-        // FIXME: This isn't working in some scenario. I've seen all labels disappear twice when loading in from a long fast-forward.
         spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &world_map);
     }
 }

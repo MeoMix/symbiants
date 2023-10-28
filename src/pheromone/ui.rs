@@ -22,7 +22,7 @@ pub fn get_pheromone_sprite(
 }
 
 pub fn render_pheromones(
-    pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), Added<Pheromone>>,
+    pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength)>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
