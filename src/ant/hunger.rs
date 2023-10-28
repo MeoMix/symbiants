@@ -117,8 +117,6 @@ pub fn ants_hunger(
 
                     // Reduce hunger by 20%
                     hunger.value -= (hunger.max() * 0.20).min(hunger.value());
-
-                    hunger.reset();
                     initiative.consume();
                 }
             }
