@@ -47,32 +47,6 @@ pub struct AntBundle {
     inventory: AntInventory,
 }
 
-impl AntBundle {
-    pub fn new(
-        position: Position,
-        color: AntColor,
-        orientation: AntOrientation,
-        inventory: AntInventory,
-        role: AntRole,
-        name: AntName,
-        initiative: Initiative,
-        hunger: Hunger,
-    ) -> Self {
-        AntBundle {
-            id: Id::default(),
-            ant: Ant,
-            position,
-            orientation,
-            inventory,
-            role,
-            initiative,
-            name,
-            color,
-            hunger,
-        }
-    }
-}
-
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AntName(pub String);
