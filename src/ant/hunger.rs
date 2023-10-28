@@ -69,10 +69,6 @@ impl Hunger {
     pub fn is_starved(&self) -> bool {
         self.value >= self.max
     }
-
-    pub fn reset(&mut self) {
-        self.value = 0.0;
-    }
 }
 
 pub fn ants_hunger(
