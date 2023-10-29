@@ -15,9 +15,15 @@ pub struct ExternalSimulationEvent {
     pub position: Position,
 }
 
+#[derive(Resource, Default)]
+pub struct PointerTapState {
+    pub position: Option<Vec2>,
+}
+
 pub fn setup_pointer(mut commands: Commands) {
     // Calling init_resource prevents Bevy's automatic event cleanup. Need to do it manually.
     commands.init_resource::<Events<ExternalSimulationEvent>>();
+    commands.init_resource::<PointerTapState>();
 }
 
 // Map user input to simulation events which will be processed manually at the start of the next simulation run.
@@ -31,6 +37,7 @@ pub fn handle_pointer_tap(
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
     mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
+    mut pointer_tap_state: ResMut<PointerTapState>,
 ) {
     if is_pointer_captured.0 {
         return;
@@ -45,22 +52,56 @@ pub fn handle_pointer_tap(
     let touches_vec: Vec<&Touch> = touches.iter().collect();
     let primary_touch_pressed = touches.any_just_pressed() && touches_vec.len() == 1;
 
-    let pointer_position;
-    if left_mouse_button_pressed {
-        pointer_position = match window.cursor_position() {
-            Some(position) => position,
+    let pointer_pressed_position = if left_mouse_button_pressed {
+        match window.cursor_position() {
+            Some(position) => Some(position),
             None => return,
-        };
+        }
     } else if primary_touch_pressed {
-        pointer_position = touches_vec[0].position();
+        Some(touches_vec[0].position())
     } else {
+        None
+    };
+
+    if pointer_pressed_position.is_some() {
+        pointer_tap_state.position = pointer_pressed_position;
+    }
+
+    if pointer_tap_state.position.is_none() {
+        return;
+    }
+
+    let left_mouse_button_released = mouse_input.just_released(MouseButton::Left);
+    let primary_touch_released = touches.any_just_released() && touches_vec.len() == 1;
+
+    let pointer_released_position = if left_mouse_button_released {
+        match window.cursor_position() {
+            Some(position) => Some(position),
+            None => return,
+        }
+    } else if primary_touch_released {
+        Some(touches_vec[0].position())
+    } else {
+        None
+    };
+
+    if pointer_released_position.is_none() {
+        return;
+    }
+
+    let pointer_distance = pointer_tap_state
+        .position
+        .unwrap()
+        .distance(pointer_released_position.unwrap());
+    let is_drag = pointer_distance >= 5.0;
+    if is_drag {
         return;
     }
 
     let (camera, camera_transform) = camera_query.single_mut();
 
     let world_position = camera
-        .viewport_to_world_2d(camera_transform, pointer_position)
+        .viewport_to_world_2d(camera_transform, pointer_tap_state.position.unwrap())
         .unwrap();
 
     let grid_position = world_to_grid_position(&world_map, world_position);
