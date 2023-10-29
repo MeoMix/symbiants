@@ -12,7 +12,7 @@ use crate::{
 
 use self::{
     birthing::Birthing, chambering::Chambering, commands::AntCommandsExt, hunger::Hunger,
-    sleep::Asleep, tunneling::Tunneling,
+    sleep::Asleep, tunneling::Tunneling, digestion::Digestion,
 };
 
 use super::element::Element;
@@ -23,6 +23,7 @@ pub mod chambering;
 pub mod commands;
 pub mod death;
 pub mod dig;
+pub mod digestion;
 pub mod drop;
 pub mod emote;
 pub mod hunger;
@@ -44,6 +45,7 @@ pub struct AntBundle {
     name: AntName,
     color: AntColor,
     hunger: Hunger,
+    digestion: Digestion,
     inventory: AntInventory,
 }
 

@@ -1,4 +1,7 @@
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Dead, Initiative};
+use super::{
+    commands::AntCommandsExt, digestion::Digestion, AntInventory, AntOrientation, AntRole, Dead,
+    Initiative,
+};
 use crate::{
     common::IdMap,
     element::Element,
@@ -8,22 +11,12 @@ use crate::{
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Hunger {
     value: f32,
     max: f32,
     rate: f32,
-}
-
-impl Default for Hunger {
-    fn default() -> Self {
-        Self {
-            value: 0.0,
-            max: 100.0,
-            rate: 1.0,
-        }
-    }
 }
 
 impl Hunger {
@@ -42,8 +35,8 @@ impl Hunger {
         self.value
     }
 
-    pub fn max(&self) -> f32 {
-        self.max
+    pub fn set_value(&mut self, value: f32) {
+        self.value = value.min(self.max).max(0.0);
     }
 
     pub fn tick(&mut self) {
@@ -75,6 +68,7 @@ pub fn ants_hunger(
     mut ants_hunger_query: Query<(
         Entity,
         &mut Hunger,
+        &mut Digestion,
         &AntOrientation,
         &Position,
         &mut AntInventory,
@@ -85,7 +79,7 @@ pub fn ants_hunger(
     world_map: Res<WorldMap>,
     id_map: Res<IdMap>,
 ) {
-    for (entity, mut hunger, orientation, position, mut inventory, mut initiative) in
+    for (entity, mut hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
         hunger.tick();
@@ -111,8 +105,7 @@ pub fn ants_hunger(
                 if *element == Element::Food {
                     inventory.0 = None;
 
-                    // Reduce hunger by 20%
-                    hunger.value -= (hunger.max() * 0.20).min(hunger.value());
+                    digestion.increment(-0.20);
                     initiative.consume();
                 }
             }
@@ -131,7 +124,8 @@ pub fn ants_hunger(
 pub fn ants_regurgitate(
     mut ants_hunger_query: Query<(
         Entity,
-        &mut Hunger,
+        &Hunger,
+        &mut Digestion,
         &AntOrientation,
         &Position,
         &mut AntInventory,
@@ -141,64 +135,69 @@ pub fn ants_regurgitate(
 ) {
     let peckish_ants = ants_hunger_query
         .iter()
-        .filter(|(_, hunger, _, _, inventory, initiative, _)| {
+        .filter(|(_, hunger, _, _, _, inventory, initiative, _)| {
             initiative.can_act() && hunger.is_peckish() && inventory.0 == None
         })
         .collect::<Vec<_>>();
 
     let mut results = vec![];
 
-    for (ant_entity, ant_hunger, ant_orientation, ant_position, _, _, ant_role) in peckish_ants {
+    for (ant_entity, ant_hunger, _, ant_orientation, ant_position, _, _, ant_role) in peckish_ants {
         let ahead_position = ant_orientation.get_ahead_position(ant_position);
 
-        if let Some((other_ant_entity, other_ant_hunger, _, _, _, _, _)) = ants_hunger_query
-            .iter()
-            // Support ontop of as well as in front because its kinda challenging to ensure queen can have an ant directly in front of them.
-            .find(
-                |(
-                    other_ant_entity,
-                    _,
-                    other_ant_orientation,
-                    &other_ant_position,
-                    other_ant_inventory,
-                    other_ant_initiative,
-                    _,
-                )| {
-                    if !other_ant_initiative.can_act() || other_ant_inventory.0 != None {
+        if let Some((other_ant_entity, other_ant_hunger, other_ant_digestion, _, _, _, _, _)) =
+            ants_hunger_query
+                .iter()
+                // Support ontop of as well as in front because its kinda challenging to ensure queen can have an ant directly in front of them.
+                .find(
+                    |(
+                        other_ant_entity,
+                        _,
+                        _,
+                        other_ant_orientation,
+                        &other_ant_position,
+                        other_ant_inventory,
+                        other_ant_initiative,
+                        _,
+                    )| {
+                        if !other_ant_initiative.can_act() || other_ant_inventory.0 != None {
+                            return false;
+                        }
+
+                        // If ants are adjacent and facing one another - allow regurgitation.
+                        if other_ant_position == ahead_position
+                            && other_ant_orientation.get_ahead_position(&other_ant_position)
+                                == *ant_position
+                        {
+                            return true;
+                        }
+
+                        // If ants are standing ontop of one another (and not the same ant) - allow regurgitation
+                        if other_ant_position == *ant_position && *other_ant_entity != ant_entity {
+                            return true;
+                        }
+
                         return false;
-                    }
-
-                    // If ants are adjacent and facing one another - allow regurgitation.
-                    if other_ant_position == ahead_position
-                        && other_ant_orientation.get_ahead_position(&other_ant_position)
-                            == *ant_position
-                    {
-                        return true;
-                    }
-
-                    // If ants are standing ontop of one another (and not the same ant) - allow regurgitation
-                    if other_ant_position == *ant_position && *other_ant_entity != ant_entity {
-                        return true;
-                    }
-
-                    return false;
-                },
-            )
+                    },
+                )
         {
             if *ant_role == AntRole::Queen
                 || (ant_hunger.is_starving() && !other_ant_hunger.is_hungry())
                 || (ant_hunger.is_hungry() && other_ant_hunger.is_full())
             {
-                // Transfer up to 20% hunger from other_ant to ant.
-                let hunger_transfer_amount =
-                    (other_ant_hunger.max() * 0.20).min(other_ant_hunger.value());
-                results.push((ant_entity, other_ant_entity, hunger_transfer_amount));
+                // Transfer up to 20% digestion from other_ant to ant.
+                let digestion_transfer_amount =
+                    (other_ant_digestion.max() * 0.20).min(other_ant_digestion.value());
+
+                if digestion_transfer_amount > 0.0 {
+                    results.push((ant_entity, other_ant_entity, digestion_transfer_amount));
+                }
             }
         }
     }
 
-    for (ant_entity, other_ant_entity, hunger_transfer_amount) in results {
-        let [(_, mut hunger, _, _, _, mut ant_initiative, _), (_, mut other_ant_hunger, _, _, _, mut other_ant_initiative, _)] =
+    for (ant_entity, other_ant_entity, digestion_transfer_amount) in results {
+        let [(_, _, mut digestion, _, _, _, mut ant_initiative, _), (_, _, mut other_ant_digestion, _, _, _, mut other_ant_initiative, _)] =
             ants_hunger_query
                 .get_many_mut([ant_entity, other_ant_entity])
                 .unwrap();
@@ -210,8 +209,8 @@ pub fn ants_regurgitate(
             continue;
         }
 
-        hunger.value -= hunger_transfer_amount;
-        other_ant_hunger.value += hunger_transfer_amount;
+        digestion.value -= digestion_transfer_amount;
+        other_ant_digestion.value += digestion_transfer_amount;
 
         ant_initiative.consume();
         other_ant_initiative.consume();

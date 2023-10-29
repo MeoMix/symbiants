@@ -11,22 +11,12 @@ use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Birthing {
     value: f32,
     max: f32,
     rate: f32,
-}
-
-impl Default for Birthing {
-    fn default() -> Self {
-        Self {
-            value: 0.0,
-            max: 100.0,
-            rate: 1.0,
-        }
-    }
 }
 
 impl Birthing {

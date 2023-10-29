@@ -12,6 +12,7 @@ use crate::{
         },
         death::on_ants_add_dead,
         dig::ants_dig,
+        digestion::ants_digestion,
         drop::ants_drop,
         hunger::{ants_hunger, ants_regurgitate},
         nest_expansion::ants_nest_expansion,
@@ -168,7 +169,14 @@ impl Plugin for SimulationPlugin {
                         // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
                         ants_stabilize_footing_movement,
                         // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
-                        (ants_hunger, ants_regurgitate, apply_deferred).chain(),
+                        (
+                            ants_digestion,
+                            ants_hunger,
+                            apply_deferred,
+                            ants_regurgitate,
+                            apply_deferred,
+                        )
+                            .chain(),
                         (ants_birthing, apply_deferred).chain(),
                         (ants_sleep, ants_wake, ants_sleep_emote, apply_deferred).chain(),
                         (

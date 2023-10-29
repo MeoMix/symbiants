@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
     nesting::Nesting, AntBundle, AntColor, AntName, AntOrientation, AntRole, Initiative,
-    InventoryItemBundle, hunger::Hunger, Ant,
+    InventoryItemBundle, hunger::Hunger, Ant, digestion::Digestion,
 };
 
 pub trait AntCommandsExt {
@@ -251,6 +251,7 @@ impl Command for SpawnAntCommand {
             name: self.name,
             color: self.color,
             hunger: Hunger::new(settings.max_hunger_time),
+            digestion: Digestion::new(settings.max_hunger_time),
         };
 
         let id = ant_bundle.id.clone();
