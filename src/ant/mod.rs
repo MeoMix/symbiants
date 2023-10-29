@@ -394,6 +394,7 @@ pub fn register_ant(
     register::<Angle>(&app_type_registry, &mut saveable_registry);
     register::<AntRole>(&app_type_registry, &mut saveable_registry);
     register::<Hunger>(&app_type_registry, &mut saveable_registry);
+    register::<Digestion>(&app_type_registry, &mut saveable_registry);
     register::<AntInventory>(&app_type_registry, &mut saveable_registry);
     register::<InventoryItem>(&app_type_registry, &mut saveable_registry);
     register::<Birthing>(&app_type_registry, &mut saveable_registry);
