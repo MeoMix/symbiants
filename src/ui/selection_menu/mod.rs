@@ -39,11 +39,18 @@ pub fn update_selection_menu(
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
 
+    let selected_element = selected_element_query.get_single();
+    let selected_ant = selected_ant_query.get_single();
+
+    if selected_element.is_err() && selected_ant.is_err() {
+        return;
+    }
+
     egui::Window::new("Selection")
         .default_pos(egui::Pos2::new(0.0, window.height()))
         .resizable(false)
         .show(ctx, |ui| {
-            if let Ok((element, element_position)) = selected_element_query.get_single() {
+            if let Ok((element, element_position)) = selected_element {
                 ui.label("Element");
                 ui.label(&format!("Type: {:?}", element));
 
@@ -59,7 +66,7 @@ pub fn update_selection_menu(
                     ));
                 }
             } else if let Ok((hunger, name, ant_role, inventory, birthing, dead, asleep)) =
-                selected_ant_query.get_single()
+                selected_ant
             {
                 ui.label("Ant");
                 ui.label(&format!("Name: {}", name.0));
