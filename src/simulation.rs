@@ -285,6 +285,17 @@ impl Plugin for SimulationPlugin {
                 )
                     .chain()
                     .run_if(not(in_state(StoryPlaybackState::FastForwarding))),
+                |world: &mut World| {
+                    // DANGER:
+                    // This is probably the most questionable piece of code in this codebase.
+                    // Systems within FixedUpdate depend on RemovedComponents<T>, but this isn't cleared until
+                    // end-of-frame. If FixedUpdate runs multiple times before yielding then RemovedComponents<T>
+                    // will contain stale entries and panics will occur.
+                    // Calling this *BREAKS* change tracking in stages past FixedUpdate because it clears
+                    // any existing, tracked events. 
+                    // TODO: It might be desirable to move this to the top of FixedUpdate rather than the bottom
+                    world.clear_trackers();
+                }
             )
                 .run_if(in_state(StoryState::Telling))
                 .chain(),

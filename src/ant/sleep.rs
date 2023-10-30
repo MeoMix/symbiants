@@ -1,13 +1,15 @@
 use bevy::prelude::*;
-use bevy_turborand::{GlobalRng, DelegatedRng};
+use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    ant::emote::EmoteType,
+    settings::Settings,
     story_time::StoryElapsedTicks,
-    world_map::{position::Position, WorldMap}, settings::Settings, ant::emote::EmoteType,
+    world_map::{position::Position, WorldMap},
 };
 
-use super::{AntInventory, AntOrientation, Initiative, emote::Emote};
+use super::{emote::Emote, AntInventory, AntOrientation, Initiative};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -45,7 +47,9 @@ pub fn ants_sleep_emote(
 ) {
     for ant_entity in ants_query.iter() {
         if rng.f32() < settings.probabilities.sleep_emote {
-            commands.entity(ant_entity).insert(Emote::new(EmoteType::Asleep));
+            commands
+                .entity(ant_entity)
+                .insert(Emote::new(EmoteType::Asleep));
         }
     }
 }
