@@ -178,7 +178,7 @@ impl Plugin for SimulationPlugin {
                         )
                             .chain(),
                         (ants_birthing, apply_deferred).chain(),
-                        (ants_sleep, ants_wake, ants_sleep_emote, apply_deferred).chain(),
+                        (ants_sleep, ants_wake, apply_deferred).chain(),
                         (
                             ants_sleep_emote.run_if(
                                 resource_exists::<StoryElapsedTicks>()
