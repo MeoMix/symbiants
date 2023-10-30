@@ -1,20 +1,12 @@
 /// Ants might emote from time to time. This results in showing an emoji above their head.
-/// TODO: Make this more flexible and invert control. For now prioritizing ease of implementation.
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
-#[reflect(Component)]
+#[derive(Component, Debug, PartialEq, Copy, Clone)]
 pub enum EmoteType {
-    // TODO: It's weird to have None as a default when I'll remove the Component entirely instead of setting to None
-    #[default]
-    None,
     Asleep,
-    Hungry,
 }
 
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
-#[reflect(Component)]
+#[derive(Component, Debug, PartialEq, Copy, Clone)]
 pub struct Emote {
     pub emote_type: EmoteType,
     value: f32,
