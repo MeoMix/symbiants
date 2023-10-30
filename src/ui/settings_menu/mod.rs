@@ -7,7 +7,7 @@ use crate::{
     story_time::{
         StoryElapsedTicks, StoryPlaybackState, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,
         MAX_USER_TICKS_PER_SECOND,
-    },
+    }, settings::Settings, ant::AntColor,
 };
 
 pub fn update_settings_menu(
@@ -19,6 +19,8 @@ pub fn update_settings_menu(
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
     mut pheromone_visibility: ResMut<PheromoneVisibility>,
     mut story_elapsed_ticks: ResMut<StoryElapsedTicks>,
+    mut settings: ResMut<Settings>,
+    mut ant_query: Query<&mut AntColor>
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -66,9 +68,40 @@ pub fn update_settings_menu(
                 }
             }
 
+            ui.label("Ant Color");
+
+            let mut egui_color = bevy_color_to_color32(settings.ant_color);
+            egui::color_picker::color_edit_button_srgba(ui, &mut egui_color, egui::color_picker::Alpha::OnlyBlend);
+            let new_ant_color = color32_to_bevy_color(egui_color);
+
+            if settings.ant_color != new_ant_color {
+                settings.ant_color = new_ant_color;
+
+                for mut ant_color in ant_query.iter_mut() {
+                    ant_color.0 = new_ant_color;
+                }
+            }
 
             if ui.button("Reset Story").clicked() {
                 next_story_state.set(StoryState::Cleanup);
             }
         });
+}
+
+fn color32_to_bevy_color(color: egui::Color32) -> bevy::prelude::Color {
+    bevy::prelude::Color::rgba(
+        color.r() as f32 / 255.0,
+        color.g() as f32 / 255.0,
+        color.b() as f32 / 255.0,
+        color.a() as f32 / 255.0,
+    )
+}
+
+fn bevy_color_to_color32(color: bevy::prelude::Color) -> egui::Color32 {
+    egui::Color32::from_rgba_unmultiplied(
+        (color.r() * 255.0) as u8,
+        (color.g() * 255.0) as u8,
+        (color.b() * 255.0) as u8,
+        (color.a() * 255.0) as u8,
+    )
 }

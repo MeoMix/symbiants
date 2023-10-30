@@ -345,6 +345,14 @@ pub fn on_update_ant_position(
     }
 }
 
+pub fn on_update_ant_color(
+    mut query: Query<(&AntColor, &mut Sprite), (Changed<AntColor>, Without<Dead>)>,
+) {
+    for (color, mut sprite) in query.iter_mut() {
+        sprite.color = color.0;
+    }
+}
+
 pub fn on_update_ant_orientation(
     mut query: Query<(&mut Transform, &AntOrientation), Changed<AntOrientation>>,
 ) {

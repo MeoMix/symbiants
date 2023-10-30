@@ -27,7 +27,7 @@ use crate::{
         ui::{
             on_added_ant_dead, on_added_ant_emote, on_despawn_ant, on_removed_emote, on_spawn_ant,
             on_tick_emote, on_update_ant_inventory, on_update_ant_orientation,
-            on_update_ant_position, rerender_ants,
+            on_update_ant_position, rerender_ants, on_update_ant_color,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
@@ -279,6 +279,7 @@ impl Plugin for SimulationPlugin {
                     // Updated
                     on_update_ant_position,
                     on_update_ant_orientation,
+                    on_update_ant_color,
                     on_update_ant_inventory,
                     on_update_element_position,
                     on_update_pheromone_visibility,
