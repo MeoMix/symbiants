@@ -33,13 +33,45 @@ pub fn update_settings_menu(
         .show(ctx, |ui| {
             ui.checkbox(&mut story_time.is_real_time, "Use Real Time");
 
-            //ui.checkbox(&mut story_time.is_real_sun, "Use Real Sunrise/Sunset");
+            ui.add_enabled_ui(story_time.is_real_time, |ui| {
+                ui.checkbox(&mut story_time.is_real_sun, "Use Real Sunrise/Sunset");
+            });
 
-            // TODO: egui doesn't support numeric inputs
-            // https://github.com/emilk/egui/issues/1348
-            // lat/long
-            // ui.add(egui::TextEdit::singleline(&mut story_time.latitude).hint_text("Lat"));
-            // ui.add(egui::TextEdit::singleline(&mut story_time.longitutde).hint_text("Long"));
+            ui.add_enabled_ui(story_time.is_real_sun, |ui| {
+                ui.horizontal_top(|ui| {
+                    // TODO: egui doesn't support numeric inputs
+                    // https://github.com/emilk/egui/issues/1348
+                    // TODO: introduce separate (local?) state tracking for input to support temporarily incorrect state.
+                    // This will enable supporting writing "1.05" directly rather than needing to say "105" then go back and add the period.
+                    let mut temp_latitude = story_time.latitude.to_string();
+                    let latitude_input = egui::TextEdit::singleline(&mut temp_latitude);
+
+                    ui.label("Lat.");
+                    ui.add(
+                        latitude_input
+                            .desired_width(50.0)
+                            .interactive(story_time.is_real_sun),
+                    );
+
+                    // attempt to parse latitude string back into float:
+                    if let Ok(new_latitude) = temp_latitude.parse::<f32>() {
+                        story_time.latitude = new_latitude;
+                    }
+
+                    let mut temp_longitude = story_time.longitude.to_string();
+                    let longitude_input = egui::TextEdit::singleline(&mut temp_longitude);
+                    ui.label("Long.");
+                    ui.add(
+                        longitude_input
+                            .desired_width(50.0)
+                            .interactive(story_time.is_real_sun),
+                    );
+
+                    if let Ok(new_longitude) = temp_longitude.parse::<f32>() {
+                        story_time.longitude = new_longitude;
+                    }
+                });
+            });
 
             ui.add(
                 egui::Slider::new(
@@ -78,23 +110,25 @@ pub fn update_settings_menu(
                 }
             }
 
-            ui.label("Ant Color");
+            ui.horizontal_top(|ui| {
+                ui.label("Ant Color");
 
-            let mut egui_color = bevy_color_to_color32(settings.ant_color);
-            egui::color_picker::color_edit_button_srgba(
-                ui,
-                &mut egui_color,
-                egui::color_picker::Alpha::OnlyBlend,
-            );
-            let new_ant_color = color32_to_bevy_color(egui_color);
+                let mut egui_color = bevy_color_to_color32(settings.ant_color);
+                egui::color_picker::color_edit_button_srgba(
+                    ui,
+                    &mut egui_color,
+                    egui::color_picker::Alpha::OnlyBlend,
+                );
+                let new_ant_color = color32_to_bevy_color(egui_color);
 
-            if settings.ant_color != new_ant_color {
-                settings.ant_color = new_ant_color;
+                if settings.ant_color != new_ant_color {
+                    settings.ant_color = new_ant_color;
 
-                for mut ant_color in ant_query.iter_mut() {
-                    ant_color.0 = new_ant_color;
+                    for mut ant_color in ant_query.iter_mut() {
+                        ant_color.0 = new_ant_color;
+                    }
                 }
-            }
+            });
 
             if ui.button("Reset Story").clicked() {
                 next_story_state.set(StoryState::Cleanup);

@@ -25,9 +25,12 @@ fn interpolate_color(color_a: Color, color_b: Color, t: f32) -> Color {
     Color::rgba(r, g, b, a)
 }
 
-fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
-    let current_time = hour as f32 + minute as f32 / 60.0;
-
+// TODO: Instead of using sunrise/sunset, consider swapping to altitude and using the sun's altitude directly to define key moments.
+fn get_sky_gradient_color(
+    current_decimal_hours: f32,
+    sunrise_decimal_hours: f32,
+    sunset_decimal_hours: f32,
+) -> (Color, Color) {
     let midnight = Color::rgba(0.0471, 0.0353, 0.0392, 1.0);
     let predawn = Color::rgba(0.0471, 0.0353, 0.0392, 1.0);
     let dawn = Color::rgba(0.0863, 0.1059, 0.2118, 1.0);
@@ -41,13 +44,13 @@ fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
     // the sun rises and sets at times that would make sense for a person's daily routine.
     let key_moments = [
         (0.0, midnight),
-        (6.0, predawn),
-        (8.0, dawn),
-        (8.5, morning),
+        (sunrise_decimal_hours - 2.0, predawn),
+        (sunrise_decimal_hours, dawn),
+        (sunrise_decimal_hours + 0.5, morning),
         (12.0, noon),
-        (19.5, evening),
-        (20.0, dusk),
-        (22.0, postdusk),
+        (sunset_decimal_hours - 0.5, evening),
+        (sunset_decimal_hours, dusk),
+        (sunset_decimal_hours + 2.0, postdusk),
     ];
 
     let (idx, &(start_time, start_color)) = key_moments
@@ -55,7 +58,7 @@ fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
         .enumerate()
         .find(|&(i, &(time, _))| {
             i == key_moments.len() - 1
-                || (current_time >= time && current_time < key_moments[i + 1].0)
+                || (current_decimal_hours >= time && current_decimal_hours < key_moments[i + 1].0)
         })
         .unwrap();
 
@@ -65,7 +68,7 @@ fn get_sky_gradient_color(hour: isize, minute: isize) -> (Color, Color) {
         key_moments[idx + 1]
     };
 
-    let progress = (current_time - start_time) / (end_time - start_time);
+    let progress = (current_decimal_hours - start_time) / (end_time - start_time);
 
     let north_color;
     let south_color;
@@ -90,9 +93,14 @@ fn create_sky_sprites(
 ) -> Vec<(SpriteBundle, Position, SkyBackground)> {
     let mut sky_sprites = vec![];
 
-    let time_info = story_time.as_time_info();
+    let current_decimal_hours = story_time.get_decimal_hours();
+    let (sunrise_decimal_hours, sunset_decimal_hours) = story_time.get_sun_decimal_hours();
 
-    let (north_color, south_color) = get_sky_gradient_color(time_info.hours(), time_info.minutes());
+    let (north_color, south_color) = get_sky_gradient_color(
+        current_decimal_hours,
+        sunrise_decimal_hours,
+        sunset_decimal_hours,
+    );
 
     for x in 0..width {
         for y in 0..height {
@@ -191,7 +199,14 @@ pub fn update_sky_background(
         return;
     }
 
-    let (north_color, south_color) = get_sky_gradient_color(time_info.hours(), time_info.minutes());
+    let current_decimal_hours = story_time.get_decimal_hours();
+    let (sunrise_decimal_hours, sunset_decimal_hours) = story_time.get_sun_decimal_hours();
+
+    let (north_color, south_color) = get_sky_gradient_color(
+        current_decimal_hours,
+        sunrise_decimal_hours,
+        sunset_decimal_hours,
+    );
     for (mut sprite, position) in sky_sprite_query.iter_mut() {
         let t_y: f32 = position.y as f32 / *world_map.surface_level() as f32;
         let color = interpolate_color(north_color, south_color, t_y);

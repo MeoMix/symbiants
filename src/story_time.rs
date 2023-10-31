@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
-use chrono::{DateTime, LocalResult, TimeZone, Utc};
-use js_sys::Date;
+use chrono::Datelike;
+use chrono::{DateTime, LocalResult, NaiveDate, TimeZone, Timelike, Utc};
 use std::time::Duration;
-use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::common::register;
 
@@ -12,19 +11,6 @@ pub const MAX_USER_TICKS_PER_SECOND: isize = 1_500;
 pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 50_000;
 pub const SECONDS_PER_HOUR: isize = 3_600;
 pub const SECONDS_PER_DAY: isize = 86_400;
-
-#[wasm_bindgen]
-pub fn seconds_into_day() -> f64 {
-    let date = Date::new_0();
-
-    let hours = date.get_hours();
-    let minutes = date.get_minutes();
-    let seconds = date.get_seconds();
-
-    let total_seconds = (hours as f64 * 3600.0) + (minutes as f64 * 60.0) + seconds as f64;
-
-    total_seconds
-}
 
 // NOTE: `bevy_reflect` doesn't support DateTime<Utc> without manually implement Reflect (which is hard)
 // So, use a timestamp instead and convert to DateTime<Utc> when needed.
@@ -91,10 +77,11 @@ impl Default for StoryTime {
             elapsed_ticks: 0,
             is_real_time: false,
             is_real_sun: false,
-            latitude: 0.0,
-            longitude: 0.0,
+            // Might as well default to San Francisco
+            latitude: 37.0,
+            longitude: -122.0,
             // Real time wants to know how many seconds into the real world day have passed when the story started.
-            real_time_offset: seconds_into_day() as isize,
+            real_time_offset: chrono::Local::now().time().num_seconds_from_midnight() as isize,
             // Offset by an assumption that, for Sandbox Mode, the story starts at 8AM the first day not at Midnight.
             demo_time_offset: 8 * SECONDS_PER_HOUR,
         }
@@ -127,6 +114,38 @@ impl StoryTime {
             hours,
             minutes,
         }
+    }
+
+    pub fn get_decimal_hours(&self) -> f32 {
+        let time_info = self.as_time_info();
+
+        time_info.hours() as f32 + time_info.minutes() as f32 / 60.0
+    }
+
+    // Use local because trying to reflect user's sunrise/sunset time not Greenwich's.
+    pub fn get_sun_decimal_hours(&self) -> (f32, f32) {
+        if !self.is_real_time || !self.is_real_sun {
+            return (8.0, 20.0);
+        }
+
+        // TODO: Base this off of StoryTime's elapsed_ticks + time offset rather than current day so that sun renders correctly when fast-forwarding.
+        let today = chrono::Local::now().date_naive();
+
+        let date = NaiveDate::from_ymd_opt(today.year(), today.month(), today.day()).unwrap();
+
+        let sun_times =
+            sun_times::sun_times(date, self.latitude as f64, self.longitude as f64, 0.0).unwrap();
+
+        let sunrise: DateTime<chrono::Local> = DateTime::from(sun_times.0);
+        let sunset: DateTime<chrono::Local> = DateTime::from(sun_times.1);
+
+        let sunrise_decimal_hours =
+            sunrise.time().hour() as f32 + sunrise.time().minute() as f32 / 60.0;
+
+        let sunset_decimal_hours =
+            sunset.time().hour() as f32 + sunset.time().minute() as f32 / 60.0;
+
+        (sunrise_decimal_hours, sunset_decimal_hours)
     }
 }
 
