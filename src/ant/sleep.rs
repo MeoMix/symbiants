@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     ant::emote::EmoteType,
     settings::Settings,
-    story_time::StoryElapsedTicks,
+    story_time::StoryTime,
     world_map::{position::Position, WorldMap},
 };
 
@@ -19,9 +19,9 @@ pub fn ants_sleep(
     ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), With<Initiative>>,
     mut commands: Commands,
     world_map: Res<WorldMap>,
-    story_elapsed_ticks: Res<StoryElapsedTicks>,
+    story_time: Res<StoryTime>,
 ) {
-    if !story_elapsed_ticks.as_time_info().is_nighttime() {
+    if !story_time.as_time_info().is_nighttime() {
         return;
     }
 
@@ -57,10 +57,10 @@ pub fn ants_sleep_emote(
 pub fn ants_wake(
     ants_query: Query<Entity, With<Asleep>>,
     mut commands: Commands,
-    story_elapsed_ticks: Res<StoryElapsedTicks>,
+    story_time: Res<StoryTime>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    if story_elapsed_ticks.as_time_info().is_nighttime() {
+    if story_time.as_time_info().is_nighttime() {
         return;
     }
 

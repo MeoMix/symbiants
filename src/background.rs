@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     story_state::StoryState,
-    story_time::{StoryElapsedTicks, TimeInfo},
+    story_time::{StoryTime, TimeInfo},
     world_map::{position::Position, WorldMap},
 };
 
@@ -86,11 +86,11 @@ fn create_sky_sprites(
     width: isize,
     height: isize,
     world_map: &Res<WorldMap>,
-    elapsed_ticks: &Res<StoryElapsedTicks>,
+    story_time: &Res<StoryTime>,
 ) -> Vec<(SpriteBundle, Position, SkyBackground)> {
     let mut sky_sprites = vec![];
 
-    let time_info = elapsed_ticks.as_time_info();
+    let time_info = story_time.as_time_info();
 
     let (north_color, south_color) = get_sky_gradient_color(time_info.hours(), time_info.minutes());
 
@@ -163,7 +163,7 @@ fn create_tunnel_sprites(
 pub fn update_sky_background(
     mut sky_sprite_query: Query<(&mut Sprite, &Position), With<SkyBackground>>,
     mut last_run_time_info: Local<TimeInfo>,
-    elapsed_ticks: Res<StoryElapsedTicks>,
+    story_time: Res<StoryTime>,
     story_state: Res<State<StoryState>>,
     // TODO: Option because need to run during Initializing to reset but WorldMap is gone already.
     // maybe could find a way to reset this at the same time WorldMap is getting despawned?
@@ -180,7 +180,7 @@ pub fn update_sky_background(
         None => panic!("expected world map to exist at this point"),
     };
 
-    let time_info = elapsed_ticks.as_time_info();
+    let time_info = story_time.as_time_info();
 
     // Update the sky's colors once a minute of elapsed *story time* not real-world time.
     if time_info.days() == last_run_time_info.days()
@@ -206,7 +206,7 @@ pub fn update_sky_background(
 pub fn setup_background(
     mut commands: Commands,
     world_map: Res<WorldMap>,
-    elapsed_ticks: Res<StoryElapsedTicks>,
+    story_time: Res<StoryTime>,
 ) {
     let air_height = *world_map.surface_level() + 1;
 
@@ -214,7 +214,7 @@ pub fn setup_background(
         *world_map.width(),
         air_height,
         &world_map,
-        &elapsed_ticks,
+        &story_time,
     ));
 
     commands.spawn_batch(create_tunnel_sprites(

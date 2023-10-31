@@ -75,18 +75,24 @@ impl TimeInfo {
 
 #[derive(Resource, Clone, Reflect)]
 #[reflect(Resource)]
-pub struct StoryElapsedTicks {
-    value: isize,
+pub struct StoryTime {
+    elapsed_ticks: isize,
     pub is_real_time: bool,
+    pub is_real_sun: bool,
+    pub latitude: f32,
+    pub longitude: f32,
     real_time_offset: isize,
     demo_time_offset: isize,
 }
 
-impl Default for StoryElapsedTicks {
+impl Default for StoryTime {
     fn default() -> Self {
-        StoryElapsedTicks {
-            value: 0,
+        StoryTime {
+            elapsed_ticks: 0,
             is_real_time: false,
+            is_real_sun: false,
+            latitude: 0.0,
+            longitude: 0.0,
             // Real time wants to know how many seconds into the real world day have passed when the story started.
             real_time_offset: seconds_into_day() as isize,
             // Offset by an assumption that, for Sandbox Mode, the story starts at 8AM the first day not at Midnight.
@@ -95,9 +101,9 @@ impl Default for StoryElapsedTicks {
     }
 }
 
-impl StoryElapsedTicks {
-    pub fn value(&self) -> isize {
-        self.value
+impl StoryTime {
+    pub fn elapsed_ticks(&self) -> isize {
+        self.elapsed_ticks
     }
 
     pub fn as_time_info(&self) -> TimeInfo {
@@ -108,7 +114,7 @@ impl StoryElapsedTicks {
         };
 
         let seconds_total =
-            self.value as f32 / DEFAULT_TICKS_PER_SECOND as f32 + start_time_offset as f32;
+            self.elapsed_ticks as f32 / DEFAULT_TICKS_PER_SECOND as f32 + start_time_offset as f32;
         let days = (seconds_total / SECONDS_PER_DAY as f32).floor() as isize;
 
         // Calculate hours and minutes
@@ -155,13 +161,13 @@ pub fn register_story_time(
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
     register::<StoryRealWorldTime>(&app_type_registry, &mut saveable_registry);
-    register::<StoryElapsedTicks>(&app_type_registry, &mut saveable_registry);
+    register::<StoryTime>(&app_type_registry, &mut saveable_registry);
 }
 
 // TODO: awkward timing for this - need to have resources available before calling load (why?)
 pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryRealWorldTime>();
-    commands.init_resource::<StoryElapsedTicks>();
+    commands.init_resource::<StoryTime>();
     commands.init_resource::<FastForwardingStateInfo>();
     commands.init_resource::<TicksPerSecond>();
     commands.insert_resource(FixedTime::new_from_secs(
@@ -177,7 +183,7 @@ pub fn setup_story_time(
     mut story_real_world_time: ResMut<StoryRealWorldTime>,
     mut fixed_time: ResMut<FixedTime>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
-    mut story_elapsed_ticks: ResMut<StoryElapsedTicks>,
+    mut story_elapsed_ticks: ResMut<StoryTime>,
     ticks_per_second: Res<TicksPerSecond>,
 ) {
     // Setup story_real_world_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
@@ -194,7 +200,7 @@ pub fn setup_story_time(
             // Increment elapsed ticks by the amount not being simulated to keep game clock synced with real-world clock
             if story_elapsed_ticks.is_real_time {
                 let missed_ticks = seconds_past_max * ticks_per_second.0;
-                story_elapsed_ticks.value += missed_ticks;
+                story_elapsed_ticks.elapsed_ticks += missed_ticks;
             }
 
             // Enforce a max of 24 hours because it's impossible to quickly simulate an arbitrary amount of time missed.
@@ -211,7 +217,7 @@ pub fn setup_story_time(
 
 pub fn teardown_story_time(mut commands: Commands) {
     commands.remove_resource::<StoryRealWorldTime>();
-    commands.remove_resource::<StoryElapsedTicks>();
+    commands.remove_resource::<StoryTime>();
     commands.remove_resource::<FastForwardingStateInfo>();
     commands.remove_resource::<TicksPerSecond>();
 
@@ -270,8 +276,8 @@ pub fn update_story_real_world_time(mut story_real_world_time: ResMut<StoryRealW
 }
 
 // Track in-game time by counting elapsed ticks.
-pub fn update_story_elapsed_ticks(mut story_elapsed_ticks: ResMut<StoryElapsedTicks>) {
-    story_elapsed_ticks.value += 1;
+pub fn update_story_elapsed_ticks(mut story_time: ResMut<StoryTime>) {
+    story_time.elapsed_ticks += 1;
 }
 
 pub fn update_time_scale(

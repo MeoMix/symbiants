@@ -4,14 +4,14 @@ use bevy_egui::{egui, EguiContexts};
 use crate::{
     ant::{birthing::Birthing, hunger::Hunger, AntRole, Dead},
     element::Food,
-    story_time::StoryElapsedTicks,
+    story_time::StoryTime,
 };
 
 pub fn update_info_window(
     mut contexts: EguiContexts,
     ant_query: Query<(&AntRole, &Hunger, Option<&Birthing>), Without<Dead>>,
     food_query: Query<&Food>,
-    elapsed_ticks: Res<StoryElapsedTicks>,
+    story_time: Res<StoryTime>,
 ) {
     let queen_ant = ant_query
         .iter()
@@ -30,7 +30,7 @@ pub fn update_info_window(
         .default_pos(egui::Pos2::new(0.0, 0.0))
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
-            let time_info = elapsed_ticks.as_time_info();
+            let time_info = story_time.as_time_info();
 
             // Determine AM/PM and adjust hour to 12-hour format
             let hours = time_info.hours();

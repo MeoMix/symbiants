@@ -2,12 +2,14 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
 use crate::{
+    ant::AntColor,
     pheromone::PheromoneVisibility,
+    settings::Settings,
     story_state::StoryState,
     story_time::{
-        StoryElapsedTicks, StoryPlaybackState, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,
+        StoryPlaybackState, StoryTime, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,
         MAX_USER_TICKS_PER_SECOND,
-    }, settings::Settings, ant::AntColor,
+    },
 };
 
 pub fn update_settings_menu(
@@ -18,9 +20,9 @@ pub fn update_settings_menu(
     story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
     mut pheromone_visibility: ResMut<PheromoneVisibility>,
-    mut story_elapsed_ticks: ResMut<StoryElapsedTicks>,
+    mut story_time: ResMut<StoryTime>,
     mut settings: ResMut<Settings>,
-    mut ant_query: Query<&mut AntColor>
+    mut ant_query: Query<&mut AntColor>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -29,7 +31,15 @@ pub fn update_settings_menu(
         .default_pos(egui::Pos2::new(window.width() - 400.0, 0.0))
         .resizable(false)
         .show(ctx, |ui| {
-            ui.checkbox(&mut story_elapsed_ticks.is_real_time, "Start From Real Time");
+            ui.checkbox(&mut story_time.is_real_time, "Use Real Time");
+
+            //ui.checkbox(&mut story_time.is_real_sun, "Use Real Sunrise/Sunset");
+
+            // TODO: egui doesn't support numeric inputs
+            // https://github.com/emilk/egui/issues/1348
+            // lat/long
+            // ui.add(egui::TextEdit::singleline(&mut story_time.latitude).hint_text("Lat"));
+            // ui.add(egui::TextEdit::singleline(&mut story_time.longitutde).hint_text("Long"));
 
             ui.add(
                 egui::Slider::new(
@@ -71,7 +81,11 @@ pub fn update_settings_menu(
             ui.label("Ant Color");
 
             let mut egui_color = bevy_color_to_color32(settings.ant_color);
-            egui::color_picker::color_edit_button_srgba(ui, &mut egui_color, egui::color_picker::Alpha::OnlyBlend);
+            egui::color_picker::color_edit_button_srgba(
+                ui,
+                &mut egui_color,
+                egui::color_picker::Alpha::OnlyBlend,
+            );
             let new_ant_color = color32_to_bevy_color(egui_color);
 
             if settings.ant_color != new_ant_color {

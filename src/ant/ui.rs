@@ -420,7 +420,6 @@ pub fn on_added_ant_emote(
         commands.entity(ant_entity).with_children(|parent| {
             let texture = match emote.emote_type {
                 EmoteType::Asleep => asset_server.load("images/zzz.png"),
-                _ => panic!("Unexpected emote: {:?}", emote),
             };
 
             parent.spawn((

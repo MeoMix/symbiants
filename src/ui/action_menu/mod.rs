@@ -66,6 +66,8 @@ pub fn update_action_menu(
 
             ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
 
+            // TODO: Disable this button except for a few hours each simulated day and allow the user to define that range.
+            // TODO: Make it so that this button can only be clicked once per simulated day
             if ui.button("Breathe for Food").clicked() {
                 is_showing_breath_dialog.0 = true;
             }

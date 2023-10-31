@@ -58,7 +58,7 @@ use crate::{
     story_time::{
         pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
         teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
-        update_time_scale, StoryElapsedTicks, StoryPlaybackState, DEFAULT_TICKS_PER_SECOND,
+        update_time_scale, StoryTime, StoryPlaybackState, DEFAULT_TICKS_PER_SECOND,
     },
     world_map::{setup_world_map, teardown_world_map},
 };
@@ -181,7 +181,7 @@ impl Plugin for SimulationPlugin {
                         (ants_sleep, ants_wake, apply_deferred).chain(),
                         (
                             ants_sleep_emote.run_if(
-                                resource_exists::<StoryElapsedTicks>()
+                                resource_exists::<StoryTime>()
                                     .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
                             ),
                             on_tick_emote,
@@ -392,10 +392,10 @@ fn check_textures(
 }
 
 // TODO: Maybe do this according to time rather than number of ticks elapsing to keep things consistent
-fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryElapsedTicks>) -> bool {
-    move |mut last_run_tick_count: Local<isize>, elapsed_ticks: Res<StoryElapsedTicks>| {
-        if *last_run_tick_count + ticks <= elapsed_ticks.value() {
-            *last_run_tick_count = elapsed_ticks.value();
+fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) -> bool {
+    move |mut last_run_tick_count: Local<isize>, story_time: Res<StoryTime>| {
+        if *last_run_tick_count + ticks <= story_time.elapsed_ticks() {
+            *last_run_tick_count = story_time.elapsed_ticks();
             true
         } else {
             false
