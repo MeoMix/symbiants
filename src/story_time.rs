@@ -53,9 +53,8 @@ impl TimeInfo {
         self.minutes
     }
 
-    // TODO: Could use an enum or something
-    pub fn is_nighttime(&self) -> bool {
-        self.hours < 6 || self.hours >= 22
+    pub fn get_decimal_hours(&self) -> f32 {
+        self.hours() as f32 + self.minutes() as f32 / 60.0
     }
 }
 
@@ -116,14 +115,18 @@ impl StoryTime {
         }
     }
 
-    pub fn get_decimal_hours(&self) -> f32 {
+    // TODO: Could use an enum or something
+    pub fn is_nighttime(&self) -> bool {
+        let (sunrise, sunset) = self.get_sunrise_sunset_decimal_hours();
+
         let time_info = self.as_time_info();
 
-        time_info.hours() as f32 + time_info.minutes() as f32 / 60.0
+        // TODO: edgecase where sunset is past 10pm or sunrise is before 2am?
+        time_info.hours < (sunrise - 2.0) as isize || time_info.hours >= (sunset + 2.0) as isize
     }
 
     // Use local because trying to reflect user's sunrise/sunset time not Greenwich's.
-    pub fn get_sun_decimal_hours(&self) -> (f32, f32) {
+    pub fn get_sunrise_sunset_decimal_hours(&self) -> (f32, f32) {
         if !self.is_real_time || !self.is_real_sun {
             return (8.0, 20.0);
         }

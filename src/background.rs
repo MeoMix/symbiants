@@ -93,8 +93,9 @@ fn create_sky_sprites(
 ) -> Vec<(SpriteBundle, Position, SkyBackground)> {
     let mut sky_sprites = vec![];
 
-    let current_decimal_hours = story_time.get_decimal_hours();
-    let (sunrise_decimal_hours, sunset_decimal_hours) = story_time.get_sun_decimal_hours();
+    let current_decimal_hours = story_time.as_time_info().get_decimal_hours();
+    let (sunrise_decimal_hours, sunset_decimal_hours) =
+        story_time.get_sunrise_sunset_decimal_hours();
 
     let (north_color, south_color) = get_sky_gradient_color(
         current_decimal_hours,
@@ -199,8 +200,9 @@ pub fn update_sky_background(
         return;
     }
 
-    let current_decimal_hours = story_time.get_decimal_hours();
-    let (sunrise_decimal_hours, sunset_decimal_hours) = story_time.get_sun_decimal_hours();
+    let current_decimal_hours = story_time.as_time_info().get_decimal_hours();
+    let (sunrise_decimal_hours, sunset_decimal_hours) =
+        story_time.get_sunrise_sunset_decimal_hours();
 
     let (north_color, south_color) = get_sky_gradient_color(
         current_decimal_hours,
