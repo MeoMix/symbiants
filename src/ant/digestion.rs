@@ -52,7 +52,6 @@ pub fn ants_digestion(mut ants_digestion_query: Query<(&mut Digestion, &mut Hung
         let digestion_amount = digestion.tick();
 
         if digestion_amount > 0.0 {
-            // TODO: This only really works because digestion and hunger have the same scale, idk if I should depend on that
             let value = hunger.value() - digestion_amount;
             hunger.set_value(value);
         }

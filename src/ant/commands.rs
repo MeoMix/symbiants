@@ -251,7 +251,7 @@ impl Command for SpawnAntCommand {
             name: self.name,
             color: self.color,
             hunger: Hunger::new(settings.max_hunger_time),
-            digestion: Digestion::new(settings.max_hunger_time),
+            digestion: Digestion::new(settings.max_digestion_time),
         };
 
         let id = ant_bundle.id.clone();
