@@ -27,7 +27,7 @@ impl Hunger {
         let rate = max / (max_time_seconds * DEFAULT_TICKS_PER_SECOND) as f32;
 
         Self {
-            value: 50.0,
+            value: 0.0,
             max,
             rate,
         }
