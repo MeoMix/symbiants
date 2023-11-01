@@ -47,9 +47,18 @@ pub fn update_action_menu(
         .default_pos(egui::Pos2::new(window.width(), 0.0))
         .resizable(false)
         .show(ctx, |ui| {
+            // TODO: Make it so that this button can only be clicked once per simulated day
+            let food_disabled = settings.is_breathwork_scheduled
+                && story_time.is_real_time
+                && !story_time.is_nighttime();
+
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Select, "Select");
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Place Sand");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Place Food");
+
+            ui.add_enabled_ui(!food_disabled, |ui| {
+                ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Place Food");
+            });
+
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Place Dirt");
             ui.selectable_value(
                 pointer_action.as_mut(),
@@ -70,12 +79,8 @@ pub fn update_action_menu(
 
             ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
 
-            // TODO: Make it so that this button can only be clicked once per simulated day
-            let disabled = settings.is_breathwork_scheduled
-                && story_time.is_real_time
-                && !story_time.is_nighttime();
 
-            ui.add_enabled_ui(!disabled, |ui| {
+            ui.add_enabled_ui(!food_disabled, |ui| {
                 if ui.button("Breathe for Food").clicked() {
                     is_showing_breath_dialog.0 = true;
                 }
