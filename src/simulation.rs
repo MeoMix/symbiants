@@ -14,7 +14,7 @@ use crate::{
         dig::ants_dig,
         digestion::ants_digestion,
         drop::ants_drop,
-        hunger::{ants_hunger, ants_regurgitate},
+        hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate},
         nest_expansion::ants_nest_expansion,
         nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
         register_ant, setup_ant,
@@ -26,8 +26,8 @@ use crate::{
         },
         ui::{
             on_added_ant_dead, on_added_ant_emote, on_despawn_ant, on_removed_emote, on_spawn_ant,
-            on_tick_emote, on_update_ant_inventory, on_update_ant_orientation,
-            on_update_ant_position, rerender_ants, on_update_ant_color,
+            on_tick_emote, on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
+            on_update_ant_position, rerender_ants,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
@@ -58,7 +58,7 @@ use crate::{
     story_time::{
         pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
         teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
-        update_time_scale, StoryTime, StoryPlaybackState, DEFAULT_TICKS_PER_SECOND,
+        update_time_scale, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
     },
     world_map::{setup_world_map, teardown_world_map},
 };
@@ -171,7 +171,8 @@ impl Plugin for SimulationPlugin {
                         // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
                         (
                             ants_digestion,
-                            ants_hunger,
+                            ants_hunger_tick,
+                            ants_hunger_act,
                             apply_deferred,
                             ants_regurgitate,
                             apply_deferred,
@@ -293,10 +294,10 @@ impl Plugin for SimulationPlugin {
                     // end-of-frame. If FixedUpdate runs multiple times before yielding then RemovedComponents<T>
                     // will contain stale entries and panics will occur.
                     // Calling this *BREAKS* change tracking in stages past FixedUpdate because it clears
-                    // any existing, tracked events. 
+                    // any existing, tracked events.
                     // TODO: It might be desirable to move this to the top of FixedUpdate rather than the bottom
                     world.clear_trackers();
-                }
+                },
             )
                 .run_if(in_state(StoryState::Telling))
                 .chain(),

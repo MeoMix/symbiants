@@ -1,6 +1,8 @@
 use super::{
-    commands::AntCommandsExt, digestion::Digestion, AntInventory, AntOrientation, AntRole, Dead,
-    Initiative,
+    commands::AntCommandsExt,
+    digestion::Digestion,
+    emote::{Emote, EmoteType},
+    AntInventory, AntOrientation, AntRole, Dead, Initiative,
 };
 use crate::{
     common::IdMap,
@@ -25,7 +27,7 @@ impl Hunger {
         let rate = max / (max_time_seconds * DEFAULT_TICKS_PER_SECOND) as f32;
 
         Self {
-            value: 0.0,
+            value: 50.0,
             max,
             rate,
         }
@@ -64,10 +66,18 @@ impl Hunger {
     }
 }
 
-pub fn ants_hunger(
+// TODO: Ants stop getting hungry while asleep which isn't really intended, but I haven't thought through Initative removal enough clearly
+// because sometimes I want it for Dead + Sleep, sometimes just one or the other, and it's becoming a leaky abstraction.
+pub fn ants_hunger_tick(mut ants_hunger_query: Query<&mut Hunger, Without<Dead>>) {
+    for mut hunger in ants_hunger_query.iter_mut() {
+        hunger.tick();
+    }
+}
+
+pub fn ants_hunger_act(
     mut ants_hunger_query: Query<(
         Entity,
-        &mut Hunger,
+        &Hunger,
         &mut Digestion,
         &AntOrientation,
         &Position,
@@ -79,13 +89,14 @@ pub fn ants_hunger(
     world_map: Res<WorldMap>,
     id_map: Res<IdMap>,
 ) {
-    for (entity, mut hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
+    for (ant_entity, hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
-        hunger.tick();
-
         if hunger.is_starved() {
-            commands.entity(entity).insert(Dead).remove::<Initiative>();
+            commands
+                .entity(ant_entity)
+                .insert(Dead)
+                .remove::<Initiative>();
         } else if hunger.is_peckish() {
             if !initiative.can_act() {
                 continue;
@@ -96,17 +107,21 @@ pub fn ants_hunger(
                 let ahead_position = orientation.get_ahead_position(position);
                 if world_map.is_element(&elements_query, ahead_position, Element::Food) {
                     let food_entity = world_map.get_element_entity(ahead_position).unwrap();
-                    commands.dig(entity, ahead_position, *food_entity);
+                    commands.dig(ant_entity, ahead_position, *food_entity);
                 }
             } else {
-                let entity = id_map.0.get(inventory.0.as_ref().unwrap()).unwrap();
-                let element = elements_query.get(*entity).unwrap();
+                let element_entity = id_map.0.get(inventory.0.as_ref().unwrap()).unwrap();
+                let element = elements_query.get(*element_entity).unwrap();
 
                 if *element == Element::Food {
                     inventory.0 = None;
 
                     digestion.increment(-0.20);
                     initiative.consume();
+
+                    commands
+                        .entity(ant_entity)
+                        .insert(Emote::new(EmoteType::FoodLove));
                 }
             }
         }
@@ -132,6 +147,7 @@ pub fn ants_regurgitate(
         &mut Initiative,
         &mut AntRole,
     )>,
+    mut commands: Commands,
 ) {
     let peckish_ants = ants_hunger_query
         .iter()
@@ -214,5 +230,9 @@ pub fn ants_regurgitate(
 
         ant_initiative.consume();
         other_ant_initiative.consume();
+
+        commands
+            .entity(ant_entity)
+            .insert(Emote::new(EmoteType::FoodLove));
     }
 }

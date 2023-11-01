@@ -4,6 +4,7 @@ use bevy::prelude::*;
 #[derive(Component, Debug, PartialEq, Copy, Clone)]
 pub enum EmoteType {
     Asleep,
+    FoodLove,
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone)]
