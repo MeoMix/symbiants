@@ -115,6 +115,15 @@ impl StoryTime {
         }
     }
 
+    pub fn is_within_schedule_window(&self) -> bool {
+        let time_info = self.as_time_info();
+        
+        let (sunrise, _) = self.get_sunrise_sunset_decimal_hours();
+        let (hours, _) = decimal_hours_to_hours_minutes(sunrise);
+
+        (time_info.hours() - hours as isize).abs() < 2
+    }
+
     // TODO: Could use an enum or something
     pub fn is_nighttime(&self) -> bool {
         let (sunrise, sunset) = self.get_sunrise_sunset_decimal_hours();
@@ -313,4 +322,10 @@ pub fn update_time_scale(
     }
 
     fixed_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
+}
+
+fn decimal_hours_to_hours_minutes(decimal_hours: f32) -> (f32, f32) {
+    let hours = decimal_hours.trunc();
+    let minutes = (decimal_hours.fract() * 60.0).round();
+    (hours, minutes)
 }

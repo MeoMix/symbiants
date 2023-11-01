@@ -50,7 +50,7 @@ pub fn update_action_menu(
             // TODO: Make it so that this button can only be clicked once per simulated day
             let food_disabled = settings.is_breathwork_scheduled
                 && story_time.is_real_time
-                && !story_time.is_nighttime();
+                && !story_time.is_within_schedule_window();
 
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Select, "Select");
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Place Sand");
@@ -78,7 +78,6 @@ pub fn update_action_menu(
             );
 
             ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
-
 
             ui.add_enabled_ui(!food_disabled, |ui| {
                 if ui.button("Breathe for Food").clicked() {
