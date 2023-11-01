@@ -37,6 +37,7 @@ pub struct Settings {
     pub emote_duration: isize,
     pub max_hunger_time: isize,
     pub max_birthing_time: isize,
+    pub is_breathwork_scheduled: bool,
     pub probabilities: Probabilities,
 }
 
@@ -71,6 +72,7 @@ impl Default for Settings {
             emote_duration: 30,
             max_hunger_time: 86_400, // 1 day
             max_birthing_time: 3_600, // 1 hour
+            is_breathwork_scheduled: false,
             probabilities: Probabilities {
                 random_drop: 0.003,
                 random_turn: 0.005,

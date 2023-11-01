@@ -3,6 +3,8 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
+use crate::{settings::Settings, story_time::StoryTime};
+
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
 pub enum PointerAction {
     #[default]
@@ -34,6 +36,8 @@ pub fn update_action_menu(
     mut pointer_action: ResMut<PointerAction>,
     mut is_showing_breath_dialog: ResMut<IsShowingBreathDialog>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
+    settings: Res<Settings>,
+    story_time: Res<StoryTime>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -66,10 +70,15 @@ pub fn update_action_menu(
 
             ui.selectable_value(pointer_action.as_mut(), PointerAction::KillAnt, "Kill Ant");
 
-            // TODO: Disable this button except for a few hours each simulated day and allow the user to define that range.
             // TODO: Make it so that this button can only be clicked once per simulated day
-            if ui.button("Breathe for Food").clicked() {
-                is_showing_breath_dialog.0 = true;
-            }
+            let disabled = settings.is_breathwork_scheduled
+                && story_time.is_real_time
+                && !story_time.is_nighttime();
+
+            ui.add_enabled_ui(!disabled, |ui| {
+                if ui.button("Breathe for Food").clicked() {
+                    is_showing_breath_dialog.0 = true;
+                }
+            });
         });
 }

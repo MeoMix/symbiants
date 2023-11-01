@@ -73,12 +73,23 @@ pub fn update_settings_menu(
                 });
             });
 
+            ui.add_enabled_ui(story_time.is_real_time, |ui| {
+                ui.checkbox(&mut settings.is_breathwork_scheduled, "Use Breathwork Scheduling");
+
+                let (sunrise, _) = story_time.get_sunrise_sunset_decimal_hours();
+
+                let (hours, minutes) = decimal_hours_to_hours_minutes(sunrise);
+                
+                ui.label(&format!("Unlock Time: {}:{:02} AM", hours - 2.0, minutes));
+                ui.label(&format!("Lock Time: {}:{:02} AM", hours + 2.0, minutes));
+            });
+
             ui.add(
                 egui::Slider::new(
                     &mut ticks_per_second.0,
                     DEFAULT_TICKS_PER_SECOND..=MAX_USER_TICKS_PER_SECOND,
                 )
-                .text("Speed"),
+                .text("ticks/sec"),
             );
 
             match story_playback_state.get() {
@@ -152,4 +163,10 @@ fn bevy_color_to_color32(color: bevy::prelude::Color) -> egui::Color32 {
         (color.b() * 255.0) as u8,
         (color.a() * 255.0) as u8,
     )
+}
+
+fn decimal_hours_to_hours_minutes(decimal_hours: f32) -> (f32, f32) {
+    let hours = decimal_hours.trunc();
+    let minutes = (decimal_hours.fract() * 60.0).round();
+    (hours, minutes)
 }
