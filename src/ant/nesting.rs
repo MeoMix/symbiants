@@ -4,7 +4,7 @@ use crate::{
     element::Element,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     settings::Settings,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
@@ -43,7 +43,7 @@ pub fn ants_nesting_movement(
         &Nesting,
     )>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     mut rng: ResMut<GlobalRng>,
 ) {
     for (mut initiative, position, mut orientation, inventory, nesting) in ants_query.iter_mut() {
@@ -51,7 +51,7 @@ pub fn ants_nesting_movement(
             continue;
         }
 
-        if world_map.is_underground(&position) || inventory.0 != None {
+        if nest.is_underground(&position) || inventory.0 != None {
             continue;
         }
 
@@ -77,7 +77,7 @@ pub fn ants_nesting_movement(
             &orientation,
             &position,
             &elements_query,
-            &world_map,
+            &nest,
             &mut rng,
         );
 
@@ -95,7 +95,7 @@ pub fn ants_nesting_action(
         Entity,
     )>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
@@ -113,7 +113,7 @@ pub fn ants_nesting_action(
             &inventory,
             &position,
             &orientation,
-            &world_map,
+            &nest,
             &elements_query,
             &settings,
         ) {
@@ -122,21 +122,21 @@ pub fn ants_nesting_action(
                 &orientation,
                 ant_entity,
                 &mut nesting,
-                &world_map,
+                &nest,
                 &mut commands,
                 &settings,
             );
             continue;
         }
 
-        if can_finish_nesting(&position, &orientation, &world_map, &elements_query) {
+        if can_finish_nesting(&position, &orientation, &nest, &elements_query) {
             finish_digging_nest(
                 &position,
                 &orientation,
                 ant_entity,
                 &inventory,
                 &mut initiative,
-                &world_map,
+                &nest,
                 &mut commands,
                 &settings,
             );
@@ -161,7 +161,7 @@ fn can_start_nesting(
     inventory: &AntInventory,
     ant_position: &Position,
     ant_orientation: &AntOrientation,
-    world_map: &WorldMap,
+    nest: &Nest,
     elements_query: &Query<&Element>,
     settings: &Settings,
 ) -> bool {
@@ -178,10 +178,10 @@ fn can_start_nesting(
     let is_too_near_world_edge =
         ant_position.x < offset || ant_position.x > settings.world_width - offset;
 
-    let has_valid_dig_site = world_map.is_aboveground(&ant_position) && !is_too_near_world_edge;
+    let has_valid_dig_site = nest.is_aboveground(&ant_position) && !is_too_near_world_edge;
 
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *world_map.element_entity(dig_position);
+    let dig_target_entity = *nest.element_entity(dig_position);
 
     let is_element_diggable = elements_query
         .get(dig_target_entity)
@@ -199,13 +199,13 @@ fn start_digging_nest(
     ant_orientation: &AntOrientation,
     ant_entity: Entity,
     nesting: &mut Nesting,
-    world_map: &WorldMap,
+    nest: &Nest,
     commands: &mut Commands,
     settings: &Settings,
 ) {
     // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *world_map.element_entity(dig_position);
+    let dig_target_entity = *nest.element_entity(dig_position);
     commands.dig(ant_entity, dig_position, dig_target_entity);
 
     *nesting = Nesting::Started(dig_position);
@@ -227,10 +227,10 @@ fn start_digging_nest(
 fn can_finish_nesting(
     ant_position: &Position,
     ant_orientation: &AntOrientation,
-    world_map: &WorldMap,
+    nest: &Nest,
     elements_query: &Query<&Element>,
 ) -> bool {
-    if world_map.is_aboveground(ant_position) {
+    if nest.is_aboveground(ant_position) {
         return false;
     }
 
@@ -242,7 +242,7 @@ fn can_finish_nesting(
     let above_position = ant_orientation.get_above_position(ant_position);
     let ahead_position = ant_orientation.get_ahead_position(ant_position);
 
-    let is_chamber_spacious = world_map.is_all_element(
+    let is_chamber_spacious = nest.is_all_element(
         &elements_query,
         &[
             *ant_position,
@@ -260,7 +260,7 @@ fn can_finish_nesting(
     let below_position = ant_orientation.get_below_position(ant_position);
     let behind_below_position = ant_orientation.get_behind_position(&below_position);
 
-    let is_chamber_floor_sturdy = world_map.is_all_element(
+    let is_chamber_floor_sturdy = nest.is_all_element(
         &elements_query,
         &[below_position, behind_below_position],
         Element::Dirt,
@@ -281,7 +281,7 @@ fn finish_digging_nest(
     ant_entity: Entity,
     ant_inventory: &AntInventory,
     initiative: &mut Initiative,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
     commands: &mut Commands,
     settings: &Res<Settings>,
 ) {
@@ -292,7 +292,7 @@ fn finish_digging_nest(
 
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);
-        let drop_target_entity = world_map.element_entity(drop_position);
+        let drop_target_entity = nest.element_entity(drop_position);
         commands.drop(ant_entity, drop_position, *drop_target_entity);
     } else {
         // TODO: This seems wrong. Everywhere else initiative is hidden behind custom action commands.

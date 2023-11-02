@@ -9,7 +9,7 @@ use crate::{
     common::IdMap,
     element::Element,
     pheromone::{Pheromone, PheromoneStrength},
-    world_map::position::Position,
+    nest::position::Position,
 };
 
 #[derive(Component, Default, PartialEq, Copy, Clone, Debug)]

@@ -1,7 +1,7 @@
 use crate::{
     element::Element,
     settings::Settings,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 use super::{AntOrientation, Initiative};
@@ -17,7 +17,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 pub fn ants_stabilize_footing_movement(
     mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation)>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     mut rng: ResMut<GlobalRng>,
 ) {
     for (mut initiative, position, mut orientation) in ants_query.iter_mut() {
@@ -26,7 +26,7 @@ pub fn ants_stabilize_footing_movement(
         }
 
         let below_position = orientation.get_below_position(&position);
-        let has_air_below = world_map.is_element(&elements_query, below_position, Element::Air);
+        let has_air_below = nest.is_element(&elements_query, below_position, Element::Air);
         if !has_air_below {
             continue;
         }
@@ -35,7 +35,7 @@ pub fn ants_stabilize_footing_movement(
             &orientation,
             &position,
             &elements_query,
-            &world_map,
+            &nest,
             &mut rng,
         );
 
@@ -47,7 +47,7 @@ pub fn ants_stabilize_footing_movement(
 pub fn ants_walk(
     mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation)>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
@@ -58,7 +58,7 @@ pub fn ants_walk(
 
         // An ant might be attempting to walk forward into a solid block. If so, they'll turn and walk up the block.
         let ahead_position = orientation.get_ahead_position(&position);
-        let has_air_ahead = world_map
+        let has_air_ahead = nest
             .get_element_entity(ahead_position)
             .map_or(false, |entity| {
                 elements_query
@@ -74,7 +74,7 @@ pub fn ants_walk(
                 &orientation,
                 &position,
                 &elements_query,
-                &world_map,
+                &nest,
                 &mut rng,
             );
 
@@ -86,7 +86,7 @@ pub fn ants_walk(
         let foot_orientation = orientation.rotate_forward();
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
-        if let Some(foot_entity) = world_map.get_element_entity(foot_position) {
+        if let Some(foot_entity) = nest.get_element_entity(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
 
             if *foot_element == Element::Air {
@@ -101,7 +101,7 @@ pub fn ants_walk(
             initiative.consume_movement();
         } else {
             // SPECIAL CASE: if underground then an out-of-bounds location is considered dirt to walk on
-            if world_map.is_underground(&foot_position) {
+            if nest.is_underground(&foot_position) {
                 // Just move forward
                 *position = ahead_position;
                 initiative.consume_movement();
@@ -115,17 +115,17 @@ pub fn get_turned_orientation(
     orientation: &AntOrientation,
     position: &Position,
     elements_query: &Query<&Element>,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
     rng: &mut ResMut<GlobalRng>,
 ) -> AntOrientation {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
     let back_orientation = orientation.rotate_backward();
-    if is_valid_location(back_orientation, *position, elements_query, world_map) {
+    if is_valid_location(back_orientation, *position, elements_query, nest) {
         return back_orientation;
     }
 
     let opposite_orientation = orientation.turn_around();
-    if is_valid_location(opposite_orientation, *position, elements_query, world_map) {
+    if is_valid_location(opposite_orientation, *position, elements_query, nest) {
         return opposite_orientation;
     }
 
@@ -135,7 +135,7 @@ pub fn get_turned_orientation(
         .iter()
         .filter(|&&inner_orientation| inner_orientation != *orientation)
         .filter(|&&inner_orientation| {
-            is_valid_location(inner_orientation, *position, elements_query, world_map)
+            is_valid_location(inner_orientation, *position, elements_query, nest)
         })
         .collect::<Vec<_>>();
 
@@ -151,10 +151,10 @@ fn is_valid_location(
     orientation: AntOrientation,
     position: Position,
     elements_query: &Query<&Element>,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
 ) -> bool {
     // Need air at the ants' body for it to be a legal ant location.
-    let Some(entity) = world_map.get_element_entity(position) else {
+    let Some(entity) = nest.get_element_entity(position) else {
         return false;
     };
     let Ok(element) = elements_query.get(*entity) else {
@@ -167,9 +167,9 @@ fn is_valid_location(
 
     // Get the location beneath the ants' feet and check for air
     let below_position = orientation.get_below_position(&position);
-    let Some(entity) = world_map.get_element_entity(below_position) else {
+    let Some(entity) = nest.get_element_entity(below_position) else {
         // SPECIAL CASE: if underground then an out-of-bounds location is considered dirt to walk on
-        if world_map.is_underground(&below_position) {
+        if nest.is_underground(&below_position) {
             return true;
         }
 

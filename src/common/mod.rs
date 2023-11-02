@@ -3,7 +3,7 @@ use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::world_map::position::Position;
+use crate::nest::position::Position;
 
 pub mod ui;
 

@@ -8,7 +8,7 @@ use crate::{
     common::IdMap,
     element::Element,
     story_time::DEFAULT_TICKS_PER_SECOND,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -86,7 +86,7 @@ pub fn ants_hunger_act(
     )>,
     elements_query: Query<&Element>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     id_map: Res<IdMap>,
 ) {
     for (ant_entity, hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
@@ -105,8 +105,8 @@ pub fn ants_hunger_act(
             // If there is food near the hungry ant then pick it up and if the ant is holding food then eat it.
             if inventory.0 == None {
                 let ahead_position = orientation.get_ahead_position(position);
-                if world_map.is_element(&elements_query, ahead_position, Element::Food) {
-                    let food_entity = world_map.get_element_entity(ahead_position).unwrap();
+                if nest.is_element(&elements_query, ahead_position, Element::Food) {
+                    let food_entity = nest.get_element_entity(ahead_position).unwrap();
                     commands.dig(ant_entity, ahead_position, *food_entity);
                 }
             } else {

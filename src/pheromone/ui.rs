@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::world_map::{position::Position, WorldMap};
+use crate::nest::{position::Position, Nest};
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
 
@@ -25,7 +25,7 @@ pub fn render_pheromones(
     pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength)>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
 ) {
     for (pheromone_entity, _, _, _) in &pheromone_query {
         commands.entity(pheromone_entity).remove::<SpriteBundle>();
@@ -33,7 +33,7 @@ pub fn render_pheromones(
 
     for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         commands.entity(pheromone_entity).insert(SpriteBundle {
-            transform: Transform::from_translation(position.as_world_position(&world_map)),
+            transform: Transform::from_translation(position.as_world_position(&nest)),
             sprite: get_pheromone_sprite(pheromone, pheromone_strength),
             visibility: pheromone_visibility.0,
             ..default()
@@ -45,11 +45,11 @@ pub fn on_spawn_pheromone(
     pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), Added<Pheromone>>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
 ) {
     for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         commands.entity(pheromone_entity).insert(SpriteBundle {
-            transform: Transform::from_translation(position.as_world_position(&world_map)),
+            transform: Transform::from_translation(position.as_world_position(&nest)),
             sprite: get_pheromone_sprite(pheromone, pheromone_strength),
             visibility: pheromone_visibility.0,
             ..default()

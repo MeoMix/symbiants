@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     ant::{commands::AntCommandsExt, AntInventory},
     element::Element,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 use super::Dead;
@@ -14,14 +14,14 @@ use super::Dead;
 pub fn on_ants_add_dead(
     ants_query: Query<(Entity, &Position, &AntInventory), Added<Dead>>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     elements_query: Query<&Element>,
 ) {
     for (ant_entity, ant_position, ant_inventory) in ants_query.iter() {
         if ant_inventory.0 != None {
-            let element_entity = world_map.get_element_entity(*ant_position).unwrap();
+            let element_entity = nest.get_element_entity(*ant_position).unwrap();
 
-            if world_map.is_element(&elements_query, *ant_position, Element::Air) {
+            if nest.is_element(&elements_query, *ant_position, Element::Air) {
                 commands.drop(ant_entity, *ant_position, *element_entity);
             } else {
                 commands.entity(*element_entity).remove_parent().despawn();

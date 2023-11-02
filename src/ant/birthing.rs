@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     common::register, name_list::get_random_name, story_time::DEFAULT_TICKS_PER_SECOND,
-    world_map::position::Position,
+    nest::position::Position,
 };
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;

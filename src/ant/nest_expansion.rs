@@ -10,7 +10,7 @@ use crate::{
     element::Element,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     settings::Settings,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 use super::{AntInventory, AntOrientation, AntRole, Initiative};
@@ -28,7 +28,7 @@ pub fn ants_nest_expansion(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
 ) {
     let ant_entity_positions = ants_query
         .iter()
@@ -44,7 +44,7 @@ pub fn ants_nest_expansion(
 
         if *ant_role != AntRole::Worker
             || inventory.0 != None
-            || world_map.is_aboveground(ant_position)
+            || nest.is_aboveground(ant_position)
             || ant_orientation.is_facing_north()
         {
             continue;
@@ -61,20 +61,20 @@ pub fn ants_nest_expansion(
         if is_crowded && rng.f32() < settings.probabilities.expand_nest {
             let dirt_position = ant_orientation.get_ahead_position(ant_position);
 
-            if !world_map.is_element(&elements_query, dirt_position, Element::Dirt) {
+            if !nest.is_element(&elements_query, dirt_position, Element::Dirt) {
                 continue;
             }
 
             // Must be attempting to dig a tunnel which means there needs to be dirt on either side of the dig site.
             let dirt_adjacent_position_above = ant_orientation.get_above_position(&dirt_position);
             let dirt_adjacent_position_below = ant_orientation.get_below_position(&dirt_position);
-            if world_map.is_element(&elements_query, dirt_adjacent_position_above, Element::Air)
-                || world_map.is_element(&elements_query, dirt_adjacent_position_below, Element::Air)
+            if nest.is_element(&elements_query, dirt_adjacent_position_above, Element::Air)
+                || nest.is_element(&elements_query, dirt_adjacent_position_below, Element::Air)
             {
                 continue;
             }
 
-            let dig_target_entity = *world_map.element_entity(dirt_position);
+            let dig_target_entity = *nest.element_entity(dirt_position);
             commands.dig(ant_entity, dirt_position, dig_target_entity);
             commands.spawn_pheromone(
                 dirt_position,

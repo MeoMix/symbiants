@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Reflect};
 use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::{common::register, world_map::position::Position};
+use crate::{common::register, nest::position::Position};
 
 #[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {
@@ -42,8 +42,8 @@ pub struct Settings {
     pub probabilities: Probabilities,
 }
 
-// TODO: It feels weird to put these methods here rather than on WorldMap, but I need access to these
-// calculations when creating a new WorldMap instance.
+// TODO: It feels weird to put these methods here rather than on Nest, but I need access to these
+// calculations when creating a new Nest instance.
 impl Settings {
     pub fn get_surface_level(&self) -> isize {
         (self.world_height as f32 - (self.world_height as f32 * self.initial_dirt_percent)) as isize

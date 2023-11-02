@@ -66,7 +66,7 @@ fn scale_to_world(
 // fn focus_queen(
 //     ant_query: Query<(&Position, &AntRole)>,
 //     mut events: EventWriter<Pan>,
-//     world_map: Res<WorldMap>,
+//     nest: Res<Nest>,
 // ) {
 //     let queen_ant_position = ant_query
 //         .iter()
@@ -74,14 +74,14 @@ fn scale_to_world(
 //         .map(|(position, _)| position);
 
 //     if let Some(queen_ant_position) = queen_ant_position {
-//         let queen_world_position = queen_ant_position.as_world_position(&world_map);
+//         let queen_world_position = queen_ant_position.as_world_position(&nest);
 
 //         events.send(Pan(queen_world_position.truncate()));
 //     }
 // }
 
 pub fn setup(mut commands: Commands) {
-    // This needs to run early so main menu is visible even without a WorldMap created.
+    // This needs to run early so main menu is visible even without a Nest created.
     commands.spawn((Camera2dBundle::default(), MainCamera));
 }
 

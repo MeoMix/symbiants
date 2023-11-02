@@ -6,7 +6,7 @@ use crate::{
 use super::{
     element::Element,
     settings::Settings,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
@@ -26,13 +26,13 @@ pub struct Unstable;
 // and do not fall if surrounded by non-air
 fn get_element_fall_position(
     position: Position,
-    world_map: &WorldMap,
+    nest: &Nest,
     elements_query: &Query<&Element>,
     rng: &mut Mut<GlobalRng>,
 ) -> Option<Position> {
     // If there is air below then continue falling down.
     let below_position = position + Position::Y;
-    if world_map.is_element(&elements_query, below_position, Element::Air) {
+    if nest.is_element(&elements_query, below_position, Element::Air) {
         return Some(below_position);
     }
 
@@ -40,7 +40,7 @@ fn get_element_fall_position(
     // Look for a column of air two units tall to either side and consider going in one of those directions.
     let left_position = position + Position::NEG_X;
     let left_below_position = position + Position::new(-1, 1);
-    let mut go_left = world_map.is_all_element(
+    let mut go_left = nest.is_all_element(
         &elements_query,
         &[left_position, left_below_position],
         Element::Air,
@@ -48,7 +48,7 @@ fn get_element_fall_position(
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
-    let mut go_right = world_map.is_all_element(
+    let mut go_right = nest.is_all_element(
         &elements_query,
         &[right_position, right_below_position],
         Element::Air,
@@ -75,18 +75,18 @@ pub fn gravity_elements(
         Query<&mut Position, With<Element>>,
     )>,
     elements_query: Query<&Element>,
-    mut world_map: ResMut<WorldMap>,
+    mut nest: ResMut<Nest>,
     mut rng: ResMut<GlobalRng>,
 ) {
     let element_air_swaps: Vec<_> = element_position_queries
         .p0()
         .iter()
         .filter_map(|&position| {
-            get_element_fall_position(position, &world_map, &elements_query, &mut rng.reborrow())
+            get_element_fall_position(position, &nest, &elements_query, &mut rng.reborrow())
                 .and_then(|air_position| {
                     Some((
-                        *world_map.get_element_entity(position)?,
-                        *world_map.get_element_entity(air_position)?,
+                        *nest.get_element_entity(position)?,
+                        *nest.get_element_entity(air_position)?,
                     ))
                 })
         })
@@ -109,8 +109,8 @@ pub fn gravity_elements(
         // TODO: It seems wrong that when swapping two existing elements I need to manually update the world map
         // but that when spawning new elements the on_spawn_element system does it for me.
         // Update indices since they're indexed by position and track where elements are at.
-        world_map.set_element(*element_position, element_entity);
-        world_map.set_element(*air_position, air_entity);
+        nest.set_element(*element_position, element_entity);
+        nest.set_element(*air_position, air_entity);
     }
 }
 
@@ -124,7 +124,7 @@ pub fn gravity_ants(
         Option<&Dead>,
     )>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
@@ -133,11 +133,11 @@ pub fn gravity_ants(
         let below_position = orientation.get_below_position(&position);
 
         let is_air_beneath_feet =
-            world_map.is_all_element(&elements_query, &[below_position], Element::Air);
+            nest.is_all_element(&elements_query, &[below_position], Element::Air);
 
         // SPECIAL CASE: out of bounds underground is considered dirt not air
-        let is_out_of_bounds_beneath_feet = !world_map.is_within_bounds(&below_position)
-            && world_map.is_aboveground(&below_position);
+        let is_out_of_bounds_beneath_feet = !nest.is_within_bounds(&below_position)
+            && nest.is_aboveground(&below_position);
 
         let is_chance_falling =
             orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
@@ -154,7 +154,7 @@ pub fn gravity_ants(
         {
             let below_position = *position + Position::Y;
             let is_air_below =
-                world_map.is_all_element(&elements_query, &[below_position], Element::Air);
+                nest.is_all_element(&elements_query, &[below_position], Element::Air);
 
             if is_air_below {
                 position.y = below_position.y;
@@ -176,7 +176,7 @@ pub fn gravity_mark_unstable(
     air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
     elements_query: Query<&Element, Without<Air>>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
 ) {
     let mut positions = HashSet::new();
 
@@ -188,14 +188,14 @@ pub fn gravity_mark_unstable(
 
     for &position in &positions {
         // If the current position contains a sand or food element, mark it as unstable
-        if let Some(entity) = world_map.get_element_entity(position) {
+        if let Some(entity) = nest.get_element_entity(position) {
             if let Ok(element) = elements_query.get(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
                     commands.toggle_element_command(*entity, position, true, Unstable);
                 }
 
                 // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
-                if *element == Element::Dirt && world_map.is_aboveground(&position) {
+                if *element == Element::Dirt && nest.is_aboveground(&position) {
                     commands.toggle_element_command(*entity, position, true, Unstable);
                 }
             }
@@ -262,14 +262,14 @@ pub fn gravity_mark_stable(
 
 //         let height = element_grid.len() as isize;
 //         let width = element_grid.first().map_or(0, |row| row.len()) as isize;
-//         let world_map = WorldMap::new(
+//         let nest = Nest::new(
 //             width,
 //             height,
 //             0.0,
 //             WorldSaveState::default(),
 //             Some(spawned_elements),
 //         );
-//         app.insert_resource(world_map);
+//         app.insert_resource(nest);
 //         app.insert_resource(Settings {
 //             world_width: width,
 //             world_height: height,
@@ -352,14 +352,14 @@ pub fn gravity_mark_stable(
 
 //         let height = element_grid.len() as isize;
 //         let width = element_grid.first().map_or(0, |row| row.len()) as isize;
-//         let world_map = WorldMap::new(
+//         let nest = Nest::new(
 //             width,
 //             height,
 //             0,
 //             WorldSaveState::default(),
 //             Some(spawned_elements),
 //         );
-//         app.insert_resource(world_map);
+//         app.insert_resource(nest);
 //         app.insert_resource(Settings {
 //             world_width: width,
 //             world_height: height,
@@ -381,20 +381,20 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::ZERO]),
+//                 .get::<Element>(nest.elements[&Position::ZERO]),
 //             Some(&Element::Air)
 //         );
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::Y]),
+//             app.world.get::<Element>(nest.elements[&Position::Y]),
 //             Some(&Element::Air)
 //         );
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::new(0, 2)]),
+//                 .get::<Element>(nest.elements[&Position::new(0, 2)]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -410,15 +410,15 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::ZERO]),
+//                 .get::<Element>(nest.elements[&Position::ZERO]),
 //             Some(&Element::Sand)
 //         );
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::Y]),
+//             app.world.get::<Element>(nest.elements[&Position::Y]),
 //             Some(&Element::Dirt)
 //         );
 //     }
@@ -437,14 +437,14 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::X]),
+//             app.world.get::<Element>(nest.elements[&Position::X]),
 //             Some(&Element::Air)
 //         );
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::Y]),
+//             app.world.get::<Element>(nest.elements[&Position::Y]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -463,15 +463,15 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::ZERO]),
+//                 .get::<Element>(nest.elements[&Position::ZERO]),
 //             Some(&Element::Air)
 //         );
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::ONE]),
+//             app.world.get::<Element>(nest.elements[&Position::ONE]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -490,10 +490,10 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::Y]),
+//             app.world.get::<Element>(nest.elements[&Position::Y]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -512,11 +512,11 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::new(2, 1)]),
+//                 .get::<Element>(nest.elements[&Position::new(2, 1)]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -535,10 +535,10 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::X]),
+//             app.world.get::<Element>(nest.elements[&Position::X]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -557,10 +557,10 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
-//             app.world.get::<Element>(world_map.elements[&Position::X]),
+//             app.world.get::<Element>(nest.elements[&Position::X]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -579,11 +579,11 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::ZERO]),
+//                 .get::<Element>(nest.elements[&Position::ZERO]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -602,11 +602,11 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::ZERO]),
+//                 .get::<Element>(nest.elements[&Position::ZERO]),
 //             Some(&Element::Sand)
 //         );
 //     }
@@ -622,11 +622,11 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::new(0, 15)]),
+//                 .get::<Element>(nest.elements[&Position::new(0, 15)]),
 //             Some(&Element::Dirt)
 //         );
 //     }
@@ -643,17 +643,17 @@ pub fn gravity_mark_stable(
 //         app.update();
 
 //         // Assert
-//         let Some(world_map) = app.world.get_resource::<WorldMap>() else { panic!() };
+//         let Some(nest) = app.world.get_resource::<Nest>() else { panic!() };
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::new(0, 15)]),
+//                 .get::<Element>(nest.elements[&Position::new(0, 15)]),
 //             Some(&Element::Air)
 //         );
 
 //         assert_eq!(
 //             app.world
-//                 .get::<Element>(world_map.elements[&Position::new(0, 16)]),
+//                 .get::<Element>(nest.elements[&Position::new(0, 16)]),
 //             Some(&Element::Sand)
 //         );
 //     }

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::register,
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
-    world_map::position::Position,
+    nest::position::Position,
 };
 
 use self::commands::PheromoneCommandsExt;

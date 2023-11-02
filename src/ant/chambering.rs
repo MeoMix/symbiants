@@ -6,7 +6,7 @@ use crate::{
     element::Element,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     settings::Settings,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 use bevy_turborand::{DelegatedRng, GlobalRng};
@@ -32,7 +32,7 @@ pub fn ants_chamber_pheromone_act(
         &Chambering,
     )>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     mut commands: Commands,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -61,7 +61,7 @@ pub fn ants_chamber_pheromone_act(
             &ant_entity,
             &position,
             &elements_query,
-            &world_map,
+            &nest,
             &mut commands,
         ) {
             // Subtract 1 because not placing pheromone at ant_position but instead placing it at a position adjacent
@@ -121,12 +121,12 @@ pub fn ants_remove_chamber_pheromone(
         Or<(Changed<Position>, Changed<AntInventory>)>,
     >,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
 ) {
     for (entity, position, inventory, chambering) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(entity).remove::<Chambering>();
-        } else if world_map.is_aboveground(position) {
+        } else if nest.is_aboveground(position) {
             commands.entity(entity).remove::<Chambering>();
         } else if chambering.0 <= 0 {
             commands.entity(entity).remove::<Chambering>();
@@ -139,15 +139,15 @@ fn try_dig(
     ant_entity: &Entity,
     dig_position: &Position,
     elements_query: &Query<&Element>,
-    world_map: &WorldMap,
+    nest: &Nest,
     commands: &mut Commands,
 ) -> bool {
-    if !world_map.is_within_bounds(&dig_position) {
+    if !nest.is_within_bounds(&dig_position) {
         return false;
     }
 
     // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = world_map.element_entity(*dig_position);
+    let element_entity = nest.element_entity(*dig_position);
     let element = elements_query.get(*element_entity).unwrap();
     if *element == Element::Air {
         return false;

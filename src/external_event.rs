@@ -14,7 +14,7 @@ use crate::{
     name_list::get_random_name,
     settings::Settings,
     ui::action_menu::PointerAction,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 /// Process user input events at the start of the FixedUpdate simulation loop.
@@ -23,7 +23,7 @@ use crate::{
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
@@ -42,7 +42,7 @@ pub fn process_external_event(
                 .find(|(_, &position, _, _)| position == grid_position)
                 .map(|(entity, _, _, _)| entity);
 
-            let element_entity_at_position = world_map.get_element_entity(grid_position);
+            let element_entity_at_position = nest.get_element_entity(grid_position);
 
             let currently_selected_entity = selected_entity_query.get_single();
 
@@ -71,29 +71,29 @@ pub fn process_external_event(
                 }
             }
         } else if pointer_action == PointerAction::Food {
-            if world_map.is_element(&elements_query, grid_position, Element::Air) {
-                if let Some(entity) = world_map.get_element_entity(grid_position) {
+            if nest.is_element(&elements_query, grid_position, Element::Air) {
+                if let Some(entity) = nest.get_element_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Food, *entity);
                 }
             }
         } else if pointer_action == PointerAction::Sand {
-            if world_map.is_element(&elements_query, grid_position, Element::Air) {
-                if let Some(entity) = world_map.get_element_entity(grid_position) {
+            if nest.is_element(&elements_query, grid_position, Element::Air) {
+                if let Some(entity) = nest.get_element_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Sand, *entity);
                 }
             }
         } else if pointer_action == PointerAction::Dirt {
-            if world_map.is_element(&elements_query, grid_position, Element::Air) {
-                if let Some(entity) = world_map.get_element_entity(grid_position) {
+            if nest.is_element(&elements_query, grid_position, Element::Air) {
+                if let Some(entity) = nest.get_element_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Dirt, *entity);
                 }
             }
         } else if pointer_action == PointerAction::DespawnElement {
-            if let Some(entity) = world_map.get_element_entity(grid_position) {
+            if let Some(entity) = nest.get_element_entity(grid_position) {
                 commands.replace_element(grid_position, Element::Air, *entity);
             }
         } else if pointer_action == PointerAction::SpawnWorkerAnt {
-            if world_map.is_element(&elements_query, grid_position, Element::Air) {
+            if nest.is_element(&elements_query, grid_position, Element::Air) {
                 commands.spawn_ant(
                     grid_position,
                     AntColor(settings.ant_color),

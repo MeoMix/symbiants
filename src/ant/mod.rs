@@ -7,7 +7,7 @@ use crate::{
     common::{register, Id},
     name_list::get_random_name,
     settings::Settings,
-    world_map::position::Position,
+    nest::position::Position,
 };
 
 use self::{

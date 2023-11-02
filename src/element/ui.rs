@@ -1,5 +1,5 @@
 use super::Element;
-use crate::world_map::{position::Position, WorldMap};
+use crate::nest::{position::Position, Nest};
 use bevy::{asset::HandleId, prelude::*};
 
 #[derive(Resource)]
@@ -165,7 +165,7 @@ pub fn get_element_index(exposure: ElementExposure) -> usize {
 pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
@@ -176,14 +176,14 @@ pub fn on_spawn_element(
             position,
             &element_sprite_handles,
             &elements_query,
-            &world_map,
+            &nest,
             &mut commands,
         );
 
         let adjacent_positions = position.get_adjacent_positions();
 
         for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) = world_map.get_element_entity(adjacent_position) {
+            if let Some(adjacent_element_entity) = nest.get_element_entity(adjacent_position) {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
                 if *adjacent_element != Element::Air {
@@ -193,7 +193,7 @@ pub fn on_spawn_element(
                         &adjacent_position,
                         &element_sprite_handles,
                         &elements_query,
-                        &world_map,
+                        &nest,
                         &mut commands,
                     );
                 }
@@ -208,27 +208,27 @@ fn update_element_sprite(
     element_position: &Position,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
     commands: &mut Commands,
 ) {
     // TODO: maybe make this reactive rather than calculating all the time to avoid insert when no change in exposure is occurring?
     let element_exposure = ElementExposure {
-        north: world_map.is_element(
+        north: nest.is_element(
             &elements_query,
             *element_position - Position::Y,
             Element::Air,
         ),
-        east: world_map.is_element(
+        east: nest.is_element(
             &elements_query,
             *element_position + Position::X,
             Element::Air,
         ),
-        south: world_map.is_element(
+        south: nest.is_element(
             &elements_query,
             *element_position + Position::Y,
             Element::Air,
         ),
-        west: world_map.is_element(
+        west: nest.is_element(
             &elements_query,
             *element_position - Position::X,
             Element::Air,
@@ -245,7 +245,7 @@ fn update_element_sprite(
             custom_size: Some(Vec2::splat(1.0)),
             ..default()
         },
-        transform: Transform::from_translation(element_position.as_world_position(&world_map)),
+        transform: Transform::from_translation(element_position.as_world_position(&nest)),
         ..default()
     });
 }
@@ -253,7 +253,7 @@ fn update_element_sprite(
 pub fn rerender_elements(
     mut element_query: Query<(&Position, &Element, Entity)>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
@@ -264,7 +264,7 @@ pub fn rerender_elements(
             position,
             &element_sprite_handles,
             &elements_query,
-            &world_map,
+            &nest,
             &mut commands,
         );
     }
@@ -273,7 +273,7 @@ pub fn rerender_elements(
 pub fn on_update_element_position(
     mut element_query: Query<(&Position, &Element, Entity), Changed<Position>>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
@@ -284,14 +284,14 @@ pub fn on_update_element_position(
             position,
             &element_sprite_handles,
             &elements_query,
-            &world_map,
+            &nest,
             &mut commands,
         );
 
         let adjacent_positions = position.get_adjacent_positions();
 
         for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) = world_map.get_element_entity(adjacent_position) {
+            if let Some(adjacent_element_entity) = nest.get_element_entity(adjacent_position) {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
                 if *adjacent_element != Element::Air {
@@ -301,7 +301,7 @@ pub fn on_update_element_position(
                         &adjacent_position,
                         &element_sprite_handles,
                         &elements_query,
-                        &world_map,
+                        &nest,
                         &mut commands,
                     );
                 }

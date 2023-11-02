@@ -5,7 +5,7 @@ use bevy_egui::EguiContexts;
 use crate::{
     camera::MainCamera,
     ui::action_menu::PointerAction,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 #[derive(Event)]
@@ -33,7 +33,7 @@ pub fn handle_pointer_tap(
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
     mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
@@ -104,7 +104,7 @@ pub fn handle_pointer_tap(
         .viewport_to_world_2d(camera_transform, pointer_tap_state.position.unwrap())
         .unwrap();
 
-    let grid_position = world_to_grid_position(&world_map, world_position);
+    let grid_position = world_to_grid_position(&nest, world_position);
 
     external_simulation_event_writer.send(ExternalSimulationEvent {
         action: *pointer_action,
@@ -112,9 +112,9 @@ pub fn handle_pointer_tap(
     });
 }
 
-fn world_to_grid_position(world_map: &WorldMap, world_position: Vec2) -> Position {
-    let x = world_position.x + (*world_map.width() as f32 / 2.0) - 0.5;
-    let y = -world_position.y + (*world_map.height() as f32 / 2.0) - 0.5;
+fn world_to_grid_position(nest: &Nest, world_position: Vec2) -> Position {
+    let x = world_position.x + (*nest.width() as f32 / 2.0) - 0.5;
+    let y = -world_position.y + (*nest.height() as f32 / 2.0) - 0.5;
 
     Position {
         x: x.abs().round() as isize,

@@ -6,7 +6,7 @@ use crate::{
     ant::AntInventory,
     common::{Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
-    world_map::{position::Position, WorldMap}, settings::Settings,
+    nest::{position::Position, Nest}, settings::Settings,
 };
 
 use super::{
@@ -92,8 +92,8 @@ struct DigElementCommand {
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
-        let world_map = world.resource::<WorldMap>();
-        let element_entity = match world_map.get_element_entity(self.target_position) {
+        let nest = world.resource::<Nest>();
+        let element_entity = match nest.get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -123,7 +123,7 @@ impl Command for DigElementCommand {
             .spawn(AirElementBundle::new(self.target_position))
             .id();
         world
-            .resource_mut::<WorldMap>()
+            .resource_mut::<Nest>()
             .set_element(self.target_position, air_entity);
 
         // TODO: There's probably a more elegant way to express this - "denseness" of sand rather than changing between dirt/sand.
@@ -166,8 +166,8 @@ struct DropElementCommand {
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
-        let world_map = world.resource::<WorldMap>();
-        let air_entity = match world_map.get_element_entity(self.target_position) {
+        let nest = world.resource::<Nest>();
+        let air_entity = match nest.get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -206,7 +206,7 @@ impl Command for DropElementCommand {
         let element_entity = spawn_element(*element, self.target_position, world);
 
         world
-            .resource_mut::<WorldMap>()
+            .resource_mut::<Nest>()
             .set_element(self.target_position, element_entity);
 
         // Remove element from ant inventory.

@@ -8,7 +8,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use crate::{
     ant::{hunger::Hunger, Dead},
     element::{commands::ElementCommandsExt, Air, Element, Food},
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 use super::action_menu::IsShowingBreathDialog;
@@ -29,7 +29,7 @@ pub fn update_breath_dialog(
     food_query: Query<&Food>,
     air_query: Query<&Position, With<Air>>,
     mut rng: ResMut<GlobalRng>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     mut commands: Commands,
     mut is_running: Local<bool>,
     mut is_open: Local<IsOpen>,
@@ -135,7 +135,7 @@ pub fn update_breath_dialog(
                             }
 
                             for position in spawn_positions.iter() {
-                                if let Some(entity) = world_map.get_element_entity(*position) {
+                                if let Some(entity) = nest.get_element_entity(*position) {
                                     commands.replace_element(*position, Element::Food, *entity);
                                 }
                             }

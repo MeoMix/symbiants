@@ -60,7 +60,7 @@ use crate::{
         teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
         update_time_scale, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
     },
-    world_map::{setup_world_map, teardown_world_map},
+    nest::{setup_nest, teardown_nest},
 };
 
 pub struct SimulationPlugin;
@@ -111,7 +111,7 @@ impl Plugin for SimulationPlugin {
         app.add_systems(
             OnEnter(StoryState::FinalizingStartup),
             (
-                (setup_world_map, apply_deferred).chain(),
+                (setup_nest, apply_deferred).chain(),
                 (setup_common, apply_deferred).chain(),
                 (setup_pointer, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
@@ -342,7 +342,7 @@ impl Plugin for SimulationPlugin {
                 teardown_ant,
                 teardown_element,
                 teardown_pheromone,
-                teardown_world_map,
+                teardown_nest,
                 teardown_save,
                 restart_story,
             )

@@ -12,7 +12,7 @@ use crate::{
     },
     settings::Settings,
     story_time::DEFAULT_TICKS_PER_SECOND,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 use bevy::prelude::*;
 
@@ -31,7 +31,7 @@ fn insert_ant_sprite(
     asset_server: &Res<AssetServer>,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
     id_map: &Res<IdMap>,
 ) {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
@@ -57,7 +57,7 @@ fn insert_ant_sprite(
                 },
                 transform: Transform {
                     translation: position
-                        .as_world_position(&world_map)
+                        .as_world_position(&nest)
                         .add(translation_offset.0),
                     rotation: orientation.as_world_rotation(),
                     scale: orientation.as_world_scale(),
@@ -95,7 +95,7 @@ fn spawn_ant_label_text2d(
     position: &Position,
     name: &AntName,
     entity: Entity,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
 ) {
     // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, -1.0, 1.0));
@@ -105,7 +105,7 @@ fn spawn_ant_label_text2d(
         Text2dBundle {
             transform: Transform {
                 translation: position
-                    .as_world_position(&world_map)
+                    .as_world_position(&nest)
                     .add(translation_offset.0),
                 // TODO: This is an unreasonably small value for text, but is needed for crisp rendering. Does that mean I am doing something wrong?
                 scale: Vec3::new(0.01, 0.01, 0.0),
@@ -143,7 +143,7 @@ pub fn on_spawn_ant(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     id_map: Res<IdMap>,
 ) {
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
@@ -159,11 +159,11 @@ pub fn on_spawn_ant(
             &asset_server,
             &element_sprite_handles,
             &elements_query,
-            &world_map,
+            &nest,
             &id_map,
         );
 
-        spawn_ant_label_text2d(&mut commands, position, name, entity, &world_map);
+        spawn_ant_label_text2d(&mut commands, position, name, entity, &nest);
     }
 }
 
@@ -183,7 +183,7 @@ pub fn rerender_ants(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     id_map: Res<IdMap>,
 ) {
     // TODO: This wouldn't be necessary if Ant maintained LabelEntity somewhere?
@@ -205,11 +205,11 @@ pub fn rerender_ants(
             &asset_server,
             &element_sprite_handles,
             &elements_query,
-            &world_map,
+            &nest,
             &id_map,
         );
 
-        spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &world_map);
+        spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &nest);
     }
 }
 
@@ -326,11 +326,11 @@ pub fn on_update_ant_position(
         (&mut Transform, &TranslationOffset, &AntLabel),
         (Without<Ant>, With<AntLabel>),
     >,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
 ) {
     for (position, mut transform, translation_offset) in ant_query.iter_mut() {
         transform.translation = position
-            .as_world_position(&world_map)
+            .as_world_position(&nest)
             .add(translation_offset.0);
     }
 
@@ -339,7 +339,7 @@ pub fn on_update_ant_position(
     for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
         if let Ok((position, _, _)) = ant_query.get(label.0) {
             transform.translation = position
-                .as_world_position(&world_map)
+                .as_world_position(&nest)
                 .add(translation_offset.0);
         }
     }

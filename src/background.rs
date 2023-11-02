@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     story_state::StoryState,
     story_time::{StoryTime, TimeInfo},
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 #[derive(Component)]
@@ -88,7 +88,7 @@ fn get_sky_gradient_color(
 fn create_sky_sprites(
     width: isize,
     height: isize,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
     story_time: &Res<StoryTime>,
 ) -> Vec<(SpriteBundle, Position, SkyBackground)> {
     let mut sky_sprites = vec![];
@@ -107,11 +107,11 @@ fn create_sky_sprites(
         for y in 0..height {
             let position = Position::new(x, y);
 
-            let mut world_position = position.as_world_position(&world_map);
+            let mut world_position = position.as_world_position(&nest);
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 
-            let t_y: f32 = position.y as f32 / *world_map.surface_level() as f32;
+            let t_y: f32 = position.y as f32 / *nest.surface_level() as f32;
             let color = interpolate_color(north_color, south_color, t_y);
 
             let sky_sprite = SpriteBundle {
@@ -135,7 +135,7 @@ fn create_tunnel_sprites(
     width: isize,
     height: isize,
     y_offset: isize,
-    world_map: &Res<WorldMap>,
+    nest: &Res<Nest>,
 ) -> Vec<(SpriteBundle, Position, TunnelBackground)> {
     let mut tunnel_sprites = vec![];
 
@@ -146,7 +146,7 @@ fn create_tunnel_sprites(
         for y in 0..height {
             let position = Position::new(x, y + y_offset);
 
-            let mut world_position = position.as_world_position(&world_map);
+            let mut world_position = position.as_world_position(&nest);
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 
@@ -174,9 +174,9 @@ pub fn update_sky_background(
     mut last_run_time_info: Local<TimeInfo>,
     story_time: Res<StoryTime>,
     story_state: Res<State<StoryState>>,
-    // TODO: Option because need to run during Initializing to reset but WorldMap is gone already.
-    // maybe could find a way to reset this at the same time WorldMap is getting despawned?
-    world_map: Option<Res<WorldMap>>,
+    // TODO: Option because need to run during Initializing to reset but Nest is gone already.
+    // maybe could find a way to reset this at the same time Nest is getting despawned?
+    nest: Option<Res<Nest>>,
 ) {
     // Reset local when in initializing to prevent data retention issue when clicking "Reset" in Sandbox Mode
     if *story_state == StoryState::Initializing {
@@ -184,8 +184,8 @@ pub fn update_sky_background(
         return;
     }
 
-    let world_map = match world_map {
-        Some(world_map) => world_map,
+    let nest = match nest {
+        Some(nest) => nest,
         None => panic!("expected world map to exist at this point"),
     };
 
@@ -210,7 +210,7 @@ pub fn update_sky_background(
         sunset_decimal_hours,
     );
     for (mut sprite, position) in sky_sprite_query.iter_mut() {
-        let t_y: f32 = position.y as f32 / *world_map.surface_level() as f32;
+        let t_y: f32 = position.y as f32 / *nest.surface_level() as f32;
         let color = interpolate_color(north_color, south_color, t_y);
 
         sprite.color = color;
@@ -222,23 +222,23 @@ pub fn update_sky_background(
 // Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_background(
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     story_time: Res<StoryTime>,
 ) {
-    let air_height = *world_map.surface_level() + 1;
+    let air_height = *nest.surface_level() + 1;
 
     commands.spawn_batch(create_sky_sprites(
-        *world_map.width(),
+        *nest.width(),
         air_height,
-        &world_map,
+        &nest,
         &story_time,
     ));
 
     commands.spawn_batch(create_tunnel_sprites(
-        *world_map.width(),
-        *world_map.height() - air_height,
+        *nest.width(),
+        *nest.height() - air_height,
         air_height,
-        &world_map,
+        &nest,
     ));
 }
 

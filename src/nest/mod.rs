@@ -7,9 +7,9 @@ pub mod position;
 use self::position::Position;
 
 /// Note the intentional omission of reflection/serialization.
-/// This is because WorldMap is a cache that is trivially regenerated on app startup from persisted state.
+/// This is because Nest is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]
-pub struct WorldMap {
+pub struct Nest {
     width: isize,
     height: isize,
     surface_level: isize,
@@ -21,7 +21,7 @@ pub struct WorldMap {
 ///
 /// This is used to speed up most logic because there's a consistent need throughout the application to know what elements are
 /// at or near a given position.
-pub fn setup_world_map(
+pub fn setup_nest(
     element_query: Query<(&mut Position, Entity), With<Element>>,
     settings: Res<Settings>,
     mut commands: Commands,
@@ -35,7 +35,7 @@ pub fn setup_world_map(
         elements_cache[position.y as usize][position.x as usize] = entity;
     }
 
-    commands.insert_resource(WorldMap::new(
+    commands.insert_resource(Nest::new(
         settings.world_width,
         settings.world_height,
         settings.get_surface_level(),
@@ -43,18 +43,18 @@ pub fn setup_world_map(
     ));
 }
 
-pub fn teardown_world_map(mut commands: Commands) {
-    commands.remove_resource::<WorldMap>();
+pub fn teardown_nest(mut commands: Commands) {
+    commands.remove_resource::<Nest>();
 }
 
-impl WorldMap {
+impl Nest {
     pub fn new(
         width: isize,
         height: isize,
         surface_level: isize,
         elements_cache: Vec<Vec<Entity>>,
     ) -> Self {
-        WorldMap {
+        Nest {
             width,
             height,
             surface_level,

@@ -6,7 +6,7 @@ use crate::{
     ant::emote::EmoteType,
     settings::Settings,
     story_time::StoryTime,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 use super::{emote::Emote, AntInventory, AntOrientation, Initiative};
@@ -18,7 +18,7 @@ pub struct Asleep;
 pub fn ants_sleep(
     ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), With<Initiative>>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     story_time: Res<StoryTime>,
 ) {
     if !story_time.is_nighttime() {
@@ -26,7 +26,7 @@ pub fn ants_sleep(
     }
 
     for (ant_entity, ant_position, ant_orientation, ant_inventory) in ants_query.iter() {
-        if world_map.is_underground(ant_position)
+        if nest.is_underground(ant_position)
             && ant_orientation.is_rightside_up()
             && ant_inventory.0 == None
         {

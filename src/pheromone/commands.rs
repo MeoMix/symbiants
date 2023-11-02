@@ -1,4 +1,4 @@
-use crate::{world_map::position::Position, common::Id};
+use crate::{nest::position::Position, common::Id};
 use bevy::{ecs::system::Command, prelude::*};
 
 use super::{Pheromone, PheromoneMap, PheromoneDuration, PheromoneStrength};

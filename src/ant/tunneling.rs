@@ -10,7 +10,7 @@ use crate::{
     element::Element,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     settings::Settings,
-    world_map::{position::Position, WorldMap},
+    nest::{position::Position, Nest},
 };
 
 use super::birthing::Birthing;
@@ -27,7 +27,7 @@ pub struct Tunneling(pub isize);
 pub fn ants_tunnel_pheromone_move(
     mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), With<Tunneling>>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     mut rng: ResMut<GlobalRng>,
 ) {
     for (mut orientation, mut initiative, mut ant_position) in ants_query.iter_mut() {
@@ -40,7 +40,7 @@ pub fn ants_tunnel_pheromone_move(
 
         // If there's solid material in front of ant then consider turning onto it if there's tunnel to follow upward.
         let ahead_position = orientation.get_ahead_position(&ant_position);
-        let has_air_ahead = world_map
+        let has_air_ahead = nest
             .get_element_entity(ahead_position)
             .map_or(false, |entity| {
                 elements_query
@@ -49,7 +49,7 @@ pub fn ants_tunnel_pheromone_move(
             });
 
         let above_position = orientation.get_above_position(&ant_position);
-        let has_air_above = world_map
+        let has_air_above = nest
             .get_element_entity(above_position)
             .map_or(false, |entity| {
                 elements_query
@@ -62,7 +62,7 @@ pub fn ants_tunnel_pheromone_move(
                 &orientation,
                 &ant_position,
                 &elements_query,
-                &world_map,
+                &nest,
                 &mut rng,
             );
 
@@ -79,7 +79,7 @@ pub fn ants_tunnel_pheromone_move(
         let foot_orientation = orientation.rotate_forward();
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
-        if let Some(foot_entity) = world_map.get_element_entity(foot_position) {
+        if let Some(foot_entity) = nest.get_element_entity(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
 
             if *foot_element == Element::Air {
@@ -106,7 +106,7 @@ pub fn ants_tunnel_pheromone_act(
         &Tunneling,
     )>,
     elements_query: Query<&Element>,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
@@ -127,12 +127,12 @@ pub fn ants_tunnel_pheromone_act(
         }
 
         let ahead_position = orientation.get_ahead_position(position);
-        if !world_map.is_within_bounds(&ahead_position) {
+        if !nest.is_within_bounds(&ahead_position) {
             continue;
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = world_map.element_entity(ahead_position);
+        let entity = nest.element_entity(ahead_position);
         let Ok(element) = elements_query.get(*entity) else {
             panic!("act - expected entity to exist")
         };
@@ -142,7 +142,7 @@ pub fn ants_tunnel_pheromone_act(
         }
 
         let dig_position = orientation.get_ahead_position(position);
-        let dig_target_entity = *world_map.element_entity(dig_position);
+        let dig_target_entity = *nest.element_entity(dig_position);
         commands.dig(ant_entity, dig_position, dig_target_entity);
 
         // Reduce PheromoneStrength by 1 because not digging at ant_position, but ant_position + 1.
@@ -209,13 +209,13 @@ pub fn ants_remove_tunnel_pheromone(
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
-    world_map: Res<WorldMap>,
+    nest: Res<Nest>,
     settings: Res<Settings>,
 ) {
     for (ant_entity, ant_position, inventory, tunneling) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(ant_entity).remove::<Tunneling>();
-        } else if world_map.is_aboveground(ant_position) {
+        } else if nest.is_aboveground(ant_position) {
             commands.entity(ant_entity).remove::<Tunneling>();
         } else if tunneling.0 <= 0 {
             commands.entity(ant_entity).remove::<Tunneling>();

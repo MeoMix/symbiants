@@ -15,7 +15,7 @@ mod simulation;
 mod story_state;
 mod story_time;
 mod ui;
-mod world_map;
+mod nest;
 
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
