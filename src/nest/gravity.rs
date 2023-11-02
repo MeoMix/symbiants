@@ -1,12 +1,14 @@
 use crate::{
     ant::{AntOrientation, Dead, Initiative},
-    element::{commands::ElementCommandsExt, Air, Element}, settings::Settings,
+    common::position::Position,
+    element::{commands::ElementCommandsExt, Air, Element},
+    settings::Settings,
 };
 
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use super::{position::Position, Nest};
+use super::Nest;
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
@@ -133,8 +135,8 @@ pub fn gravity_ants(
             nest.is_all_element(&elements_query, &[below_position], Element::Air);
 
         // SPECIAL CASE: out of bounds underground is considered dirt not air
-        let is_out_of_bounds_beneath_feet = !nest.is_within_bounds(&below_position)
-            && nest.is_aboveground(&below_position);
+        let is_out_of_bounds_beneath_feet =
+            !nest.is_within_bounds(&below_position) && nest.is_aboveground(&below_position);
 
         let is_chance_falling =
             orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;

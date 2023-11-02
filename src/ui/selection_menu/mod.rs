@@ -6,10 +6,9 @@ use crate::{
         birthing::Birthing, hunger::Hunger, sleep::Asleep, Ant, AntInventory, AntName, AntRole,
         Dead,
     },
-    common::IdMap,
+    common::{IdMap, position::Position},
     element::Element,
     pheromone::{Pheromone, PheromoneStrength},
-    nest::position::Position,
 };
 
 #[derive(Component, Default, PartialEq, Copy, Clone, Debug)]

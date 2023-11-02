@@ -7,10 +7,11 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     ant::commands::AntCommandsExt,
+    common::position::Position,
     element::Element,
+    nest::Nest,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     settings::Settings,
-    nest::{position::Position, Nest},
 };
 
 use super::{AntInventory, AntOrientation, AntRole, Initiative};

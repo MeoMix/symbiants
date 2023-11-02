@@ -3,10 +3,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
+    common::position::Position,
     element::Element,
+    nest::Nest,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     settings::Settings,
-    nest::{position::Position, Nest},
 };
 
 use bevy_turborand::{DelegatedRng, GlobalRng};

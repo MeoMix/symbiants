@@ -4,14 +4,15 @@ use bevy::{ecs::system::Command, prelude::*};
 
 use crate::{
     ant::AntInventory,
-    common::{Id, IdMap},
+    common::{position::Position, Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
-    nest::{position::Position, Nest}, settings::Settings,
+    nest::Nest,
+    settings::Settings,
 };
 
 use super::{
-    nesting::Nesting, AntBundle, AntColor, AntName, AntOrientation, AntRole, Initiative,
-    InventoryItemBundle, hunger::Hunger, Ant, digestion::Digestion,
+    digestion::Digestion, hunger::Hunger, nesting::Nesting, Ant, AntBundle, AntColor, AntName,
+    AntOrientation, AntRole, Initiative, InventoryItemBundle,
 };
 
 pub trait AntCommandsExt {
@@ -144,7 +145,10 @@ impl Command for DigElementCommand {
 
         let inventory_item_entity = world.spawn(inventory_item_bundle).id();
 
-        world.resource_mut::<IdMap>().0.insert(inventory_item_element_id.clone(), inventory_item_entity);
+        world
+            .resource_mut::<IdMap>()
+            .0
+            .insert(inventory_item_element_id.clone(), inventory_item_entity);
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
             Some(mut inventory) => inventory.0 = Some(inventory_item_element_id),
@@ -263,10 +267,7 @@ impl Command for SpawnAntCommand {
         } else {
             entity = world.spawn(ant_bundle).id();
         }
-        
-        world
-            .resource_mut::<IdMap>()
-            .0
-            .insert(id, entity);
+
+        world.resource_mut::<IdMap>().0.insert(id, entity);
     }
 }

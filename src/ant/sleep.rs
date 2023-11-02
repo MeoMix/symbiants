@@ -3,10 +3,8 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ant::emote::EmoteType,
-    settings::Settings,
+    ant::emote::EmoteType, common::position::Position, nest::Nest, settings::Settings,
     story_time::StoryTime,
-    nest::{position::Position, Nest},
 };
 
 use super::{emote::Emote, AntInventory, AntOrientation, Initiative};

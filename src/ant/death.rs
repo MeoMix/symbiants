@@ -2,8 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     ant::{commands::AntCommandsExt, AntInventory},
+    common::position::Position,
     element::Element,
-    nest::{position::Position, Nest},
+    nest::Nest,
 };
 
 use super::Dead;

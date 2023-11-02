@@ -1,15 +1,25 @@
-use crate::{nest::position::Position, common::Id};
+use crate::common::{position::Position, Id};
 use bevy::{ecs::system::Command, prelude::*};
 
-use super::{Pheromone, PheromoneMap, PheromoneDuration, PheromoneStrength};
+use super::{Pheromone, PheromoneDuration, PheromoneMap, PheromoneStrength};
 
 pub trait PheromoneCommandsExt {
-    fn spawn_pheromone(&mut self, position: Position, pheromone: Pheromone, pheromone_strength: PheromoneStrength);
+    fn spawn_pheromone(
+        &mut self,
+        position: Position,
+        pheromone: Pheromone,
+        pheromone_strength: PheromoneStrength,
+    );
     fn despawn_pheromone(&mut self, pheromone_entity: Entity, position: Position);
 }
 
 impl<'w, 's> PheromoneCommandsExt for Commands<'w, 's> {
-    fn spawn_pheromone(&mut self, position: Position, pheromone: Pheromone, pheromone_strength: PheromoneStrength) {
+    fn spawn_pheromone(
+        &mut self,
+        position: Position,
+        pheromone: Pheromone,
+        pheromone_strength: PheromoneStrength,
+    ) {
         self.add(SpawnPheromoneCommand {
             position,
             pheromone,
@@ -41,7 +51,13 @@ impl Command for SpawnPheromoneCommand {
         }
 
         let pheromone_entity = world
-            .spawn((Id::default(), self.position, self.pheromone, PheromoneDuration::default(), self.pheromone_strength))
+            .spawn((
+                Id::default(),
+                self.position,
+                self.pheromone,
+                PheromoneDuration::default(),
+                self.pheromone_strength,
+            ))
             .id();
         world
             .resource_mut::<PheromoneMap>()

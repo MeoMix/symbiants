@@ -1,13 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{element::Element, settings::Settings};
+use crate::{common::position::Position, element::Element, settings::Settings};
 
 mod background;
 pub mod gravity;
 pub mod nest_simulation;
-pub mod position;
-
-use self::position::Position;
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Nest is a cache that is trivially regenerated on app startup from persisted state.
@@ -130,5 +127,20 @@ impl Nest {
         positions
             .iter()
             .all(|&position| self.is_element(elements_query, position, search_element))
+    }
+
+    // TODO: This still isn't the right spot for it I think, but living here for now. Maybe move into a dedicate UI layer later on
+    // Convert Position to Transform, z-index is naively set to 1 for now
+    pub fn as_world_position(&self, position: Position) -> Vec3 {
+        let y_offset = self.height as f32 / 2.0;
+        let x_offset = self.width as f32 / 2.0;
+
+        Vec3 {
+            // NOTE: unit width is 1.0 so add 0.5 to center the position
+            x: position.x as f32 - x_offset + 0.5,
+            // The view of the model position is just an inversion along the y-axis.
+            y: -position.y as f32 + y_offset - 0.5,
+            z: 1.0,
+        }
     }
 }

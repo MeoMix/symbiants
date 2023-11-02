@@ -5,10 +5,10 @@ use super::{
     AntInventory, AntOrientation, AntRole, Dead, Initiative,
 };
 use crate::{
-    common::IdMap,
+    common::{position::Position, IdMap},
     element::Element,
+    nest::Nest,
     story_time::DEFAULT_TICKS_PER_SECOND,
-    nest::{position::Position, Nest},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

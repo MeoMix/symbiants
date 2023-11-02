@@ -3,9 +3,8 @@ use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::register,
+    common::{position::Position, register},
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
-    nest::position::Position,
 };
 
 use self::commands::PheromoneCommandsExt;
@@ -25,7 +24,7 @@ pub enum Pheromone {
 #[reflect(Component)]
 pub struct PheromoneStrength {
     value: isize,
-    max: isize
+    max: isize,
 }
 
 impl PheromoneStrength {

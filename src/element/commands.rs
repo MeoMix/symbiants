@@ -1,8 +1,8 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
 use crate::{
-    common::IdMap,
+    common::{position::Position, IdMap},
     // TODO: element shouldn't couple to gravity, want to be able to reuse element
-    nest::{gravity::Unstable, position::Position, Nest},
+    nest::{gravity::Unstable, Nest},
 };
 use bevy::{ecs::system::Command, prelude::*};
 

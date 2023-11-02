@@ -77,7 +77,7 @@ fn scale_to_world(
 //         .map(|(position, _)| position);
 
 //     if let Some(queen_ant_position) = queen_ant_position {
-//         let queen_world_position = queen_ant_position.as_world_position(&nest);
+//         let queen_world_position = nest.as_world_position(queen_ant_position);
 
 //         events.send(Pan(queen_world_position.truncate()));
 //     }

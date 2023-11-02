@@ -1,6 +1,5 @@
-use super::nest::position::Position;
 use crate::{
-    common::{register, Id},
+    common::{position::Position, register, Id},
     // TODO: Prefer not to couple to Gravity
     nest::gravity::Unstable,
     settings::Settings,
@@ -127,7 +126,7 @@ pub enum Element {
 }
 
 impl Element {
-    pub fn is_diggable(&self) -> bool{
+    pub fn is_diggable(&self) -> bool {
         match self {
             Element::Dirt => true,
             Element::Sand => true,

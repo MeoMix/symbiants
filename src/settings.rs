@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Reflect};
 use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::{common::register, nest::position::Position};
+use crate::common::{position::Position, register};
 
 #[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {
@@ -78,7 +78,7 @@ impl Default for Settings {
             max_hunger_time: 86_400, // 1 day
             // NOTE: digestion_time must be quicker than hunger_time or ants hunger will never decrease.
             max_digestion_time: 3_600, // 1 hour
-            max_birthing_time: 3_600, // 1 hour
+            max_birthing_time: 3_600,  // 1 hour
             is_breathwork_scheduled: false,
             probabilities: Probabilities {
                 random_drop: 0.003,

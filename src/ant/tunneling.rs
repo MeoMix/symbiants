@@ -7,10 +7,11 @@ use crate::{
         commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
         Initiative,
     },
+    common::position::Position,
     element::Element,
+    nest::Nest,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     settings::Settings,
-    nest::{position::Position, Nest},
 };
 
 use super::birthing::Birthing;

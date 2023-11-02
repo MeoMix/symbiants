@@ -2,7 +2,10 @@ use super::{
     commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole,
     Facing, Initiative,
 };
-use crate::{common::register, nest::position::Position, story_time::DEFAULT_TICKS_PER_SECOND};
+use crate::{
+    common::{position::Position, register},
+    story_time::DEFAULT_TICKS_PER_SECOND,
+};
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;

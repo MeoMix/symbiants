@@ -5,14 +5,14 @@ use super::{
     Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead,
 };
 use crate::{
-    common::IdMap,
+    common::{position::Position, IdMap},
     element::{
         ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
         Element,
     },
+    nest::Nest,
     settings::Settings,
     story_time::DEFAULT_TICKS_PER_SECOND,
-    nest::{position::Position, Nest},
 };
 use bevy::prelude::*;
 
@@ -56,9 +56,7 @@ fn insert_ant_sprite(
                     ..default()
                 },
                 transform: Transform {
-                    translation: position
-                        .as_world_position(&nest)
-                        .add(translation_offset.0),
+                    translation: nest.as_world_position(*position).add(translation_offset.0),
                     rotation: orientation.as_world_rotation(),
                     scale: orientation.as_world_scale(),
                     ..default()
@@ -104,9 +102,7 @@ fn spawn_ant_label_text2d(
         translation_offset,
         Text2dBundle {
             transform: Transform {
-                translation: position
-                    .as_world_position(&nest)
-                    .add(translation_offset.0),
+                translation: nest.as_world_position(*position).add(translation_offset.0),
                 // TODO: This is an unreasonably small value for text, but is needed for crisp rendering. Does that mean I am doing something wrong?
                 scale: Vec3::new(0.01, 0.01, 0.0),
                 ..default()
@@ -329,18 +325,14 @@ pub fn on_update_ant_position(
     nest: Res<Nest>,
 ) {
     for (position, mut transform, translation_offset) in ant_query.iter_mut() {
-        transform.translation = position
-            .as_world_position(&nest)
-            .add(translation_offset.0);
+        transform.translation = nest.as_world_position(*position).add(translation_offset.0);
     }
 
     // TODO: This seems bad for performance because it iterates all labels each time rather than just focusing on which ant positions changed.
     // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
     for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
         if let Ok((position, _, _)) = ant_query.get(label.0) {
-            transform.translation = position
-                .as_world_position(&nest)
-                .add(translation_offset.0);
+            transform.translation = nest.as_world_position(*position).add(translation_offset.0);
         }
     }
 }

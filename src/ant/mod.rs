@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
 use crate::{
-    common::{register, Id},
-    nest::position::Position,
+    common::{position::Position, register, Id},
     settings::Settings,
 };
 

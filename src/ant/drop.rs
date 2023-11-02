@@ -1,8 +1,8 @@
 use crate::{
-    common::IdMap,
+    common::{position::Position, IdMap},
     element::Element,
+    nest::Nest,
     settings::Settings,
-    nest::{position::Position, Nest},
 };
 
 use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};

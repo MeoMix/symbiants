@@ -7,8 +7,9 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     ant::{hunger::Hunger, Dead},
+    common::position::Position,
     element::{commands::ElementCommandsExt, Air, Element, Food},
-    nest::{position::Position, Nest},
+    nest::Nest,
 };
 
 use super::action_menu::IsShowingBreathDialog;
@@ -160,7 +161,8 @@ pub fn update_breath_dialog(
                             pluralize(ant_count)
                         ));
 
-                        let seconds = (ant_food_needed / 10) * (duration as isize * labels.len() as isize);
+                        let seconds =
+                            (ant_food_needed / 10) * (duration as isize * labels.len() as isize);
                         ui.label(&format!(
                             "That's about {} second{} of breathing.",
                             seconds,

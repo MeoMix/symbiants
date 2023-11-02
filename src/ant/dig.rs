@@ -1,8 +1,4 @@
-use crate::{
-    element::Element,
-    settings::Settings,
-    nest::{position::Position, Nest},
-};
+use crate::{common::position::Position, element::Element, nest::Nest, settings::Settings};
 
 use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;
@@ -94,9 +90,9 @@ fn try_dig(
     // For workers, check if digging near queen and if so prioritize it because it's immersion breaking
     // seeing stuff stacked on the queen and her not moving to respond to it.
     if *ant_role == AntRole::Worker {
-        let adjacent_queen = ants_query
-            .iter()
-            .find(|(_, _, _,position, &role, _)| role == AntRole::Queen && dig_position.distance(position) <= 1);
+        let adjacent_queen = ants_query.iter().find(|(_, _, _, position, &role, _)| {
+            role == AntRole::Queen && dig_position.distance(position) <= 1
+        });
 
         if adjacent_queen.is_some() {
             commands.dig(ant_entity, dig_position, *element_entity);

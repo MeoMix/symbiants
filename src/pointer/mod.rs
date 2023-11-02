@@ -4,11 +4,8 @@ use bevy::input::touch::Touch;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
-use crate::{
-    camera::MainCamera,
-    ui::action_menu::PointerAction,
-    nest::{position::Position, Nest},
-};
+use crate::common::position::Position;
+use crate::{camera::MainCamera, nest::Nest, ui::action_menu::PointerAction};
 
 #[derive(Event)]
 pub struct ExternalSimulationEvent {

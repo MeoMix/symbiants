@@ -3,8 +3,9 @@ use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::nest::position::Position;
+use self::position::Position;
 
+pub mod position;
 pub mod ui;
 
 // TODO: clean up IdMap on Id component removal.

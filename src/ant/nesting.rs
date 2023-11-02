@@ -1,10 +1,10 @@
 use crate::{
     ant::birthing::Birthing,
-    common::register,
+    common::{position::Position, register},
     element::Element,
+    nest::Nest,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     settings::Settings,
-    nest::{position::Position, Nest},
 };
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
@@ -73,13 +73,8 @@ pub fn ants_nesting_movement(
             continue;
         }
 
-        *orientation = get_turned_orientation(
-            &orientation,
-            &position,
-            &elements_query,
-            &nest,
-            &mut rng,
-        );
+        *orientation =
+            get_turned_orientation(&orientation, &position, &elements_query, &nest, &mut rng);
 
         initiative.consume_movement();
     }

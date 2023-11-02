@@ -1,8 +1,4 @@
-use crate::{
-    element::Element,
-    settings::Settings,
-    nest::{position::Position, Nest},
-};
+use crate::{common::position::Position, element::Element, nest::Nest, settings::Settings};
 
 use super::{AntOrientation, Initiative};
 use bevy::prelude::*;
@@ -31,13 +27,8 @@ pub fn ants_stabilize_footing_movement(
             continue;
         }
 
-        *orientation = get_turned_orientation(
-            &orientation,
-            &position,
-            &elements_query,
-            &nest,
-            &mut rng,
-        );
+        *orientation =
+            get_turned_orientation(&orientation, &position, &elements_query, &nest, &mut rng);
 
         initiative.consume_movement();
     }
@@ -70,13 +61,8 @@ pub fn ants_walk(
         let is_turning_randomly = rng.chance(settings.probabilities.random_turn.into());
 
         if !has_air_ahead || is_turning_randomly {
-            *orientation = get_turned_orientation(
-                &orientation,
-                &position,
-                &elements_query,
-                &nest,
-                &mut rng,
-            );
+            *orientation =
+                get_turned_orientation(&orientation, &position, &elements_query, &nest, &mut rng);
 
             initiative.consume_movement();
             continue;

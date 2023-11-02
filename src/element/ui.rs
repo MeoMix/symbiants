@@ -1,5 +1,5 @@
 use super::Element;
-use crate::nest::{position::Position, Nest};
+use crate::{common::position::Position, nest::Nest};
 use bevy::{asset::HandleId, prelude::*};
 
 #[derive(Resource)]
@@ -245,7 +245,7 @@ fn update_element_sprite(
             custom_size: Some(Vec2::splat(1.0)),
             ..default()
         },
-        transform: Transform::from_translation(element_position.as_world_position(&nest)),
+        transform: Transform::from_translation(nest.as_world_position(*element_position)),
         ..default()
     });
 }

@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
+    common::position::Position,
+    nest::Nest,
     story_state::StoryState,
     story_time::{StoryTime, TimeInfo},
-    nest::{position::Position, Nest},
 };
 
 #[derive(Component)]
@@ -107,7 +108,7 @@ fn create_sky_sprites(
         for y in 0..height {
             let position = Position::new(x, y);
 
-            let mut world_position = position.as_world_position(&nest);
+            let mut world_position = nest.as_world_position(position);
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 
@@ -146,7 +147,7 @@ fn create_tunnel_sprites(
         for y in 0..height {
             let position = Position::new(x, y + y_offset);
 
-            let mut world_position = position.as_world_position(&nest);
+            let mut world_position = nest.as_world_position(position);
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 
@@ -220,11 +221,7 @@ pub fn update_sky_background(
 }
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-pub fn setup_background(
-    mut commands: Commands,
-    nest: Res<Nest>,
-    story_time: Res<StoryTime>,
-) {
+pub fn setup_background(mut commands: Commands, nest: Res<Nest>, story_time: Res<StoryTime>) {
     let air_height = *nest.surface_level() + 1;
 
     commands.spawn_batch(create_sky_sprites(

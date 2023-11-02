@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::nest::{position::Position, Nest};
+use crate::{common::position::Position, nest::Nest};
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
 
@@ -33,7 +33,7 @@ pub fn render_pheromones(
 
     for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         commands.entity(pheromone_entity).insert(SpriteBundle {
-            transform: Transform::from_translation(position.as_world_position(&nest)),
+            transform: Transform::from_translation(nest.as_world_position(*position)),
             sprite: get_pheromone_sprite(pheromone, pheromone_strength),
             visibility: pheromone_visibility.0,
             ..default()
@@ -49,7 +49,7 @@ pub fn on_spawn_pheromone(
 ) {
     for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         commands.entity(pheromone_entity).insert(SpriteBundle {
-            transform: Transform::from_translation(position.as_world_position(&nest)),
+            transform: Transform::from_translation(nest.as_world_position(*position)),
             sprite: get_pheromone_sprite(pheromone, pheromone_strength),
             visibility: pheromone_visibility.0,
             ..default()

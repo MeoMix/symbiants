@@ -1,4 +1,5 @@
 use crate::ant::commands::AntCommandsExt;
+use crate::common::position::Position;
 use crate::common::IdMap;
 use crate::pointer::ExternalSimulationEvent;
 use bevy::prelude::*;
@@ -11,7 +12,7 @@ use crate::{
         Initiative,
     },
     element::{commands::ElementCommandsExt, Element},
-    nest::{position::Position, Nest},
+    nest::Nest,
     settings::Settings,
     ui::action_menu::PointerAction,
 };

@@ -1,7 +1,6 @@
-use super::Nest;
 use bevy::prelude::*;
-use std::ops::{Add, Mul, Sub};
 use serde::{Deserialize, Serialize};
+use std::ops::{Add, Mul, Sub};
 
 #[derive(
     Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Reflect, Default, Serialize, Deserialize,
@@ -26,20 +25,6 @@ impl Position {
 
     pub const fn new(x: isize, y: isize) -> Self {
         Self { x, y }
-    }
-
-    // Convert Position to Transform, z-index is naively set to 1 for now
-    pub fn as_world_position(&self, nest: &Res<Nest>) -> Vec3 {
-        let y_offset = *nest.height() as f32 / 2.0;
-        let x_offset = *nest.width() as f32 / 2.0;
-
-        Vec3 {
-            // NOTE: unit width is 1.0 so add 0.5 to center the position
-            x: self.x as f32 - x_offset + 0.5,
-            // The view of the model position is just an inversion along the y-axis.
-            y: -self.y as f32 + y_offset - 0.5,
-            z: 1.0,
-        }
     }
 
     /// Returns the Manhattan Distance between two positions
