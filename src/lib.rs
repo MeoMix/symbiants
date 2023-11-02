@@ -11,6 +11,7 @@ mod settings;
 mod story_state;
 mod story_time;
 mod ui;
+mod ui2;
 
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
