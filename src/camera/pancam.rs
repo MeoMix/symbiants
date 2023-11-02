@@ -36,7 +36,7 @@ impl Plugin for PanCamPlugin {
                 on_change_projection,
             )
                 .in_set(PanCamSystemSet)
-                .run_if(resource_equals(IsPointerCaptured(false))),
+                .run_if(resource_exists_and_equals(IsPointerCaptured(false))),
         )
         .register_type::<PanCam>();
     }

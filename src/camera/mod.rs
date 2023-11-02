@@ -1,5 +1,4 @@
 use crate::{
-    pancam::{PanCam, PanCamPlugin},
     settings::{pre_setup_settings, Settings},
     story_state::{restart_story, StoryState},
 };
@@ -7,6 +6,10 @@ use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
+
+use self::pancam::{PanCam, PanCamPlugin};
+
+mod pancam;
 
 #[derive(Component)]
 pub struct MainCamera;

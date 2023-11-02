@@ -2,10 +2,7 @@ use super::{
     commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole,
     Facing, Initiative,
 };
-use crate::{
-    common::register, name_list::get_random_name, story_time::DEFAULT_TICKS_PER_SECOND,
-    nest::position::Position,
-};
+use crate::{common::register, nest::position::Position, story_time::DEFAULT_TICKS_PER_SECOND};
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
@@ -90,7 +87,7 @@ pub fn ants_birthing(
                 AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
                 AntInventory::default(),
                 AntRole::Worker,
-                AntName(get_random_name(&mut rng.reborrow())),
+                AntName::random(&mut rng.reborrow()),
                 Initiative::new(&mut rng.reborrow()),
             );
 

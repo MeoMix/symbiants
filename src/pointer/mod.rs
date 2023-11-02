@@ -1,3 +1,5 @@
+pub mod external_event;
+
 use bevy::input::touch::Touch;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;

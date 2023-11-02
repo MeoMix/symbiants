@@ -1,6 +1,4 @@
 use bevy::{asset::LoadState, prelude::*};
-use bevy_save::SaveableRegistry;
-use bevy_turborand::GlobalRng;
 
 use crate::{
     ant::{
@@ -31,7 +29,6 @@ use crate::{
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
     },
-    background::{setup_background, teardown_background, update_sky_background},
     common::{
         pre_setup_common, register_common, setup_common,
         ui::{on_added_selected, on_removed_selected},
@@ -42,13 +39,14 @@ use crate::{
             on_spawn_element, on_update_element_position, rerender_elements, ElementSpriteHandles,
         },
     },
-    external_event::process_external_event,
-    gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable},
+    nest::background::{setup_background, teardown_background, update_sky_background},
+    nest::{setup_nest, teardown_nest},
     pheromone::{
         pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
         ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
     },
-    pointer::{handle_pointer_tap, is_pointer_captured, setup_pointer, IsPointerCaptured},
+    pointer::external_event::process_external_event,
+    pointer::{handle_pointer_tap, is_pointer_captured, setup_pointer},
     save::{load, save, setup_save, teardown_save},
     settings::{pre_setup_settings, register_settings, teardown_settings},
     story_state::{
@@ -60,25 +58,14 @@ use crate::{
         teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
         update_time_scale, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
     },
-    nest::{setup_nest, teardown_nest},
 };
 
-pub struct SimulationPlugin;
+use super::gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable};
 
-impl Plugin for SimulationPlugin {
+pub struct NestSimulationPlugin;
+
+impl Plugin for NestSimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SaveableRegistry>();
-
-        // Some resources should be available for the entire lifetime of the application.
-        // For example, IsPointerCaptured is a UI resource which is useful when interacting with the GameStart menu.
-        app.init_resource::<IsPointerCaptured>();
-        // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
-        app.init_resource::<GlobalRng>();
-
-        app.add_state::<StoryState>();
-        // TODO: call this in setup_story_time?
-        app.add_state::<StoryPlaybackState>();
-
         app.add_systems(
             OnEnter(StoryState::Initializing),
             (

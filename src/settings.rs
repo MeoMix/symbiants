@@ -29,6 +29,8 @@ pub struct Settings {
     pub save_interval: isize,
     pub nest_width: isize,
     pub nest_height: isize,
+    pub crater_width: isize,
+    pub crater_height: isize,
     pub initial_dirt_percent: f32,
     pub initial_ant_worker_count: isize,
     pub ant_color: Color,
@@ -65,6 +67,8 @@ impl Default for Settings {
             nest_width: 144,
             // TODO: I want this to be able to go to 400 without lag and without breaking local storage
             nest_height: 144,
+            crater_width: 144,
+            crater_height: 144,
             initial_dirt_percent: 2.0 / 4.0,
             initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!

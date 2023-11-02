@@ -1,8 +1,8 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
 use crate::{
     common::IdMap,
-    gravity::Unstable,
-    nest::{position::Position, Nest},
+    // TODO: element shouldn't couple to gravity, want to be able to reuse element
+    nest::{gravity::Unstable, position::Position, Nest},
 };
 use bevy::{ecs::system::Command, prelude::*};
 
@@ -90,10 +90,7 @@ struct SpawnElementCommand {
 
 impl Command for SpawnElementCommand {
     fn apply(self, world: &mut World) {
-        if let Some(existing_entity) = world
-            .resource::<Nest>()
-            .get_element_entity(self.position)
-        {
+        if let Some(existing_entity) = world.resource::<Nest>().get_element_entity(self.position) {
             info!(
                 "Entity {:?} already exists at position {:?}",
                 existing_entity, self.position

@@ -1,7 +1,8 @@
 use super::nest::position::Position;
 use crate::{
     common::{register, Id},
-    gravity::Unstable,
+    // TODO: Prefer not to couple to Gravity
+    nest::gravity::Unstable,
     settings::Settings,
 };
 use bevy::prelude::*;

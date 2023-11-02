@@ -2,6 +2,9 @@ use bevy::prelude::*;
 
 use crate::{element::Element, settings::Settings};
 
+mod background;
+pub mod gravity;
+pub mod nest_simulation;
 pub mod position;
 
 use self::position::Position;

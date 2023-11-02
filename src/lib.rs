@@ -1,36 +1,48 @@
 mod ant;
-mod background;
 mod camera;
 mod common;
+mod crater;
 mod element;
-mod external_event;
-mod gravity;
-mod name_list;
-mod pancam;
+mod nest;
 mod pheromone;
 mod pointer;
 mod save;
 mod settings;
-mod simulation;
 mod story_state;
 mod story_time;
 mod ui;
-mod nest;
 
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
-use bevy_save::SavePlugin;
+use bevy_save::{SavePlugin, SaveableRegistry};
 use bevy_turborand::prelude::*;
 use camera::CameraPlugin;
-use simulation::SimulationPlugin;
+use crater::crater_simulation::CraterSimulationPlugin;
+use nest::nest_simulation::NestSimulationPlugin;
+use pointer::IsPointerCaptured;
+use story_state::StoryState;
+use story_time::StoryPlaybackState;
 use ui::UIPlugin;
 
 pub struct SymbiantsPlugin;
 
 impl Plugin for SymbiantsPlugin {
     fn build(&self, app: &mut App) {
+        // TODO: All this stuff is common to both CraterSimulation and NestSimulation and needs to find a good common home.
+        app.init_resource::<SaveableRegistry>();
+
+        // Some resources should be available for the entire lifetime of the application.
+        // For example, IsPointerCaptured is a UI resource which is useful when interacting with the GameStart menu.
+        app.init_resource::<IsPointerCaptured>();
+        // TODO: I put very little thought into initializing this resource always vs saving/loading the seed.
+        app.init_resource::<GlobalRng>();
+
+        app.add_state::<StoryState>();
+        // TODO: call this in setup_story_time?
+        app.add_state::<StoryPlaybackState>();
+
         app.add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
@@ -51,6 +63,6 @@ impl Plugin for SymbiantsPlugin {
         })
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         .add_plugins((RngPlugin::default(), SavePlugin))
-        .add_plugins((CameraPlugin, UIPlugin, SimulationPlugin));
+        .add_plugins((CameraPlugin, UIPlugin, NestSimulationPlugin, CraterSimulationPlugin));
     }
 }

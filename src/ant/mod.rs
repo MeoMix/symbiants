@@ -5,14 +5,13 @@ use std::f32::consts::PI;
 
 use crate::{
     common::{register, Id},
-    name_list::get_random_name,
-    settings::Settings,
     nest::position::Position,
+    settings::Settings,
 };
 
 use self::{
-    birthing::Birthing, chambering::Chambering, commands::AntCommandsExt, hunger::Hunger,
-    sleep::Asleep, tunneling::Tunneling, digestion::Digestion,
+    birthing::Birthing, chambering::Chambering, commands::AntCommandsExt, digestion::Digestion,
+    hunger::Hunger, name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
 use super::element::Element;
@@ -27,6 +26,7 @@ pub mod digestion;
 pub mod drop;
 pub mod emote;
 pub mod hunger;
+mod name_list;
 pub mod nest_expansion;
 pub mod nesting;
 pub mod sleep;
@@ -52,6 +52,12 @@ pub struct AntBundle {
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AntName(pub String);
+
+impl AntName {
+    pub fn random(rng: &mut Mut<GlobalRng>) -> Self {
+        AntName(get_random_name(&mut rng.reborrow()))
+    }
+}
 
 #[derive(Component)]
 pub struct AntLabel(pub Entity);
@@ -425,7 +431,7 @@ pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut comman
             AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
             AntInventory::default(),
             AntRole::Worker,
-            AntName(get_random_name(&mut rng)),
+            AntName::random(&mut rng),
             Initiative::new(&mut rng),
         );
     }

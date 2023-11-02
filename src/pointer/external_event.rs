@@ -11,10 +11,9 @@ use crate::{
         Initiative,
     },
     element::{commands::ElementCommandsExt, Element},
-    name_list::get_random_name,
+    nest::{position::Position, Nest},
     settings::Settings,
     ui::action_menu::PointerAction,
-    nest::{position::Position, Nest},
 };
 
 /// Process user input events at the start of the FixedUpdate simulation loop.
@@ -100,7 +99,7 @@ pub fn process_external_event(
                     AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
                     AntInventory::default(),
                     AntRole::Worker,
-                    AntName(get_random_name(&mut rng.reborrow())),
+                    AntName::random(&mut rng.reborrow()),
                     Initiative::new(&mut rng.reborrow()),
                 );
             }
