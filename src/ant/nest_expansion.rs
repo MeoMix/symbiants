@@ -9,7 +9,7 @@ use crate::{
     ant::commands::AntCommandsExt,
     common::position::Position,
     element::Element,
-    nest::Nest,
+    nest_simulation::nest::Nest,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     settings::Settings,
 };

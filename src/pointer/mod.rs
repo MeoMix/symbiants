@@ -5,7 +5,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
 use crate::common::position::Position;
-use crate::{camera::MainCamera, nest::Nest, ui::action_menu::PointerAction};
+use crate::{camera::MainCamera, nest_simulation::nest::Nest, ui::action_menu::PointerAction};
 
 #[derive(Event)]
 pub struct ExternalSimulationEvent {

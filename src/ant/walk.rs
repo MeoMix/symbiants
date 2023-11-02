@@ -1,4 +1,4 @@
-use crate::{common::position::Position, element::Element, nest::Nest, settings::Settings};
+use crate::{common::position::Position, element::Element, nest_simulation::nest::Nest, settings::Settings};
 
 use super::{AntOrientation, Initiative};
 use bevy::prelude::*;

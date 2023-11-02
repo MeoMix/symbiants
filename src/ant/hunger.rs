@@ -7,7 +7,7 @@ use super::{
 use crate::{
     common::{position::Position, IdMap},
     element::Element,
-    nest::Nest,
+    nest_simulation::nest::Nest,
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;

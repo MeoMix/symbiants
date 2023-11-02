@@ -4,7 +4,7 @@ use crate::{
     ant::{commands::AntCommandsExt, AntInventory},
     common::position::Position,
     element::Element,
-    nest::Nest,
+    nest_simulation::nest::Nest,
 };
 
 use super::Dead;

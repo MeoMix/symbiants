@@ -2,7 +2,7 @@ use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, San
 use crate::{
     common::{position::Position, IdMap},
     // TODO: element shouldn't couple to gravity, want to be able to reuse element
-    nest::{gravity::Unstable, Nest},
+    nest_simulation::{gravity::Unstable, nest::Nest},
 };
 use bevy::{ecs::system::Command, prelude::*};
 

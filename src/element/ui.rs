@@ -1,5 +1,5 @@
 use super::Element;
-use crate::{common::position::Position, nest::Nest};
+use crate::{common::position::Position, nest_simulation::nest::Nest};
 use bevy::{asset::HandleId, prelude::*};
 
 #[derive(Resource)]

@@ -9,7 +9,7 @@ use crate::{
     ant::{hunger::Hunger, Dead},
     common::position::Position,
     element::{commands::ElementCommandsExt, Air, Element, Food},
-    nest::Nest,
+    nest_simulation::nest::Nest,
 };
 
 use super::action_menu::IsShowingBreathDialog;

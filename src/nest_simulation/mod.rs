@@ -1,3 +1,7 @@
+mod background;
+pub mod gravity;
+pub mod nest;
+
 use bevy::{asset::LoadState, prelude::*};
 
 use crate::{
@@ -39,8 +43,6 @@ use crate::{
             on_spawn_element, on_update_element_position, rerender_elements, ElementSpriteHandles,
         },
     },
-    nest::background::{setup_background, teardown_background, update_sky_background},
-    nest::{setup_nest, teardown_nest},
     pheromone::{
         pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
         ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
@@ -60,7 +62,11 @@ use crate::{
     },
 };
 
-use super::gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable};
+use self::{
+    background::{setup_background, teardown_background, update_sky_background},
+    gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable},
+    nest::{setup_nest, teardown_nest},
+};
 
 pub struct NestSimulationPlugin;
 

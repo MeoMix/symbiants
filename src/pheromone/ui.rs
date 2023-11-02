@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{common::position::Position, nest::Nest};
+use crate::{common::position::Position, nest_simulation::nest::Nest};
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
 

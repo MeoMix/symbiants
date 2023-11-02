@@ -3,7 +3,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ant::emote::EmoteType, common::position::Position, nest::Nest, settings::Settings,
+    ant::emote::EmoteType, common::position::Position, nest_simulation::nest::Nest, settings::Settings,
     story_time::StoryTime,
 };
 

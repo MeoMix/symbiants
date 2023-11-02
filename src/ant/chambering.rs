@@ -5,7 +5,7 @@ use crate::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
     common::position::Position,
     element::Element,
-    nest::Nest,
+    nest_simulation::nest::Nest,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     settings::Settings,
 };

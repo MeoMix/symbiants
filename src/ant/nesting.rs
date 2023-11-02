@@ -2,7 +2,7 @@ use crate::{
     ant::birthing::Birthing,
     common::{position::Position, register},
     element::Element,
-    nest::Nest,
+    nest_simulation::nest::Nest,
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     settings::Settings,
 };

@@ -2,10 +2,6 @@ use bevy::prelude::*;
 
 use crate::{common::position::Position, element::Element, settings::Settings};
 
-mod background;
-pub mod gravity;
-pub mod nest_simulation;
-
 /// Note the intentional omission of reflection/serialization.
 /// This is because Nest is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]

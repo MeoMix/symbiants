@@ -6,7 +6,7 @@ use crate::{
     ant::AntInventory,
     common::{position::Position, Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
-    nest::Nest,
+    nest_simulation::nest::Nest,
     settings::Settings,
 };
 

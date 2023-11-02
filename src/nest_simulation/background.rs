@@ -2,10 +2,11 @@ use bevy::prelude::*;
 
 use crate::{
     common::position::Position,
-    nest::Nest,
     story_state::StoryState,
     story_time::{StoryTime, TimeInfo},
 };
+
+use super::nest::Nest;
 
 #[derive(Component)]
 pub struct SkyBackground;

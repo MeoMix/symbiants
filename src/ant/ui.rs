@@ -10,7 +10,7 @@ use crate::{
         ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
         Element,
     },
-    nest::Nest,
+    nest_simulation::nest::Nest,
     settings::Settings,
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
