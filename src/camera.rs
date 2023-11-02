@@ -25,8 +25,8 @@ fn window_resize(
         };
 
         if resize_event.window == entity {
-            let max_ratio = (resize_event.width / settings.world_width as f32)
-                .max(resize_event.height / settings.world_height as f32);
+            let max_ratio = (resize_event.width / settings.nest_width as f32)
+                .max(resize_event.height / settings.nest_height as f32);
 
             main_camera_query.single_mut().scale = 1.0 / max_ratio;
         }
@@ -44,18 +44,18 @@ fn scale_to_world(
 
     // NOTE: This calculation is "wrong" on first load because resize has yet to occur.
     // This calculation is correct when resetting world state post-load, though.
-    let max_ratio = (primary_window.width() / settings.world_width as f32)
-        .max(primary_window.height() / settings.world_height as f32);
+    let max_ratio = (primary_window.width() / settings.nest_width as f32)
+        .max(primary_window.height() / settings.nest_height as f32);
 
     let (main_camera_entity, mut projection) = main_camera_query.single_mut();
 
     projection.scale = 1.0 / max_ratio;
 
     commands.entity(main_camera_entity).insert(PanCam {
-        min_x: Some(-settings.world_width as f32 / 2.0),
-        min_y: Some(-settings.world_height as f32 / 2.0),
-        max_x: Some(settings.world_width as f32 / 2.0),
-        max_y: Some(settings.world_height as f32 / 2.0),
+        min_x: Some(-settings.nest_width as f32 / 2.0),
+        min_y: Some(-settings.nest_height as f32 / 2.0),
+        max_x: Some(settings.nest_width as f32 / 2.0),
+        max_y: Some(settings.nest_height as f32 / 2.0),
         min_scale: 0.01,
         ..default()
     });

@@ -271,8 +271,8 @@ pub fn gravity_mark_stable(
 //         );
 //         app.insert_resource(nest);
 //         app.insert_resource(Settings {
-//             world_width: width,
-//             world_height: height,
+//             nest_width: width,
+//             nest_height: height,
 //             ..default()
 //         });
 
@@ -361,8 +361,8 @@ pub fn gravity_mark_stable(
 //         );
 //         app.insert_resource(nest);
 //         app.insert_resource(Settings {
-//             world_width: width,
-//             world_height: height,
+//             nest_width: width,
+//             nest_height: height,
 //             ..default()
 //         });
 

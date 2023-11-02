@@ -149,8 +149,8 @@ pub fn register_element(
 }
 
 pub fn setup_element(settings: Res<Settings>, mut commands: Commands) {
-    for y in 0..settings.world_height {
-        for x in 0..settings.world_width {
+    for y in 0..settings.nest_height {
+        for x in 0..settings.nest_width {
             let position = Position::new(x, y);
 
             // FIXME: These should be commands.spawn_element but need to fix circularity with expecting Nest to exist.

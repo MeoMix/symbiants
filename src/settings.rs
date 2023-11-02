@@ -27,8 +27,8 @@ pub struct Probabilities {
 pub struct Settings {
     pub snapshot_interval: isize,
     pub save_interval: isize,
-    pub world_width: isize,
-    pub world_height: isize,
+    pub nest_width: isize,
+    pub nest_height: isize,
     pub initial_dirt_percent: f32,
     pub initial_ant_worker_count: isize,
     pub ant_color: Color,
@@ -46,11 +46,11 @@ pub struct Settings {
 // calculations when creating a new Nest instance.
 impl Settings {
     pub fn get_surface_level(&self) -> isize {
-        (self.world_height as f32 - (self.world_height as f32 * self.initial_dirt_percent)) as isize
+        (self.nest_height as f32 - (self.nest_height as f32 * self.initial_dirt_percent)) as isize
     }
 
     pub fn get_random_surface_position(&self, rng: &mut Mut<GlobalRng>) -> Position {
-        Position::new(rng.isize(0..self.world_width), self.get_surface_level())
+        Position::new(rng.isize(0..self.nest_width), self.get_surface_level())
     }
 }
 
@@ -62,9 +62,9 @@ impl Default for Settings {
             // Saving data to local storage is slow, but generating the snapshot of the world is also slow.
             // Take snapshots aggressively because browser tab closes too quickly to JIT snapshot.
             snapshot_interval: 5, // TODO: prefer 1 here but it's too slow, makes sim stutter
-            world_width: 144,
+            nest_width: 144,
             // TODO: I want this to be able to go to 400 without lag and without breaking local storage
-            world_height: 144,
+            nest_height: 144,
             initial_dirt_percent: 2.0 / 4.0,
             initial_ant_worker_count: 0,
             ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!

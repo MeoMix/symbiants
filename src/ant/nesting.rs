@@ -174,9 +174,9 @@ fn can_start_nesting(
     }
 
     // If x position is within 20% of world edge then don't dig there
-    let offset = settings.world_width / 5;
+    let offset = settings.nest_width / 5;
     let is_too_near_world_edge =
-        ant_position.x < offset || ant_position.x > settings.world_width - offset;
+        ant_position.x < offset || ant_position.x > settings.nest_width - offset;
 
     let has_valid_dig_site = nest.is_aboveground(&ant_position) && !is_too_near_world_edge;
 

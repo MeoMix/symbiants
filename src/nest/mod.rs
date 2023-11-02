@@ -27,8 +27,8 @@ pub fn setup_nest(
     mut commands: Commands,
 ) {
     let mut elements_cache = vec![
-        vec![Entity::PLACEHOLDER; settings.world_width as usize];
-        settings.world_height as usize
+        vec![Entity::PLACEHOLDER; settings.nest_width as usize];
+        settings.nest_height as usize
     ];
 
     for (position, entity) in element_query.iter() {
@@ -36,8 +36,8 @@ pub fn setup_nest(
     }
 
     commands.insert_resource(Nest::new(
-        settings.world_width,
-        settings.world_height,
+        settings.nest_width,
+        settings.nest_height,
         settings.get_surface_level(),
         elements_cache,
     ));
