@@ -1,7 +1,7 @@
 mod ant;
 mod camera;
 mod common;
-mod creater_simulation;
+mod crater_simulation;
 mod element;
 mod nest_simulation;
 mod pheromone;
@@ -19,7 +19,7 @@ use bevy::{
 use bevy_save::{SavePlugin, SaveableRegistry};
 use bevy_turborand::prelude::*;
 use camera::CameraPlugin;
-use creater_simulation::CraterSimulationPlugin;
+use crater_simulation::CraterSimulationPlugin;
 use nest_simulation::NestSimulationPlugin;
 use pointer::IsPointerCaptured;
 use story_state::StoryState;
