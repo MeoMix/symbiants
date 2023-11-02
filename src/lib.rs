@@ -1,7 +1,7 @@
 mod ant;
 mod camera;
 mod common;
-mod crater;
+mod creater_simulation;
 mod element;
 mod nest;
 mod pheromone;
@@ -19,7 +19,7 @@ use bevy::{
 use bevy_save::{SavePlugin, SaveableRegistry};
 use bevy_turborand::prelude::*;
 use camera::CameraPlugin;
-use crater::crater_simulation::CraterSimulationPlugin;
+use creater_simulation::CraterSimulationPlugin;
 use nest::nest_simulation::NestSimulationPlugin;
 use pointer::IsPointerCaptured;
 use story_state::StoryState;
@@ -63,6 +63,11 @@ impl Plugin for SymbiantsPlugin {
         })
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         .add_plugins((RngPlugin::default(), SavePlugin))
-        .add_plugins((CameraPlugin, UIPlugin, NestSimulationPlugin, CraterSimulationPlugin));
+        .add_plugins((
+            CameraPlugin,
+            UIPlugin,
+            NestSimulationPlugin,
+            CraterSimulationPlugin,
+        ));
     }
 }
