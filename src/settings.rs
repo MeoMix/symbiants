@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Reflect};
 use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::common::{position::Position, register};
+use crate::story::common::{position::Position, register};
 
 #[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {

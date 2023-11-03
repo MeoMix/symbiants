@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::ant::{AntRole, Dead};
+use crate::story::ant::{AntRole, Dead};
 
 // TODO: Probably split this into AppState and StoryState where AppState encompasses the app
 // and StoryState is a single instance, usually 1:1 but 0:1 during story creation.

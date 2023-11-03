@@ -1,17 +1,9 @@
-mod ant;
-mod camera;
-mod common;
-mod crater_simulation;
-mod element;
-mod nest_simulation;
-mod pheromone;
-mod pointer;
+mod main_menu;
 mod save;
 mod settings;
+mod story;
 mod story_state;
-mod story_time;
 mod ui;
-mod ui2;
 
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
@@ -19,13 +11,14 @@ use bevy::{
 };
 use bevy_save::{SavePlugin, SaveableRegistry};
 use bevy_turborand::prelude::*;
-use camera::CameraPlugin;
-use crater_simulation::CraterSimulationPlugin;
-use nest_simulation::NestSimulationPlugin;
-use pointer::IsPointerCaptured;
+use main_menu::update_main_menu;
 use story_state::StoryState;
-use story_time::StoryPlaybackState;
-use ui::UIPlugin;
+use ui::CoreUIPlugin;
+use story::{
+    camera::CameraPlugin, crater_simulation::CraterSimulationPlugin,
+    nest_simulation::NestSimulationPlugin, pointer::IsPointerCaptured,
+    story_time::StoryPlaybackState, ui::StoryUIPlugin,
+};
 
 pub struct SymbiantsPlugin;
 
@@ -66,9 +59,15 @@ impl Plugin for SymbiantsPlugin {
         .add_plugins((RngPlugin::default(), SavePlugin))
         .add_plugins((
             CameraPlugin,
-            UIPlugin,
+            CoreUIPlugin,
+            StoryUIPlugin,
             NestSimulationPlugin,
             CraterSimulationPlugin,
         ));
+
+        app.add_systems(
+            Update,
+            update_main_menu.run_if(in_state(StoryState::GatheringSettings)),
+        );
     }
 }
