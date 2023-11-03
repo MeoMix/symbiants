@@ -11,7 +11,7 @@ use crate::{
         ant::commands::AntCommandsExt,
         common::position::Position,
         element::Element,
-        nest_simulation::nest::Nest,
+        nest_simulation::nest::{Nest, Nest2},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };
@@ -31,9 +31,9 @@ pub fn ants_nest_expansion(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
-    nest_query: Query<&Nest>,
+    nest_query: Query<(&Nest, &Nest2)>,
 ) {
-    let nest = nest_query.single();
+    let (nest, nest2) = nest_query.single();
 
     let ant_entity_positions = ants_query
         .iter()
@@ -49,7 +49,7 @@ pub fn ants_nest_expansion(
 
         if *ant_role != AntRole::Worker
             || inventory.0 != None
-            || nest.is_aboveground(ant_position)
+            || nest2.is_aboveground(ant_position)
             || ant_orientation.is_facing_north()
         {
             continue;

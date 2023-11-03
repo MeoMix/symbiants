@@ -8,7 +8,7 @@ use crate::{
     },
 };
 
-use super::nest::Nest;
+use super::nest::{Nest, Nest2};
 
 #[derive(Component)]
 pub struct SkyBackground;
@@ -93,6 +93,7 @@ fn create_sky_sprites(
     width: isize,
     height: isize,
     nest: &Nest,
+    nest2: &Nest2,
     story_time: &Res<StoryTime>,
 ) -> Vec<(SpriteBundle, Position, SkyBackground)> {
     let mut sky_sprites = vec![];
@@ -115,7 +116,7 @@ fn create_sky_sprites(
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 
-            let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
+            let t_y: f32 = position.y as f32 / nest2.surface_level() as f32;
             let color = interpolate_color(north_color, south_color, t_y);
 
             let sky_sprite = SpriteBundle {
@@ -177,7 +178,7 @@ pub fn update_sky_background(
     mut sky_sprite_query: Query<(&mut Sprite, &Position), With<SkyBackground>>,
     mut last_run_time_info: Local<TimeInfo>,
     app_state: Res<State<AppState>>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Nest2>,
     // Optional due to running during cleanup
     story_time: Option<Res<StoryTime>>,
 ) {
@@ -188,7 +189,7 @@ pub fn update_sky_background(
     }
 
     let story_time = story_time.unwrap();
-    let nest = nest_query.single();
+    let nest2 = nest_query.single();
     let time_info = story_time.as_time_info();
 
     // Update the sky's colors once a minute of elapsed *story time* not real-world time.
@@ -210,7 +211,7 @@ pub fn update_sky_background(
         sunset_decimal_hours,
     );
     for (mut sprite, position) in sky_sprite_query.iter_mut() {
-        let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
+        let t_y: f32 = position.y as f32 / nest2.surface_level() as f32;
         let color = interpolate_color(north_color, south_color, t_y);
 
         sprite.color = color;
@@ -220,14 +221,15 @@ pub fn update_sky_background(
 }
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-pub fn setup_background(mut commands: Commands, nest_query: Query<&Nest>, story_time: Res<StoryTime>) {
-    let nest = nest_query.single();
-    let air_height = nest.surface_level() + 1;
+pub fn setup_background(mut commands: Commands, nest_query: Query<(&Nest, &Nest2)>, story_time: Res<StoryTime>) {
+    let (nest, nest2) = nest_query.single();
+    let air_height = nest2.surface_level() + 1;
 
     commands.spawn_batch(create_sky_sprites(
         nest.width(),
         air_height,
         &nest,
+        &nest2,
         &story_time,
     ));
 

@@ -10,7 +10,7 @@ use crate::{
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use super::nest::Nest;
+use super::nest::{Nest, Nest2};
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
@@ -133,11 +133,11 @@ pub fn gravity_ants(
         Option<&Dead>,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<(&Nest, &Nest2)>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    let nest = nest_query.single();
+    let (nest, nest2) = nest_query.single();
 
     for (orientation, mut position, initiative, dead) in ants_query.iter_mut() {
         // Figure out foot direction
@@ -151,7 +151,7 @@ pub fn gravity_ants(
 
         // SPECIAL CASE: out of bounds underground is considered dirt not air
         let is_out_of_bounds_beneath_feet =
-            !nest.is_within_bounds(&below_position) && nest.is_aboveground(&below_position);
+            !nest.is_within_bounds(&below_position) && nest2.is_aboveground(&below_position);
 
         let is_chance_falling =
             orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
@@ -193,7 +193,7 @@ pub fn gravity_mark_unstable(
     air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
     elements_query: Query<&Element, Without<Air>>,
     mut commands: Commands,
-    nest_query: Query<&Nest>,
+    nest_query: Query<(&Nest, &Nest2)>,
 ) {
     let mut positions = HashSet::new();
 
@@ -203,7 +203,7 @@ pub fn gravity_mark_unstable(
         positions.insert(position + Position::new(1, -1));
     }
 
-    let nest = nest_query.single();
+    let (nest, nest2) = nest_query.single();
 
     for &position in &positions {
         // If the current position contains a sand or food element, mark it as unstable
@@ -214,7 +214,7 @@ pub fn gravity_mark_unstable(
                 }
 
                 // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
-                if *element == Element::Dirt && nest.is_aboveground(&position) {
+                if *element == Element::Dirt && nest2.is_aboveground(&position) {
                     commands.toggle_element_command(*entity, position, true, Unstable);
                 }
             }

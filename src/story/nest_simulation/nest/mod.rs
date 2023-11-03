@@ -15,7 +15,6 @@ use self::elements_cache::ElementsCache;
 pub struct Nest {
     width: isize,
     height: isize,
-    surface_level: isize,
     elements_cache: ElementsCache,
 }
 
@@ -38,11 +37,13 @@ pub fn setup_nest(
         elements_cache[position.y as usize][position.x as usize] = entity;
     }
 
-    commands.spawn(Nest::new(
-        settings.nest_width,
-        settings.nest_height,
-        settings.get_surface_level(),
-        ElementsCache::new(elements_cache),
+    commands.spawn((
+        Nest::new(
+            settings.nest_width,
+            settings.nest_height,
+            ElementsCache::new(elements_cache),
+        ),
+        Nest2::new(settings.get_surface_level()),
     ));
 }
 
@@ -53,16 +54,10 @@ pub fn teardown_nest(mut commands: Commands, nest_entity_query: Query<Entity, Wi
 }
 
 impl Nest {
-    pub fn new(
-        width: isize,
-        height: isize,
-        surface_level: isize,
-        elements_cache: ElementsCache,
-    ) -> Self {
+    pub fn new(width: isize, height: isize, elements_cache: ElementsCache) -> Self {
         Nest {
             width,
             height,
-            surface_level,
             elements_cache,
         }
     }
@@ -75,24 +70,12 @@ impl Nest {
         self.height
     }
 
-    pub fn surface_level(&self) -> isize {
-        self.surface_level
-    }
-
     pub fn elements(&self) -> &ElementsCache {
         &self.elements_cache
     }
 
     pub fn elements_mut(&mut self) -> &mut ElementsCache {
         &mut self.elements_cache
-    }
-
-    pub fn is_aboveground(&self, position: &Position) -> bool {
-        !self.is_underground(position)
-    }
-
-    pub fn is_underground(&self, position: &Position) -> bool {
-        position.y > self.surface_level
     }
 
     pub fn is_within_bounds(&self, position: &Position) -> bool {
@@ -112,5 +95,28 @@ impl Nest {
             y: -position.y as f32 + y_offset - 0.5,
             z: 1.0,
         }
+    }
+}
+
+#[derive(Component, Debug)]
+pub struct Nest2 {
+    surface_level: isize,
+}
+
+impl Nest2 {
+    pub fn new(surface_level: isize) -> Self {
+        Self { surface_level }
+    }
+
+    pub fn surface_level(&self) -> isize {
+        self.surface_level
+    }
+
+    pub fn is_aboveground(&self, position: &Position) -> bool {
+        !self.is_underground(position)
+    }
+
+    pub fn is_underground(&self, position: &Position) -> bool {
+        position.y > self.surface_level
     }
 }

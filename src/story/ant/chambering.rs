@@ -5,7 +5,7 @@ use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
     common::position::Position,
     element::Element,
-    nest_simulation::nest::Nest,
+    nest_simulation::nest::{Nest, Nest2},
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
 };
 
@@ -123,14 +123,14 @@ pub fn ants_remove_chamber_pheromone(
         Or<(Changed<Position>, Changed<AntInventory>)>,
     >,
     mut commands: Commands,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Nest2>,
 ) {
-    let nest = nest_query.single();
+    let nest2 = nest_query.single();
 
     for (entity, position, inventory, chambering) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(entity).remove::<Chambering>();
-        } else if nest.is_aboveground(position) {
+        } else if nest2.is_aboveground(position) {
             commands.entity(entity).remove::<Chambering>();
         } else if chambering.0 <= 0 {
             commands.entity(entity).remove::<Chambering>();

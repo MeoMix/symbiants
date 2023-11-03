@@ -3,7 +3,7 @@ use crate::{
     story::{
         common::{position::Position, IdMap},
         element::Element,
-        nest_simulation::nest::Nest,
+        nest_simulation::nest::{Nest, Nest2},
     },
 };
 
@@ -21,12 +21,14 @@ pub fn ants_drop(
         Entity,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<(&Nest, &Nest2)>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
     id_map: Res<IdMap>,
 ) {
+    let (nest, nest2) = nest_query.single();
+
     for (orientation, inventory, initiative, position, role, ant_entity) in ants_query.iter() {
         if !initiative.can_act() {
             continue;
@@ -35,8 +37,6 @@ pub fn ants_drop(
         if inventory.0 == None {
             continue;
         }
-
-        let nest = nest_query.single();
 
         // TODO: drop ahead not where at?
         if rng.f32() < settings.probabilities.random_drop {
@@ -69,12 +69,12 @@ pub fn ants_drop(
 
         // Prioritize dropping sand above ground and food below ground.
         let drop_sand = *inventory_item_element == Element::Sand
-            && nest.is_aboveground(&ahead_position)
+            && nest2.is_aboveground(&ahead_position)
             && rng.f32() < settings.probabilities.above_surface_sand_drop;
 
         let mut drop_food = false;
         if *inventory_item_element == Element::Food {
-            if nest.is_underground(&ahead_position) {
+            if nest2.is_underground(&ahead_position) {
                 // Don't let ants drop food in tunnels that don't have space for them to navigate around dropped food.
                 if nest.elements().is_element(
                     &elements_query,

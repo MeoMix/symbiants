@@ -9,7 +9,7 @@ use crate::{story::{
     },
     common::position::Position,
     element::Element,
-    nest_simulation::nest::Nest,
+    nest_simulation::nest::{Nest, Nest2},
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
 
 }, settings::Settings};
@@ -28,10 +28,10 @@ pub struct Tunneling(pub isize);
 pub fn ants_tunnel_pheromone_move(
     mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), With<Tunneling>>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<(&Nest, &Nest2)>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    let nest = nest_query.single();
+    let (nest, nest2) = nest_query.single();
 
     for (mut orientation, mut initiative, mut ant_position) in ants_query.iter_mut() {
         if !initiative.can_move() {
@@ -68,6 +68,7 @@ pub fn ants_tunnel_pheromone_move(
                 &ant_position,
                 &elements_query,
                 &nest,
+                &nest2,
                 &mut rng,
             );
 
@@ -216,15 +217,15 @@ pub fn ants_remove_tunnel_pheromone(
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Nest2>,
     settings: Res<Settings>,
 ) {
-    let nest = nest_query.single();
+    let nest2 = nest_query.single();
 
     for (ant_entity, ant_position, inventory, tunneling) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(ant_entity).remove::<Tunneling>();
-        } else if nest.is_aboveground(ant_position) {
+        } else if nest2.is_aboveground(ant_position) {
             commands.entity(ant_entity).remove::<Tunneling>();
         } else if tunneling.0 <= 0 {
             commands.entity(ant_entity).remove::<Tunneling>();

@@ -1,10 +1,13 @@
-use crate::{story::{
-    ant::birthing::Birthing,
-    common::{position::Position, register},
-    element::Element,
-    nest_simulation::nest::Nest,
-    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
-}, settings::Settings};
+use crate::{
+    settings::Settings,
+    story::{
+        ant::birthing::Birthing,
+        common::{position::Position, register},
+        element::Element,
+        nest_simulation::nest::{Nest, Nest2},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+    },
+};
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
@@ -42,17 +45,17 @@ pub fn ants_nesting_movement(
         &Nesting,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<(&Nest, &Nest2)>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    let nest = nest_query.single();
-    
+    let (nest, nest2) = nest_query.single();
+
     for (mut initiative, position, mut orientation, inventory, nesting) in ants_query.iter_mut() {
         if !initiative.can_move() {
             continue;
         }
 
-        if nest.is_underground(&position) || inventory.0 != None {
+        if nest2.is_underground(&position) || inventory.0 != None {
             continue;
         }
 
@@ -74,8 +77,14 @@ pub fn ants_nesting_movement(
             continue;
         }
 
-        *orientation =
-            get_turned_orientation(&orientation, &position, &elements_query, &nest, &mut rng);
+        *orientation = get_turned_orientation(
+            &orientation,
+            &position,
+            &elements_query,
+            &nest,
+            &nest2,
+            &mut rng,
+        );
 
         initiative.consume_movement();
     }
@@ -91,12 +100,12 @@ pub fn ants_nesting_action(
         Entity,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<(&Nest, &Nest2)>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
-    let nest = nest_query.single();
+    let (nest, nest2) = nest_query.single();
 
     for (mut nesting, orientation, inventory, mut initiative, position, ant_entity) in
         ants_query.iter_mut()
@@ -112,6 +121,7 @@ pub fn ants_nesting_action(
             &position,
             &orientation,
             &nest,
+            &nest2,
             &elements_query,
             &settings,
         ) {
@@ -127,7 +137,7 @@ pub fn ants_nesting_action(
             continue;
         }
 
-        if can_finish_nesting(&position, &orientation, &nest, &elements_query) {
+        if can_finish_nesting(&position, &orientation, &nest, &nest2, &elements_query) {
             finish_digging_nest(
                 &position,
                 &orientation,
@@ -160,6 +170,7 @@ fn can_start_nesting(
     ant_position: &Position,
     ant_orientation: &AntOrientation,
     nest: &Nest,
+    nest2: &Nest2,
     elements_query: &Query<&Element>,
     settings: &Settings,
 ) -> bool {
@@ -176,7 +187,7 @@ fn can_start_nesting(
     let is_too_near_world_edge =
         ant_position.x < offset || ant_position.x > settings.nest_width - offset;
 
-    let has_valid_dig_site = nest.is_aboveground(&ant_position) && !is_too_near_world_edge;
+    let has_valid_dig_site = nest2.is_aboveground(&ant_position) && !is_too_near_world_edge;
 
     let dig_position = ant_orientation.get_below_position(ant_position);
     let dig_target_entity = nest.elements().element_entity(dig_position);
@@ -226,9 +237,10 @@ fn can_finish_nesting(
     ant_position: &Position,
     ant_orientation: &AntOrientation,
     nest: &Nest,
+    nest2: &Nest2,
     elements_query: &Query<&Element>,
 ) -> bool {
-    if nest.is_aboveground(ant_position) {
+    if nest2.is_aboveground(ant_position) {
         return false;
     }
 
