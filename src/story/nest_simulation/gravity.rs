@@ -4,13 +4,13 @@ use crate::{
         ant::{AntOrientation, Dead, Initiative},
         common::position::Position,
         element::{commands::ElementCommandsExt, Air, Element},
+        grid::Grid,
+        nest_simulation::nest::Nest,
     },
 };
 
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
-
-use super::{grid::Grid, nest::Nest};
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.

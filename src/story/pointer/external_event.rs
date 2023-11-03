@@ -1,7 +1,9 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
     common::{position::Position, IdMap},
-    ui::selection_menu::Selected, nest_simulation::{grid::Grid, nest::Nest},
+    grid::Grid,
+    nest_simulation::nest::Nest,
+    ui::selection_menu::Selected,
 };
 
 use bevy::prelude::*;
@@ -33,7 +35,7 @@ pub fn process_external_event(
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
     selected_entity_query: Query<Entity, With<Selected>>,
     id_map: Res<IdMap>,
-) {    
+) {
     let nest = nest_query.single();
 
     for event in external_simulation_events.drain() {
@@ -76,19 +78,28 @@ pub fn process_external_event(
                 }
             }
         } else if pointer_action == PointerAction::Food {
-            if nest.elements().is_element(&elements_query, grid_position, Element::Air) {
+            if nest
+                .elements()
+                .is_element(&elements_query, grid_position, Element::Air)
+            {
                 if let Some(entity) = nest.elements().get_element_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Food, *entity);
                 }
             }
         } else if pointer_action == PointerAction::Sand {
-            if nest.elements().is_element(&elements_query, grid_position, Element::Air) {
+            if nest
+                .elements()
+                .is_element(&elements_query, grid_position, Element::Air)
+            {
                 if let Some(entity) = nest.elements().get_element_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Sand, *entity);
                 }
             }
         } else if pointer_action == PointerAction::Dirt {
-            if nest.elements().is_element(&elements_query, grid_position, Element::Air) {
+            if nest
+                .elements()
+                .is_element(&elements_query, grid_position, Element::Air)
+            {
                 if let Some(entity) = nest.elements().get_element_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Dirt, *entity);
                 }
@@ -98,7 +109,10 @@ pub fn process_external_event(
                 commands.replace_element(grid_position, Element::Air, *entity);
             }
         } else if pointer_action == PointerAction::SpawnWorkerAnt {
-            if nest.elements().is_element(&elements_query, grid_position, Element::Air) {
+            if nest
+                .elements()
+                .is_element(&elements_query, grid_position, Element::Air)
+            {
                 commands.spawn_ant(
                     grid_position,
                     AntColor(settings.ant_color),

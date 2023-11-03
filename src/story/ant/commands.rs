@@ -6,7 +6,7 @@ use crate::story::{
     ant::AntInventory,
     common::{position::Position, Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
-    nest_simulation::grid::Grid,
+    grid::Grid,
 };
 
 use crate::settings::Settings;

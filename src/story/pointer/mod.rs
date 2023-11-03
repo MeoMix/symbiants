@@ -5,10 +5,11 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
 use crate::story::{
-    camera::MainCamera, common::position::Position, ui::action_menu::PointerAction,
+    camera::MainCamera,
+    common::position::Position,
+    grid::{Grid, VisibleGrid},
+    ui::action_menu::PointerAction,
 };
-
-use super::nest_simulation::grid::{Grid, VisibleGrid};
 
 #[derive(Event)]
 pub struct ExternalSimulationEvent {

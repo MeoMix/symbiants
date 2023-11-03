@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::story::{common::position::Position, nest_simulation::{grid::Grid, nest::Nest}};
+use crate::story::{common::position::Position, grid::Grid, nest_simulation::nest::Nest};
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
 

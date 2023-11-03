@@ -4,7 +4,8 @@ use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory},
     common::position::Position,
     element::Element,
-    nest_simulation::{grid::Grid, nest::Nest},
+    grid::Grid,
+    nest_simulation::nest::Nest,
 };
 
 use super::Dead;

@@ -3,7 +3,8 @@ use crate::{
     story::{
         common::{position::Position, IdMap},
         element::Element,
-        nest_simulation::{grid::Grid, nest::Nest},
+        grid::Grid,
+        nest_simulation::nest::Nest,
     },
 };
 

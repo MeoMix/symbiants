@@ -1,9 +1,7 @@
 use crate::{
     settings::Settings,
     story::{
-        common::position::Position,
-        element::Element,
-        nest_simulation::{grid::Grid, nest::Nest},
+        common::position::Position, element::Element, grid::Grid, nest_simulation::nest::Nest,
     },
 };
 

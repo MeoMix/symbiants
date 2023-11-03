@@ -1,6 +1,9 @@
-use crate::settings::Settings;
-use crate::story::nest_simulation::grid::Grid;
-use crate::story::{common::position::Position, element::Element, nest_simulation::nest::Nest};
+use crate::{
+    settings::Settings,
+    story::{
+        common::position::Position, element::Element, grid::Grid, nest_simulation::nest::Nest,
+    },
+};
 
 use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;

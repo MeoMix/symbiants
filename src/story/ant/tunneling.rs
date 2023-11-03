@@ -11,7 +11,8 @@ use crate::{
         },
         common::position::Position,
         element::Element,
-        nest_simulation::{nest::Nest, grid::Grid},
+        grid::Grid,
+        nest_simulation::nest::Nest,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
 };

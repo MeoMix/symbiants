@@ -1,12 +1,16 @@
-use crate::app_state::AppState;
+use crate::{
+    app_state::AppState,
+    story::{
+        grid::{Grid, VisibleGrid},
+        nest_simulation::nest::setup_nest,
+    },
+};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
 
 use self::pancam::{PanCam, PanCamPlugin};
-
-use super::nest_simulation::{grid::{Grid, VisibleGrid}, nest::setup_nest};
 
 mod pancam;
 

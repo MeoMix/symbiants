@@ -12,7 +12,8 @@ use crate::{
             ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
             Element,
         },
-        nest_simulation::{grid::Grid, nest::Nest},
+        grid::Grid,
+        nest_simulation::nest::Nest,
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
@@ -58,7 +59,9 @@ fn insert_ant_sprite(
                     ..default()
                 },
                 transform: Transform {
-                    translation: grid.grid_to_world_position(*position).add(translation_offset.0),
+                    translation: grid
+                        .grid_to_world_position(*position)
+                        .add(translation_offset.0),
                     rotation: orientation.as_world_rotation(),
                     scale: orientation.as_world_scale(),
                     ..default()
@@ -104,7 +107,9 @@ fn spawn_ant_label_text2d(
         translation_offset,
         Text2dBundle {
             transform: Transform {
-                translation: grid.grid_to_world_position(*position).add(translation_offset.0),
+                translation: grid
+                    .grid_to_world_position(*position)
+                    .add(translation_offset.0),
                 // TODO: This is an unreasonably small value for text, but is needed for crisp rendering. Does that mean I am doing something wrong?
                 scale: Vec3::new(0.01, 0.01, 0.0),
                 ..default()
@@ -333,14 +338,18 @@ pub fn on_update_ant_position(
     let grid = nest_query.single();
 
     for (position, mut transform, translation_offset) in ant_query.iter_mut() {
-        transform.translation = grid.grid_to_world_position(*position).add(translation_offset.0);
+        transform.translation = grid
+            .grid_to_world_position(*position)
+            .add(translation_offset.0);
     }
 
     // TODO: This seems bad for performance because it iterates all labels each time rather than just focusing on which ant positions changed.
     // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
     for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
         if let Ok((position, _, _)) = ant_query.get(label.0) {
-            transform.translation = grid.grid_to_world_position(*position).add(translation_offset.0);
+            transform.translation = grid
+                .grid_to_world_position(*position)
+                .add(translation_offset.0);
         }
     }
 }

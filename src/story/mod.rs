@@ -3,6 +3,7 @@ pub mod camera;
 pub mod common;
 pub mod crater_simulation;
 pub mod element;
+pub mod grid;
 pub mod nest_simulation;
 pub mod pheromone;
 pub mod pointer;

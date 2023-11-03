@@ -9,7 +9,8 @@ use crate::story::{
     ant::{hunger::Hunger, Dead},
     common::position::Position,
     element::{commands::ElementCommandsExt, Air, Element, Food},
-    nest_simulation::{grid::Grid, nest::Nest},
+    grid::Grid,
+    nest_simulation::nest::Nest,
 };
 
 use super::action_menu::IsShowingBreathDialog;

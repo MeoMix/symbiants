@@ -4,11 +4,11 @@ use crate::{
     app_state::AppState,
     story::{
         common::position::Position,
+        grid::Grid,
+        nest_simulation::nest::Nest,
         story_time::{StoryTime, TimeInfo},
     },
 };
-
-use super::{nest::Nest, grid::Grid};
 
 #[derive(Component)]
 pub struct SkyBackground;

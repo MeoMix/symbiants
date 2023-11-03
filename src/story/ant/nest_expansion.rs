@@ -11,7 +11,8 @@ use crate::{
         ant::commands::AntCommandsExt,
         common::position::Position,
         element::Element,
-        nest_simulation::{grid::Grid, nest::Nest},
+        grid::Grid,
+        nest_simulation::nest::Nest,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };

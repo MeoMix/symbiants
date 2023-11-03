@@ -2,10 +2,12 @@ use bevy::prelude::*;
 
 use crate::{
     settings::Settings,
-    story::{common::position::Position, element::Element},
+    story::{
+        common::position::Position,
+        element::Element,
+        grid::{elements_cache::ElementsCache, Grid, VisibleGrid},
+    },
 };
-
-use super::grid::{elements_cache::ElementsCache, Grid, VisibleGrid};
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Nest is trivially regenerated on app startup from persisted state.

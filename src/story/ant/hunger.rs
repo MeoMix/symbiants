@@ -7,7 +7,8 @@ use super::{
 use crate::story::{
     common::{position::Position, IdMap},
     element::Element,
-    nest_simulation::{grid::Grid, nest::Nest},
+    grid::Grid,
+    nest_simulation::nest::Nest,
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;

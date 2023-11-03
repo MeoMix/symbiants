@@ -4,7 +4,8 @@ use crate::{
         ant::birthing::Birthing,
         common::{position::Position, register},
         element::Element,
-        nest_simulation::{nest::Nest, grid::Grid},
+        grid::Grid,
+        nest_simulation::nest::Nest,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };

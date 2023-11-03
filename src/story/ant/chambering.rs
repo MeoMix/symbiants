@@ -5,7 +5,9 @@ use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
     common::position::Position,
     element::Element,
-    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength}, nest_simulation::{grid::Grid, nest::Nest},
+    grid::Grid,
+    nest_simulation::nest::Nest,
+    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
 };
 
 use crate::settings::Settings;

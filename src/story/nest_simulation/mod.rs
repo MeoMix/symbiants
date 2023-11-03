@@ -1,7 +1,6 @@
 mod background;
 pub mod gravity;
 pub mod nest;
-pub mod grid;
 
 use bevy::{asset::LoadState, prelude::*};
 
