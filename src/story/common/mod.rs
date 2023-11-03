@@ -14,7 +14,7 @@ pub mod ui;
 #[derive(Resource, Debug, Default)]
 pub struct IdMap(pub HashMap<Id, Entity>);
 
-// Id is needed because Entity isn't fit for user across sessions, i.e. save state, refresh page, load state.
+// Id is needed because Entity isn't fit for use across sessions, i.e. save state, refresh page, load state.
 #[derive(Component, Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, Reflect)]
 #[reflect(Component)]
 pub struct Id(pub Uuid);

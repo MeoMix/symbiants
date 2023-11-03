@@ -61,16 +61,16 @@ impl Nest {
         }
     }
 
-    pub fn width(&self) -> &isize {
-        &self.width
+    pub fn width(&self) -> isize {
+        self.width
     }
 
-    pub fn height(&self) -> &isize {
-        &self.height
+    pub fn height(&self) -> isize {
+        self.height
     }
 
-    pub fn surface_level(&self) -> &isize {
-        &self.surface_level
+    pub fn surface_level(&self) -> isize {
+        self.surface_level
     }
 
     pub fn is_aboveground(&self, position: &Position) -> bool {

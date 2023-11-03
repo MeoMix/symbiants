@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
+    app_state::AppState,
     story::{
         common::position::Position,
         story_time::{StoryTime, TimeInfo},
     },
-    app_state::AppState,
 };
 
 use super::nest::Nest;
@@ -115,7 +115,7 @@ fn create_sky_sprites(
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 
-            let t_y: f32 = position.y as f32 / *nest.surface_level() as f32;
+            let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
             let color = interpolate_color(north_color, south_color, t_y);
 
             let sky_sprite = SpriteBundle {
@@ -210,7 +210,7 @@ pub fn update_sky_background(
         sunset_decimal_hours,
     );
     for (mut sprite, position) in sky_sprite_query.iter_mut() {
-        let t_y: f32 = position.y as f32 / *nest.surface_level() as f32;
+        let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
         let color = interpolate_color(north_color, south_color, t_y);
 
         sprite.color = color;
@@ -221,18 +221,18 @@ pub fn update_sky_background(
 
 // Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_background(mut commands: Commands, nest: Res<Nest>, story_time: Res<StoryTime>) {
-    let air_height = *nest.surface_level() + 1;
+    let air_height = nest.surface_level() + 1;
 
     commands.spawn_batch(create_sky_sprites(
-        *nest.width(),
+        nest.width(),
         air_height,
         &nest,
         &story_time,
     ));
 
     commands.spawn_batch(create_tunnel_sprites(
-        *nest.width(),
-        *nest.height() - air_height,
+        nest.width(),
+        nest.height() - air_height,
         air_height,
         &nest,
     ));

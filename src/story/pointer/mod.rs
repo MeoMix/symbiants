@@ -114,8 +114,8 @@ pub fn handle_pointer_tap(
 }
 
 fn world_to_grid_position(nest: &Nest, world_position: Vec2) -> Position {
-    let x = world_position.x + (*nest.width() as f32 / 2.0) - 0.5;
-    let y = -world_position.y + (*nest.height() as f32 / 2.0) - 0.5;
+    let x = world_position.x + (nest.width() as f32 / 2.0) - 0.5;
+    let y = -world_position.y + (nest.height() as f32 / 2.0) - 0.5;
 
     Position {
         x: x.abs().round() as isize,
