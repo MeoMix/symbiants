@@ -27,14 +27,16 @@ use super::ExternalSimulationEvent;
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
     selected_entity_query: Query<Entity, With<Selected>>,
     id_map: Res<IdMap>,
-) {
+) {    
+    let nest = nest_query.single();
+
     for event in external_simulation_events.drain() {
         let pointer_action = event.action;
         let grid_position = event.position;

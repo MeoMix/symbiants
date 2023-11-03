@@ -79,9 +79,11 @@ pub fn gravity_elements(
         Query<&mut Position, With<Element>>,
     )>,
     elements_query: Query<&Element>,
-    mut nest: ResMut<Nest>,
+    mut nest_query: Query<&mut Nest>,
     mut rng: ResMut<GlobalRng>,
 ) {
+    let nest = nest_query.single();
+
     let element_air_swaps: Vec<_> = element_position_queries
         .p0()
         .iter()
@@ -95,6 +97,8 @@ pub fn gravity_elements(
                 })
         })
         .collect();
+
+    let mut nest = nest_query.single_mut();
 
     // Swap element/air positions and update internal state to reflect the swap
     for &(element_entity, air_entity) in element_air_swaps.iter() {
@@ -113,7 +117,8 @@ pub fn gravity_elements(
         // TODO: It seems wrong that when swapping two existing elements I need to manually update the world map
         // but that when spawning new elements the on_spawn_element system does it for me.
         // Update indices since they're indexed by position and track where elements are at.
-        nest.elements_mut().set_element(*element_position, element_entity);
+        nest.elements_mut()
+            .set_element(*element_position, element_entity);
         nest.elements_mut().set_element(*air_position, air_entity);
     }
 }
@@ -128,17 +133,21 @@ pub fn gravity_ants(
         Option<&Dead>,
     )>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
+    let nest = nest_query.single();
+
     for (orientation, mut position, initiative, dead) in ants_query.iter_mut() {
         // Figure out foot direction
         let below_position = orientation.get_below_position(&position);
 
-        let is_air_beneath_feet =
-            nest.elements()
-                .is_all_element(&elements_query, &[below_position], Element::Air);
+        let is_air_beneath_feet = nest.elements().is_all_element(
+            &elements_query,
+            &[below_position],
+            Element::Air,
+        );
 
         // SPECIAL CASE: out of bounds underground is considered dirt not air
         let is_out_of_bounds_beneath_feet =
@@ -158,9 +167,11 @@ pub fn gravity_ants(
             || is_dead
         {
             let below_position = *position + Position::Y;
-            let is_air_below =
-                nest.elements()
-                    .is_all_element(&elements_query, &[below_position], Element::Air);
+            let is_air_below = nest.elements().is_all_element(
+                &elements_query,
+                &[below_position],
+                Element::Air,
+            );
 
             if is_air_below {
                 position.y = below_position.y;
@@ -182,7 +193,7 @@ pub fn gravity_mark_unstable(
     air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
     elements_query: Query<&Element, Without<Air>>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
     let mut positions = HashSet::new();
 
@@ -191,6 +202,8 @@ pub fn gravity_mark_unstable(
         positions.insert(position + Position::new(0, -1));
         positions.insert(position + Position::new(1, -1));
     }
+
+    let nest = nest_query.single();
 
     for &position in &positions {
         // If the current position contains a sand or food element, mark it as unstable

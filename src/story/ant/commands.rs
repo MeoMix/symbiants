@@ -94,7 +94,7 @@ struct DigElementCommand {
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
-        let nest = world.resource::<Nest>();
+        let nest = world.query::<&Nest>().single(world);
         let element_entity = match nest.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
@@ -124,8 +124,10 @@ impl Command for DigElementCommand {
         let air_entity = world
             .spawn(AirElementBundle::new(self.target_position))
             .id();
+
         world
-            .resource_mut::<Nest>()
+            .query::<&mut Nest>()
+            .single_mut(world)
             .elements_mut()
             .set_element(self.target_position, air_entity);
 
@@ -172,7 +174,7 @@ struct DropElementCommand {
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
-        let nest = world.resource::<Nest>();
+        let nest = world.query::<&Nest>().single(world);
         let air_entity = match nest.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
@@ -212,7 +214,8 @@ impl Command for DropElementCommand {
         let element_entity = spawn_element(*element, self.target_position, world);
 
         world
-            .resource_mut::<Nest>()
+            .query::<&mut Nest>()
+            .single_mut(world)
             .elements_mut()
             .set_element(self.target_position, element_entity);
 

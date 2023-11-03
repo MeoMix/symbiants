@@ -21,7 +21,7 @@ pub fn ants_drop(
         Entity,
     )>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
@@ -35,6 +35,8 @@ pub fn ants_drop(
         if inventory.0 == None {
             continue;
         }
+
+        let nest = nest_query.single();
 
         // TODO: drop ahead not where at?
         if rng.f32() < settings.probabilities.random_drop {

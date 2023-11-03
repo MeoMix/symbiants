@@ -165,10 +165,12 @@ pub fn get_element_index(exposure: ElementExposure) -> usize {
 pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
+    let nest = nest_query.single();
+
     for (entity, position, element) in &added_elements_query {
         update_element_sprite(
             entity,
@@ -208,7 +210,7 @@ fn update_element_sprite(
     element_position: &Position,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    nest: &Res<Nest>,
+    nest: &Nest,
     commands: &mut Commands,
 ) {
     // TODO: maybe make this reactive rather than calculating all the time to avoid insert when no change in exposure is occurring?
@@ -253,10 +255,12 @@ fn update_element_sprite(
 pub fn rerender_elements(
     mut element_query: Query<(&Position, &Element, Entity)>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
+    let nest = nest_query.single();
+
     for (position, element, entity) in element_query.iter_mut() {
         update_element_sprite(
             entity,
@@ -273,10 +277,12 @@ pub fn rerender_elements(
 pub fn on_update_element_position(
     mut element_query: Query<(&Position, &Element, Entity), Changed<Position>>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
+    let nest = nest_query.single();
+
     for (position, element, entity) in element_query.iter_mut() {
         update_element_sprite(
             entity,

@@ -16,12 +16,14 @@ pub struct Asleep;
 pub fn ants_sleep(
     ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), With<Initiative>>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     story_time: Res<StoryTime>,
 ) {
     if !story_time.is_nighttime() {
         return;
     }
+
+    let nest = nest_query.single();
 
     for (ant_entity, ant_position, ant_orientation, ant_inventory) in ants_query.iter() {
         if nest.is_underground(ant_position)

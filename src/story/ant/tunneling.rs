@@ -28,9 +28,11 @@ pub struct Tunneling(pub isize);
 pub fn ants_tunnel_pheromone_move(
     mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), With<Tunneling>>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     mut rng: ResMut<GlobalRng>,
 ) {
+    let nest = nest_query.single();
+
     for (mut orientation, mut initiative, mut ant_position) in ants_query.iter_mut() {
         if !initiative.can_move() {
             continue;
@@ -109,10 +111,12 @@ pub fn ants_tunnel_pheromone_act(
         &Tunneling,
     )>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
+    let nest = nest_query.single();
+
     for (orientation, inventory, initiative, position, ant_entity, tunneling) in ants_query.iter() {
         if !initiative.can_act() {
             continue;
@@ -212,9 +216,11 @@ pub fn ants_remove_tunnel_pheromone(
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
 ) {
+    let nest = nest_query.single();
+
     for (ant_entity, ant_position, inventory, tunneling) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(ant_entity).remove::<Tunneling>();

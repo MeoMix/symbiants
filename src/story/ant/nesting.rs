@@ -42,9 +42,11 @@ pub fn ants_nesting_movement(
         &Nesting,
     )>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     mut rng: ResMut<GlobalRng>,
 ) {
+    let nest = nest_query.single();
+    
     for (mut initiative, position, mut orientation, inventory, nesting) in ants_query.iter_mut() {
         if !initiative.can_move() {
             continue;
@@ -89,11 +91,13 @@ pub fn ants_nesting_action(
         Entity,
     )>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
+    let nest = nest_query.single();
+
     for (mut nesting, orientation, inventory, mut initiative, position, ant_entity) in
         ants_query.iter_mut()
     {
@@ -175,10 +179,10 @@ fn can_start_nesting(
     let has_valid_dig_site = nest.is_aboveground(&ant_position) && !is_too_near_world_edge;
 
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *nest.elements().element_entity(dig_position);
+    let dig_target_entity = nest.elements().element_entity(dig_position);
 
     let is_element_diggable = elements_query
-        .get(dig_target_entity)
+        .get(*dig_target_entity)
         .map_or(false, |element| element.is_diggable());
 
     has_valid_dig_site && is_element_diggable
@@ -199,8 +203,8 @@ fn start_digging_nest(
 ) {
     // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *nest.elements().element_entity(dig_position);
-    commands.dig(ant_entity, dig_position, dig_target_entity);
+    let dig_target_entity = nest.elements().element_entity(dig_position);
+    commands.dig(ant_entity, dig_position, *dig_target_entity);
 
     *nesting = Nesting::Started(dig_position);
     commands.spawn_pheromone(
@@ -275,7 +279,7 @@ fn finish_digging_nest(
     ant_entity: Entity,
     ant_inventory: &AntInventory,
     initiative: &mut Initiative,
-    nest: &Res<Nest>,
+    nest: &Nest,
     commands: &mut Commands,
     settings: &Res<Settings>,
 ) {

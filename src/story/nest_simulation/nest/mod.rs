@@ -11,7 +11,7 @@ use self::elements_cache::ElementsCache;
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Nest is a cache that is trivially regenerated on app startup from persisted state.
-#[derive(Resource, Debug)]
+#[derive(Component, Debug)]
 pub struct Nest {
     width: isize,
     height: isize,
@@ -38,7 +38,7 @@ pub fn setup_nest(
         elements_cache[position.y as usize][position.x as usize] = entity;
     }
 
-    commands.insert_resource(Nest::new(
+    commands.spawn(Nest::new(
         settings.nest_width,
         settings.nest_height,
         settings.get_surface_level(),
@@ -46,8 +46,10 @@ pub fn setup_nest(
     ));
 }
 
-pub fn teardown_nest(mut commands: Commands) {
-    commands.remove_resource::<Nest>();
+pub fn teardown_nest(mut commands: Commands, nest_entity_query: Query<Entity, With<Nest>>) {
+    let nest_entity = nest_entity_query.single();
+
+    commands.entity(nest_entity).despawn();
 }
 
 impl Nest {

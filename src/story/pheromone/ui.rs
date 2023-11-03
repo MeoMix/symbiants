@@ -25,11 +25,13 @@ pub fn render_pheromones(
     pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength)>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
     for (pheromone_entity, _, _, _) in &pheromone_query {
         commands.entity(pheromone_entity).remove::<SpriteBundle>();
     }
+
+    let nest = nest_query.single();
 
     for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         commands.entity(pheromone_entity).insert(SpriteBundle {
@@ -45,8 +47,10 @@ pub fn on_spawn_pheromone(
     pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), Added<Pheromone>>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
+    let nest = nest_query.single();
+
     for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         commands.entity(pheromone_entity).insert(SpriteBundle {
             transform: Transform::from_translation(nest.as_world_position(*position)),

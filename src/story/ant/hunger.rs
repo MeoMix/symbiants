@@ -86,9 +86,11 @@ pub fn ants_hunger_act(
     )>,
     elements_query: Query<&Element>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     id_map: Res<IdMap>,
 ) {
+    let nest = nest_query.single();
+
     for (ant_entity, hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {

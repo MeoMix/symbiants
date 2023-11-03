@@ -30,7 +30,7 @@ fn insert_ant_sprite(
     asset_server: &Res<AssetServer>,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    nest: &Res<Nest>,
+    nest: &Nest,
     id_map: &Res<IdMap>,
 ) {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
@@ -92,7 +92,7 @@ fn spawn_ant_label_text2d(
     position: &Position,
     name: &AntName,
     entity: Entity,
-    nest: &Res<Nest>,
+    nest: &Nest,
 ) {
     // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, -1.0, 1.0));
@@ -138,9 +138,11 @@ pub fn on_spawn_ant(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     id_map: Res<IdMap>,
 ) {
+    let nest = nest_query.single();
+
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
         insert_ant_sprite(
             &mut commands,
@@ -178,9 +180,11 @@ pub fn rerender_ants(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     id_map: Res<IdMap>,
 ) {
+    let nest = nest_query.single();
+
     // TODO: This wouldn't be necessary if Ant maintained LabelEntity somewhere?
     for label_entity in label_query.iter() {
         commands.entity(label_entity).despawn();
@@ -321,8 +325,10 @@ pub fn on_update_ant_position(
         (&mut Transform, &TranslationOffset, &AntLabel),
         (Without<Ant>, With<AntLabel>),
     >,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
+    let nest = nest_query.single();
+
     for (position, mut transform, translation_offset) in ant_query.iter_mut() {
         transform.translation = nest.as_world_position(*position).add(translation_offset.0);
     }

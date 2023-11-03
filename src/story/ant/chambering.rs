@@ -34,7 +34,7 @@ pub fn ants_chamber_pheromone_act(
         &Chambering,
     )>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     mut commands: Commands,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -63,7 +63,7 @@ pub fn ants_chamber_pheromone_act(
             &ant_entity,
             &position,
             &elements_query,
-            &nest,
+            &nest_query,
             &mut commands,
         ) {
             // Subtract 1 because not placing pheromone at ant_position but instead placing it at a position adjacent
@@ -123,8 +123,10 @@ pub fn ants_remove_chamber_pheromone(
         Or<(Changed<Position>, Changed<AntInventory>)>,
     >,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
+    let nest = nest_query.single();
+
     for (entity, position, inventory, chambering) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(entity).remove::<Chambering>();
@@ -141,9 +143,11 @@ fn try_dig(
     ant_entity: &Entity,
     dig_position: &Position,
     elements_query: &Query<&Element>,
-    nest: &Nest,
+    nest_query: &Query<&Nest>,
     commands: &mut Commands,
 ) -> bool {
+    let nest = nest_query.single();
+
     if !nest.is_within_bounds(&dig_position) {
         return false;
     }

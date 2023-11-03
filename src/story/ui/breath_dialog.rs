@@ -30,7 +30,7 @@ pub fn update_breath_dialog(
     food_query: Query<&Food>,
     air_query: Query<&Position, With<Air>>,
     mut rng: ResMut<GlobalRng>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     mut commands: Commands,
     mut is_running: Local<bool>,
     mut is_open: Local<IsOpen>,
@@ -54,6 +54,7 @@ pub fn update_breath_dialog(
         *is_running = false;
         *timer = 0.;
     }
+
 
     egui::CentralPanel::default().show(ctx, |_| {
         egui::Window::new("Breathe")
@@ -135,6 +136,7 @@ pub fn update_breath_dialog(
                                 spawn_positions.insert(*position);
                             }
 
+                            let nest = nest_query.single();
                             for position in spawn_positions.iter() {
                                 if let Some(entity) = nest.elements().get_element_entity(*position) {
                                     commands.replace_element(*position, Element::Food, *entity);

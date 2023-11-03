@@ -59,9 +59,12 @@ impl Command for ReplaceElementCommand {
         // apply after a system finishes running. It's possible for two writes to occur to the same location during a given
         // system run and, in this scenario, overwrites should not occur because validity checks have already been performed.
         // So, we anticipate the entity to be destroyed and confirm it still exists in the position expected. Otherwise, no-op.
-        let nest = world.resource::<Nest>();
-
-        let existing_entity = match nest.elements().get_element_entity(self.position) {
+        let existing_entity = match world
+            .query::<&Nest>()
+            .single(world)
+            .elements()
+            .get_element_entity(self.position)
+        {
             Some(entity) => entity,
             None => {
                 info!("No entity found at position {:?}", self.position);
@@ -78,7 +81,8 @@ impl Command for ReplaceElementCommand {
 
         let entity = spawn_element(self.element, self.position, world);
         world
-            .resource_mut::<Nest>()
+            .query::<&mut Nest>()
+            .single_mut(world)
             .elements_mut()
             .set_element(self.position, entity);
     }
@@ -92,7 +96,8 @@ struct SpawnElementCommand {
 impl Command for SpawnElementCommand {
     fn apply(self, world: &mut World) {
         if let Some(existing_entity) = world
-            .resource::<Nest>()
+            .query::<&Nest>()
+            .single(world)
             .elements()
             .get_element_entity(self.position)
         {
@@ -105,7 +110,8 @@ impl Command for SpawnElementCommand {
 
         let entity = spawn_element(self.element, self.position, world);
         world
-            .resource_mut::<Nest>()
+            .query::<&mut Nest>()
+            .single_mut(world)
             .elements_mut()
             .set_element(self.position, entity);
     }
@@ -125,7 +131,7 @@ pub fn spawn_element(element: Element, position: Position, world: &mut World) ->
             // HACK: Dirt that spawns below surface level is not unstable but dirt that is above is unstable.
             // It should be possible to do this is a more generic way, but performance issues abound. The main one is
             // is that using a Query which iterates over Element and filters on With<Added> still iterates all elements.
-            let nest = world.resource::<Nest>();
+            let nest = world.query::<&Nest>().single(world);
             let element_bundle = DirtElementBundle::new(position);
             let element_bundle_id = element_bundle.id.clone();
 
@@ -170,7 +176,7 @@ struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
 
 impl<C: Component + Send + Sync + 'static> Command for ToggleElementCommand<C> {
     fn apply(self, world: &mut World) {
-        let nest = world.resource::<Nest>();
+        let nest = world.query::<&Nest>().single(world);
         let element_entity = match nest.elements().get_element_entity(self.position) {
             Some(entity) => *entity,
             None => {

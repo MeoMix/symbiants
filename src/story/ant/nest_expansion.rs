@@ -31,8 +31,10 @@ pub fn ants_nest_expansion(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
+    let nest = nest_query.single();
+
     let ant_entity_positions = ants_query
         .iter()
         .map(|(_, _, _, _, position, entity)| (*position, entity))

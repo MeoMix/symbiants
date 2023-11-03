@@ -28,8 +28,13 @@ fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
+    let nest = match nest_query.get_single() {
+        Ok(nest) => nest,
+        Err(_) => return
+    };
+
     let primary_window_entity = primary_window_query.single();
 
     for resize_event in resize_events.iter() {
@@ -48,9 +53,11 @@ fn window_resize(
 fn scale_projection(
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
 ) {
+    let nest = nest_query.single();
     let primary_window = primary_window_query.single();
+    
     main_camera_query.single_mut().scale = get_best_fit_scale(
         primary_window.width(),
         primary_window.height(),
@@ -61,9 +68,11 @@ fn scale_projection(
 
 fn insert_pancam(
     main_camera_query: Query<Entity, With<MainCamera>>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     mut commands: Commands,
 ) {
+    let nest = nest_query.single();
+
     commands.entity(main_camera_query.single()).insert(PanCam {
         min_x: Some(-nest.width() as f32 / 2.0),
         min_y: Some(-nest.height() as f32 / 2.0),
@@ -97,6 +106,6 @@ impl Plugin for CameraPlugin {
         );
         app.add_systems(OnEnter(AppState::Cleanup), teardown);
 
-        app.add_systems(Update, window_resize.run_if(resource_exists::<Nest>()));
+        app.add_systems(Update, window_resize);
     }
 }

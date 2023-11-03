@@ -34,7 +34,7 @@ pub fn handle_pointer_tap(
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
     mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
@@ -105,6 +105,7 @@ pub fn handle_pointer_tap(
         .viewport_to_world_2d(camera_transform, pointer_tap_state.position.unwrap())
         .unwrap();
 
+    let nest = nest_query.single();
     let grid_position = world_to_grid_position(&nest, world_position);
 
     external_simulation_event_writer.send(ExternalSimulationEvent {

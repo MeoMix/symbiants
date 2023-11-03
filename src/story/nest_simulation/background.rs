@@ -92,7 +92,7 @@ fn get_sky_gradient_color(
 fn create_sky_sprites(
     width: isize,
     height: isize,
-    nest: &Res<Nest>,
+    nest: &Nest,
     story_time: &Res<StoryTime>,
 ) -> Vec<(SpriteBundle, Position, SkyBackground)> {
     let mut sky_sprites = vec![];
@@ -139,7 +139,7 @@ fn create_tunnel_sprites(
     width: isize,
     height: isize,
     y_offset: isize,
-    nest: &Res<Nest>,
+    nest: &Nest,
 ) -> Vec<(SpriteBundle, Position, TunnelBackground)> {
     let mut tunnel_sprites = vec![];
 
@@ -177,9 +177,9 @@ pub fn update_sky_background(
     mut sky_sprite_query: Query<(&mut Sprite, &Position), With<SkyBackground>>,
     mut last_run_time_info: Local<TimeInfo>,
     app_state: Res<State<AppState>>,
+    nest_query: Query<&Nest>,
     // Optional due to running during cleanup
     story_time: Option<Res<StoryTime>>,
-    nest: Option<Res<Nest>>,
 ) {
     // Reset local when in initializing to prevent data retention issue when clicking "Reset" in Sandbox Mode
     if *app_state == AppState::Cleanup {
@@ -188,7 +188,7 @@ pub fn update_sky_background(
     }
 
     let story_time = story_time.unwrap();
-    let nest = nest.unwrap();
+    let nest = nest_query.single();
     let time_info = story_time.as_time_info();
 
     // Update the sky's colors once a minute of elapsed *story time* not real-world time.
@@ -220,7 +220,8 @@ pub fn update_sky_background(
 }
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-pub fn setup_background(mut commands: Commands, nest: Res<Nest>, story_time: Res<StoryTime>) {
+pub fn setup_background(mut commands: Commands, nest_query: Query<&Nest>, story_time: Res<StoryTime>) {
+    let nest = nest_query.single();
     let air_height = nest.surface_level() + 1;
 
     commands.spawn_batch(create_sky_sprites(

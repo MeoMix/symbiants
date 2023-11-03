@@ -15,9 +15,11 @@ use super::Dead;
 pub fn on_ants_add_dead(
     ants_query: Query<(Entity, &Position, &AntInventory), Added<Dead>>,
     mut commands: Commands,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     elements_query: Query<&Element>,
 ) {
+    let nest = nest_query.single();
+
     for (ant_entity, ant_position, ant_inventory) in ants_query.iter() {
         if ant_inventory.0 != None {
             let element_entity = nest.elements().get_element_entity(*ant_position).unwrap();

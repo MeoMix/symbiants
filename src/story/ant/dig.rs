@@ -15,7 +15,7 @@ pub fn ants_dig(
         Entity,
     )>,
     elements_query: Query<&Element>,
-    nest: Res<Nest>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
@@ -44,7 +44,7 @@ pub fn ants_dig(
             *position,
             &elements_query,
             &ants_query,
-            &nest,
+            &nest_query,
             &mut commands,
             &settings,
             &mut rng,
@@ -67,11 +67,13 @@ fn try_dig(
         &AntRole,
         Entity,
     )>,
-    nest: &Res<Nest>,
+    nest_query: &Query<&Nest>,
     commands: &mut Commands,
     settings: &Res<Settings>,
     rng: &mut ResMut<GlobalRng>,
 ) -> bool {
+    let nest = nest_query.single();
+
     if !nest.is_within_bounds(&dig_position) {
         return false;
     }
