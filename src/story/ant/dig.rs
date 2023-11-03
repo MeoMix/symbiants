@@ -1,5 +1,5 @@
 use crate::settings::Settings;
-use crate::story::nest_simulation::nest::Nest2;
+use crate::story::nest_simulation::grid::Grid;
 use crate::story::{common::position::Position, element::Element, nest_simulation::nest::Nest};
 
 use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
@@ -16,7 +16,7 @@ pub fn ants_dig(
         Entity,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<(&Nest, &Nest2)>,
+    nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
@@ -68,19 +68,19 @@ fn try_dig(
         &AntRole,
         Entity,
     )>,
-    nest_query: &Query<(&Nest, &Nest2)>,
+    nest_query: &Query<(&Grid, &Nest)>,
     commands: &mut Commands,
     settings: &Res<Settings>,
     rng: &mut ResMut<GlobalRng>,
 ) -> bool {
-    let (nest, nest2) = nest_query.single();
+    let (grid, nest) = nest_query.single();
 
-    if !nest.is_within_bounds(&dig_position) {
+    if !grid.is_within_bounds(&dig_position) {
         return false;
     }
 
     // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = nest.elements().get_element_entity(dig_position).unwrap();
+    let element_entity = grid.elements().get_element_entity(dig_position).unwrap();
     let element = elements_query.get(*element_entity).unwrap();
     if *element == Element::Air {
         return false;
@@ -109,15 +109,15 @@ fn try_dig(
 
     if *element == Element::Food && *ant_role == AntRole::Worker {
         // When above ground, workers prioritize picking up food. Queen needs to focus on nest construction.
-        if nest2.is_aboveground(&dig_position) {
+        if nest.is_aboveground(&dig_position) {
             dig = rng.f32() < settings.probabilities.above_surface_food_dig;
         } else {
             dig = rng.f32() < settings.probabilities.below_surface_food_dig;
         }
-    } else if *element == Element::Sand && nest2.is_underground(&dig_position) {
+    } else if *element == Element::Sand && nest.is_underground(&dig_position) {
         // When underground, prioritize clearing out sand and allow for digging tunnels through dirt. Leave food underground.
         // It's OK for queen to pick up sand because sometimes it'll get in the way of nest building.
-        dig = *element == Element::Sand && nest2.is_underground(&dig_position);
+        dig = *element == Element::Sand && nest.is_underground(&dig_position);
     }
 
     if dig {

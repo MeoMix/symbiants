@@ -10,7 +10,7 @@ use crate::{
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use super::nest::{Nest, Nest2};
+use super::{grid::Grid, nest::Nest};
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
@@ -27,13 +27,13 @@ pub struct Unstable;
 // and do not fall if surrounded by non-air
 fn get_element_fall_position(
     position: Position,
-    nest: &Nest,
+    grid: &Grid,
     elements_query: &Query<&Element>,
     rng: &mut Mut<GlobalRng>,
 ) -> Option<Position> {
     // If there is air below then continue falling down.
     let below_position = position + Position::Y;
-    if nest
+    if grid
         .elements()
         .is_element(&elements_query, below_position, Element::Air)
     {
@@ -44,7 +44,7 @@ fn get_element_fall_position(
     // Look for a column of air two units tall to either side and consider going in one of those directions.
     let left_position = position + Position::NEG_X;
     let left_below_position = position + Position::new(-1, 1);
-    let mut go_left = nest.elements().is_all_element(
+    let mut go_left = grid.elements().is_all_element(
         &elements_query,
         &[left_position, left_below_position],
         Element::Air,
@@ -52,7 +52,7 @@ fn get_element_fall_position(
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
-    let mut go_right = nest.elements().is_all_element(
+    let mut go_right = grid.elements().is_all_element(
         &elements_query,
         &[right_position, right_below_position],
         Element::Air,
@@ -79,26 +79,26 @@ pub fn gravity_elements(
         Query<&mut Position, With<Element>>,
     )>,
     elements_query: Query<&Element>,
-    mut nest_query: Query<&mut Nest>,
+    mut nest_query: Query<&mut Grid>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     let element_air_swaps: Vec<_> = element_position_queries
         .p0()
         .iter()
         .filter_map(|&position| {
-            get_element_fall_position(position, &nest, &elements_query, &mut rng.reborrow())
+            get_element_fall_position(position, &grid, &elements_query, &mut rng.reborrow())
                 .and_then(|air_position| {
                     Some((
-                        *nest.elements().get_element_entity(position)?,
-                        *nest.elements().get_element_entity(air_position)?,
+                        *grid.elements().get_element_entity(position)?,
+                        *grid.elements().get_element_entity(air_position)?,
                     ))
                 })
         })
         .collect();
 
-    let mut nest = nest_query.single_mut();
+    let mut grid = nest_query.single_mut();
 
     // Swap element/air positions and update internal state to reflect the swap
     for &(element_entity, air_entity) in element_air_swaps.iter() {
@@ -117,9 +117,9 @@ pub fn gravity_elements(
         // TODO: It seems wrong that when swapping two existing elements I need to manually update the world map
         // but that when spawning new elements the on_spawn_element system does it for me.
         // Update indices since they're indexed by position and track where elements are at.
-        nest.elements_mut()
+        grid.elements_mut()
             .set_element(*element_position, element_entity);
-        nest.elements_mut().set_element(*air_position, air_entity);
+        grid.elements_mut().set_element(*air_position, air_entity);
     }
 }
 
@@ -133,25 +133,23 @@ pub fn gravity_ants(
         Option<&Dead>,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<(&Nest, &Nest2)>,
+    nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    let (nest, nest2) = nest_query.single();
+    let (grid, nest) = nest_query.single();
 
     for (orientation, mut position, initiative, dead) in ants_query.iter_mut() {
         // Figure out foot direction
         let below_position = orientation.get_below_position(&position);
 
-        let is_air_beneath_feet = nest.elements().is_all_element(
-            &elements_query,
-            &[below_position],
-            Element::Air,
-        );
+        let is_air_beneath_feet =
+            grid.elements()
+                .is_all_element(&elements_query, &[below_position], Element::Air);
 
         // SPECIAL CASE: out of bounds underground is considered dirt not air
         let is_out_of_bounds_beneath_feet =
-            !nest.is_within_bounds(&below_position) && nest2.is_aboveground(&below_position);
+            !grid.is_within_bounds(&below_position) && nest.is_aboveground(&below_position);
 
         let is_chance_falling =
             orientation.is_upside_down() && rng.f32() < settings.probabilities.random_fall;
@@ -167,11 +165,9 @@ pub fn gravity_ants(
             || is_dead
         {
             let below_position = *position + Position::Y;
-            let is_air_below = nest.elements().is_all_element(
-                &elements_query,
-                &[below_position],
-                Element::Air,
-            );
+            let is_air_below =
+                grid.elements()
+                    .is_all_element(&elements_query, &[below_position], Element::Air);
 
             if is_air_below {
                 position.y = below_position.y;
@@ -193,7 +189,7 @@ pub fn gravity_mark_unstable(
     air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
     elements_query: Query<&Element, Without<Air>>,
     mut commands: Commands,
-    nest_query: Query<(&Nest, &Nest2)>,
+    nest_query: Query<(&Grid, &Nest)>,
 ) {
     let mut positions = HashSet::new();
 
@@ -203,18 +199,18 @@ pub fn gravity_mark_unstable(
         positions.insert(position + Position::new(1, -1));
     }
 
-    let (nest, nest2) = nest_query.single();
+    let (grid, nest) = nest_query.single();
 
     for &position in &positions {
         // If the current position contains a sand or food element, mark it as unstable
-        if let Some(entity) = nest.elements().get_element_entity(position) {
+        if let Some(entity) = grid.elements().get_element_entity(position) {
             if let Ok(element) = elements_query.get(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
                     commands.toggle_element_command(*entity, position, true, Unstable);
                 }
 
                 // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
-                if *element == Element::Dirt && nest2.is_aboveground(&position) {
+                if *element == Element::Dirt && nest.is_aboveground(&position) {
                     commands.toggle_element_command(*entity, position, true, Unstable);
                 }
             }

@@ -4,15 +4,18 @@ use super::{
     emote::{Emote, EmoteType},
     Ant, AntColor, AntInventory, AntLabel, AntName, AntOrientation, AntRole, Dead,
 };
-use crate::{story::{
-    common::{position::Position, IdMap},
-    element::{
-        ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
-        Element,
+use crate::{
+    settings::Settings,
+    story::{
+        common::{position::Position, IdMap},
+        element::{
+            ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
+            Element,
+        },
+        nest_simulation::grid::Grid,
+        story_time::DEFAULT_TICKS_PER_SECOND,
     },
-    nest_simulation::nest::Nest,
-    story_time::DEFAULT_TICKS_PER_SECOND,
-}, settings::Settings};
+};
 use bevy::prelude::*;
 
 #[derive(Component, Copy, Clone)]
@@ -30,7 +33,7 @@ fn insert_ant_sprite(
     asset_server: &Res<AssetServer>,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    nest: &Nest,
+    nest: &Grid,
     id_map: &Res<IdMap>,
 ) {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
@@ -92,7 +95,7 @@ fn spawn_ant_label_text2d(
     position: &Position,
     name: &AntName,
     entity: Entity,
-    nest: &Nest,
+    nest: &Grid,
 ) {
     // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, -1.0, 1.0));
@@ -138,7 +141,7 @@ pub fn on_spawn_ant(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     id_map: Res<IdMap>,
 ) {
     let nest = nest_query.single();
@@ -180,7 +183,7 @@ pub fn rerender_ants(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     id_map: Res<IdMap>,
 ) {
     let nest = nest_query.single();
@@ -325,7 +328,7 @@ pub fn on_update_ant_position(
         (&mut Transform, &TranslationOffset, &AntLabel),
         (Without<Ant>, With<AntLabel>),
     >,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
 ) {
     let nest = nest_query.single();
 

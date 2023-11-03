@@ -1,7 +1,7 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
     common::{position::Position, IdMap},
-    ui::selection_menu::Selected,
+    ui::selection_menu::Selected, nest_simulation::grid::Grid,
 };
 
 use bevy::prelude::*;
@@ -13,7 +13,6 @@ use crate::story::{
         Initiative,
     },
     element::{commands::ElementCommandsExt, Element},
-    nest_simulation::nest::Nest,
     ui::action_menu::PointerAction,
 };
 
@@ -27,7 +26,7 @@ use super::ExternalSimulationEvent;
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,

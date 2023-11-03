@@ -9,7 +9,7 @@ use crate::story::{
     ant::{hunger::Hunger, Dead},
     common::position::Position,
     element::{commands::ElementCommandsExt, Air, Element, Food},
-    nest_simulation::nest::Nest,
+    nest_simulation::grid::Grid,
 };
 
 use super::action_menu::IsShowingBreathDialog;
@@ -30,7 +30,7 @@ pub fn update_breath_dialog(
     food_query: Query<&Food>,
     air_query: Query<&Position, With<Air>>,
     mut rng: ResMut<GlobalRng>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     mut commands: Commands,
     mut is_running: Local<bool>,
     mut is_open: Local<IsOpen>,
@@ -54,7 +54,6 @@ pub fn update_breath_dialog(
         *is_running = false;
         *timer = 0.;
     }
-
 
     egui::CentralPanel::default().show(ctx, |_| {
         egui::Window::new("Breathe")
@@ -138,7 +137,8 @@ pub fn update_breath_dialog(
 
                             let nest = nest_query.single();
                             for position in spawn_positions.iter() {
-                                if let Some(entity) = nest.elements().get_element_entity(*position) {
+                                if let Some(entity) = nest.elements().get_element_entity(*position)
+                                {
                                     commands.replace_element(*position, Element::Food, *entity);
                                 }
                             }

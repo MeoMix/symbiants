@@ -11,7 +11,7 @@ use crate::{
         ant::commands::AntCommandsExt,
         common::position::Position,
         element::Element,
-        nest_simulation::nest::{Nest, Nest2},
+        nest_simulation::{grid::Grid, nest::Nest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };
@@ -31,9 +31,9 @@ pub fn ants_nest_expansion(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
-    nest_query: Query<(&Nest, &Nest2)>,
+    nest_query: Query<(&Grid, &Nest)>,
 ) {
-    let (nest, nest2) = nest_query.single();
+    let (grid, nest) = nest_query.single();
 
     let ant_entity_positions = ants_query
         .iter()
@@ -49,7 +49,7 @@ pub fn ants_nest_expansion(
 
         if *ant_role != AntRole::Worker
             || inventory.0 != None
-            || nest2.is_aboveground(ant_position)
+            || nest.is_aboveground(ant_position)
             || ant_orientation.is_facing_north()
         {
             continue;
@@ -66,20 +66,29 @@ pub fn ants_nest_expansion(
         if is_crowded && rng.f32() < settings.probabilities.expand_nest {
             let dirt_position = ant_orientation.get_ahead_position(ant_position);
 
-            if !nest.elements().is_element(&elements_query, dirt_position, Element::Dirt) {
+            if !grid
+                .elements()
+                .is_element(&elements_query, dirt_position, Element::Dirt)
+            {
                 continue;
             }
 
             // Must be attempting to dig a tunnel which means there needs to be dirt on either side of the dig site.
             let dirt_adjacent_position_above = ant_orientation.get_above_position(&dirt_position);
             let dirt_adjacent_position_below = ant_orientation.get_below_position(&dirt_position);
-            if nest.elements().is_element(&elements_query, dirt_adjacent_position_above, Element::Air)
-                || nest.elements().is_element(&elements_query, dirt_adjacent_position_below, Element::Air)
-            {
+            if grid.elements().is_element(
+                &elements_query,
+                dirt_adjacent_position_above,
+                Element::Air,
+            ) || grid.elements().is_element(
+                &elements_query,
+                dirt_adjacent_position_below,
+                Element::Air,
+            ) {
                 continue;
             }
 
-            let dig_target_entity = *nest.elements().element_entity(dirt_position);
+            let dig_target_entity = *grid.elements().element_entity(dirt_position);
             commands.dig(ant_entity, dirt_position, dig_target_entity);
             commands.spawn_pheromone(
                 dirt_position,

@@ -1,5 +1,5 @@
 use super::Element;
-use crate::story::{common::position::Position, nest_simulation::nest::Nest};
+use crate::story::{common::position::Position, nest_simulation::grid::Grid};
 use bevy::{asset::HandleId, prelude::*};
 
 #[derive(Resource)]
@@ -165,7 +165,7 @@ pub fn get_element_index(exposure: ElementExposure) -> usize {
 pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
@@ -185,7 +185,9 @@ pub fn on_spawn_element(
         let adjacent_positions = position.get_adjacent_positions();
 
         for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) = nest.elements().get_element_entity(adjacent_position) {
+            if let Some(adjacent_element_entity) =
+                nest.elements().get_element_entity(adjacent_position)
+            {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
                 if *adjacent_element != Element::Air {
@@ -210,7 +212,7 @@ fn update_element_sprite(
     element_position: &Position,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    nest: &Nest,
+    nest: &Grid,
     commands: &mut Commands,
 ) {
     // TODO: maybe make this reactive rather than calculating all the time to avoid insert when no change in exposure is occurring?
@@ -255,7 +257,7 @@ fn update_element_sprite(
 pub fn rerender_elements(
     mut element_query: Query<(&Position, &Element, Entity)>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
@@ -277,7 +279,7 @@ pub fn rerender_elements(
 pub fn on_update_element_position(
     mut element_query: Query<(&Position, &Element, Entity), Changed<Position>>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
@@ -297,7 +299,9 @@ pub fn on_update_element_position(
         let adjacent_positions = position.get_adjacent_positions();
 
         for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) = nest.elements().get_element_entity(adjacent_position) {
+            if let Some(adjacent_element_entity) =
+                nest.elements().get_element_entity(adjacent_position)
+            {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
                 if *adjacent_element != Element::Air {

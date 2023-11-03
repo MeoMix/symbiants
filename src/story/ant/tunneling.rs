@@ -2,17 +2,19 @@ use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
-use crate::{story::{
-    ant::{
-        commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
-        Initiative,
+use crate::{
+    settings::Settings,
+    story::{
+        ant::{
+            commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
+            Initiative,
+        },
+        common::position::Position,
+        element::Element,
+        nest_simulation::{nest::Nest, grid::Grid},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
-    common::position::Position,
-    element::Element,
-    nest_simulation::nest::{Nest, Nest2},
-    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
-
-}, settings::Settings};
+};
 
 use super::birthing::Birthing;
 
@@ -28,10 +30,10 @@ pub struct Tunneling(pub isize);
 pub fn ants_tunnel_pheromone_move(
     mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), With<Tunneling>>,
     elements_query: Query<&Element>,
-    nest_query: Query<(&Nest, &Nest2)>,
+    nest_query: Query<(&Grid, &Nest)>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    let (nest, nest2) = nest_query.single();
+    let (grid, nest) = nest_query.single();
 
     for (mut orientation, mut initiative, mut ant_position) in ants_query.iter_mut() {
         if !initiative.can_move() {
@@ -43,32 +45,32 @@ pub fn ants_tunnel_pheromone_move(
 
         // If there's solid material in front of ant then consider turning onto it if there's tunnel to follow upward.
         let ahead_position = orientation.get_ahead_position(&ant_position);
-        let has_air_ahead = nest
-            .elements()
-            .get_element_entity(ahead_position)
-            .map_or(false, |entity| {
-                elements_query
-                    .get(*entity)
-                    .map_or(false, |element| *element == Element::Air)
-            });
+        let has_air_ahead =
+            grid.elements()
+                .get_element_entity(ahead_position)
+                .map_or(false, |entity| {
+                    elements_query
+                        .get(*entity)
+                        .map_or(false, |element| *element == Element::Air)
+                });
 
         let above_position = orientation.get_above_position(&ant_position);
-        let has_air_above = nest
-            .elements()
-            .get_element_entity(above_position)
-            .map_or(false, |entity| {
-                elements_query
-                    .get(*entity)
-                    .map_or(false, |element| *element == Element::Air)
-            });
+        let has_air_above =
+            grid.elements()
+                .get_element_entity(above_position)
+                .map_or(false, |entity| {
+                    elements_query
+                        .get(*entity)
+                        .map_or(false, |element| *element == Element::Air)
+                });
 
         if !has_air_ahead && has_air_above {
             *orientation = get_turned_orientation(
                 &orientation,
                 &ant_position,
                 &elements_query,
+                &grid,
                 &nest,
-                &nest2,
                 &mut rng,
             );
 
@@ -85,7 +87,7 @@ pub fn ants_tunnel_pheromone_move(
         let foot_orientation = orientation.rotate_forward();
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
-        if let Some(foot_entity) = nest.elements().get_element_entity(foot_position) {
+        if let Some(foot_entity) = grid.elements().get_element_entity(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
 
             if *foot_element == Element::Air {
@@ -112,7 +114,7 @@ pub fn ants_tunnel_pheromone_act(
         &Tunneling,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
@@ -217,15 +219,15 @@ pub fn ants_remove_tunnel_pheromone(
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
     mut commands: Commands,
-    nest_query: Query<&Nest2>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
 ) {
-    let nest2 = nest_query.single();
+    let nest = nest_query.single();
 
     for (ant_entity, ant_position, inventory, tunneling) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(ant_entity).remove::<Tunneling>();
-        } else if nest2.is_aboveground(ant_position) {
+        } else if nest.is_aboveground(ant_position) {
             commands.entity(ant_entity).remove::<Tunneling>();
         } else if tunneling.0 <= 0 {
             commands.entity(ant_entity).remove::<Tunneling>();

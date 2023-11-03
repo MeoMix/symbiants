@@ -6,7 +6,7 @@ use crate::story::{
     ant::AntInventory,
     common::{position::Position, Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
-    nest_simulation::nest::Nest,
+    nest_simulation::grid::Grid,
 };
 
 use crate::settings::Settings;
@@ -94,7 +94,7 @@ struct DigElementCommand {
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
-        let nest = world.query::<&Nest>().single(world);
+        let nest = world.query::<&Grid>().single(world);
         let element_entity = match nest.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
@@ -126,7 +126,7 @@ impl Command for DigElementCommand {
             .id();
 
         world
-            .query::<&mut Nest>()
+            .query::<&mut Grid>()
             .single_mut(world)
             .elements_mut()
             .set_element(self.target_position, air_entity);
@@ -174,7 +174,7 @@ struct DropElementCommand {
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
-        let nest = world.query::<&Nest>().single(world);
+        let nest = world.query::<&Grid>().single(world);
         let air_entity = match nest.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
@@ -214,7 +214,7 @@ impl Command for DropElementCommand {
         let element_entity = spawn_element(*element, self.target_position, world);
 
         world
-            .query::<&mut Nest>()
+            .query::<&mut Grid>()
             .single_mut(world)
             .elements_mut()
             .set_element(self.target_position, element_entity);

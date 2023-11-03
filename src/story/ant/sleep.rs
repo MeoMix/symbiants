@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     settings::Settings,
     story::{
-        ant::emote::EmoteType, common::position::Position, nest_simulation::nest::Nest2,
+        ant::emote::EmoteType, common::position::Position, nest_simulation::nest::Nest,
         story_time::StoryTime,
     },
 };
@@ -19,17 +19,17 @@ pub struct Asleep;
 pub fn ants_sleep(
     ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), With<Initiative>>,
     mut commands: Commands,
-    nest_query: Query<&Nest2>,
+    nest_query: Query<&Nest>,
     story_time: Res<StoryTime>,
 ) {
     if !story_time.is_nighttime() {
         return;
     }
 
-    let nest2 = nest_query.single();
+    let nest = nest_query.single();
 
     for (ant_entity, ant_position, ant_orientation, ant_inventory) in ants_query.iter() {
-        if nest2.is_underground(ant_position)
+        if nest.is_underground(ant_position)
             && ant_orientation.is_rightside_up()
             && ant_inventory.0 == None
         {

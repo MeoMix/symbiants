@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::story::{common::position::Position, nest_simulation::nest::Nest};
+use crate::story::{common::position::Position, nest_simulation::grid::Grid};
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
 
@@ -25,7 +25,7 @@ pub fn render_pheromones(
     pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength)>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
 ) {
     for (pheromone_entity, _, _, _) in &pheromone_query {
         commands.entity(pheromone_entity).remove::<SpriteBundle>();
@@ -47,7 +47,7 @@ pub fn on_spawn_pheromone(
     pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), Added<Pheromone>>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
 ) {
     let nest = nest_query.single();
 

@@ -5,8 +5,7 @@ use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
     common::position::Position,
     element::Element,
-    nest_simulation::nest::{Nest, Nest2},
-    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength}, nest_simulation::{grid::Grid, nest::Nest},
 };
 
 use crate::settings::Settings;
@@ -34,7 +33,7 @@ pub fn ants_chamber_pheromone_act(
         &Chambering,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     mut commands: Commands,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -123,14 +122,14 @@ pub fn ants_remove_chamber_pheromone(
         Or<(Changed<Position>, Changed<AntInventory>)>,
     >,
     mut commands: Commands,
-    nest_query: Query<&Nest2>,
+    nest_query: Query<&Nest>,
 ) {
-    let nest2 = nest_query.single();
+    let nest = nest_query.single();
 
     for (entity, position, inventory, chambering) in ants_query.iter_mut() {
         if inventory.0 != None {
             commands.entity(entity).remove::<Chambering>();
-        } else if nest2.is_aboveground(position) {
+        } else if nest.is_aboveground(position) {
             commands.entity(entity).remove::<Chambering>();
         } else if chambering.0 <= 0 {
             commands.entity(entity).remove::<Chambering>();
@@ -143,7 +142,7 @@ fn try_dig(
     ant_entity: &Entity,
     dig_position: &Position,
     elements_query: &Query<&Element>,
-    nest_query: &Query<&Nest>,
+    nest_query: &Query<&Grid>,
     commands: &mut Commands,
 ) -> bool {
     let nest = nest_query.single();

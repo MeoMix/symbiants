@@ -5,9 +5,10 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
 use crate::story::{
-    camera::MainCamera, common::position::Position, nest_simulation::nest::Nest,
-    ui::action_menu::PointerAction,
+    camera::MainCamera, common::position::Position, ui::action_menu::PointerAction,
 };
+
+use super::nest_simulation::grid::Grid;
 
 #[derive(Event)]
 pub struct ExternalSimulationEvent {
@@ -34,7 +35,7 @@ pub fn handle_pointer_tap(
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
     mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
@@ -114,7 +115,7 @@ pub fn handle_pointer_tap(
     });
 }
 
-fn world_to_grid_position(nest: &Nest, world_position: Vec2) -> Position {
+fn world_to_grid_position(nest: &Grid, world_position: Vec2) -> Position {
     let x = world_position.x + (nest.width() as f32 / 2.0) - 0.5;
     let y = -world_position.y + (nest.height() as f32 / 2.0) - 0.5;
 

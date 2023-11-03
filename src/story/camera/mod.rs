@@ -6,7 +6,7 @@ use bevy::{
 
 use self::pancam::{PanCam, PanCamPlugin};
 
-use super::nest_simulation::nest::{Nest, setup_nest};
+use super::nest_simulation::{grid::Grid, nest::setup_nest};
 
 mod pancam;
 
@@ -28,11 +28,11 @@ fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
 ) {
     let nest = match nest_query.get_single() {
         Ok(nest) => nest,
-        Err(_) => return
+        Err(_) => return,
     };
 
     let primary_window_entity = primary_window_query.single();
@@ -53,11 +53,11 @@ fn window_resize(
 fn scale_projection(
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
 ) {
     let nest = nest_query.single();
     let primary_window = primary_window_query.single();
-    
+
     main_camera_query.single_mut().scale = get_best_fit_scale(
         primary_window.width(),
         primary_window.height(),
@@ -68,7 +68,7 @@ fn scale_projection(
 
 fn insert_pancam(
     main_camera_query: Query<Entity, With<MainCamera>>,
-    nest_query: Query<&Nest>,
+    nest_query: Query<&Grid>,
     mut commands: Commands,
 ) {
     let nest = nest_query.single();
