@@ -1,6 +1,6 @@
 use crate::{
     settings::{pre_setup_settings, Settings},
-    story_state::{restart_story, StoryState},
+    app_state::{restart_story, AppState},
 };
 use bevy::{
     prelude::*,
@@ -102,7 +102,7 @@ impl Plugin for CameraPlugin {
 
         // TODO: This is still wrong because waiting for predefined settings isn't useful if loaded settings are different.
         app.add_systems(
-            OnEnter(StoryState::Initializing),
+            OnEnter(AppState::BeginSetup),
             (
                 setup,
                 apply_deferred,
@@ -112,11 +112,11 @@ impl Plugin for CameraPlugin {
         );
 
         // app.add_systems(
-        //     OnEnter(StoryState::Telling),
+        //     OnEnter(AppState::TellStory),
         //     (focus_queen).chain(),
         // );
 
-        app.add_systems(OnEnter(StoryState::Cleanup), teardown.before(restart_story));
+        app.add_systems(OnEnter(AppState::Cleanup), teardown.before(restart_story));
         app.add_systems(Update, window_resize.run_if(resource_exists::<Settings>()));
     }
 }

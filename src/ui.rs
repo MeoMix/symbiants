@@ -6,11 +6,15 @@ use bevy_egui::egui::{self, TextStyle};
 use egui::FontFamily::Proportional;
 use egui::FontId;
 
+use crate::story::pointer::IsPointerCaptured;
+
 pub struct CoreUIPlugin;
 
 impl Plugin for CoreUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin);
+
+        app.init_resource::<IsPointerCaptured>();
 
         // TODO: Do I need to ensure this runs before all other egui systems?
         app.add_systems(Update, set_theme);

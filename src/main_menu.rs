@@ -1,4 +1,4 @@
-use crate::story_state::StoryState;
+use crate::app_state::AppState;
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, Align2},
@@ -8,7 +8,7 @@ use bevy_egui::{
 // TODO: About menu
 pub fn update_main_menu(
     mut contexts: EguiContexts,
-    mut next_story_state: ResMut<NextState<StoryState>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -24,7 +24,7 @@ pub fn update_main_menu(
                     .on_disabled_hover_text("Coming soon™!");
 
                 if ui.button("Sandbox Mode").clicked() {
-                    next_story_state.set(StoryState::Creating);
+                    next_app_state.set(AppState::CreateNewStory);
                 }
             });
         });

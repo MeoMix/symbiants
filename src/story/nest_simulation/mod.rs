@@ -60,9 +60,9 @@ use crate::{
             update_time_scale, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
         },
     },
-    story_state::{
+    app_state::{
         begin_story, check_story_over, continue_startup, finalize_startup, restart_story,
-        StoryState,
+        AppState,
     },
 };
 
@@ -77,7 +77,7 @@ pub struct NestSimulationPlugin;
 impl Plugin for NestSimulationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(StoryState::Initializing),
+            OnEnter(AppState::BeginSetup),
             (
                 register_settings,
                 register_common,
@@ -96,17 +96,17 @@ impl Plugin for NestSimulationPlugin {
         );
 
         app.add_systems(
-            OnEnter(StoryState::LoadingSave),
+            OnEnter(AppState::TryLoadSave),
             load.pipe(continue_startup),
         );
 
         app.add_systems(
-            OnEnter(StoryState::Creating),
+            OnEnter(AppState::CreateNewStory),
             ((setup_element, setup_ant), finalize_startup).chain(),
         );
 
         app.add_systems(
-            OnEnter(StoryState::FinalizingStartup),
+            OnEnter(AppState::FinishSetup),
             (
                 (setup_nest, apply_deferred).chain(),
                 (setup_common, apply_deferred).chain(),
@@ -120,29 +120,29 @@ impl Plugin for NestSimulationPlugin {
         );
 
         // IMPORTANT: setup_story_time sets FixedTime.accumulated which is reset when transitioning between schedules.
-        // If this is ran OnEnter FinalizingStartup then the accumulated time will be reset to zero before FixedUpdate runs.
-        app.add_systems(OnExit(StoryState::FinalizingStartup), setup_story_time);
+        // If this is ran OnEnter FinishSetup then the accumulated time will be reset to zero before FixedUpdate runs.
+        app.add_systems(OnExit(AppState::FinishSetup), setup_story_time);
 
         // IMPORTANT: don't process user input in FixedUpdate because events in FixedUpdate are broken
         // https://github.com/bevyengine/bevy/issues/7691
         app.add_systems(
             Update,
             (is_pointer_captured, handle_pointer_tap)
-                .run_if(in_state(StoryState::Telling))
+                .run_if(in_state(AppState::TellStory))
                 .chain(),
         );
 
         app.add_systems(
             Update,
             update_time_scale.run_if(
-                in_state(StoryState::Telling)
+                in_state(AppState::TellStory)
                     .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
             ),
         );
 
         app.add_systems(
             Update,
-            check_textures.run_if(in_state(StoryState::Initializing)),
+            check_textures.run_if(in_state(AppState::BeginSetup)),
         );
 
         app.add_systems(
@@ -296,7 +296,7 @@ impl Plugin for NestSimulationPlugin {
                     world.clear_trackers();
                 },
             )
-                .run_if(in_state(StoryState::Telling))
+                .run_if(in_state(AppState::TellStory))
                 .chain(),
         );
 
@@ -307,7 +307,7 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             Update,
-            update_story_real_world_time.run_if(in_state(StoryState::Telling)),
+            update_story_real_world_time.run_if(in_state(AppState::TellStory)),
         );
 
         app.add_systems(
@@ -316,7 +316,7 @@ impl Plugin for NestSimulationPlugin {
                 // `update_sky_background` is a view concern, and kinda heavy, so skip doing it while fast-forwarding.
                 // It has some local state within it which needs to be reset when clicking "Reset Story" so need to run in initializing, too.
                 not(in_state(StoryPlaybackState::FastForwarding)).and_then(
-                    in_state(StoryState::Telling).or_else(in_state(StoryState::Initializing)),
+                    in_state(AppState::TellStory).or_else(in_state(AppState::BeginSetup)),
                 ),
             ),
         );
@@ -326,12 +326,12 @@ impl Plugin for NestSimulationPlugin {
             PostUpdate,
             // Saving is an expensive operation. Skip while fast-forwarding for performance.
             save.run_if(
-                in_state(StoryState::Telling).and_then(in_state(StoryPlaybackState::Playing)),
+                in_state(AppState::TellStory).and_then(in_state(StoryPlaybackState::Playing)),
             ),
         );
 
         app.add_systems(
-            OnEnter(StoryState::Cleanup),
+            OnEnter(AppState::Cleanup),
             (
                 teardown_story_time,
                 teardown_settings,
@@ -378,14 +378,14 @@ fn load_textures(asset_server: Res<AssetServer>, mut commands: Commands) {
 }
 
 fn check_textures(
-    mut next_state: ResMut<NextState<StoryState>>,
+    mut next_state: ResMut<NextState<AppState>>,
     element_sprite_handles: ResMut<ElementSpriteHandles>,
     asset_server: Res<AssetServer>,
 ) {
     if let LoadState::Loaded =
         asset_server.get_group_load_state(element_sprite_handles.handle_ids())
     {
-        next_state.set(StoryState::LoadingSave);
+        next_state.set(AppState::TryLoadSave);
     }
 }
 

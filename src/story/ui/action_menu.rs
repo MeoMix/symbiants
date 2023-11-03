@@ -23,7 +23,6 @@ pub enum PointerAction {
 pub struct IsShowingBreathDialog(pub bool);
 
 pub fn setup_action_menu(mut commands: Commands) {
-    info!("setup_action_menu!");
     commands.init_resource::<PointerAction>();
     commands.init_resource::<IsShowingBreathDialog>();
 }

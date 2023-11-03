@@ -4,11 +4,11 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::story_state::StoryState;
+use crate::app_state::AppState;
 
 pub fn update_story_over_dialog(
     mut contexts: EguiContexts,
-    mut next_story_state: ResMut<NextState<StoryState>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
 ) {
     let ctx = contexts.ctx_mut();
 
@@ -21,7 +21,7 @@ pub fn update_story_over_dialog(
 
             ui.vertical_centered(|ui| {
                 if ui.button("Begin New Story").clicked() {
-                    next_story_state.set(StoryState::Cleanup);
+                    next_app_state.set(AppState::Cleanup);
                 }
             });
         });

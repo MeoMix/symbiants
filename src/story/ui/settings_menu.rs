@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use crate::{settings::Settings, story_state::StoryState};
+use crate::{settings::Settings, app_state::AppState};
 
 use crate::story::{
     ant::AntColor,
@@ -15,7 +15,7 @@ use crate::story::{
 pub fn update_settings_menu(
     mut contexts: EguiContexts,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    mut next_story_state: ResMut<NextState<StoryState>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
     mut ticks_per_second: ResMut<TicksPerSecond>,
     story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
@@ -145,7 +145,7 @@ pub fn update_settings_menu(
             });
 
             if ui.button("Reset Story").clicked() {
-                next_story_state.set(StoryState::Cleanup);
+                next_app_state.set(AppState::Cleanup);
             }
         });
 }

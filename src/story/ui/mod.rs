@@ -8,7 +8,7 @@ mod loading_dialog;
 mod story_over_dialog;
 
 use crate::story::story_time::StoryPlaybackState;
-use crate::story_state::StoryState;
+use crate::app_state::AppState;
 
 use self::action_menu::*;
 use self::breath_dialog::update_breath_dialog;
@@ -23,7 +23,7 @@ pub struct StoryUIPlugin;
 
 impl Plugin for StoryUIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(StoryState::Telling), setup_action_menu);
+        app.add_systems(OnEnter(AppState::TellStory), setup_action_menu);
 
         // TODO: Prefer keeping UI around until after Over (but not that simple because can click Reset which skips Over)
         app.add_systems(
@@ -36,7 +36,7 @@ impl Plugin for StoryUIPlugin {
                 update_selection_menu,
             )
                 .run_if(
-                    in_state(StoryState::Telling)
+                    in_state(AppState::TellStory)
                         .and_then(not(resource_exists_and_equals(IsShowingBreathDialog(true)))),
                 ),
         );
@@ -46,12 +46,12 @@ impl Plugin for StoryUIPlugin {
             update_breath_dialog.run_if(resource_exists_and_equals(IsShowingBreathDialog(true))),
         );
 
-        app.add_systems(OnExit(StoryState::Telling), teardown_action_menu);
+        app.add_systems(OnExit(AppState::TellStory), teardown_action_menu);
 
         app.add_systems(
             Update,
             update_story_over_dialog.run_if(
-                in_state(StoryState::Over)
+                in_state(AppState::EndStory)
                     .and_then(not(resource_exists_and_equals(IsShowingBreathDialog(true)))),
             ),
         );

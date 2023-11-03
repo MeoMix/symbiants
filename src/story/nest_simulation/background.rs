@@ -5,7 +5,7 @@ use crate::{
         common::position::Position,
         story_time::{StoryTime, TimeInfo},
     },
-    story_state::StoryState,
+    app_state::AppState,
 };
 
 use super::nest::Nest;
@@ -177,13 +177,13 @@ pub fn update_sky_background(
     mut sky_sprite_query: Query<(&mut Sprite, &Position), With<SkyBackground>>,
     mut last_run_time_info: Local<TimeInfo>,
     story_time: Res<StoryTime>,
-    story_state: Res<State<StoryState>>,
+    app_state: Res<State<AppState>>,
     // TODO: Option because need to run during Initializing to reset but Nest is gone already.
     // maybe could find a way to reset this at the same time Nest is getting despawned?
     nest: Option<Res<Nest>>,
 ) {
     // Reset local when in initializing to prevent data retention issue when clicking "Reset" in Sandbox Mode
-    if *story_state == StoryState::Initializing {
+    if *app_state == AppState::BeginSetup {
         *last_run_time_info = TimeInfo::default();
         return;
     }
