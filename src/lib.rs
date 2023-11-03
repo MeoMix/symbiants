@@ -1,23 +1,23 @@
+mod app_state;
+mod core_ui;
 mod main_menu;
 mod save;
 mod settings;
 mod story;
-mod app_state;
-mod ui;
 
+use app_state::AppState;
 use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
 use bevy_save::{SavePlugin, SaveableRegistry};
 use bevy_turborand::prelude::*;
+use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
 use story::{
     camera::CameraPlugin, crater_simulation::CraterSimulationPlugin,
     nest_simulation::NestSimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin,
 };
-use app_state::AppState;
-use ui::CoreUIPlugin;
 
 pub struct SymbiantsPlugin;
 
