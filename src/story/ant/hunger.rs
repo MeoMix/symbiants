@@ -7,7 +7,7 @@ use super::{
 use crate::story::{
     common::{position::Position, IdMap},
     element::Element,
-    nest_simulation::grid::Grid,
+    nest_simulation::{grid::Grid, nest::Nest},
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;
@@ -86,10 +86,10 @@ pub fn ants_hunger_act(
     )>,
     elements_query: Query<&Element>,
     mut commands: Commands,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     id_map: Res<IdMap>,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     for (ant_entity, hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
@@ -107,11 +107,11 @@ pub fn ants_hunger_act(
             // If there is food near the hungry ant then pick it up and if the ant is holding food then eat it.
             if inventory.0 == None {
                 let ahead_position = orientation.get_ahead_position(position);
-                if nest
+                if grid
                     .elements()
                     .is_element(&elements_query, ahead_position, Element::Food)
                 {
-                    let food_entity = nest.elements().get_element_entity(ahead_position).unwrap();
+                    let food_entity = grid.elements().get_element_entity(ahead_position).unwrap();
                     commands.dig(ant_entity, ahead_position, *food_entity);
                 }
             } else {

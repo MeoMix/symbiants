@@ -9,7 +9,7 @@ use crate::story::{
     ant::{hunger::Hunger, Dead},
     common::position::Position,
     element::{commands::ElementCommandsExt, Air, Element, Food},
-    nest_simulation::grid::Grid,
+    nest_simulation::{grid::Grid, nest::Nest},
 };
 
 use super::action_menu::IsShowingBreathDialog;
@@ -30,7 +30,7 @@ pub fn update_breath_dialog(
     food_query: Query<&Food>,
     air_query: Query<&Position, With<Air>>,
     mut rng: ResMut<GlobalRng>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     mut is_running: Local<bool>,
     mut is_open: Local<IsOpen>,

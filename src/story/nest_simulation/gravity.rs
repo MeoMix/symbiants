@@ -79,7 +79,7 @@ pub fn gravity_elements(
         Query<&mut Position, With<Element>>,
     )>,
     elements_query: Query<&Element>,
-    mut nest_query: Query<&mut Grid>,
+    mut nest_query: Query<&mut Grid, With<Nest>>,
     mut rng: ResMut<GlobalRng>,
 ) {
     let grid = nest_query.single();

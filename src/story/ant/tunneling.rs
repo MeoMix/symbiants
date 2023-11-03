@@ -114,11 +114,11 @@ pub fn ants_tunnel_pheromone_act(
         &Tunneling,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     for (orientation, inventory, initiative, position, ant_entity, tunneling) in ants_query.iter() {
         if !initiative.can_act() {
@@ -137,12 +137,12 @@ pub fn ants_tunnel_pheromone_act(
         }
 
         let ahead_position = orientation.get_ahead_position(position);
-        if !nest.is_within_bounds(&ahead_position) {
+        if !grid.is_within_bounds(&ahead_position) {
             continue;
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = nest.elements().element_entity(ahead_position);
+        let entity = grid.elements().element_entity(ahead_position);
         let Ok(element) = elements_query.get(*entity) else {
             panic!("act - expected entity to exist")
         };
@@ -152,7 +152,7 @@ pub fn ants_tunnel_pheromone_act(
         }
 
         let dig_position = orientation.get_ahead_position(position);
-        let dig_target_entity = *nest.elements().element_entity(dig_position);
+        let dig_target_entity = *grid.elements().element_entity(dig_position);
         commands.dig(ant_entity, dig_position, dig_target_entity);
 
         // Reduce PheromoneStrength by 1 because not digging at ant_position, but ant_position + 1.

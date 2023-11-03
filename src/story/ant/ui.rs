@@ -12,7 +12,7 @@ use crate::{
             ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
             Element,
         },
-        nest_simulation::grid::Grid,
+        nest_simulation::{grid::Grid, nest::Nest},
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
@@ -33,7 +33,7 @@ fn insert_ant_sprite(
     asset_server: &Res<AssetServer>,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    nest: &Grid,
+    grid: &Grid,
     id_map: &Res<IdMap>,
 ) {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
@@ -58,7 +58,7 @@ fn insert_ant_sprite(
                     ..default()
                 },
                 transform: Transform {
-                    translation: nest.as_world_position(*position).add(translation_offset.0),
+                    translation: grid.grid_to_world_position(*position).add(translation_offset.0),
                     rotation: orientation.as_world_rotation(),
                     scale: orientation.as_world_scale(),
                     ..default()
@@ -95,7 +95,7 @@ fn spawn_ant_label_text2d(
     position: &Position,
     name: &AntName,
     entity: Entity,
-    nest: &Grid,
+    grid: &Grid,
 ) {
     // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, -1.0, 1.0));
@@ -104,7 +104,7 @@ fn spawn_ant_label_text2d(
         translation_offset,
         Text2dBundle {
             transform: Transform {
-                translation: nest.as_world_position(*position).add(translation_offset.0),
+                translation: grid.grid_to_world_position(*position).add(translation_offset.0),
                 // TODO: This is an unreasonably small value for text, but is needed for crisp rendering. Does that mean I am doing something wrong?
                 scale: Vec3::new(0.01, 0.01, 0.0),
                 ..default()
@@ -141,10 +141,10 @@ pub fn on_spawn_ant(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     id_map: Res<IdMap>,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
         insert_ant_sprite(
@@ -159,11 +159,11 @@ pub fn on_spawn_ant(
             &asset_server,
             &element_sprite_handles,
             &elements_query,
-            &nest,
+            &grid,
             &id_map,
         );
 
-        spawn_ant_label_text2d(&mut commands, position, name, entity, &nest);
+        spawn_ant_label_text2d(&mut commands, position, name, entity, &grid);
     }
 }
 
@@ -183,10 +183,10 @@ pub fn rerender_ants(
     asset_server: Res<AssetServer>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     id_map: Res<IdMap>,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     // TODO: This wouldn't be necessary if Ant maintained LabelEntity somewhere?
     for label_entity in label_query.iter() {
@@ -207,11 +207,11 @@ pub fn rerender_ants(
             &asset_server,
             &element_sprite_handles,
             &elements_query,
-            &nest,
+            &grid,
             &id_map,
         );
 
-        spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &nest);
+        spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &grid);
     }
 }
 
@@ -328,19 +328,19 @@ pub fn on_update_ant_position(
         (&mut Transform, &TranslationOffset, &AntLabel),
         (Without<Ant>, With<AntLabel>),
     >,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     for (position, mut transform, translation_offset) in ant_query.iter_mut() {
-        transform.translation = nest.as_world_position(*position).add(translation_offset.0);
+        transform.translation = grid.grid_to_world_position(*position).add(translation_offset.0);
     }
 
     // TODO: This seems bad for performance because it iterates all labels each time rather than just focusing on which ant positions changed.
     // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
     for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
         if let Ok((position, _, _)) = ant_query.get(label.0) {
-            transform.translation = nest.as_world_position(*position).add(translation_offset.0);
+            transform.translation = grid.grid_to_world_position(*position).add(translation_offset.0);
         }
     }
 }

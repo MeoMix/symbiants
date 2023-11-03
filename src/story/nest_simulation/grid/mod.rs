@@ -6,6 +6,10 @@ use crate::story::common::position::Position;
 
 use self::elements_cache::ElementsCache;
 
+// TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
+#[derive(Component)]
+pub struct VisibleGrid;
+
 /// Note the intentional omission of reflection/serialization.
 /// This is because Grid is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Component, Debug)]
@@ -46,7 +50,7 @@ impl Grid {
 
     // TODO: This still isn't the right spot for it I think, but living here for now. Maybe move into a dedicate UI layer later on
     // Convert Position to Transform, z-index is naively set to 1 for now
-    pub fn as_world_position(&self, position: Position) -> Vec3 {
+    pub fn grid_to_world_position(&self, position: Position) -> Vec3 {
         let y_offset = self.height as f32 / 2.0;
         let x_offset = self.width as f32 / 2.0;
 
@@ -56,6 +60,16 @@ impl Grid {
             // The view of the model position is just an inversion along the y-axis.
             y: -position.y as f32 + y_offset - 0.5,
             z: 1.0,
+        }
+    }
+
+    pub fn world_to_grid_position(&self, world_position: Vec2) -> Position {
+        let x = world_position.x + (self.width() as f32 / 2.0) - 0.5;
+        let y = -world_position.y + (self.height() as f32 / 2.0) - 0.5;
+    
+        Position {
+            x: x.abs().round() as isize,
+            y: y.abs().round() as isize,
         }
     }
 }

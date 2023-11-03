@@ -112,7 +112,7 @@ fn create_sky_sprites(
         for y in 0..height {
             let position = Position::new(x, y);
 
-            let mut world_position = grid.as_world_position(position);
+            let mut world_position = grid.grid_to_world_position(position);
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 
@@ -140,7 +140,7 @@ fn create_tunnel_sprites(
     width: isize,
     height: isize,
     y_offset: isize,
-    nest: &Grid,
+    grid: &Grid,
 ) -> Vec<(SpriteBundle, Position, TunnelBackground)> {
     let mut tunnel_sprites = vec![];
 
@@ -151,7 +151,7 @@ fn create_tunnel_sprites(
         for y in 0..height {
             let position = Position::new(x, y + y_offset);
 
-            let mut world_position = nest.as_world_position(position);
+            let mut world_position = grid.grid_to_world_position(position);
             // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
             world_position.z = 0.0;
 

@@ -5,7 +5,7 @@ use crate::{
     story::{common::position::Position, element::Element},
 };
 
-use super::grid::{elements_cache::ElementsCache, Grid};
+use super::grid::{elements_cache::ElementsCache, Grid, VisibleGrid};
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Nest is trivially regenerated on app startup from persisted state.
@@ -52,6 +52,7 @@ pub fn setup_nest(
     }
 
     commands.spawn((
+        VisibleGrid,
         Grid::new(
             settings.nest_width,
             settings.nest_height,

@@ -33,7 +33,7 @@ pub fn ants_chamber_pheromone_act(
         &Chambering,
     )>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -142,17 +142,17 @@ fn try_dig(
     ant_entity: &Entity,
     dig_position: &Position,
     elements_query: &Query<&Element>,
-    nest_query: &Query<&Grid>,
+    nest_query: &Query<&Grid, With<Nest>>,
     commands: &mut Commands,
 ) -> bool {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
-    if !nest.is_within_bounds(&dig_position) {
+    if !grid.is_within_bounds(&dig_position) {
         return false;
     }
 
     // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = nest.elements().element_entity(*dig_position);
+    let element_entity = grid.elements().element_entity(*dig_position);
     let element = elements_query.get(*element_entity).unwrap();
     if *element == Element::Air {
         return false;

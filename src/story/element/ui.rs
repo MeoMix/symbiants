@@ -1,5 +1,5 @@
 use super::Element;
-use crate::story::{common::position::Position, nest_simulation::grid::Grid};
+use crate::story::{common::position::Position, nest_simulation::{grid::Grid, nest::Nest}};
 use bevy::{asset::HandleId, prelude::*};
 
 #[derive(Resource)]
@@ -165,11 +165,11 @@ pub fn get_element_index(exposure: ElementExposure) -> usize {
 pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     for (entity, position, element) in &added_elements_query {
         update_element_sprite(
@@ -178,7 +178,7 @@ pub fn on_spawn_element(
             position,
             &element_sprite_handles,
             &elements_query,
-            &nest,
+            &grid,
             &mut commands,
         );
 
@@ -186,7 +186,7 @@ pub fn on_spawn_element(
 
         for adjacent_position in adjacent_positions {
             if let Some(adjacent_element_entity) =
-                nest.elements().get_element_entity(adjacent_position)
+                grid.elements().get_element_entity(adjacent_position)
             {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
@@ -197,7 +197,7 @@ pub fn on_spawn_element(
                         &adjacent_position,
                         &element_sprite_handles,
                         &elements_query,
-                        &nest,
+                        &grid,
                         &mut commands,
                     );
                 }
@@ -212,27 +212,27 @@ fn update_element_sprite(
     element_position: &Position,
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
-    nest: &Grid,
+    grid: &Grid,
     commands: &mut Commands,
 ) {
     // TODO: maybe make this reactive rather than calculating all the time to avoid insert when no change in exposure is occurring?
     let element_exposure = ElementExposure {
-        north: nest.elements().is_element(
+        north: grid.elements().is_element(
             &elements_query,
             *element_position - Position::Y,
             Element::Air,
         ),
-        east: nest.elements().is_element(
+        east: grid.elements().is_element(
             &elements_query,
             *element_position + Position::X,
             Element::Air,
         ),
-        south: nest.elements().is_element(
+        south: grid.elements().is_element(
             &elements_query,
             *element_position + Position::Y,
             Element::Air,
         ),
-        west: nest.elements().is_element(
+        west: grid.elements().is_element(
             &elements_query,
             *element_position - Position::X,
             Element::Air,
@@ -249,7 +249,7 @@ fn update_element_sprite(
             custom_size: Some(Vec2::splat(1.0)),
             ..default()
         },
-        transform: Transform::from_translation(nest.as_world_position(*element_position)),
+        transform: Transform::from_translation(grid.grid_to_world_position(*element_position)),
         ..default()
     });
 }
@@ -257,11 +257,11 @@ fn update_element_sprite(
 pub fn rerender_elements(
     mut element_query: Query<(&Position, &Element, Entity)>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     for (position, element, entity) in element_query.iter_mut() {
         update_element_sprite(
@@ -270,7 +270,7 @@ pub fn rerender_elements(
             position,
             &element_sprite_handles,
             &elements_query,
-            &nest,
+            &grid,
             &mut commands,
         );
     }
@@ -279,11 +279,11 @@ pub fn rerender_elements(
 pub fn on_update_element_position(
     mut element_query: Query<(&Position, &Element, Entity), Changed<Position>>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid>,
+    nest_query: Query<&Grid, With<Nest>>,
     element_sprite_handles: Res<ElementSpriteHandles>,
     mut commands: Commands,
 ) {
-    let nest = nest_query.single();
+    let grid = nest_query.single();
 
     for (position, element, entity) in element_query.iter_mut() {
         update_element_sprite(
@@ -292,7 +292,7 @@ pub fn on_update_element_position(
             position,
             &element_sprite_handles,
             &elements_query,
-            &nest,
+            &grid,
             &mut commands,
         );
 
@@ -300,7 +300,7 @@ pub fn on_update_element_position(
 
         for adjacent_position in adjacent_positions {
             if let Some(adjacent_element_entity) =
-                nest.elements().get_element_entity(adjacent_position)
+                grid.elements().get_element_entity(adjacent_position)
             {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
@@ -311,7 +311,7 @@ pub fn on_update_element_position(
                         &adjacent_position,
                         &element_sprite_handles,
                         &elements_query,
-                        &nest,
+                        &grid,
                         &mut commands,
                     );
                 }

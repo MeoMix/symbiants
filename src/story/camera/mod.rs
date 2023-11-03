@@ -6,7 +6,7 @@ use bevy::{
 
 use self::pancam::{PanCam, PanCamPlugin};
 
-use super::nest_simulation::{grid::Grid, nest::setup_nest};
+use super::nest_simulation::{grid::{Grid, VisibleGrid}, nest::setup_nest};
 
 mod pancam;
 
@@ -28,10 +28,10 @@ fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
-    nest_query: Query<&Grid>,
+    visible_grid_query: Query<&Grid, With<VisibleGrid>>,
 ) {
-    let nest = match nest_query.get_single() {
-        Ok(nest) => nest,
+    let visible_grid = match visible_grid_query.get_single() {
+        Ok(visible_grid) => visible_grid,
         Err(_) => return,
     };
 
@@ -42,8 +42,8 @@ fn window_resize(
             main_camera_query.single_mut().scale = get_best_fit_scale(
                 resize_event.width,
                 resize_event.height,
-                nest.width() as f32,
-                nest.height() as f32,
+                visible_grid.width() as f32,
+                visible_grid.height() as f32,
             );
         }
     }
@@ -53,31 +53,31 @@ fn window_resize(
 fn scale_projection(
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    nest_query: Query<&Grid>,
+    visible_grid_query: Query<&Grid, With<VisibleGrid>>,
 ) {
-    let nest = nest_query.single();
+    let visible_grid = visible_grid_query.single();
     let primary_window = primary_window_query.single();
 
     main_camera_query.single_mut().scale = get_best_fit_scale(
         primary_window.width(),
         primary_window.height(),
-        nest.width() as f32,
-        nest.height() as f32,
+        visible_grid.width() as f32,
+        visible_grid.height() as f32,
     );
 }
 
 fn insert_pancam(
     main_camera_query: Query<Entity, With<MainCamera>>,
-    nest_query: Query<&Grid>,
+    visible_grid_query: Query<&Grid, With<VisibleGrid>>,
     mut commands: Commands,
 ) {
-    let nest = nest_query.single();
+    let visible_grid = visible_grid_query.single();
 
     commands.entity(main_camera_query.single()).insert(PanCam {
-        min_x: Some(-nest.width() as f32 / 2.0),
-        min_y: Some(-nest.height() as f32 / 2.0),
-        max_x: Some(nest.width() as f32 / 2.0),
-        max_y: Some(nest.height() as f32 / 2.0),
+        min_x: Some(-visible_grid.width() as f32 / 2.0),
+        min_y: Some(-visible_grid.height() as f32 / 2.0),
+        max_x: Some(visible_grid.width() as f32 / 2.0),
+        max_y: Some(visible_grid.height() as f32 / 2.0),
         min_scale: 0.01,
         ..default()
     });
