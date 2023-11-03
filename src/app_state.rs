@@ -15,7 +15,7 @@ pub enum AppState {
     Cleanup,
 }
 
-pub fn restart_story(mut next_app_state: ResMut<NextState<AppState>>) {
+pub fn restart(mut next_app_state: ResMut<NextState<AppState>>) {
     next_app_state.set(AppState::BeginSetup);
 }
 

@@ -112,7 +112,7 @@ pub fn register_settings(
     register::<Probabilities>(&app_type_registry, &mut saveable_registry);
 }
 
-pub fn pre_setup_settings(mut commands: Commands) {
+pub fn setup_settings(mut commands: Commands) {
     commands.init_resource::<Settings>();
 }
 

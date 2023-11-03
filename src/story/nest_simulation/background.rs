@@ -176,23 +176,19 @@ fn create_tunnel_sprites(
 pub fn update_sky_background(
     mut sky_sprite_query: Query<(&mut Sprite, &Position), With<SkyBackground>>,
     mut last_run_time_info: Local<TimeInfo>,
-    story_time: Res<StoryTime>,
     app_state: Res<State<AppState>>,
-    // TODO: Option because need to run during Initializing to reset but Nest is gone already.
-    // maybe could find a way to reset this at the same time Nest is getting despawned?
+    // Optional due to running during cleanup
+    story_time: Option<Res<StoryTime>>,
     nest: Option<Res<Nest>>,
 ) {
     // Reset local when in initializing to prevent data retention issue when clicking "Reset" in Sandbox Mode
-    if *app_state == AppState::BeginSetup {
+    if *app_state == AppState::Cleanup {
         *last_run_time_info = TimeInfo::default();
         return;
     }
 
-    let nest = match nest {
-        Some(nest) => nest,
-        None => panic!("expected world map to exist at this point"),
-    };
-
+    let story_time = story_time.unwrap();
+    let nest = nest.unwrap();
     let time_info = story_time.as_time_info();
 
     // Update the sky's colors once a minute of elapsed *story time* not real-world time.

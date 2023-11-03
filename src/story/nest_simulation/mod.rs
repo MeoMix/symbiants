@@ -5,8 +5,11 @@ pub mod nest;
 use bevy::{asset::LoadState, prelude::*};
 
 use crate::{
+    app_state::{
+        begin_story, check_story_over, continue_startup, finalize_startup, restart, AppState,
+    },
     save::{load, save, setup_save, teardown_save},
-    settings::{pre_setup_settings, register_settings, teardown_settings},
+    settings::{setup_settings, register_settings, teardown_settings},
     story::{
         ant::{
             ants_initiative,
@@ -60,10 +63,6 @@ use crate::{
             update_time_scale, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
         },
     },
-    app_state::{
-        begin_story, check_story_over, continue_startup, finalize_startup, restart_story,
-        AppState,
-    },
 };
 
 use self::{
@@ -87,27 +86,23 @@ impl Plugin for NestSimulationPlugin {
                 register_element,
                 register_ant,
                 register_pheromone,
-                (pre_setup_settings, apply_deferred).chain(),
-                (pre_setup_story_time, apply_deferred).chain(),
                 (pre_setup_common, apply_deferred).chain(),
                 load_textures,
             )
                 .chain(),
         );
 
-        app.add_systems(
-            OnEnter(AppState::TryLoadSave),
-            load.pipe(continue_startup),
-        );
+        app.add_systems(OnEnter(AppState::TryLoadSave), load.pipe(continue_startup));
 
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
-            ((setup_element, setup_ant), finalize_startup).chain(),
+            ((setup_settings, apply_deferred, setup_element, setup_ant).chain(), finalize_startup).chain(),
         );
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
+                (pre_setup_story_time, apply_deferred).chain(),
                 (setup_nest, apply_deferred).chain(),
                 (setup_common, apply_deferred).chain(),
                 (setup_pointer, apply_deferred).chain(),
@@ -315,9 +310,8 @@ impl Plugin for NestSimulationPlugin {
             update_sky_background.run_if(
                 // `update_sky_background` is a view concern, and kinda heavy, so skip doing it while fast-forwarding.
                 // It has some local state within it which needs to be reset when clicking "Reset Story" so need to run in initializing, too.
-                not(in_state(StoryPlaybackState::FastForwarding)).and_then(
-                    in_state(AppState::TellStory).or_else(in_state(AppState::BeginSetup)),
-                ),
+                not(in_state(StoryPlaybackState::FastForwarding))
+                    .and_then(in_state(AppState::TellStory).or_else(in_state(AppState::Cleanup))),
             ),
         );
 
@@ -341,9 +335,8 @@ impl Plugin for NestSimulationPlugin {
                 teardown_pheromone,
                 teardown_nest,
                 teardown_save,
-                restart_story,
+                restart,
             )
-                .chain(),
         );
     }
 }
