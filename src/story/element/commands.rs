@@ -61,7 +61,7 @@ impl Command for ReplaceElementCommand {
         // So, we anticipate the entity to be destroyed and confirm it still exists in the position expected. Otherwise, no-op.
         let nest = world.resource::<Nest>();
 
-        let existing_entity = match nest.get_element_entity(self.position) {
+        let existing_entity = match nest.elements().get_element_entity(self.position) {
             Some(entity) => entity,
             None => {
                 info!("No entity found at position {:?}", self.position);
@@ -79,6 +79,7 @@ impl Command for ReplaceElementCommand {
         let entity = spawn_element(self.element, self.position, world);
         world
             .resource_mut::<Nest>()
+            .elements_mut()
             .set_element(self.position, entity);
     }
 }
@@ -90,7 +91,11 @@ struct SpawnElementCommand {
 
 impl Command for SpawnElementCommand {
     fn apply(self, world: &mut World) {
-        if let Some(existing_entity) = world.resource::<Nest>().get_element_entity(self.position) {
+        if let Some(existing_entity) = world
+            .resource::<Nest>()
+            .elements()
+            .get_element_entity(self.position)
+        {
             info!(
                 "Entity {:?} already exists at position {:?}",
                 existing_entity, self.position
@@ -101,6 +106,7 @@ impl Command for SpawnElementCommand {
         let entity = spawn_element(self.element, self.position, world);
         world
             .resource_mut::<Nest>()
+            .elements_mut()
             .set_element(self.position, entity);
     }
 }
@@ -165,7 +171,7 @@ struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
 impl<C: Component + Send + Sync + 'static> Command for ToggleElementCommand<C> {
     fn apply(self, world: &mut World) {
         let nest = world.resource::<Nest>();
-        let element_entity = match nest.get_element_entity(self.position) {
+        let element_entity = match nest.elements().get_element_entity(self.position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.position);

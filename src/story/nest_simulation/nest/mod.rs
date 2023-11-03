@@ -1,9 +1,13 @@
+mod elements_cache;
+
 use bevy::prelude::*;
 
 use crate::{
     settings::Settings,
     story::{common::position::Position, element::Element},
 };
+
+use self::elements_cache::ElementsCache;
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Nest is a cache that is trivially regenerated on app startup from persisted state.
@@ -12,7 +16,7 @@ pub struct Nest {
     width: isize,
     height: isize,
     surface_level: isize,
-    elements_cache: Vec<Vec<Entity>>,
+    elements_cache: ElementsCache,
 }
 
 /// Called after creating a new story, or loading an existing story from storage.
@@ -38,7 +42,7 @@ pub fn setup_nest(
         settings.nest_width,
         settings.nest_height,
         settings.get_surface_level(),
-        elements_cache,
+        ElementsCache::new(elements_cache),
     ));
 }
 
@@ -51,7 +55,7 @@ impl Nest {
         width: isize,
         height: isize,
         surface_level: isize,
-        elements_cache: Vec<Vec<Entity>>,
+        elements_cache: ElementsCache,
     ) -> Self {
         Nest {
             width,
@@ -73,6 +77,14 @@ impl Nest {
         self.surface_level
     }
 
+    pub fn elements(&self) -> &ElementsCache {
+        &self.elements_cache
+    }
+
+    pub fn elements_mut(&mut self) -> &mut ElementsCache {
+        &mut self.elements_cache
+    }
+
     pub fn is_aboveground(&self, position: &Position) -> bool {
         !self.is_underground(position)
     }
@@ -83,49 +95,6 @@ impl Nest {
 
     pub fn is_within_bounds(&self, position: &Position) -> bool {
         position.x >= 0 && position.x < self.width && position.y >= 0 && position.y < self.height
-    }
-
-    pub fn get_element_entity(&self, position: Position) -> Option<&Entity> {
-        self.elements_cache
-            .get(position.y as usize)
-            .and_then(|row| row.get(position.x as usize))
-    }
-
-    pub fn element_entity(&self, position: Position) -> &Entity {
-        self.get_element_entity(position).expect(&format!(
-            "Element entity not found at the position: {:?}",
-            position
-        ))
-    }
-
-    pub fn set_element(&mut self, position: Position, entity: Entity) {
-        self.elements_cache[position.y as usize][position.x as usize] = entity;
-    }
-
-    pub fn is_element(
-        &self,
-        elements_query: &Query<&Element>,
-        position: Position,
-        search_element: Element,
-    ) -> bool {
-        self.get_element_entity(position).map_or(false, |&element| {
-            elements_query
-                .get(element)
-                .map_or(false, |queried_element| *queried_element == search_element)
-        })
-    }
-
-    // Returns true if every element in `positions` matches the provided Element type.
-    // NOTE: This returns true if given 0 positions.
-    pub fn is_all_element(
-        &self,
-        elements_query: &Query<&Element>,
-        positions: &[Position],
-        search_element: Element,
-    ) -> bool {
-        positions
-            .iter()
-            .all(|&position| self.is_element(elements_query, position, search_element))
     }
 
     // TODO: This still isn't the right spot for it I think, but living here for now. Maybe move into a dedicate UI layer later on

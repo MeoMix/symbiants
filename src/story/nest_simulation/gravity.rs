@@ -1,8 +1,11 @@
-use crate::{story::{
-    ant::{AntOrientation, Dead, Initiative},
-    common::position::Position,
-    element::{commands::ElementCommandsExt, Air, Element},
-}, settings::Settings};
+use crate::{
+    settings::Settings,
+    story::{
+        ant::{AntOrientation, Dead, Initiative},
+        common::position::Position,
+        element::{commands::ElementCommandsExt, Air, Element},
+    },
+};
 
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
@@ -30,7 +33,10 @@ fn get_element_fall_position(
 ) -> Option<Position> {
     // If there is air below then continue falling down.
     let below_position = position + Position::Y;
-    if nest.is_element(&elements_query, below_position, Element::Air) {
+    if nest
+        .elements()
+        .is_element(&elements_query, below_position, Element::Air)
+    {
         return Some(below_position);
     }
 
@@ -38,7 +44,7 @@ fn get_element_fall_position(
     // Look for a column of air two units tall to either side and consider going in one of those directions.
     let left_position = position + Position::NEG_X;
     let left_below_position = position + Position::new(-1, 1);
-    let mut go_left = nest.is_all_element(
+    let mut go_left = nest.elements().is_all_element(
         &elements_query,
         &[left_position, left_below_position],
         Element::Air,
@@ -46,7 +52,7 @@ fn get_element_fall_position(
 
     let right_position = position + Position::X;
     let right_below_position = position + Position::ONE;
-    let mut go_right = nest.is_all_element(
+    let mut go_right = nest.elements().is_all_element(
         &elements_query,
         &[right_position, right_below_position],
         Element::Air,
@@ -83,8 +89,8 @@ pub fn gravity_elements(
             get_element_fall_position(position, &nest, &elements_query, &mut rng.reborrow())
                 .and_then(|air_position| {
                     Some((
-                        *nest.get_element_entity(position)?,
-                        *nest.get_element_entity(air_position)?,
+                        *nest.elements().get_element_entity(position)?,
+                        *nest.elements().get_element_entity(air_position)?,
                     ))
                 })
         })
@@ -107,8 +113,8 @@ pub fn gravity_elements(
         // TODO: It seems wrong that when swapping two existing elements I need to manually update the world map
         // but that when spawning new elements the on_spawn_element system does it for me.
         // Update indices since they're indexed by position and track where elements are at.
-        nest.set_element(*element_position, element_entity);
-        nest.set_element(*air_position, air_entity);
+        nest.elements_mut().set_element(*element_position, element_entity);
+        nest.elements_mut().set_element(*air_position, air_entity);
     }
 }
 
@@ -131,7 +137,8 @@ pub fn gravity_ants(
         let below_position = orientation.get_below_position(&position);
 
         let is_air_beneath_feet =
-            nest.is_all_element(&elements_query, &[below_position], Element::Air);
+            nest.elements()
+                .is_all_element(&elements_query, &[below_position], Element::Air);
 
         // SPECIAL CASE: out of bounds underground is considered dirt not air
         let is_out_of_bounds_beneath_feet =
@@ -152,7 +159,8 @@ pub fn gravity_ants(
         {
             let below_position = *position + Position::Y;
             let is_air_below =
-                nest.is_all_element(&elements_query, &[below_position], Element::Air);
+                nest.elements()
+                    .is_all_element(&elements_query, &[below_position], Element::Air);
 
             if is_air_below {
                 position.y = below_position.y;
@@ -186,7 +194,7 @@ pub fn gravity_mark_unstable(
 
     for &position in &positions {
         // If the current position contains a sand or food element, mark it as unstable
-        if let Some(entity) = nest.get_element_entity(position) {
+        if let Some(entity) = nest.elements().get_element_entity(position) {
             if let Ok(element) = elements_query.get(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
                     commands.toggle_element_command(*entity, position, true, Unstable);

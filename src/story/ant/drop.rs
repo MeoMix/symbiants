@@ -38,7 +38,7 @@ pub fn ants_drop(
 
         // TODO: drop ahead not where at?
         if rng.f32() < settings.probabilities.random_drop {
-            let target_element_entity = nest.element_entity(*position);
+            let target_element_entity = nest.elements().element_entity(*position);
             commands.drop(ant_entity, *position, *target_element_entity);
             continue;
         }
@@ -49,7 +49,7 @@ pub fn ants_drop(
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = nest.get_element_entity(ahead_position).unwrap();
+        let entity = nest.elements().get_element_entity(ahead_position).unwrap();
         let element = elements_query.get(*entity).unwrap();
         if *element != Element::Air {
             continue;
@@ -74,11 +74,11 @@ pub fn ants_drop(
         if *inventory_item_element == Element::Food {
             if nest.is_underground(&ahead_position) {
                 // Don't let ants drop food in tunnels that don't have space for them to navigate around dropped food.
-                if nest.is_element(
+                if nest.elements().is_element(
                     &elements_query,
                     orientation.get_above_position(&ahead_position),
                     Element::Air,
-                ) && nest.is_element(
+                ) && nest.elements().is_element(
                     &elements_query,
                     orientation.get_above_position(position),
                     Element::Air,
@@ -86,7 +86,7 @@ pub fn ants_drop(
                     drop_food = rng.f32() < settings.probabilities.below_surface_food_drop;
 
                     // If ant is adjacent to food then strongly consider dropping food (creates food piles)
-                    let is_food_below = nest.is_element(
+                    let is_food_below = nest.elements().is_element(
                         &elements_query,
                         orientation.get_below_position(position),
                         Element::Food,
@@ -107,7 +107,7 @@ pub fn ants_drop(
 
         if drop_sand || drop_food {
             // Drop inventory in front of ant
-            let target_element_entity = nest.element_entity(ahead_position);
+            let target_element_entity = nest.elements().element_entity(ahead_position);
             commands.drop(ant_entity, ahead_position, *target_element_entity);
             continue;
         }

@@ -77,7 +77,7 @@ fn try_dig(
     }
 
     // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = nest.get_element_entity(dig_position).unwrap();
+    let element_entity = nest.elements().get_element_entity(dig_position).unwrap();
     let element = elements_query.get(*element_entity).unwrap();
     if *element == Element::Air {
         return false;

@@ -175,7 +175,7 @@ fn can_start_nesting(
     let has_valid_dig_site = nest.is_aboveground(&ant_position) && !is_too_near_world_edge;
 
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *nest.element_entity(dig_position);
+    let dig_target_entity = *nest.elements().element_entity(dig_position);
 
     let is_element_diggable = elements_query
         .get(dig_target_entity)
@@ -199,7 +199,7 @@ fn start_digging_nest(
 ) {
     // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
-    let dig_target_entity = *nest.element_entity(dig_position);
+    let dig_target_entity = *nest.elements().element_entity(dig_position);
     commands.dig(ant_entity, dig_position, dig_target_entity);
 
     *nesting = Nesting::Started(dig_position);
@@ -236,7 +236,7 @@ fn can_finish_nesting(
     let above_position = ant_orientation.get_above_position(ant_position);
     let ahead_position = ant_orientation.get_ahead_position(ant_position);
 
-    let is_chamber_spacious = nest.is_all_element(
+    let is_chamber_spacious = nest.elements().is_all_element(
         &elements_query,
         &[
             *ant_position,
@@ -254,7 +254,7 @@ fn can_finish_nesting(
     let below_position = ant_orientation.get_below_position(ant_position);
     let behind_below_position = ant_orientation.get_behind_position(&below_position);
 
-    let is_chamber_floor_sturdy = nest.is_all_element(
+    let is_chamber_floor_sturdy = nest.elements().is_all_element(
         &elements_query,
         &[below_position, behind_below_position],
         Element::Dirt,
@@ -286,7 +286,7 @@ fn finish_digging_nest(
 
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);
-        let drop_target_entity = nest.element_entity(drop_position);
+        let drop_target_entity = nest.elements().element_entity(drop_position);
         commands.drop(ant_entity, drop_position, *drop_target_entity);
     } else {
         // TODO: This seems wrong. Everywhere else initiative is hidden behind custom action commands.

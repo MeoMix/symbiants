@@ -42,6 +42,7 @@ pub fn ants_tunnel_pheromone_move(
         // If there's solid material in front of ant then consider turning onto it if there's tunnel to follow upward.
         let ahead_position = orientation.get_ahead_position(&ant_position);
         let has_air_ahead = nest
+            .elements()
             .get_element_entity(ahead_position)
             .map_or(false, |entity| {
                 elements_query
@@ -51,6 +52,7 @@ pub fn ants_tunnel_pheromone_move(
 
         let above_position = orientation.get_above_position(&ant_position);
         let has_air_above = nest
+            .elements()
             .get_element_entity(above_position)
             .map_or(false, |entity| {
                 elements_query
@@ -80,7 +82,7 @@ pub fn ants_tunnel_pheromone_move(
         let foot_orientation = orientation.rotate_forward();
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
-        if let Some(foot_entity) = nest.get_element_entity(foot_position) {
+        if let Some(foot_entity) = nest.elements().get_element_entity(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
 
             if *foot_element == Element::Air {
@@ -133,7 +135,7 @@ pub fn ants_tunnel_pheromone_act(
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = nest.element_entity(ahead_position);
+        let entity = nest.elements().element_entity(ahead_position);
         let Ok(element) = elements_query.get(*entity) else {
             panic!("act - expected entity to exist")
         };
@@ -143,7 +145,7 @@ pub fn ants_tunnel_pheromone_act(
         }
 
         let dig_position = orientation.get_ahead_position(position);
-        let dig_target_entity = *nest.element_entity(dig_position);
+        let dig_target_entity = *nest.elements().element_entity(dig_position);
         commands.dig(ant_entity, dig_position, dig_target_entity);
 
         // Reduce PheromoneStrength by 1 because not digging at ant_position, but ant_position + 1.

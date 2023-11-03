@@ -183,7 +183,7 @@ pub fn on_spawn_element(
         let adjacent_positions = position.get_adjacent_positions();
 
         for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) = nest.get_element_entity(adjacent_position) {
+            if let Some(adjacent_element_entity) = nest.elements().get_element_entity(adjacent_position) {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
                 if *adjacent_element != Element::Air {
@@ -213,22 +213,22 @@ fn update_element_sprite(
 ) {
     // TODO: maybe make this reactive rather than calculating all the time to avoid insert when no change in exposure is occurring?
     let element_exposure = ElementExposure {
-        north: nest.is_element(
+        north: nest.elements().is_element(
             &elements_query,
             *element_position - Position::Y,
             Element::Air,
         ),
-        east: nest.is_element(
+        east: nest.elements().is_element(
             &elements_query,
             *element_position + Position::X,
             Element::Air,
         ),
-        south: nest.is_element(
+        south: nest.elements().is_element(
             &elements_query,
             *element_position + Position::Y,
             Element::Air,
         ),
-        west: nest.is_element(
+        west: nest.elements().is_element(
             &elements_query,
             *element_position - Position::X,
             Element::Air,
@@ -291,7 +291,7 @@ pub fn on_update_element_position(
         let adjacent_positions = position.get_adjacent_positions();
 
         for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) = nest.get_element_entity(adjacent_position) {
+            if let Some(adjacent_element_entity) = nest.elements().get_element_entity(adjacent_position) {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
                 if *adjacent_element != Element::Air {

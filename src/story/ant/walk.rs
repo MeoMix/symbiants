@@ -24,7 +24,7 @@ pub fn ants_stabilize_footing_movement(
         }
 
         let below_position = orientation.get_below_position(&position);
-        let has_air_below = nest.is_element(&elements_query, below_position, Element::Air);
+        let has_air_below = nest.elements().is_element(&elements_query, below_position, Element::Air);
         if !has_air_below {
             continue;
         }
@@ -52,6 +52,7 @@ pub fn ants_walk(
         // An ant might be attempting to walk forward into a solid block. If so, they'll turn and walk up the block.
         let ahead_position = orientation.get_ahead_position(&position);
         let has_air_ahead = nest
+            .elements()
             .get_element_entity(ahead_position)
             .map_or(false, |entity| {
                 elements_query
@@ -74,7 +75,7 @@ pub fn ants_walk(
         let foot_orientation = orientation.rotate_forward();
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
-        if let Some(foot_entity) = nest.get_element_entity(foot_position) {
+        if let Some(foot_entity) = nest.elements().get_element_entity(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
 
             if *foot_element == Element::Air {
@@ -142,7 +143,7 @@ fn is_valid_location(
     nest: &Res<Nest>,
 ) -> bool {
     // Need air at the ants' body for it to be a legal ant location.
-    let Some(entity) = nest.get_element_entity(position) else {
+    let Some(entity) = nest.elements().get_element_entity(position) else {
         return false;
     };
     let Ok(element) = elements_query.get(*entity) else {
@@ -155,7 +156,7 @@ fn is_valid_location(
 
     // Get the location beneath the ants' feet and check for air
     let below_position = orientation.get_below_position(&position);
-    let Some(entity) = nest.get_element_entity(below_position) else {
+    let Some(entity) = nest.elements().get_element_entity(below_position) else {
         // SPECIAL CASE: if underground then an out-of-bounds location is considered dirt to walk on
         if nest.is_underground(&below_position) {
             return true;

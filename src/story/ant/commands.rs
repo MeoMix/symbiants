@@ -95,7 +95,7 @@ struct DigElementCommand {
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
         let nest = world.resource::<Nest>();
-        let element_entity = match nest.get_element_entity(self.target_position) {
+        let element_entity = match nest.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -126,6 +126,7 @@ impl Command for DigElementCommand {
             .id();
         world
             .resource_mut::<Nest>()
+            .elements_mut()
             .set_element(self.target_position, air_entity);
 
         // TODO: There's probably a more elegant way to express this - "denseness" of sand rather than changing between dirt/sand.
@@ -172,7 +173,7 @@ struct DropElementCommand {
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
         let nest = world.resource::<Nest>();
-        let air_entity = match nest.get_element_entity(self.target_position) {
+        let air_entity = match nest.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -212,6 +213,7 @@ impl Command for DropElementCommand {
 
         world
             .resource_mut::<Nest>()
+            .elements_mut()
             .set_element(self.target_position, element_entity);
 
         // Remove element from ant inventory.

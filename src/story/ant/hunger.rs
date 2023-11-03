@@ -105,8 +105,8 @@ pub fn ants_hunger_act(
             // If there is food near the hungry ant then pick it up and if the ant is holding food then eat it.
             if inventory.0 == None {
                 let ahead_position = orientation.get_ahead_position(position);
-                if nest.is_element(&elements_query, ahead_position, Element::Food) {
-                    let food_entity = nest.get_element_entity(ahead_position).unwrap();
+                if nest.elements().is_element(&elements_query, ahead_position, Element::Food) {
+                    let food_entity = nest.elements().get_element_entity(ahead_position).unwrap();
                     commands.dig(ant_entity, ahead_position, *food_entity);
                 }
             } else {

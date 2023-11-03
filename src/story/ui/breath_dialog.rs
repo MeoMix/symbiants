@@ -136,7 +136,7 @@ pub fn update_breath_dialog(
                             }
 
                             for position in spawn_positions.iter() {
-                                if let Some(entity) = nest.get_element_entity(*position) {
+                                if let Some(entity) = nest.elements().get_element_entity(*position) {
                                     commands.replace_element(*position, Element::Food, *entity);
                                 }
                             }
