@@ -1,10 +1,12 @@
-use crate::{app_state::AppState, settings::Settings};
+use crate::app_state::AppState;
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
 
 use self::pancam::{PanCam, PanCamPlugin};
+
+use super::nest_simulation::nest::{Nest, setup_nest};
 
 mod pancam;
 
@@ -26,7 +28,7 @@ fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
-    settings: Res<Settings>,
+    nest: Res<Nest>,
 ) {
     let primary_window_entity = primary_window_query.single();
 
@@ -35,8 +37,8 @@ fn window_resize(
             main_camera_query.single_mut().scale = get_best_fit_scale(
                 resize_event.width,
                 resize_event.height,
-                settings.nest_width as f32,
-                settings.nest_height as f32,
+                nest.width() as f32,
+                nest.height() as f32,
             );
         }
     }
@@ -46,27 +48,27 @@ fn window_resize(
 fn scale_projection(
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    settings: Res<Settings>,
+    nest: Res<Nest>,
 ) {
     let primary_window = primary_window_query.single();
     main_camera_query.single_mut().scale = get_best_fit_scale(
         primary_window.width(),
         primary_window.height(),
-        settings.nest_width as f32,
-        settings.nest_height as f32,
+        nest.width() as f32,
+        nest.height() as f32,
     );
 }
 
 fn insert_pancam(
     main_camera_query: Query<Entity, With<MainCamera>>,
-    settings: Res<Settings>,
+    nest: Res<Nest>,
     mut commands: Commands,
 ) {
     commands.entity(main_camera_query.single()).insert(PanCam {
-        min_x: Some(-settings.nest_width as f32 / 2.0),
-        min_y: Some(-settings.nest_height as f32 / 2.0),
-        max_x: Some(settings.nest_width as f32 / 2.0),
-        max_y: Some(settings.nest_height as f32 / 2.0),
+        min_x: Some(-nest.width() as f32 / 2.0),
+        min_y: Some(-nest.height() as f32 / 2.0),
+        max_x: Some(nest.width() as f32 / 2.0),
+        max_y: Some(nest.height() as f32 / 2.0),
         min_scale: 0.01,
         ..default()
     });
@@ -91,10 +93,10 @@ impl Plugin for CameraPlugin {
         app.add_systems(OnEnter(AppState::BeginSetup), setup);
         app.add_systems(
             OnEnter(AppState::FinishSetup),
-            (insert_pancam, scale_projection),
+            (insert_pancam, scale_projection).after(setup_nest),
         );
         app.add_systems(OnEnter(AppState::Cleanup), teardown);
 
-        app.add_systems(Update, window_resize.run_if(resource_exists::<Settings>()));
+        app.add_systems(Update, window_resize.run_if(resource_exists::<Nest>()));
     }
 }
