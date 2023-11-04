@@ -1,17 +1,31 @@
-// TODO: probably merge crater and nest simulation and modularize at a lower level because there's a lot of core/common simulation code
+mod background;
+pub mod crater;
+
 use bevy::prelude::*;
 
-// use crate::{app_state::AppState, settings::Settings, nest::position::Position};
+use crate::app_state::AppState;
+
+use self::{
+    background::{setup_background, teardown_background},
+    crater::{setup_crater, teardown_crater},
+};
 
 pub struct CraterSimulationPlugin;
 
 impl Plugin for CraterSimulationPlugin {
-    fn build(&self, _: &mut App) {
-        info!("hello world");
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            OnEnter(AppState::FinishSetup),
+            (
+                (setup_crater, apply_deferred).chain(),
+                (setup_background, apply_deferred).chain(),
+            )
+                .chain(),
+        );
 
-        // Need to render a grid of squares representing the craters available area.
-        // Start with square, can make it round after.
-
-        // app.add_systems(OnEnter(AppState::Initializing), ().chain());
+        app.add_systems(
+            OnEnter(AppState::Cleanup),
+            (teardown_background, teardown_crater),
+        );
     }
 }

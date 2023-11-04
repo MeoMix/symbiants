@@ -1,4 +1,5 @@
 pub mod elements_cache;
+pub mod ui;
 
 use bevy::prelude::*;
 

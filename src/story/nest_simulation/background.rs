@@ -223,26 +223,28 @@ pub fn update_sky_background(
 // Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_background(
     mut commands: Commands,
-    nest_query: Query<(&Grid, &Nest)>,
+    nest_query: Query<(&Grid, &Nest, Entity)>,
     story_time: Res<StoryTime>,
 ) {
-    let (grid, nest) = nest_query.single();
+    let (grid, nest, nest_entity) = nest_query.single();
     let air_height = nest.surface_level() + 1;
 
-    commands.spawn_batch(create_sky_sprites(
-        grid.width(),
-        air_height,
-        &grid,
-        &nest,
-        &story_time,
-    ));
+    commands.entity(nest_entity).with_children(|parent| {
+        let sky_sprites = create_sky_sprites(grid.width(), air_height, &grid, &nest, &story_time);
 
-    commands.spawn_batch(create_tunnel_sprites(
-        grid.width(),
-        grid.height() - air_height,
-        air_height,
-        &grid,
-    ));
+        for sky_sprite in sky_sprites {
+            parent.spawn(sky_sprite);
+        }
+    });
+
+    commands.entity(nest_entity).with_children(|parent| {
+        let tunnel_sprites =
+            create_tunnel_sprites(grid.width(), grid.height() - air_height, air_height, &grid);
+
+        for tunnel_sprite in tunnel_sprites {
+            parent.spawn(tunnel_sprite);
+        }
+    });
 }
 
 pub fn teardown_background(

@@ -9,7 +9,7 @@ use crate::{
         begin_story, check_story_over, continue_startup, finalize_startup, restart, AppState,
     },
     save::{load, save, setup_save, teardown_save},
-    settings::{setup_settings, register_settings, teardown_settings},
+    settings::{register_settings, setup_settings, teardown_settings},
     story::{
         ant::{
             ants_initiative,
@@ -71,6 +71,8 @@ use self::{
     nest::{setup_nest, teardown_nest},
 };
 
+use super::grid::ui::{on_added_visible_grid, on_removed_visible_grid};
+
 pub struct NestSimulationPlugin;
 
 impl Plugin for NestSimulationPlugin {
@@ -96,7 +98,11 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
-            ((setup_settings, apply_deferred, setup_element, setup_ant).chain(), finalize_startup).chain(),
+            (
+                (setup_settings, apply_deferred, setup_element, setup_ant).chain(),
+                finalize_startup,
+            )
+                .chain(),
         );
 
         app.add_systems(
@@ -266,9 +272,11 @@ impl Plugin for NestSimulationPlugin {
                     on_added_ant_dead,
                     on_added_ant_emote,
                     on_added_selected,
+                    on_added_visible_grid,
                     // Removed
                     on_removed_selected,
                     on_removed_emote,
+                    on_removed_visible_grid,
                     // Updated
                     on_update_ant_position,
                     on_update_ant_orientation,
@@ -286,7 +294,8 @@ impl Plugin for NestSimulationPlugin {
                     // end-of-frame. If FixedUpdate runs multiple times before yielding then RemovedComponents<T>
                     // will contain stale entries and panics will occur.
                     // Calling this *BREAKS* change tracking in stages past FixedUpdate because it clears
-                    // any existing, tracked events.
+                    // any existing, tracked events. This is OK because change detection of the simulation isn't needed
+                    // outside of FixedUpdate.
                     // TODO: It might be desirable to move this to the top of FixedUpdate rather than the bottom
                     world.clear_trackers();
                 },
@@ -336,7 +345,7 @@ impl Plugin for NestSimulationPlugin {
                 teardown_nest,
                 teardown_save,
                 restart,
-            )
+            ),
         );
     }
 }

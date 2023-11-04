@@ -55,6 +55,11 @@ pub fn setup_nest(
 
     commands.spawn((
         VisibleGrid,
+        // TODO: prefer stronger UI separation, can't reactively add this without getting spammed with warnings when setting up children.
+        SpatialBundle {
+            visibility: Visibility::Visible,
+            ..default()
+        },
         Grid::new(
             settings.nest_width,
             settings.nest_height,
