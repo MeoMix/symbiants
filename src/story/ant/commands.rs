@@ -7,6 +7,7 @@ use crate::story::{
     common::{position::Position, Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
     grid::Grid,
+    nest_simulation::nest::Nest,
 };
 
 use crate::settings::Settings;
@@ -94,8 +95,8 @@ struct DigElementCommand {
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
-        let nest = world.query::<&Grid>().single(world);
-        let element_entity = match nest.elements().get_element_entity(self.target_position) {
+        let grid = world.query_filtered::<&Grid, With<Nest>>().single(world);
+        let element_entity = match grid.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -126,7 +127,7 @@ impl Command for DigElementCommand {
             .id();
 
         world
-            .query::<&mut Grid>()
+            .query_filtered::<&mut Grid, With<Nest>>()
             .single_mut(world)
             .elements_mut()
             .set_element(self.target_position, air_entity);
@@ -174,8 +175,8 @@ struct DropElementCommand {
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
-        let nest = world.query::<&Grid>().single(world);
-        let air_entity = match nest.elements().get_element_entity(self.target_position) {
+        let grid = world.query_filtered::<&Grid, With<Nest>>().single(world);
+        let air_entity = match grid.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -214,7 +215,7 @@ impl Command for DropElementCommand {
         let element_entity = spawn_element(*element, self.target_position, world);
 
         world
-            .query::<&mut Grid>()
+            .query_filtered::<&mut Grid, With<Nest>>()
             .single_mut(world)
             .elements_mut()
             .set_element(self.target_position, element_entity);

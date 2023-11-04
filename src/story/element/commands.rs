@@ -177,8 +177,8 @@ struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
 
 impl<C: Component + Send + Sync + 'static> Command for ToggleElementCommand<C> {
     fn apply(self, world: &mut World) {
-        let nest = world.query::<&Grid>().single(world);
-        let element_entity = match nest.elements().get_element_entity(self.position) {
+        let grid = world.query_filtered::<&Grid, With<Nest>>().single(world);
+        let element_entity = match grid.elements().get_element_entity(self.position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.position);
