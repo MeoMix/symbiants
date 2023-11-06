@@ -1,5 +1,5 @@
 use super::Element;
-use crate::story::{common::position::Position, grid::Grid, nest_simulation::nest::Nest};
+use crate::story::{common::position::Position, grid::Grid, nest_simulation::nest::{Nest, AtNest}};
 use bevy::{asset::HandleId, prelude::*};
 
 #[derive(Resource)]
@@ -241,6 +241,8 @@ fn update_element_sprite(
 
     let element_index = get_element_index(element_exposure);
 
+    // TODO: Need to not overwrite existing visibility - really only want to overwrite these 3 and add the others if they don't exist.
+
     // BUG: https://github.com/bevyengine/bevy/issues/1949
     // Intentionally not using SpriteSheetBundle due to subpixel rounding causing bleed artifacts.
     commands.entity(element_entity).insert(SpriteBundle {
@@ -250,12 +252,13 @@ fn update_element_sprite(
             ..default()
         },
         transform: Transform::from_translation(grid.grid_to_world_position(*element_position)),
+        // TODO: Maintain existing visibility if set
         ..default()
     });
 }
 
 pub fn rerender_elements(
-    mut element_query: Query<(&Position, &Element, Entity)>,
+    mut element_query: Query<(&Position, &Element, Entity), With<AtNest>>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     element_sprite_handles: Res<ElementSpriteHandles>,

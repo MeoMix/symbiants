@@ -1,6 +1,6 @@
 use crate::story::{
     common::{position::Position, register},
-    story_time::DEFAULT_TICKS_PER_SECOND,
+    story_time::DEFAULT_TICKS_PER_SECOND, nest_simulation::nest::AtNest,
 };
 
 use super::{
@@ -64,7 +64,7 @@ pub fn ants_birthing(
         &AntColor,
         &AntOrientation,
         &mut Initiative,
-    )>,
+    ), With<AtNest>>,
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
 ) {

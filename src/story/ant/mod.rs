@@ -13,7 +13,7 @@ use self::{
     hunger::Hunger, name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::element::Element;
+use super::{element::Element, nest_simulation::nest::AtNest};
 use bevy::prelude::*;
 
 pub mod birthing;
@@ -46,6 +46,8 @@ pub struct AntBundle {
     hunger: Hunger,
     digestion: Digestion,
     inventory: AntInventory,
+    // TODO: Don't hardcode this to being at nest, make it flexible
+    at_nest: AtNest,
 }
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -367,7 +369,7 @@ impl AntOrientation {
 // Each ant maintains an internal timer that determines when it will act next.
 // This adds a little realism by varying when movements occur and allows for flexibility
 // in the simulation run speed.
-pub fn ants_initiative(mut alive_ants_query: Query<&mut Initiative>, mut rng: ResMut<GlobalRng>) {
+pub fn ants_initiative(mut alive_ants_query: Query<&mut Initiative, With<AtNest>>, mut rng: ResMut<GlobalRng>) {
     for mut initiative in alive_ants_query.iter_mut() {
         if initiative.timer > 0 {
             initiative.timer -= 1;

@@ -1,4 +1,4 @@
-use crate::story::story_time::DEFAULT_TICKS_PER_SECOND;
+use crate::story::{nest_simulation::nest::AtNest, story_time::DEFAULT_TICKS_PER_SECOND};
 
 use super::{hunger::Hunger, Dead};
 use bevy::prelude::*;
@@ -49,7 +49,7 @@ impl Digestion {
 // TODO: This is (relatively) expensive to perform for the amount of value the concept adds to the user.
 /// Each tick, each ant processes any food it has inside of itself.
 pub fn ants_digestion(
-    mut ants_digestion_query: Query<(&mut Digestion, &mut Hunger), Without<Dead>>,
+    mut ants_digestion_query: Query<(&mut Digestion, &mut Hunger), (Without<Dead>, With<AtNest>)>,
 ) {
     for (mut digestion, mut hunger) in ants_digestion_query.iter_mut() {
         let digestion_amount = digestion.tick();

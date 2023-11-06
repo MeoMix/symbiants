@@ -12,6 +12,8 @@ use crate::{
 use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
+use super::nest::AtNest;
+
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
 // It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
 #[derive(Component, Reflect, Default)]
@@ -75,8 +77,8 @@ fn get_element_fall_position(
 
 pub fn gravity_elements(
     mut element_position_queries: ParamSet<(
-        Query<&Position, (With<Element>, With<Unstable>)>,
-        Query<&mut Position, With<Element>>,
+        Query<&Position, (With<Element>, With<Unstable>, With<AtNest>)>,
+        Query<&mut Position, (With<Element>, With<AtNest>)>,
     )>,
     elements_query: Query<&Element>,
     mut nest_query: Query<&mut Grid, With<Nest>>,
@@ -131,7 +133,7 @@ pub fn gravity_ants(
         &mut Position,
         Option<&mut Initiative>,
         Option<&Dead>,
-    )>,
+    ), With<AtNest>>,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
@@ -186,8 +188,8 @@ pub fn gravity_ants(
 
 // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
 pub fn gravity_mark_unstable(
-    air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>)>,
-    elements_query: Query<&Element, Without<Air>>,
+    air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>, With<AtNest>)>,
+    elements_query: Query<&Element>,
     mut commands: Commands,
     nest_query: Query<(&Grid, &Nest)>,
 ) {
@@ -221,7 +223,7 @@ pub fn gravity_mark_unstable(
 /// Elements which were Unstable, but didn't move this frame, are marked Stable by removing their Unstable marker.
 /// FIXME: floating column of sand can result in sand being marked stable while in the air due to having sand directly beneath.
 pub fn gravity_mark_stable(
-    unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>)>,
+    unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>, With<AtNest>)>,
     mut commands: Commands,
 ) {
     for (position, entity) in unstable_element_query.iter() {

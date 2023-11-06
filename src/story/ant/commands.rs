@@ -7,7 +7,7 @@ use crate::story::{
     common::{position::Position, Id, IdMap},
     element::{commands::spawn_element, AirElementBundle, Element},
     grid::Grid,
-    nest_simulation::nest::Nest,
+    nest_simulation::nest::{Nest, AtNest},
 };
 
 use crate::settings::Settings;
@@ -263,6 +263,7 @@ impl Command for SpawnAntCommand {
             color: self.color,
             hunger: Hunger::new(settings.max_hunger_time),
             digestion: Digestion::new(settings.max_digestion_time),
+            at_nest: AtNest
         };
 
         let id = ant_bundle.id.clone();

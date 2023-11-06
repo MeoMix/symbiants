@@ -6,7 +6,7 @@ use crate::story::{
     common::position::Position,
     element::Element,
     grid::Grid,
-    nest_simulation::nest::Nest,
+    nest_simulation::nest::{AtNest, Nest},
     pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
 };
 
@@ -26,14 +26,17 @@ pub struct Chambering(pub isize);
 ///  3) Either step forward or turn around
 ///  4) Repeat while covered in pheromone
 pub fn ants_chamber_pheromone_act(
-    ants_query: Query<(
-        &AntOrientation,
-        &AntInventory,
-        &Initiative,
-        &Position,
-        Entity,
-        &Chambering,
-    )>,
+    ants_query: Query<
+        (
+            &AntOrientation,
+            &AntInventory,
+            &Initiative,
+            &Position,
+            Entity,
+            &Chambering,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
@@ -85,7 +88,7 @@ pub fn ants_chamber_pheromone_act(
 pub fn ants_add_chamber_pheromone(
     ants_query: Query<
         (Entity, &Position, &AntInventory),
-        (Changed<Position>, With<Initiative>, Without<Birthing>),
+        (Changed<Position>, With<Initiative>, Without<Birthing>, With<AtNest>),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
@@ -121,7 +124,7 @@ pub fn ants_fade_chamber_pheromone(mut ants_query: Query<&mut Chambering, Change
 pub fn ants_remove_chamber_pheromone(
     mut ants_query: Query<
         (Entity, &Position, &AntInventory, &Chambering),
-        Or<(Changed<Position>, Changed<AntInventory>)>,
+        (Or<(Changed<Position>, Changed<AntInventory>)>, With<AtNest>),
     >,
     mut commands: Commands,
     nest_query: Query<&Nest>,

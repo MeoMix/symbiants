@@ -12,7 +12,7 @@ use crate::{
         common::position::Position,
         element::Element,
         grid::Grid,
-        nest_simulation::nest::Nest,
+        nest_simulation::nest::{Nest, AtNest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };
@@ -27,7 +27,7 @@ pub fn ants_nest_expansion(
         &Initiative,
         &Position,
         Entity,
-    )>,
+    ), With<AtNest>>,
     elements_query: Query<&Element>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,

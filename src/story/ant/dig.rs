@@ -1,7 +1,7 @@
 use crate::{
     settings::Settings,
     story::{
-        common::position::Position, element::Element, grid::Grid, nest_simulation::nest::Nest,
+        common::position::Position, element::Element, grid::Grid, nest_simulation::nest::{Nest, AtNest},
     },
 };
 
@@ -17,7 +17,7 @@ pub fn ants_dig(
         &Position,
         &AntRole,
         Entity,
-    )>,
+    ), With<AtNest>>,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
@@ -70,7 +70,7 @@ fn try_dig(
         &Position,
         &AntRole,
         Entity,
-    )>,
+    ), With<AtNest>>,
     nest_query: &Query<(&Grid, &Nest)>,
     commands: &mut Commands,
     settings: &Res<Settings>,

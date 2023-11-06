@@ -1,9 +1,9 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
 use crate::story::{
     common::{position::Position, IdMap},
+    grid::Grid,
     // TODO: element shouldn't couple to gravity, want to be able to reuse element
     nest_simulation::{gravity::Unstable, nest::Nest},
-    grid::Grid
 };
 use bevy::{ecs::system::Command, prelude::*};
 
@@ -61,7 +61,7 @@ impl Command for ReplaceElementCommand {
         // system run and, in this scenario, overwrites should not occur because validity checks have already been performed.
         // So, we anticipate the entity to be destroyed and confirm it still exists in the position expected. Otherwise, no-op.
         let existing_entity = match world
-            .query::<&Grid>()
+            .query_filtered::<&mut Grid, With<Nest>>()
             .single(world)
             .elements()
             .get_element_entity(self.position)
@@ -82,7 +82,7 @@ impl Command for ReplaceElementCommand {
 
         let entity = spawn_element(self.element, self.position, world);
         world
-            .query::<&mut Grid>()
+            .query_filtered::<&mut Grid, With<Nest>>()
             .single_mut(world)
             .elements_mut()
             .set_element(self.position, entity);
@@ -97,7 +97,7 @@ struct SpawnElementCommand {
 impl Command for SpawnElementCommand {
     fn apply(self, world: &mut World) {
         if let Some(existing_entity) = world
-            .query::<&Grid>()
+            .query_filtered::<&mut Grid, With<Nest>>()
             .single(world)
             .elements()
             .get_element_entity(self.position)
@@ -111,7 +111,7 @@ impl Command for SpawnElementCommand {
 
         let entity = spawn_element(self.element, self.position, world);
         world
-            .query::<&mut Grid>()
+            .query_filtered::<&mut Grid, With<Nest>>()
             .single_mut(world)
             .elements_mut()
             .set_element(self.position, entity);

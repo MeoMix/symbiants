@@ -16,7 +16,7 @@ use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
 use story::{
     camera::CameraPlugin, crater_simulation::CraterSimulationPlugin,
-    nest_simulation::NestSimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin,
+    nest_simulation::NestSimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin, grid::VisibleGridState,
 };
 
 pub struct SymbiantsPlugin;
@@ -29,6 +29,7 @@ impl Plugin for SymbiantsPlugin {
         app.add_state::<AppState>();
         // TODO: call this in setup_story_time?
         app.add_state::<StoryPlaybackState>();
+        app.add_state::<VisibleGridState>();
 
         app.add_plugins(
             DefaultPlugins

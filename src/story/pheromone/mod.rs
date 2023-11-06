@@ -9,6 +9,8 @@ use crate::story::{
 
 use self::commands::PheromoneCommandsExt;
 
+use super::nest_simulation::nest::AtNest;
+
 pub mod commands;
 pub mod ui;
 
@@ -124,7 +126,7 @@ pub fn teardown_pheromone(pheromone_query: Query<Entity, With<Pheromone>>, mut c
 }
 
 pub fn pheromone_duration_tick(
-    mut pheromone_query: Query<(&mut PheromoneDuration, &Position, Entity)>,
+    mut pheromone_query: Query<(&mut PheromoneDuration, &Position, Entity), With<AtNest>>,
     mut commands: Commands,
 ) {
     for (mut pheromone_duration, position, pheromone_entity) in pheromone_query.iter_mut() {

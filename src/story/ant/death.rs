@@ -5,7 +5,7 @@ use crate::story::{
     common::position::Position,
     element::Element,
     grid::Grid,
-    nest_simulation::nest::Nest,
+    nest_simulation::nest::{Nest, AtNest},
 };
 
 use super::Dead;
@@ -14,7 +14,7 @@ use super::Dead;
 /// TODO:
 ///     * It might be preferable to find an adjacent, available location to move inventory to rather than despawning.
 pub fn on_ants_add_dead(
-    ants_query: Query<(Entity, &Position, &AntInventory), Added<Dead>>,
+    ants_query: Query<(Entity, &Position, &AntInventory), (Added<Dead>, With<AtNest>)>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
     elements_query: Query<&Element>,

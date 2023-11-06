@@ -10,6 +10,8 @@ use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
+use super::nest_simulation::nest::AtNest;
+
 pub mod commands;
 pub mod ui;
 
@@ -31,6 +33,7 @@ pub struct AirElementBundle {
     element: Element,
     position: Position,
     air: Air,
+    at_nest: AtNest,
 }
 
 impl AirElementBundle {
@@ -40,6 +43,7 @@ impl AirElementBundle {
             element: Element::Air,
             air: Air,
             position,
+            at_nest: AtNest,
         }
     }
 }
@@ -54,6 +58,7 @@ pub struct DirtElementBundle {
     element: Element,
     dirt: Dirt,
     position: Position,
+    at_nest: AtNest,
 }
 
 impl DirtElementBundle {
@@ -63,6 +68,7 @@ impl DirtElementBundle {
             element: Element::Dirt,
             dirt: Dirt,
             position,
+            at_nest: AtNest,
         }
     }
 }
@@ -78,6 +84,7 @@ pub struct SandElementBundle {
     sand: Sand,
     position: Position,
     unstable: Unstable,
+    at_nest: AtNest,
 }
 
 impl SandElementBundle {
@@ -88,6 +95,7 @@ impl SandElementBundle {
             sand: Sand,
             position,
             unstable: Unstable,
+            at_nest: AtNest,
         }
     }
 }
@@ -103,6 +111,7 @@ pub struct FoodElementBundle {
     food: Food,
     position: Position,
     unstable: Unstable,
+    at_nest: AtNest,
 }
 
 impl FoodElementBundle {
@@ -113,6 +122,7 @@ impl FoodElementBundle {
             food: Food,
             position,
             unstable: Unstable,
+            at_nest: AtNest,
         }
     }
 }

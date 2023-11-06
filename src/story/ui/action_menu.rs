@@ -4,6 +4,9 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
 use crate::settings::Settings;
+use crate::story::grid::VisibleGrid;
+use crate::story::nest_simulation::nest::Nest;
+use crate::story::pointer::ExternalSimulationEvent;
 use crate::story::story_time::StoryTime;
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
@@ -17,6 +20,8 @@ pub enum PointerAction {
     KillAnt,
     SpawnWorkerAnt,
     DespawnWorkerAnt,
+    ShowCrater,
+    ShowNest,
 }
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
@@ -39,6 +44,8 @@ pub fn update_action_menu(
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     settings: Res<Settings>,
     story_time: Res<StoryTime>,
+    mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
+    nest_query: Query<&Nest, With<VisibleGrid>>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -85,5 +92,25 @@ pub fn update_action_menu(
                     is_showing_breath_dialog.0 = true;
                 }
             });
+
+            let is_nest_visible = nest_query.get_single().is_ok();
+
+            if is_nest_visible {
+                if ui.button("View Crater").clicked() {
+                    external_simulation_event_writer.send(ExternalSimulationEvent {
+                        action: PointerAction::ShowCrater,
+                        position: None,
+                    });
+                }
+            } else {
+                if ui.button("View Nest").clicked() {
+                    external_simulation_event_writer.send(ExternalSimulationEvent {
+                        action: PointerAction::ShowNest,
+                        position: None,
+                    });
+                }
+            }
+
+ 
         });
 }

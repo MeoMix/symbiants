@@ -1,7 +1,7 @@
 use crate::{
     settings::Settings,
     story::{
-        common::position::Position, element::Element, grid::Grid, nest_simulation::nest::Nest,
+        common::position::Position, element::Element, grid::Grid, nest_simulation::nest::{Nest, AtNest},
     },
 };
 
@@ -16,7 +16,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 ///     * I think there's a bug where ant standing adjacent to the edge of the world map will not fall because it's not air.
 ///     * Code could be written better such that movement initiative isn't consumed if there's not a valid orientation to turn to.
 pub fn ants_stabilize_footing_movement(
-    mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation)>,
+    mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation), With<AtNest>>,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     mut rng: ResMut<GlobalRng>,
@@ -51,7 +51,7 @@ pub fn ants_stabilize_footing_movement(
 
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
-    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation)>,
+    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), With<AtNest>>,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,

@@ -12,7 +12,7 @@ use crate::{
         common::position::Position,
         element::Element,
         grid::Grid,
-        nest_simulation::nest::Nest,
+        nest_simulation::nest::{Nest, AtNest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
 };
@@ -29,7 +29,7 @@ pub struct Tunneling(pub isize);
 // and when they hit that marker, they will look around them in all directions and, if they see any adjacent dirt, they will dig one piece of it and go back into "haul dirt" mode
 // if they do not see any adjacent dirt, they clean up the pheromone and, in the case of the queen, shift to giving birth
 pub fn ants_tunnel_pheromone_move(
-    mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), With<Tunneling>>,
+    mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), (With<Tunneling>, With<AtNest>)>,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     mut rng: ResMut<GlobalRng>,
@@ -113,7 +113,7 @@ pub fn ants_tunnel_pheromone_act(
         &Position,
         Entity,
         &Tunneling,
-    )>,
+    ), With<AtNest>>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
@@ -175,7 +175,7 @@ pub fn ants_tunnel_pheromone_act(
 pub fn ants_add_tunnel_pheromone(
     ants_query: Query<
         (Entity, &Position, &AntInventory, &AntOrientation),
-        (Changed<Position>, With<Initiative>, Without<Birthing>),
+        (Changed<Position>, With<Initiative>, Without<Birthing>, With<AtNest>),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
@@ -203,7 +203,7 @@ pub fn ants_add_tunnel_pheromone(
 }
 
 /// Whenever an ant takes a step it loses 1 Tunneling pheromone.
-pub fn ants_fade_tunnel_pheromone(mut ants_query: Query<&mut Tunneling, Changed<Position>>) {
+pub fn ants_fade_tunnel_pheromone(mut ants_query: Query<&mut Tunneling, (Changed<Position>, With<AtNest>)>) {
     for mut tunneling in ants_query.iter_mut() {
         tunneling.0 -= 1;
     }
@@ -215,7 +215,7 @@ pub fn ants_fade_tunnel_pheromone(mut ants_query: Query<&mut Tunneling, Changed<
 pub fn ants_remove_tunnel_pheromone(
     mut ants_query: Query<
         (Entity, &Position, &AntInventory, &Tunneling),
-        Or<(Changed<Position>, Changed<AntInventory>)>,
+        (Or<(Changed<Position>, Changed<AntInventory>)>, With<AtNest>)
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,

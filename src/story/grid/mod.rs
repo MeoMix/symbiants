@@ -1,11 +1,18 @@
 pub mod elements_cache;
-pub mod ui;
 
 use bevy::prelude::*;
 
 use crate::story::common::position::Position;
 
 use self::elements_cache::ElementsCache;
+
+// TODO: prob don't want both component (VisibleGrid) and VisibleGridState? idk
+#[derive(States, Default, Hash, Clone, Copy, Eq, PartialEq, Debug)]
+pub enum VisibleGridState {
+    #[default]
+    Nest,
+    Crater,
+}
 
 // TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
 #[derive(Component)]

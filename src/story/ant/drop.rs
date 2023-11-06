@@ -4,7 +4,7 @@ use crate::{
         common::{position::Position, IdMap},
         element::Element,
         grid::Grid,
-        nest_simulation::nest::Nest,
+        nest_simulation::nest::{Nest, AtNest},
     },
 };
 
@@ -20,7 +20,7 @@ pub fn ants_drop(
         &Position,
         &AntRole,
         Entity,
-    )>,
+    ), With<AtNest>>,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,

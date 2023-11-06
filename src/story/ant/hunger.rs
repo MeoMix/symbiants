@@ -8,7 +8,7 @@ use crate::story::{
     common::{position::Position, IdMap},
     element::Element,
     grid::Grid,
-    nest_simulation::nest::Nest,
+    nest_simulation::nest::{Nest, AtNest},
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;
@@ -69,12 +69,13 @@ impl Hunger {
 
 // TODO: Ants stop getting hungry while asleep which isn't really intended, but I haven't thought through Initative removal enough clearly
 // because sometimes I want it for Dead + Sleep, sometimes just one or the other, and it's becoming a leaky abstraction.
-pub fn ants_hunger_tick(mut ants_hunger_query: Query<&mut Hunger, Without<Dead>>) {
+pub fn ants_hunger_tick(mut ants_hunger_query: Query<&mut Hunger, (Without<Dead>, With<AtNest>)>) {
     for mut hunger in ants_hunger_query.iter_mut() {
         hunger.tick();
     }
 }
 
+// TODO: hunger should apply to ants AtCrater too
 pub fn ants_hunger_act(
     mut ants_hunger_query: Query<(
         Entity,
@@ -84,7 +85,7 @@ pub fn ants_hunger_act(
         &Position,
         &mut AntInventory,
         &mut Initiative,
-    )>,
+    ), With<AtNest>>,
     elements_query: Query<&Element>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
@@ -152,7 +153,7 @@ pub fn ants_regurgitate(
         &mut AntInventory,
         &mut Initiative,
         &mut AntRole,
-    )>,
+    ), With<AtNest>>,
     mut commands: Commands,
 ) {
     let peckish_ants = ants_hunger_query

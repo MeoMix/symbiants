@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::story::{common::position::Position, grid::Grid, nest_simulation::nest::Nest};
+use crate::story::{common::position::Position, grid::Grid, nest_simulation::nest::{Nest, AtNest}};
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
 
@@ -22,7 +22,7 @@ pub fn get_pheromone_sprite(
 }
 
 pub fn render_pheromones(
-    pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength)>,
+    pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), With<AtNest>>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,

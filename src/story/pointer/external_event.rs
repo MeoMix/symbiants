@@ -1,9 +1,9 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
     common::{position::Position, IdMap},
-    grid::Grid,
+    grid::{Grid, VisibleGrid, VisibleGridState},
     nest_simulation::nest::Nest,
-    ui::selection_menu::Selected,
+    ui::selection_menu::Selected, crater_simulation::crater::Crater,
 };
 
 use bevy::prelude::*;
@@ -29,18 +29,36 @@ pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
+    nest2_query: Query<Entity, With<Nest>>,
+    crater2_query: Query<Entity, With<Crater>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
     selected_entity_query: Query<Entity, With<Selected>>,
     id_map: Res<IdMap>,
+    mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
 ) {
     let nest = nest_query.single();
 
     for event in external_simulation_events.drain() {
         let pointer_action = event.action;
-        let grid_position = event.position;
+        if pointer_action == PointerAction::ShowCrater {
+            commands.entity(nest2_query.single()).remove::<VisibleGrid>();
+            commands.entity(crater2_query.single()).insert(VisibleGrid);
+            next_visible_grid_state.set(VisibleGridState::Crater);
+            return;
+        } else if pointer_action == PointerAction::ShowNest {
+            commands.entity(nest2_query.single()).insert(VisibleGrid);
+            commands.entity(crater2_query.single()).remove::<VisibleGrid>();
+            next_visible_grid_state.set(VisibleGridState::Nest);
+            return;
+        } else if event.position.is_none() {
+            info!("Expected grid position to be set for pointer action: {:?}", pointer_action);
+            return;
+        }
+
+        let grid_position = event.position.unwrap();
 
         if pointer_action == PointerAction::Select {
             // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.

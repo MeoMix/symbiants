@@ -13,7 +13,7 @@ use crate::{
             Element,
         },
         grid::Grid,
-        nest_simulation::nest::Nest,
+        nest_simulation::nest::{Nest, AtNest},
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
@@ -125,6 +125,7 @@ fn spawn_ant_label_text2d(
             ..default()
         },
         AntLabel(entity),
+        AtNest,
     ));
 }
 
@@ -182,7 +183,7 @@ pub fn rerender_ants(
         &AntRole,
         &AntInventory,
         Option<&Dead>,
-    )>,
+    ), With<AtNest>>,
     label_query: Query<Entity, With<AntLabel>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -400,7 +401,7 @@ pub fn on_removed_emote(
 }
 
 pub fn on_tick_emote(
-    mut ant_query: Query<(Entity, &mut Emote)>,
+    mut ant_query: Query<(Entity, &mut Emote), With<AtNest>>,
     mut commands: Commands,
     settings: Res<Settings>,
 ) {

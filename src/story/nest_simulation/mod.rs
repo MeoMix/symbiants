@@ -68,10 +68,23 @@ use crate::{
 use self::{
     background::{setup_background, teardown_background, update_sky_background},
     gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable},
-    nest::{setup_nest, teardown_nest},
+    nest::{
+        register_nest, setup_nest, setup_nest_grid, teardown_nest,
+        ui::{
+            on_added_at_nest, on_added_nest_visible_grid, on_nest_removed_visible_grid,
+            on_spawn_nest,
+        },
+        Nest,
+    },
 };
 
-use super::grid::ui::{on_added_visible_grid, on_removed_visible_grid};
+use super::{
+    crater_simulation::crater::{
+        register_crater,
+        ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
+    },
+    grid::VisibleGridState,
+};
 
 pub struct NestSimulationPlugin;
 
@@ -88,6 +101,8 @@ impl Plugin for NestSimulationPlugin {
                 register_element,
                 register_ant,
                 register_pheromone,
+                register_nest,
+                register_crater,
                 (pre_setup_common, apply_deferred).chain(),
                 load_textures,
             )
@@ -99,7 +114,13 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
             (
-                (setup_settings, apply_deferred, setup_element, setup_ant).chain(),
+                (
+                    (setup_settings, apply_deferred).chain(),
+                    (setup_nest, apply_deferred).chain(),
+                    (setup_element, apply_deferred).chain(),
+                    (setup_ant, apply_deferred).chain(),
+                )
+                    .chain(),
                 finalize_startup,
             )
                 .chain(),
@@ -108,8 +129,9 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
+                (ensure_nest_spatial_bundle, apply_deferred).chain(),
                 (pre_setup_story_time, apply_deferred).chain(),
-                (setup_nest, apply_deferred).chain(),
+                (setup_nest_grid, apply_deferred).chain(),
                 (setup_common, apply_deferred).chain(),
                 (setup_pointer, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
@@ -263,30 +285,62 @@ impl Plugin for NestSimulationPlugin {
                 // Must run even when simulation is paused to reflect user input.
                 (
                     // Spawn
-                    on_spawn_ant,
-                    on_spawn_element,
-                    on_spawn_pheromone,
+                    (
+                        on_spawn_nest,
+                        on_spawn_ant,
+                        on_spawn_element,
+                        on_spawn_pheromone,
+                    )
+                        .chain(),
                     // Despawn
-                    on_despawn_ant,
+                    (on_despawn_ant,).chain(),
                     // Added
-                    on_added_ant_dead,
-                    on_added_ant_emote,
-                    on_added_selected,
-                    on_added_visible_grid,
+                    (
+                        on_added_ant_dead,
+                        on_added_ant_emote,
+                        on_added_selected,
+                        on_added_at_nest,
+                        on_added_at_crater,
+                        on_added_nest_visible_grid,
+                    )
+                        .chain(),
                     // Removed
-                    on_removed_selected,
-                    on_removed_emote,
-                    on_removed_visible_grid,
+                    (
+                        on_removed_selected,
+                        on_removed_emote,
+                        on_nest_removed_visible_grid,
+                    )
+                        .chain(),
                     // Updated
-                    on_update_ant_position,
-                    on_update_ant_orientation,
-                    on_update_ant_color,
-                    on_update_ant_inventory,
-                    on_update_element_position,
-                    on_update_pheromone_visibility,
+                    (
+                        on_update_ant_position,
+                        on_update_ant_orientation,
+                        on_update_ant_color,
+                        on_update_ant_inventory,
+                        on_update_element_position,
+                        on_update_pheromone_visibility,
+                    )
+                        .chain(),
                 )
                     .chain()
-                    .run_if(not(in_state(StoryPlaybackState::FastForwarding))),
+                    .run_if(
+                        not(in_state(StoryPlaybackState::FastForwarding))
+                            .and_then(in_state(VisibleGridState::Nest)),
+                    ),
+                (
+                    // Spawn
+                    // Despawn
+                    // Added
+                    on_added_crater_visible_grid,
+                    // Removed
+                    on_crater_removed_visible_grid,
+                    // Updated
+                )
+                    .chain()
+                    .run_if(
+                        not(in_state(StoryPlaybackState::FastForwarding))
+                            .and_then(in_state(VisibleGridState::Crater)),
+                    ),
                 |world: &mut World| {
                     // DANGER:
                     // This is probably the most questionable piece of code in this codebase.
@@ -306,7 +360,16 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             OnExit(StoryPlaybackState::FastForwarding),
-            (rerender_ants, rerender_elements, render_pheromones).chain(),
+            (rerender_ants, rerender_elements, render_pheromones)
+                .chain()
+                .run_if(in_state(VisibleGridState::Nest)),
+        );
+
+        app.add_systems(
+            OnEnter(VisibleGridState::Nest),
+            (rerender_ants, rerender_elements, render_pheromones)
+                .chain()
+                .run_if(in_state(StoryPlaybackState::Playing)),
         );
 
         app.add_systems(
@@ -401,4 +464,13 @@ fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) 
             false
         }
     }
+}
+
+// HACK: i'm reusing the same entity for view + model, but creating model first and reactively handling view props
+// this results in warnings when I attach background as a child of nest because nest hasn't gained spatial bundle yet
+// I would just spawn nest with it, but it's not persisted, so I need to insert it after loading Nest from storage
+pub fn ensure_nest_spatial_bundle(nest_query: Query<Entity, With<Nest>>, mut commands: Commands) {
+    commands
+        .entity(nest_query.single())
+        .insert(SpatialBundle::default());
 }

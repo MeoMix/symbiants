@@ -15,7 +15,7 @@ use crate::story::{
 pub struct ExternalSimulationEvent {
     // TODO: naming of PointerAction breaks encapsulation
     pub action: PointerAction,
-    pub position: Position,
+    pub position: Option<Position>,
 }
 
 #[derive(Resource, Default)]
@@ -112,7 +112,7 @@ pub fn handle_pointer_tap(
 
     external_simulation_event_writer.send(ExternalSimulationEvent {
         action: *pointer_action,
-        position: grid_position,
+        position: Some(grid_position),
     });
 }
 

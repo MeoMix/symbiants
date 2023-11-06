@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     settings::Settings,
     story::{
-        ant::emote::EmoteType, common::position::Position, nest_simulation::nest::Nest,
+        ant::emote::EmoteType, common::position::Position, nest_simulation::nest::{Nest, AtNest},
         story_time::StoryTime,
     },
 };
@@ -17,7 +17,7 @@ use super::{emote::Emote, AntInventory, AntOrientation, Initiative};
 pub struct Asleep;
 
 pub fn ants_sleep(
-    ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), With<Initiative>>,
+    ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), (With<Initiative>, With<AtNest>)>,
     mut commands: Commands,
     nest_query: Query<&Nest>,
     story_time: Res<StoryTime>,
@@ -43,7 +43,7 @@ pub fn ants_sleep(
 
 // TODO: This actually seems like a view-only concern
 pub fn ants_sleep_emote(
-    ants_query: Query<Entity, (With<Asleep>, Without<Emote>)>,
+    ants_query: Query<Entity, (With<Asleep>, Without<Emote>, With<AtNest>)>,
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
     settings: Res<Settings>,
@@ -58,7 +58,7 @@ pub fn ants_sleep_emote(
 }
 
 pub fn ants_wake(
-    ants_query: Query<Entity, With<Asleep>>,
+    ants_query: Query<Entity, (With<Asleep>, With<AtNest>)>,
     mut commands: Commands,
     story_time: Res<StoryTime>,
     mut rng: ResMut<GlobalRng>,

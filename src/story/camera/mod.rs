@@ -1,9 +1,6 @@
 use crate::{
     app_state::AppState,
-    story::{
-        grid::{Grid, VisibleGrid},
-        nest_simulation::nest::setup_nest,
-    },
+    story::grid::{Grid, VisibleGrid},
 };
 use bevy::{
     prelude::*,
@@ -57,9 +54,14 @@ fn window_resize(
 fn scale_projection(
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    visible_grid_query: Query<&Grid, With<VisibleGrid>>,
+    visible_grid_query: Query<&Grid, Added<VisibleGrid>>,
 ) {
-    let visible_grid = visible_grid_query.single();
+    let visible_grid = match visible_grid_query.get_single() {
+        Ok(visible_grid) => visible_grid,
+        Err(_) => return,
+    };
+
+    // let visible_grid = visible_grid_query.single();
     let primary_window = primary_window_query.single();
 
     main_camera_query.single_mut().scale = get_best_fit_scale(
@@ -72,10 +74,13 @@ fn scale_projection(
 
 fn insert_pancam(
     main_camera_query: Query<Entity, With<MainCamera>>,
-    visible_grid_query: Query<&Grid, With<VisibleGrid>>,
+    visible_grid_query: Query<&Grid, Added<VisibleGrid>>,
     mut commands: Commands,
 ) {
-    let visible_grid = visible_grid_query.single();
+    let visible_grid = match visible_grid_query.get_single() {
+        Ok(visible_grid) => visible_grid,
+        Err(_) => return,
+    };
 
     commands.entity(main_camera_query.single()).insert(PanCam {
         min_x: Some(-visible_grid.width() as f32 / 2.0),
@@ -104,12 +109,9 @@ impl Plugin for CameraPlugin {
         app.add_plugins(PanCamPlugin::default());
 
         app.add_systems(OnEnter(AppState::BeginSetup), setup);
-        app.add_systems(
-            OnEnter(AppState::FinishSetup),
-            (insert_pancam, scale_projection).after(setup_nest),
-        );
         app.add_systems(OnEnter(AppState::Cleanup), teardown);
 
         app.add_systems(Update, window_resize);
+        app.add_systems(Update, (insert_pancam, scale_projection));
     }
 }

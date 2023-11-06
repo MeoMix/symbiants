@@ -10,6 +10,8 @@ use crate::{
     },
 };
 
+use super::nest::AtNest;
+
 #[derive(Component)]
 pub struct SkyBackground;
 
@@ -95,7 +97,7 @@ fn create_sky_sprites(
     grid: &Grid,
     nest: &Nest,
     story_time: &Res<StoryTime>,
-) -> Vec<(SpriteBundle, Position, SkyBackground)> {
+) -> Vec<(SpriteBundle, Position, SkyBackground, AtNest)> {
     let mut sky_sprites = vec![];
 
     let current_decimal_hours = story_time.as_time_info().get_decimal_hours();
@@ -129,7 +131,7 @@ fn create_sky_sprites(
                 ..default()
             };
 
-            sky_sprites.push((sky_sprite, position, SkyBackground));
+            sky_sprites.push((sky_sprite, position, SkyBackground, AtNest));
         }
     }
 
@@ -141,7 +143,7 @@ fn create_tunnel_sprites(
     height: isize,
     y_offset: isize,
     grid: &Grid,
-) -> Vec<(SpriteBundle, Position, TunnelBackground)> {
+) -> Vec<(SpriteBundle, Position, TunnelBackground, AtNest)> {
     let mut tunnel_sprites = vec![];
 
     let top_color: Color = Color::rgba(0.373, 0.290, 0.165, 1.0);
@@ -167,7 +169,7 @@ fn create_tunnel_sprites(
                 ..default()
             };
 
-            tunnel_sprites.push((tunnel_sprite, position, TunnelBackground));
+            tunnel_sprites.push((tunnel_sprite, position, TunnelBackground, AtNest));
         }
     }
 
@@ -223,28 +225,26 @@ pub fn update_sky_background(
 // Spawn non-interactive background (sky blue / tunnel brown)
 pub fn setup_background(
     mut commands: Commands,
-    nest_query: Query<(&Grid, &Nest, Entity)>,
+    nest_query: Query<(&Grid, &Nest)>,
     story_time: Res<StoryTime>,
 ) {
-    let (grid, nest, nest_entity) = nest_query.single();
+    let (grid, nest) = nest_query.single();
     let air_height = nest.surface_level() + 1;
 
-    commands.entity(nest_entity).with_children(|parent| {
-        let sky_sprites = create_sky_sprites(grid.width(), air_height, &grid, &nest, &story_time);
-
-        for sky_sprite in sky_sprites {
-            parent.spawn(sky_sprite);
-        }
-    });
-
-    commands.entity(nest_entity).with_children(|parent| {
-        let tunnel_sprites =
-            create_tunnel_sprites(grid.width(), grid.height() - air_height, air_height, &grid);
-
-        for tunnel_sprite in tunnel_sprites {
-            parent.spawn(tunnel_sprite);
-        }
-    });
+    commands.spawn_batch(create_sky_sprites(
+        grid.width(),
+        air_height,
+        &grid,
+        &nest,
+        &story_time,
+    ));
+    
+    commands.spawn_batch(create_tunnel_sprites(
+        grid.width(),
+        grid.height() - air_height,
+        air_height,
+        &grid,
+    ));
 }
 
 pub fn teardown_background(
