@@ -1,5 +1,8 @@
 # Symbiants
 
+![MIT/Apache 2.0](https://img.shields.io/github/license/MeoMix/symbiants)
+![Discord](https://img.shields.io/discord/1047934512773996604)
+
 ![image](https://github.com/MeoMix/symbiants/assets/1380995/100e85bd-47a1-472e-afbd-4fc4824b65c9)
 
 What is this? A project for ANTS?
