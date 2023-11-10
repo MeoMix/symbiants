@@ -18,6 +18,7 @@ bevy = { version = "0.11.3", default-features = false, features = [
   "bevy_text",
   "default_font",
   "png",
+  "x11"
 ] }
 bevy_egui = { version = "0.22.0" }
 bevy_save = { version = "0.9.1" }
