@@ -10,21 +10,16 @@ use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
-use crate::story::common::Id;
 use crate::settings::Settings;
+use crate::story::common::Id;
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
 
 static SAVE_SNAPSHOT: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 
-// TODO: Support saving on non-WASM targets.
-#[cfg(not(target_arch = "wasm32"))]
-pub fn save() {}
-
 /// Provide an opportunity to write world state to disk.
 /// This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
 /// to avoid losing too much state in the event of a crash.
-#[cfg(target_arch = "wasm32")]
 /// NOTE: intentionally don't run immediately on first run because it's expensive and nothing has changed.
 /// Let the full interval pass before creating anything rather than initializing on first run then waiting.
 pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save_time: Local<f32>) {
@@ -103,10 +98,6 @@ thread_local! {
     static ON_BEFORE_UNLOAD: RefCell<Option<Closure<dyn FnMut(BeforeUnloadEvent) -> bool>>> = RefCell::new(None);
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub fn setup_save() {}
-
-#[cfg(target_arch = "wasm32")]
 pub fn setup_save() {
     let window = web_sys::window().expect("window not available");
 
@@ -125,10 +116,6 @@ pub fn setup_save() {
     });
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub fn teardown_save() {}
-
-#[cfg(target_arch = "wasm32")]
 pub fn teardown_save() {
     LocalStorage::delete(LOCAL_STORAGE_KEY);
 
@@ -146,12 +133,6 @@ pub fn teardown_save() {
     });
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-pub fn load(world: &mut World) -> bool {
-    false
-}
-
-#[cfg(target_arch = "wasm32")]
 pub fn load(world: &mut World) -> bool {
     LocalStorage::get::<Vec<u8>>(LOCAL_STORAGE_KEY)
         .map_err(|e| {

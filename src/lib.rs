@@ -15,8 +15,8 @@ use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
 use story::{
-    camera::CameraPlugin, crater_simulation::CraterSimulationPlugin,
-    nest_simulation::NestSimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin, grid::VisibleGridState,
+    camera::CameraPlugin, crater_simulation::CraterSimulationPlugin, grid::VisibleGridState,
+    nest_simulation::NestSimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin,
 };
 
 pub struct SymbiantsPlugin;

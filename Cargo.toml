@@ -19,28 +19,36 @@ bevy = { version = "0.11.3", default-features = false, features = [
   "default_font",
   "png",
 ] }
-
 bevy_egui = { version = "0.22.0" }
 bevy_save = { version = "0.9.1" }
 bevy_turborand = { version = "0.6.0" }
-console_error_panic_hook = { version = "0.1.7" }
-wasm-bindgen = { version = "0.2.87" }
-uuid = { version = "1.4.1" }
-gloo-storage = "0.3.0"
+chrono = { version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.188", features = ["derive"] }
-rmp-serde = { version = "1.1.2" }
+sun-times = { version = "0.2.0" }
+uuid = { version = "1.4.1" }
+
+# WASM builds require extra dependencies for logging and persisting state to local storage.
+# WASM builds do not require x11 and cannot use dynamic_linking.
+[target.'cfg(target_family = "wasm")'.dependencies]
+brotli = { version = "3.4.0" }
+console_error_panic_hook = { version = "0.1.7" }
+gloo-storage = "0.3.0"
 js-sys = { version = "0.3.64", default-features = false }
+rmp-serde = { version = "1.1.2" }
+wasm-bindgen = { version = "0.2.87" }
 web-sys = { version = "0.3.64", features = [
   "EventTarget",
   "Window",
   "BeforeUnloadEvent",
 ] }
-chrono = { version = "0.4.31", features = ["serde"] }
-brotli = { version = "3.4.0" }
-sun-times = { version = "0.2.0" }
 
-[target.'cfg(target_os = "linux")'.dependencies]
-bevy = { version = "0.11.3", features = ["x11", "dynamic_linking"] }
+# Linux builds require x11. dynamic_linking isn't required, but improves repeated compilation performance.
+# dynamic_linking should not be included in release builds. It's fine to hardcode it here because only WASM is released.
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+bevy = { version = "0.11.3", default-features = false, features = [
+  "x11",
+  "dynamic_linking",
+] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.37"

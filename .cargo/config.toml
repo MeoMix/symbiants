@@ -7,7 +7,10 @@ runner = 'wasm-bindgen-test-runner'
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
 rustflags = [
-    # Prefer using mold over lld - 5x quicker.
+    # mold is up to 5× (five times!) faster than LLD, but with a few caveats like limited platform support and occasional stability issues. 
     "-C", "link-arg=--ld-path=/usr/bin/mold",
+    # Allows crates to share monomorphized generic code instead of duplicating it. 
+    # In some cases this allows us to "precompile" generic code so it doesn't affect iterative compiles. 
+    # This is only available on nightly Rust.
     "-Z", "share-generics=y"
 ]
