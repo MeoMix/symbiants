@@ -38,4 +38,4 @@ Once your environment is configured, run `trunk serve` to spin up a local server
 
 If you want to create a native build, rather than a WASM build, that is also supported but is not the default defined in .cargo/config.toml. The only native build officially supported is Linux, but feel free to try others.
 
-To generate a native build: `cargo run --target=x86_64-unknown-linux-gnu`
+To generate a native build: `cargo watch -x 'run --target x86_64-unknown-linux-gnu'`

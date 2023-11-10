@@ -22,8 +22,10 @@ RUN rustup default nightly
 RUN rustup component add rustfmt
 RUN rustup target install wasm32-unknown-unknown
 
-# trunk is used for serving in development and wasm-bindgen-cli is used for testing
-RUN cargo install trunk wasm-bindgen-cli
+# trunk is used for serving WASM builds in development
+# wasm-bindgen-cli is used for testing
+# cargo-watch is used for non-WASM build auto-reload
+RUN cargo install trunk wasm-bindgen-cli cargo-watch
 
 # TODO: If/when I take testing seriously again I can re-enable this logic, but it *DOMINATES* (100-1) Docker setup time
 # Install headless chrome driver to support testing (log messages break when using node)
