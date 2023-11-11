@@ -47,6 +47,7 @@ web-sys = { version = "0.3.64", features = [
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy = { version = "0.11.3", default-features = false, features = [
   "x11",
+  # "wayland",
   "dynamic_linking",
 ] }
 

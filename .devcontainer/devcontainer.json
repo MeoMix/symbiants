@@ -14,7 +14,17 @@
       ]
     }
   },
-  "appPort": ["8080:8080"]
+  "appPort": ["8080:8080"],
+  // IMPORTANT: IT TOOK 12 HOURS TO FIGURE OUT THAT THE FOLLOWING IS REQUIRED TO GET GPU SUPPORT IN WSL2
+  "runArgs": [
+    "--gpus=all",
+    "--device=/dev/dxg",
+    "--device=/dev/dri/card0",
+    "--device=/dev/dri/renderD128"
+  ],
+  "mounts": [
+    "source=/usr/lib/wsl,target=/usr/lib/wsl,type=bind"
+  ]
   // NOTE: trunk serve will not fall back to polling and pushing notifications didn't work from Windows, but is fine from WSL2.
   // "postCreateCommand": "trunk serve"
 }

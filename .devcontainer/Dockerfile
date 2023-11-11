@@ -11,7 +11,7 @@ FROM rust:1.71-bookworm
 # lld and mold are both Rust linkers. mold is faster, but does not support WASM.
 # mold (xorg/weston) are needed for native builds.
 RUN apt-get update && \
-  apt-get install -y libasound2-dev libudev-dev clang lld mold xorg
+   apt-get install -y libasound2-dev libudev-dev clang lld mold xorg
 
 # NOTE: you'll need something like GWSL installed on host machine to work as an xorg server
 # xorg weston
@@ -26,6 +26,20 @@ RUN rustup target install wasm32-unknown-unknown
 # wasm-bindgen-cli is used for testing
 # cargo-watch is used for non-WASM build auto-reload
 RUN cargo install trunk wasm-bindgen-cli cargo-watch
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
+
+# Uncomment the lines below to use a 3rd party repository
+# to get the latest (unstable from mesa/main) mesa library version
+# RUN apt-get update && apt install -y software-properties-common
+# RUN add-apt-repository ppa:oibaf/graphics-drivers -y
+
+RUN apt update && apt install -y \
+    vainfo \
+    mesa-va-drivers
+
+ENV LIBVA_DRIVER_NAME=d3d12
 
 # TODO: If/when I take testing seriously again I can re-enable this logic, but it *DOMINATES* (100-1) Docker setup time
 # Install headless chrome driver to support testing (log messages break when using node)

@@ -36,6 +36,8 @@ impl Plugin for SymbiantsPlugin {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         fit_canvas_to_parent: true,
+                        // NOTE: This isn't supported with Wayland.
+                        // mode: WindowMode::SizedFullscreen,
                         ..default()
                     }),
                     ..default()
