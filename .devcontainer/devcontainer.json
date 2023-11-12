@@ -10,7 +10,8 @@
         "tamasfe.even-better-toml",
         "serayuzgur.crates",
         "GitHub.copilot",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "vadimcn.vscode-lldb"
       ]
     }
   },

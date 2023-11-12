@@ -2,10 +2,14 @@
 name = "symbiants_pkg"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [lib]
 name = "symbiants_lib"
 crate-type = ["cdylib", "rlib"]
+
+[build-dependencies]
+fs_extra = "1.2"
 
 [dependencies]
 bevy = { version = "0.11.3", default-features = false, features = [
@@ -42,13 +46,16 @@ web-sys = { version = "0.3.64", features = [
   "BeforeUnloadEvent",
 ] }
 
-# Linux builds require x11. dynamic_linking isn't required, but improves repeated compilation performance.
-# dynamic_linking should not be included in release builds. It's fine to hardcode it here because only WASM is released.
+# Linux builds require x11 or wayland for display.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy = { version = "0.11.3", default-features = false, features = [
   "x11",
+  # TODO: support wayland w/ hardware accelerated GPU rendering. Currently crashes on startup and forces a Docker container restart.
   # "wayland",
-  "dynamic_linking",
+  # dynamic_linking should not be enabled for two reasons:
+  # 1. This application uses `mold` as the linker for native builds. https://bevyengine.org/learn/book/getting-started/setup/ states "Disabling bevy/dynamic may improve the performance of this linker."
+  # 2. Debugging application fails to find `libbevy_dylib.so` in `debug` because it was expecting a base16 string in the filename.
+  # "dynamic_linking",
 ] }
 
 [dev-dependencies]
