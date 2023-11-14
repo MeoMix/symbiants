@@ -1,10 +1,7 @@
-use crate::{
-    settings::Settings,
-    story::{
-        common::{position::Position, register, Id},
-        // TODO: Prefer not to couple to Gravity
-        nest_simulation::gravity::Unstable,
-    },
+use crate::story::{
+    common::{position::Position, register, Id},
+    // TODO: Prefer not to couple to Gravity
+    nest_simulation::gravity::Unstable,
 };
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
@@ -159,21 +156,6 @@ pub fn register_element(
     register::<Dirt>(&app_type_registry, &mut saveable_registry);
     register::<Sand>(&app_type_registry, &mut saveable_registry);
     register::<Unstable>(&app_type_registry, &mut saveable_registry);
-}
-
-pub fn setup_element(settings: Res<Settings>, mut commands: Commands) {
-    for y in 0..settings.nest_height {
-        for x in 0..settings.nest_width {
-            let position = Position::new(x, y);
-
-            // FIXME: These should be commands.spawn_element but need to fix circularity with expecting Nest to exist.
-            if y <= settings.get_surface_level() {
-                commands.spawn(AirElementBundle::new(position, Location::Nest));
-            } else {
-                commands.spawn(DirtElementBundle::new(position, Location::Nest));
-            }
-        }
-    }
 }
 
 pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {

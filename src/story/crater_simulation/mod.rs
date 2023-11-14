@@ -7,7 +7,7 @@ use crate::app_state::{finalize_startup, AppState};
 
 use self::{
     background::{setup_background, teardown_background},
-    crater::{setup_crater, setup_crater_grid, teardown_crater, Crater},
+    crater::{setup_crater, setup_crater_elements, setup_crater_grid, teardown_crater, Crater},
 };
 
 pub struct CraterSimulationPlugin;
@@ -16,7 +16,10 @@ impl Plugin for CraterSimulationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
-            ((setup_crater, apply_deferred)
+            ((
+                (setup_crater, apply_deferred).chain(),
+                (setup_crater_elements, apply_deferred).chain(),
+            )
                 .chain()
                 .before(finalize_startup))
             .chain(),

@@ -25,7 +25,7 @@ use crate::{
             hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate},
             nest_expansion::ants_nest_expansion,
             nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
-            register_ant, setup_ant,
+            register_ant,
             sleep::{ants_sleep, ants_sleep_emote, ants_wake},
             teardown_ant,
             tunneling::{
@@ -45,7 +45,7 @@ use crate::{
             ui::{on_added_selected, on_removed_selected},
         },
         element::{
-            register_element, setup_element, teardown_element,
+            register_element, teardown_element,
             ui::{
                 on_spawn_element, on_update_element_position, rerender_elements,
                 ElementSpriteHandles,
@@ -74,16 +74,17 @@ use self::{
             on_added_at_nest, on_added_nest_visible_grid, on_nest_removed_visible_grid,
             on_spawn_nest,
         },
-        Nest,
+        Nest, setup_nest_elements, setup_nest_ants,
     },
 };
 
 use super::{
+    common::denormalize_location,
     crater_simulation::crater::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
     },
-    grid::VisibleGridState, common::denormalize_location,
+    grid::VisibleGridState,
 };
 
 pub struct NestSimulationPlugin;
@@ -117,8 +118,8 @@ impl Plugin for NestSimulationPlugin {
                 (
                     (setup_settings, apply_deferred).chain(),
                     (setup_nest, apply_deferred).chain(),
-                    (setup_element, apply_deferred).chain(),
-                    (setup_ant, apply_deferred).chain(),
+                    (setup_nest_elements, apply_deferred).chain(),
+                    (setup_nest_ants, apply_deferred).chain(),
                 )
                     .chain(),
                 finalize_startup,

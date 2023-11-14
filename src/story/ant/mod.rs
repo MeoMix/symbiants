@@ -408,37 +408,6 @@ pub fn register_ant(
     register::<Chambering>(&app_type_registry, &mut saveable_registry);
 }
 
-pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut commands: Commands) {
-    let mut rng = rng.reborrow();
-
-    // Newly created queens instinctively start building a nest.
-    commands.spawn_ant(
-        // Queen always spawns in the center. She'll fall from the sky in the future.
-        Position::new(settings.nest_width / 2, settings.get_surface_level()),
-        AntColor(settings.ant_color),
-        AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-        AntInventory::default(),
-        AntRole::Queen,
-        AntName(String::from("Queen")),
-        Initiative::new(&mut rng),
-        Location::Nest,
-    );
-
-    for _ in 0..settings.initial_ant_worker_count {
-        // TODO: Prefer spawn_batch but would need to create custom command for spawning batch ants
-        commands.spawn_ant(
-            settings.get_random_surface_position(&mut rng),
-            AntColor(settings.ant_color),
-            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-            AntInventory::default(),
-            AntRole::Worker,
-            AntName::random(&mut rng),
-            Initiative::new(&mut rng),
-            Location::Nest,
-        );
-    }
-}
-
 pub fn teardown_ant(
     label_query: Query<Entity, With<AntLabel>>,
     ant_query: Query<Entity, With<Ant>>,

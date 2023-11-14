@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, register, Id},
-        element::Element,
+        common::{position::Position, register, Id, Location},
+        element::{Element, AirElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
 };
@@ -33,6 +33,15 @@ pub fn register_crater(
 
 pub fn setup_crater(mut commands: Commands) {
     commands.spawn((Crater, Id::default()));
+}
+
+pub fn setup_crater_elements(settings: Res<Settings>, mut commands: Commands) {
+    for y in 0..settings.crater_height {
+        for x in 0..settings.crater_width {
+            let position = Position::new(x, y);
+            commands.spawn(AirElementBundle::new(position, Location::Crater));
+        }
+    }
 }
 
 pub fn setup_crater_grid(

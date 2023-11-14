@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
+use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
 pub mod ui;
@@ -7,9 +8,9 @@ pub mod ui;
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, register, Id},
-        element::Element,
-        grid::{elements_cache::ElementsCache, Grid},
+        common::{position::Position, register, Id, Location},
+        element::{Element, AirElementBundle, DirtElementBundle},
+        grid::{elements_cache::ElementsCache, Grid}, ant::{AntColor, AntOrientation, AntInventory, AntRole, AntName, Initiative, Facing, Angle, commands::AntCommandsExt},
     },
 };
 
@@ -51,6 +52,52 @@ pub fn register_nest(
 
 pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
     commands.spawn((Nest::new(settings.get_surface_level()), Id::default()));
+}
+
+pub fn setup_nest_elements(settings: Res<Settings>, mut commands: Commands) {
+    for y in 0..settings.nest_height {
+        for x in 0..settings.nest_width {
+            let position = Position::new(x, y);
+
+            // FIXME: These should be commands.spawn_element but need to fix circularity with expecting Nest to exist.
+            if y <= settings.get_surface_level() {
+                commands.spawn(AirElementBundle::new(position, Location::Nest));
+            } else {
+                commands.spawn(DirtElementBundle::new(position, Location::Nest));
+            }
+        }
+    }
+}
+
+pub fn setup_nest_ants(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut commands: Commands) {
+    let mut rng = rng.reborrow();
+
+    // Newly created queens instinctively start building a nest.
+    commands.spawn_ant(
+        // Queen always spawns in the center. She'll fall from the sky in the future.
+        Position::new(settings.nest_width / 2, settings.get_surface_level()),
+        AntColor(settings.ant_color),
+        AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+        AntInventory::default(),
+        AntRole::Queen,
+        AntName(String::from("Queen")),
+        Initiative::new(&mut rng),
+        Location::Nest,
+    );
+
+    for _ in 0..settings.initial_ant_worker_count {
+        // TODO: Prefer spawn_batch but would need to create custom command for spawning batch ants
+        commands.spawn_ant(
+            settings.get_random_surface_position(&mut rng),
+            AntColor(settings.ant_color),
+            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+            AntInventory::default(),
+            AntRole::Worker,
+            AntName::random(&mut rng),
+            Initiative::new(&mut rng),
+            Location::Nest,
+        );
+    }
 }
 
 /// Called after creating a new story, or loading an existing story from storage.

@@ -12,7 +12,7 @@ pub fn setup_background(mut commands: Commands, crater_query: Query<&Grid, With<
 
     let crater_background_sprite = SpriteBundle {
         sprite: Sprite {
-            color: Color::PURPLE,
+            color: Color::BEIGE,
             custom_size: Some(Vec2::new(grid.width() as f32, grid.height() as f32)),
             ..default()
         },
