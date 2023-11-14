@@ -10,7 +10,7 @@ use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
-use super::nest_simulation::nest::AtNest;
+use super::common::Location;
 
 pub mod commands;
 pub mod ui;
@@ -32,18 +32,19 @@ pub struct AirElementBundle {
     id: Id,
     element: Element,
     position: Position,
+    // TODO: maybe denormalize this, too?!
     air: Air,
-    at_nest: AtNest,
+    location: Location,
 }
 
 impl AirElementBundle {
-    pub fn new(position: Position) -> Self {
+    pub fn new(position: Position, location: Location) -> Self {
         Self {
             id: Id::default(),
             element: Element::Air,
             air: Air,
             position,
-            at_nest: AtNest,
+            location,
         }
     }
 }
@@ -58,17 +59,17 @@ pub struct DirtElementBundle {
     element: Element,
     dirt: Dirt,
     position: Position,
-    at_nest: AtNest,
+    location: Location,
 }
 
 impl DirtElementBundle {
-    pub fn new(position: Position) -> Self {
+    pub fn new(position: Position, location: Location) -> Self {
         Self {
             id: Id::default(),
             element: Element::Dirt,
             dirt: Dirt,
             position,
-            at_nest: AtNest,
+            location,
         }
     }
 }
@@ -84,18 +85,18 @@ pub struct SandElementBundle {
     sand: Sand,
     position: Position,
     unstable: Unstable,
-    at_nest: AtNest,
+    location: Location,
 }
 
 impl SandElementBundle {
-    pub fn new(position: Position) -> Self {
+    pub fn new(position: Position, location: Location) -> Self {
         Self {
             id: Id::default(),
             element: Element::Sand,
             sand: Sand,
             position,
             unstable: Unstable,
-            at_nest: AtNest,
+            location,
         }
     }
 }
@@ -111,18 +112,18 @@ pub struct FoodElementBundle {
     food: Food,
     position: Position,
     unstable: Unstable,
-    at_nest: AtNest,
+    location: Location,
 }
 
 impl FoodElementBundle {
-    pub fn new(position: Position) -> Self {
+    pub fn new(position: Position, location: Location) -> Self {
         Self {
             id: Id::default(),
             element: Element::Food,
             food: Food,
             position,
             unstable: Unstable,
-            at_nest: AtNest,
+            location,
         }
     }
 }
@@ -167,9 +168,9 @@ pub fn setup_element(settings: Res<Settings>, mut commands: Commands) {
 
             // FIXME: These should be commands.spawn_element but need to fix circularity with expecting Nest to exist.
             if y <= settings.get_surface_level() {
-                commands.spawn(AirElementBundle::new(position));
+                commands.spawn(AirElementBundle::new(position, Location::Nest));
             } else {
-                commands.spawn(DirtElementBundle::new(position));
+                commands.spawn(DirtElementBundle::new(position, Location::Nest));
             }
         }
     }

@@ -13,7 +13,7 @@ use self::{
     hunger::Hunger, name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{element::Element, nest_simulation::nest::AtNest};
+use super::{element::Element, nest_simulation::nest::AtNest, common::Location};
 use bevy::prelude::*;
 
 pub mod birthing;
@@ -46,8 +46,7 @@ pub struct AntBundle {
     hunger: Hunger,
     digestion: Digestion,
     inventory: AntInventory,
-    // TODO: Don't hardcode this to being at nest, make it flexible
-    at_nest: AtNest,
+    location: Location,
 }
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -422,6 +421,7 @@ pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut comman
         AntRole::Queen,
         AntName(String::from("Queen")),
         Initiative::new(&mut rng),
+        Location::Nest,
     );
 
     for _ in 0..settings.initial_ant_worker_count {
@@ -434,6 +434,7 @@ pub fn setup_ant(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut comman
             AntRole::Worker,
             AntName::random(&mut rng),
             Initiative::new(&mut rng),
+            Location::Nest,
         );
     }
 }

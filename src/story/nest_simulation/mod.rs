@@ -83,7 +83,7 @@ use super::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
     },
-    grid::VisibleGridState,
+    grid::VisibleGridState, common::denormalize_location,
 };
 
 pub struct NestSimulationPlugin;
@@ -172,6 +172,7 @@ impl Plugin for NestSimulationPlugin {
             FixedUpdate,
             (
                 (process_external_event, apply_deferred).chain(),
+                (denormalize_location, apply_deferred).chain(),
                 ((
                     (
                         // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.

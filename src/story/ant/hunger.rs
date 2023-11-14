@@ -5,7 +5,7 @@ use super::{
     AntInventory, AntOrientation, AntRole, Dead, Initiative,
 };
 use crate::story::{
-    common::{position::Position, IdMap},
+    common::{position::Position, IdMap, Location},
     element::Element,
     grid::Grid,
     nest_simulation::nest::{Nest, AtNest},
@@ -114,7 +114,7 @@ pub fn ants_hunger_act(
                     .is_element(&elements_query, ahead_position, Element::Food)
                 {
                     let food_entity = grid.elements().get_element_entity(ahead_position).unwrap();
-                    commands.dig(ant_entity, ahead_position, *food_entity);
+                    commands.dig(ant_entity, ahead_position, *food_entity, Location::Nest);
                 }
             } else {
                 let element_entity = id_map.0.get(inventory.0.as_ref().unwrap()).unwrap();

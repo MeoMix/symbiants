@@ -9,7 +9,7 @@ use crate::{
             commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
             Initiative,
         },
-        common::position::Position,
+        common::{position::Position, Location},
         element::Element,
         grid::Grid,
         nest_simulation::nest::{Nest, AtNest},
@@ -154,7 +154,7 @@ pub fn ants_tunnel_pheromone_act(
 
         let dig_position = orientation.get_ahead_position(position);
         let dig_target_entity = *grid.elements().element_entity(dig_position);
-        commands.dig(ant_entity, dig_position, dig_target_entity);
+        commands.dig(ant_entity, dig_position, dig_target_entity, Location::Nest);
 
         // Reduce PheromoneStrength by 1 because not digging at ant_position, but ant_position + 1.
         // If this didn't occur then either the ant would need to apply strength-1 to itself when stepping onto a tile, or

@@ -4,17 +4,18 @@ use bevy::{ecs::system::Command, prelude::*};
 
 use crate::story::{
     ant::AntInventory,
-    common::{position::Position, Id, IdMap},
+    common::{position::Position, Id, IdMap, Location},
+    crater_simulation::crater::Crater,
     element::{commands::spawn_element, AirElementBundle, Element},
     grid::Grid,
-    nest_simulation::nest::{Nest, AtNest},
+    nest_simulation::nest::Nest,
 };
 
 use crate::settings::Settings;
 
 use super::{
-    digestion::Digestion, hunger::Hunger, nesting::Nesting, Ant, AntBundle, AntColor, AntName,
-    AntOrientation, AntRole, Initiative, InventoryItemBundle,
+    digestion::Digestion, hunger::Hunger, nesting::Nesting, Ant, AntColor, AntName, AntOrientation,
+    AntRole, Initiative, InventoryItemBundle,
 };
 
 pub trait AntCommandsExt {
@@ -27,13 +28,21 @@ pub trait AntCommandsExt {
         role: AntRole,
         name: AntName,
         initiative: Initiative,
+        location: Location,
     );
-    fn dig(&mut self, ant_entity: Entity, target_position: Position, target_element_entity: Entity);
+    fn dig(
+        &mut self,
+        ant_entity: Entity,
+        target_position: Position,
+        target_element_entity: Entity,
+        location: Location,
+    );
     fn drop(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
+        location: Location,
     );
 }
 
@@ -47,6 +56,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         role: AntRole,
         name: AntName,
         initiative: Initiative,
+        location: Location,
     ) {
         self.add(SpawnAntCommand {
             position,
@@ -56,6 +66,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
             role,
             name,
             initiative,
+            location,
         });
     }
 
@@ -64,11 +75,13 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
+        location: Location,
     ) {
         self.add(DigElementCommand {
             ant_entity,
             target_position,
             target_element_entity,
+            location,
         });
     }
 
@@ -77,11 +90,13 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
+        location: Location,
     ) {
         self.add(DropElementCommand {
             ant_entity,
             target_position,
             target_element_entity,
+            location,
         });
     }
 }
@@ -90,12 +105,21 @@ struct DigElementCommand {
     ant_entity: Entity,
     target_element_entity: Entity,
     target_position: Position,
+    location: Location,
 }
 
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
 impl Command for DigElementCommand {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&Grid, With<Nest>>().single(world);
+        let grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single(world),
+        };
+
         let element_entity = match grid.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
@@ -123,13 +147,19 @@ impl Command for DigElementCommand {
         world.entity_mut(element_entity).despawn();
 
         let air_entity = world
-            .spawn(AirElementBundle::new(self.target_position))
+            .spawn(AirElementBundle::new(self.target_position, Location::Nest))
             .id();
 
-        world
-            .query_filtered::<&mut Grid, With<Nest>>()
-            .single_mut(world)
-            .elements_mut()
+        let mut grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single_mut(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single_mut(world),
+        };
+
+        grid.elements_mut()
             .set_element(self.target_position, air_entity);
 
         // TODO: There's probably a more elegant way to express this - "denseness" of sand rather than changing between dirt/sand.
@@ -171,11 +201,20 @@ struct DropElementCommand {
     ant_entity: Entity,
     target_element_entity: Entity,
     target_position: Position,
+    location: Location,
 }
 
 impl Command for DropElementCommand {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&Grid, With<Nest>>().single(world);
+        let grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single(world),
+        };
+
         let air_entity = match grid.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
@@ -212,7 +251,7 @@ impl Command for DropElementCommand {
         let element = world.get::<Element>(inventory_item_entity).unwrap();
 
         // Add element to world.
-        let element_entity = spawn_element(*element, self.target_position, world);
+        let element_entity = spawn_element(*element, self.target_position, Location::Nest, world);
 
         world
             .query_filtered::<&mut Grid, With<Nest>>()
@@ -245,35 +284,33 @@ struct SpawnAntCommand {
     role: AntRole,
     name: AntName,
     initiative: Initiative,
+    location: Location,
 }
 
 impl Command for SpawnAntCommand {
     fn apply(self, world: &mut World) {
         let settings = world.resource::<Settings>();
+        let id = Id::default();
 
-        let ant_bundle = AntBundle {
-            id: Id::default(),
-            ant: Ant,
-            position: self.position,
-            orientation: self.orientation,
-            inventory: self.inventory,
-            role: self.role,
-            initiative: self.initiative,
-            name: self.name,
-            color: self.color,
-            hunger: Hunger::new(settings.max_hunger_time),
-            digestion: Digestion::new(settings.max_digestion_time),
-            at_nest: AtNest
-        };
+        let entity = world
+            .spawn((
+                id.clone(),
+                Ant,
+                self.position,
+                self.orientation,
+                self.inventory,
+                self.role,
+                self.initiative,
+                self.name,
+                self.color,
+                self.location,
+                Hunger::new(settings.max_hunger_time),
+                Digestion::new(settings.max_digestion_time),
+            ))
+            .id();
 
-        let id = ant_bundle.id.clone();
-
-        let entity;
         if self.role == AntRole::Queen {
-            // TODO: It's weird to have one special default property for Queen?
-            entity = world.spawn((ant_bundle, Nesting::default())).id();
-        } else {
-            entity = world.spawn(ant_bundle).id();
+            world.entity_mut(entity).insert(Nesting::default());
         }
 
         world.resource_mut::<IdMap>().0.insert(id, entity);

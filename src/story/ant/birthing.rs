@@ -1,5 +1,5 @@
 use crate::story::{
-    common::{position::Position, register},
+    common::{position::Position, register, Location},
     story_time::DEFAULT_TICKS_PER_SECOND, nest_simulation::nest::AtNest,
 };
 
@@ -94,6 +94,7 @@ pub fn ants_birthing(
                 AntRole::Worker,
                 AntName::random(&mut rng.reborrow()),
                 Initiative::new(&mut rng.reborrow()),
+                Location::Nest,
             );
 
             birthing.reset();

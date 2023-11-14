@@ -1,6 +1,7 @@
 use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
 use crate::story::{
-    common::{position::Position, IdMap},
+    common::{position::Position, IdMap, Location},
+    crater_simulation::crater::Crater,
     grid::Grid,
     // TODO: element shouldn't couple to gravity, want to be able to reuse element
     nest_simulation::{gravity::Unstable, nest::Nest},
@@ -8,28 +9,46 @@ use crate::story::{
 use bevy::{ecs::system::Command, prelude::*};
 
 pub trait ElementCommandsExt {
-    fn replace_element(&mut self, position: Position, element: Element, target_element: Entity);
-    fn spawn_element(&mut self, position: Position, element: Element);
+    fn replace_element(
+        &mut self,
+        position: Position,
+        element: Element,
+        target_element: Entity,
+        location: Location,
+    );
+    fn spawn_element(&mut self, position: Position, element: Element, location: Location);
     fn toggle_element_command<C: Component + Send + Sync + 'static>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
         toggle: bool,
         component: C,
+        location: Location,
     );
 }
 
 impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
-    fn replace_element(&mut self, position: Position, element: Element, target_element: Entity) {
+    fn replace_element(
+        &mut self,
+        position: Position,
+        element: Element,
+        target_element: Entity,
+        location: Location,
+    ) {
         self.add(ReplaceElementCommand {
             position,
             target_element,
             element,
+            location,
         })
     }
 
-    fn spawn_element(&mut self, position: Position, element: Element) {
-        self.add(SpawnElementCommand { element, position })
+    fn spawn_element(&mut self, position: Position, element: Element, location: Location) {
+        self.add(SpawnElementCommand {
+            element,
+            position,
+            location,
+        })
     }
 
     fn toggle_element_command<C: Component + Send + Sync + 'static>(
@@ -38,12 +57,14 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         position: Position,
         toggle: bool,
         component: C,
+        location: Location,
     ) {
         self.add(ToggleElementCommand::<C> {
             target_element_entity,
             position,
             toggle,
             component,
+            location,
         })
     }
 }
@@ -52,20 +73,22 @@ struct ReplaceElementCommand {
     target_element: Entity,
     element: Element,
     position: Position,
+    // TODO: maybe just infer this from target_element
+    location: Location,
 }
 
 impl Command for ReplaceElementCommand {
     fn apply(self, world: &mut World) {
-        // The act of replacing an element with another element is delayed because spawn/despawn are queued actions which
-        // apply after a system finishes running. It's possible for two writes to occur to the same location during a given
-        // system run and, in this scenario, overwrites should not occur because validity checks have already been performed.
-        // So, we anticipate the entity to be destroyed and confirm it still exists in the position expected. Otherwise, no-op.
-        let existing_entity = match world
-            .query_filtered::<&mut Grid, With<Nest>>()
-            .single(world)
-            .elements()
-            .get_element_entity(self.position)
-        {
+        let grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single(world),
+        };
+
+        let existing_entity = match grid.elements().get_element_entity(self.position) {
             Some(entity) => entity,
             None => {
                 info!("No entity found at position {:?}", self.position);
@@ -80,28 +103,39 @@ impl Command for ReplaceElementCommand {
 
         world.entity_mut(*existing_entity).despawn();
 
-        let entity = spawn_element(self.element, self.position, world);
-        world
-            .query_filtered::<&mut Grid, With<Nest>>()
-            .single_mut(world)
-            .elements_mut()
-            .set_element(self.position, entity);
+        let entity = spawn_element(self.element, self.position, self.location, world);
+
+        let mut grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single_mut(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single_mut(world),
+        };
+
+        grid.elements_mut().set_element(self.position, entity);
     }
 }
 
 struct SpawnElementCommand {
     element: Element,
     position: Position,
+    location: Location,
 }
 
 impl Command for SpawnElementCommand {
     fn apply(self, world: &mut World) {
-        if let Some(existing_entity) = world
-            .query_filtered::<&mut Grid, With<Nest>>()
-            .single(world)
-            .elements()
-            .get_element_entity(self.position)
-        {
+        let grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single(world),
+        };
+
+        if let Some(existing_entity) = grid.elements().get_element_entity(self.position) {
             info!(
                 "Entity {:?} already exists at position {:?}",
                 existing_entity, self.position
@@ -109,19 +143,30 @@ impl Command for SpawnElementCommand {
             return;
         }
 
-        let entity = spawn_element(self.element, self.position, world);
-        world
-            .query_filtered::<&mut Grid, With<Nest>>()
-            .single_mut(world)
-            .elements_mut()
-            .set_element(self.position, entity);
+        let entity = spawn_element(self.element, self.position, self.location, world);
+
+        let mut grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single_mut(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single_mut(world),
+        };
+
+        grid.elements_mut().set_element(self.position, entity);
     }
 }
 
-pub fn spawn_element(element: Element, position: Position, world: &mut World) -> Entity {
+pub fn spawn_element(
+    element: Element,
+    position: Position,
+    location: Location,
+    world: &mut World,
+) -> Entity {
     let (id, entity) = match element {
         Element::Air => {
-            let element_bundle = AirElementBundle::new(position);
+            let element_bundle = AirElementBundle::new(position, location);
             let element_bundle_id = element_bundle.id.clone();
 
             let entity = world.spawn(element_bundle).id();
@@ -133,7 +178,7 @@ pub fn spawn_element(element: Element, position: Position, world: &mut World) ->
             // It should be possible to do this is a more generic way, but performance issues abound. The main one is
             // is that using a Query which iterates over Element and filters on With<Added> still iterates all elements.
             let nest = world.query::<&Nest>().single(world);
-            let element_bundle = DirtElementBundle::new(position);
+            let element_bundle = DirtElementBundle::new(position, location);
             let element_bundle_id = element_bundle.id.clone();
 
             let entity;
@@ -146,7 +191,7 @@ pub fn spawn_element(element: Element, position: Position, world: &mut World) ->
             (element_bundle_id, entity)
         }
         Element::Sand => {
-            let element_bundle = SandElementBundle::new(position);
+            let element_bundle = SandElementBundle::new(position, location);
             let element_bundle_id = element_bundle.id.clone();
 
             let entity = world.spawn(element_bundle).id();
@@ -154,7 +199,7 @@ pub fn spawn_element(element: Element, position: Position, world: &mut World) ->
             (element_bundle_id, entity)
         }
         Element::Food => {
-            let element_bundle = FoodElementBundle::new(position);
+            let element_bundle = FoodElementBundle::new(position, location);
             let element_bundle_id = element_bundle.id.clone();
 
             let entity = world.spawn(element_bundle).id();
@@ -173,11 +218,20 @@ struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
     target_element_entity: Entity,
     toggle: bool,
     component: C,
+    location: Location,
 }
 
 impl<C: Component + Send + Sync + 'static> Command for ToggleElementCommand<C> {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&Grid, With<Nest>>().single(world);
+        let grid = match self.location {
+            Location::Nest => world
+                .query_filtered::<&mut Grid, With<Nest>>()
+                .single(world),
+            Location::Crater => world
+                .query_filtered::<&mut Grid, With<Crater>>()
+                .single(world),
+        };
+
         let element_entity = match grid.elements().get_element_entity(self.position) {
             Some(entity) => *entity,
             None => {

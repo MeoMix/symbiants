@@ -2,7 +2,7 @@ use crate::{
     settings::Settings,
     story::{
         ant::{AntOrientation, Dead, Initiative},
-        common::position::Position,
+        common::{position::Position, Location},
         element::{commands::ElementCommandsExt, Air, Element},
         grid::Grid,
         nest_simulation::nest::Nest,
@@ -208,12 +208,12 @@ pub fn gravity_mark_unstable(
         if let Some(entity) = grid.elements().get_element_entity(position) {
             if let Ok(element) = elements_query.get(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
-                    commands.toggle_element_command(*entity, position, true, Unstable);
+                    commands.toggle_element_command(*entity, position, true, Unstable, Location::Nest);
                 }
 
                 // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
                 if *element == Element::Dirt && nest.is_aboveground(&position) {
-                    commands.toggle_element_command(*entity, position, true, Unstable);
+                    commands.toggle_element_command(*entity, position, true, Unstable, Location::Nest);
                 }
             }
         }
@@ -228,7 +228,7 @@ pub fn gravity_mark_stable(
 ) {
     for (position, entity) in unstable_element_query.iter() {
         if !position.is_changed() {
-            commands.toggle_element_command(entity, *position, false, Unstable);
+            commands.toggle_element_command(entity, *position, false, Unstable, Location::Nest);
         }
     }
 }

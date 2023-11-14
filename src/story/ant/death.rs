@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory},
-    common::position::Position,
+    common::{position::Position, Location},
     element::Element,
     grid::Grid,
     nest_simulation::nest::{Nest, AtNest},
@@ -29,7 +29,7 @@ pub fn on_ants_add_dead(
                 .elements()
                 .is_element(&elements_query, *ant_position, Element::Air)
             {
-                commands.drop(ant_entity, *ant_position, *element_entity);
+                commands.drop(ant_entity, *ant_position, *element_entity, Location::Nest);
             } else {
                 commands.entity(*element_entity).remove_parent().despawn();
             }

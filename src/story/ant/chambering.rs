@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
-    common::position::Position,
+    common::{position::Position, Location},
     element::Element,
     grid::Grid,
     nest_simulation::nest::{AtNest, Nest},
@@ -88,7 +88,12 @@ pub fn ants_chamber_pheromone_act(
 pub fn ants_add_chamber_pheromone(
     ants_query: Query<
         (Entity, &Position, &AntInventory),
-        (Changed<Position>, With<Initiative>, Without<Birthing>, With<AtNest>),
+        (
+            Changed<Position>,
+            With<Initiative>,
+            Without<Birthing>,
+            With<AtNest>,
+        ),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
@@ -163,7 +168,7 @@ fn try_dig(
         return false;
     }
 
-    commands.dig(*ant_entity, *dig_position, *element_entity);
+    commands.dig(*ant_entity, *dig_position, *element_entity, Location::Nest);
 
     true
 }

@@ -2,7 +2,7 @@ use crate::{
     settings::Settings,
     story::{
         ant::birthing::Birthing,
-        common::{position::Position, register},
+        common::{position::Position, register, Location},
         element::Element,
         grid::Grid,
         nest_simulation::nest::{Nest, AtNest},
@@ -216,7 +216,7 @@ fn start_digging_nest(
     // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
     let dig_target_entity = nest.elements().element_entity(dig_position);
-    commands.dig(ant_entity, dig_position, *dig_target_entity);
+    commands.dig(ant_entity, dig_position, *dig_target_entity, Location::Nest);
 
     *nesting = Nesting::Started(dig_position);
     commands.spawn_pheromone(
@@ -304,7 +304,7 @@ fn finish_digging_nest(
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);
         let drop_target_entity = nest.elements().element_entity(drop_position);
-        commands.drop(ant_entity, drop_position, *drop_target_entity);
+        commands.drop(ant_entity, drop_position, *drop_target_entity, Location::Nest);
     } else {
         // TODO: This seems wrong. Everywhere else initiative is hidden behind custom action commands.
         // Ensure that ant doesn't try to move or act after settling down

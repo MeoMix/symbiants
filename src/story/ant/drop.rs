@@ -1,7 +1,7 @@
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, IdMap},
+        common::{position::Position, IdMap, Location},
         element::Element,
         grid::Grid,
         nest_simulation::nest::{Nest, AtNest},
@@ -42,7 +42,7 @@ pub fn ants_drop(
         // TODO: drop ahead not where at?
         if rng.f32() < settings.probabilities.random_drop {
             let target_element_entity = grid.elements().element_entity(*position);
-            commands.drop(ant_entity, *position, *target_element_entity);
+            commands.drop(ant_entity, *position, *target_element_entity, Location::Nest);
             continue;
         }
 
@@ -111,7 +111,7 @@ pub fn ants_drop(
         if drop_sand || drop_food {
             // Drop inventory in front of ant
             let target_element_entity = grid.elements().element_entity(ahead_position);
-            commands.drop(ant_entity, ahead_position, *target_element_entity);
+            commands.drop(ant_entity, ahead_position, *target_element_entity, Location::Nest);
             continue;
         }
     }

@@ -1,7 +1,7 @@
 use crate::{
     settings::Settings,
     story::{
-        common::position::Position, element::Element, grid::Grid, nest_simulation::nest::{Nest, AtNest},
+        common::{position::Position, Location}, element::Element, grid::Grid, nest_simulation::nest::{Nest, AtNest},
     },
 };
 
@@ -102,7 +102,7 @@ fn try_dig(
         });
 
         if adjacent_queen.is_some() {
-            commands.dig(ant_entity, dig_position, *element_entity);
+            commands.dig(ant_entity, dig_position, *element_entity, Location::Nest);
 
             return true;
         }
@@ -124,7 +124,7 @@ fn try_dig(
     }
 
     if dig {
-        commands.dig(ant_entity, dig_position, *element_entity);
+        commands.dig(ant_entity, dig_position, *element_entity, Location::Nest);
 
         return true;
     }

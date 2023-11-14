@@ -7,7 +7,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::story::{
     ant::{hunger::Hunger, Dead},
-    common::position::Position,
+    common::{position::Position, Location},
     element::{commands::ElementCommandsExt, Air, Element, Food},
     grid::Grid,
     nest_simulation::nest::Nest,
@@ -140,7 +140,7 @@ pub fn update_breath_dialog(
                             for position in spawn_positions.iter() {
                                 if let Some(entity) = nest.elements().get_element_entity(*position)
                                 {
-                                    commands.replace_element(*position, Element::Food, *entity);
+                                    commands.replace_element(*position, Element::Food, *entity, Location::Nest);
                                 }
                             }
                         }

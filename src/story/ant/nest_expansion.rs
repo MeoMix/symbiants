@@ -9,7 +9,7 @@ use crate::{
     settings::Settings,
     story::{
         ant::commands::AntCommandsExt,
-        common::position::Position,
+        common::{position::Position, Location},
         element::Element,
         grid::Grid,
         nest_simulation::nest::{Nest, AtNest},
@@ -90,7 +90,7 @@ pub fn ants_nest_expansion(
             }
 
             let dig_target_entity = *grid.elements().element_entity(dirt_position);
-            commands.dig(ant_entity, dirt_position, dig_target_entity);
+            commands.dig(ant_entity, dirt_position, dig_target_entity, Location::Nest);
             commands.spawn_pheromone(
                 dirt_position,
                 Pheromone::Tunnel,
