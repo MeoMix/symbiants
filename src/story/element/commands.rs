@@ -3,8 +3,7 @@ use crate::story::{
     common::{position::Position, IdMap, Location},
     crater_simulation::crater::Crater,
     grid::Grid,
-    // TODO: element shouldn't couple to gravity, want to be able to reuse element
-    nest_simulation::{gravity::Unstable, nest::Nest},
+    nest_simulation::nest::Nest,
 };
 use bevy::{ecs::system::Command, prelude::*};
 
@@ -174,19 +173,10 @@ pub fn spawn_element(
             (element_bundle_id, entity)
         }
         Element::Dirt => {
-            // HACK: Dirt that spawns below surface level is not unstable but dirt that is above is unstable.
-            // It should be possible to do this is a more generic way, but performance issues abound. The main one is
-            // is that using a Query which iterates over Element and filters on With<Added> still iterates all elements.
-            let nest = world.query::<&Nest>().single(world);
             let element_bundle = DirtElementBundle::new(position, location);
             let element_bundle_id = element_bundle.id.clone();
 
-            let entity;
-            if nest.is_underground(&position) {
-                entity = world.spawn(element_bundle).id();
-            } else {
-                entity = world.spawn((element_bundle, Unstable)).id();
-            }
+            let entity = world.spawn(element_bundle).id();
 
             (element_bundle_id, entity)
         }

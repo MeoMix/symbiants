@@ -67,7 +67,7 @@ use crate::{
 
 use self::{
     background::{setup_background, teardown_background, update_sky_background},
-    gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable},
+    gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable, register_gravity, gravity_set_stability},
     nest::{
         register_nest, setup_nest, setup_nest_grid, teardown_nest,
         ui::{
@@ -100,6 +100,7 @@ impl Plugin for NestSimulationPlugin {
                 register_nesting,
                 register_birthing,
                 register_element,
+                register_gravity,
                 register_ant,
                 register_pheromone,
                 register_nest,
@@ -176,6 +177,8 @@ impl Plugin for NestSimulationPlugin {
                 (denormalize_location, apply_deferred).chain(),
                 ((
                     (
+                        gravity_set_stability,
+                        apply_deferred,
                         // It's helpful to apply gravity first because position updates are applied instantly and are seen by subsequent systems.
                         // Thus, ant actions can take into consideration where an element is this frame rather than where it was last frame.
                         gravity_elements,

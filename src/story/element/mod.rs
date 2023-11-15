@@ -1,8 +1,4 @@
-use crate::story::{
-    common::{position::Position, register, Id},
-    // TODO: Prefer not to couple to Gravity
-    nest_simulation::gravity::Unstable,
-};
+use crate::story::common::{position::Position, register, Id};
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
@@ -81,7 +77,6 @@ pub struct SandElementBundle {
     element: Element,
     sand: Sand,
     position: Position,
-    unstable: Unstable,
     location: Location,
 }
 
@@ -92,7 +87,6 @@ impl SandElementBundle {
             element: Element::Sand,
             sand: Sand,
             position,
-            unstable: Unstable,
             location,
         }
     }
@@ -108,7 +102,6 @@ pub struct FoodElementBundle {
     element: Element,
     food: Food,
     position: Position,
-    unstable: Unstable,
     location: Location,
 }
 
@@ -119,7 +112,6 @@ impl FoodElementBundle {
             element: Element::Food,
             food: Food,
             position,
-            unstable: Unstable,
             location,
         }
     }
@@ -155,7 +147,6 @@ pub fn register_element(
     register::<Food>(&app_type_registry, &mut saveable_registry);
     register::<Dirt>(&app_type_registry, &mut saveable_registry);
     register::<Sand>(&app_type_registry, &mut saveable_registry);
-    register::<Unstable>(&app_type_registry, &mut saveable_registry);
 }
 
 pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {

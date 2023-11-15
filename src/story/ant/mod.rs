@@ -3,17 +3,14 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
-use crate::{
-    settings::Settings,
-    story::common::{position::Position, register, Id},
-};
+use crate::story::common::{position::Position, register, Id};
 
 use self::{
-    birthing::Birthing, chambering::Chambering, commands::AntCommandsExt, digestion::Digestion,
-    hunger::Hunger, name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
+    birthing::Birthing, chambering::Chambering, digestion::Digestion, hunger::Hunger,
+    name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{element::Element, nest_simulation::nest::AtNest, common::Location};
+use super::{common::Location, element::Element, nest_simulation::nest::AtNest};
 use bevy::prelude::*;
 
 pub mod birthing;
@@ -368,7 +365,10 @@ impl AntOrientation {
 // Each ant maintains an internal timer that determines when it will act next.
 // This adds a little realism by varying when movements occur and allows for flexibility
 // in the simulation run speed.
-pub fn ants_initiative(mut alive_ants_query: Query<&mut Initiative, With<AtNest>>, mut rng: ResMut<GlobalRng>) {
+pub fn ants_initiative(
+    mut alive_ants_query: Query<&mut Initiative, With<AtNest>>,
+    mut rng: ResMut<GlobalRng>,
+) {
     for mut initiative in alive_ants_query.iter_mut() {
         if initiative.timer > 0 {
             initiative.timer -= 1;

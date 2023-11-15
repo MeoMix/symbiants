@@ -2,7 +2,7 @@ use crate::{
     settings::Settings,
     story::{
         ant::{AntOrientation, Dead, Initiative},
-        common::{position::Position, Location},
+        common::{position::Position, register, Location},
         element::{commands::ElementCommandsExt, Air, Element},
         grid::Grid,
         nest_simulation::nest::Nest,
@@ -10,15 +10,30 @@ use crate::{
 };
 
 use bevy::{prelude::*, utils::HashSet};
+use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use super::nest::AtNest;
 
 // Sand becomes unstable temporarily when falling or adjacent to falling sand
-// It becomes stable next frame. If all sand were always unstable then it'd act more like a liquid.
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct Unstable;
+
+// Don't infer Stable implicitly from lack of Unstable for performance.
+// It's important for a System to be able to apply Unstable to newly added Elements without
+// iterating all Element each run in an attempt to do so.
+#[derive(Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct Stable;
+
+pub fn register_gravity(
+    app_type_registry: ResMut<AppTypeRegistry>,
+    mut saveable_registry: ResMut<SaveableRegistry>,
+) {
+    register::<Unstable>(&app_type_registry, &mut saveable_registry);
+    register::<Stable>(&app_type_registry, &mut saveable_registry);
+}
 
 // TODO: How to do an exact match when running a test?
 // TODO: Add tests for ant gravity
@@ -128,12 +143,15 @@ pub fn gravity_elements(
 // Ants can have air below them and not fall into it (unlike sand) because they can cling to the sides of sand and dirt.
 // However, if they are clinging to sand/dirt, and that sand/dirt disappears, then they're out of luck and gravity takes over.
 pub fn gravity_ants(
-    mut ants_query: Query<(
-        &AntOrientation,
-        &mut Position,
-        Option<&mut Initiative>,
-        Option<&Dead>,
-    ), With<AtNest>>,
+    mut ants_query: Query<
+        (
+            &AntOrientation,
+            &mut Position,
+            Option<&mut Initiative>,
+            Option<&Dead>,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
@@ -188,7 +206,14 @@ pub fn gravity_ants(
 
 // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
 pub fn gravity_mark_unstable(
-    air_query: Query<&Position, (With<Air>, Or<(Changed<Position>, Added<Position>)>, With<AtNest>)>,
+    air_query: Query<
+        &Position,
+        (
+            With<Air>,
+            Or<(Changed<Position>, Added<Position>)>,
+            With<AtNest>,
+        ),
+    >,
     elements_query: Query<&Element>,
     mut commands: Commands,
     nest_query: Query<(&Grid, &Nest)>,
@@ -208,12 +233,40 @@ pub fn gravity_mark_unstable(
         if let Some(entity) = grid.elements().get_element_entity(position) {
             if let Ok(element) = elements_query.get(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
-                    commands.toggle_element_command(*entity, position, true, Unstable, Location::Nest);
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        true,
+                        Unstable,
+                        Location::Nest,
+                    );
+
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        false,
+                        Stable,
+                        Location::Nest,
+                    );
                 }
 
                 // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
                 if *element == Element::Dirt && nest.is_aboveground(&position) {
-                    commands.toggle_element_command(*entity, position, true, Unstable, Location::Nest);
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        true,
+                        Unstable,
+                        Location::Nest,
+                    );
+
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        false,
+                        Stable,
+                        Location::Nest,
+                    );
                 }
             }
         }
@@ -223,12 +276,53 @@ pub fn gravity_mark_unstable(
 /// Elements which were Unstable, but didn't move this frame, are marked Stable by removing their Unstable marker.
 /// FIXME: floating column of sand can result in sand being marked stable while in the air due to having sand directly beneath.
 pub fn gravity_mark_stable(
-    unstable_element_query: Query<(Ref<Position>, Entity), (With<Unstable>, With<Element>, With<AtNest>)>,
+    unstable_element_query: Query<
+        (Ref<Position>, Entity),
+        (With<Unstable>, With<Element>, With<AtNest>),
+    >,
     mut commands: Commands,
 ) {
     for (position, entity) in unstable_element_query.iter() {
         if !position.is_changed() {
             commands.toggle_element_command(entity, *position, false, Unstable, Location::Nest);
+            commands.toggle_element_command(entity, *position, true, Stable, Location::Nest);
+        }
+    }
+}
+
+/// All Elements are expected to be marked as Stable or Unstable.
+/// Don't rely on just Added<Element> without multiple Without<> filters because that'll require iterating all elements each frame.
+pub fn gravity_set_stability(
+    element_query: Query<
+        (Entity, &Element, &Position),
+        (Without<Unstable>, Without<Stable>, With<AtNest>),
+    >,
+    nest_query: Query<&Nest>,
+    mut commands: Commands,
+) {
+    let nest = nest_query.single();
+
+    // TODO: Consider for_each for perf
+    for (entity, element, position) in element_query.iter() {
+        match element {
+            Element::Air => {
+                commands.entity(entity).insert(Stable);
+            }
+            Element::Dirt => {
+                // Dirt that spawns below surface level is not unstable but dirt that is above is unstable.
+                if nest.is_underground(position) {
+                    commands.entity(entity).insert(Stable);
+                } else {
+                    commands.entity(entity).insert(Unstable);
+                }
+            }
+            // Any sand or food that has just appeared starts off unstable. They'll be marked Stable later.
+            Element::Sand => {
+                commands.entity(entity).insert(Unstable);
+            }
+            Element::Food => {
+                commands.entity(entity).insert(Unstable);
+            }
         }
     }
 }
