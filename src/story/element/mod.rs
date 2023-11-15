@@ -8,114 +8,20 @@ use super::common::Location;
 pub mod commands;
 pub mod ui;
 
-// TODO: I am a little suspicious about using MORE marker components to indicate more clearly the exact type of an element
-// rather than relying on properties of the element, but I am going with this for now for simplicity and performance.
-// As an example, say a piece of sand falls down and air moves up. I want to mark elements adjacent to the air as unstable.
-// I can read the position of the sand and see it has changed, but Bevy does not provide the ability to know the previous value.
-// So, I need to read the position of the air because its current value is what is useful to me.
-// How do I find that air? Well, I could iterate over all elements (slow), I could iterate over all not-Unstable elements (air is never unstable, but same goes for dirt and sometimes sand/food) (also slow)
-// or I could tag air with a component that indicates it is air (fast).
-// Another option could be to emit an event when I move the dirt saying where it moved from.
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct Air;
-
-#[derive(Bundle)]
-pub struct AirElementBundle {
-    id: Id,
-    element: Element,
-    position: Position,
-    // TODO: maybe denormalize this, too?!
-    air: Air,
-    location: Location,
-}
-
-impl AirElementBundle {
-    pub fn new(position: Position, location: Location) -> Self {
-        Self {
-            id: Id::default(),
-            element: Element::Air,
-            air: Air,
-            position,
-            location,
-        }
-    }
-}
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct Dirt;
 
-#[derive(Bundle)]
-pub struct DirtElementBundle {
-    id: Id,
-    element: Element,
-    dirt: Dirt,
-    position: Position,
-    location: Location,
-}
-
-impl DirtElementBundle {
-    pub fn new(position: Position, location: Location) -> Self {
-        Self {
-            id: Id::default(),
-            element: Element::Dirt,
-            dirt: Dirt,
-            position,
-            location,
-        }
-    }
-}
-
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct Sand;
-
-#[derive(Bundle)]
-pub struct SandElementBundle {
-    id: Id,
-    element: Element,
-    sand: Sand,
-    position: Position,
-    location: Location,
-}
-
-impl SandElementBundle {
-    pub fn new(position: Position, location: Location) -> Self {
-        Self {
-            id: Id::default(),
-            element: Element::Sand,
-            sand: Sand,
-            position,
-            location,
-        }
-    }
-}
-
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct Food;
-
-#[derive(Bundle)]
-pub struct FoodElementBundle {
-    id: Id,
-    element: Element,
-    food: Food,
-    position: Position,
-    location: Location,
-}
-
-impl FoodElementBundle {
-    pub fn new(position: Position, location: Location) -> Self {
-        Self {
-            id: Id::default(),
-            element: Element::Food,
-            food: Food,
-            position,
-            location,
-        }
-    }
-}
 
 #[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -138,6 +44,25 @@ impl Element {
     }
 }
 
+#[derive(Bundle)]
+pub struct ElementBundle {
+    id: Id,
+    element: Element,
+    position: Position,
+    location: Location,
+}
+
+impl ElementBundle {
+    pub fn new(element: Element, position: Position, location: Location) -> Self {
+        Self {
+            id: Id::default(),
+            element,
+            position,
+            location,
+        }
+    }
+}
+
 pub fn register_element(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
@@ -152,5 +77,33 @@ pub fn register_element(
 pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {
     for element_entity in element_query.iter() {
         commands.entity(element_entity).despawn_recursive();
+    }
+}
+
+/// Element entities are represented by their Element enum, but the value of this enum isn't Queryable.
+/// As such, denormalize the Element enum into its values, represented as specific Components, and apply those.
+/// This allows systems to Query for Elements of a specific type efficiently.
+pub fn denormalize_element(
+    element_query: Query<
+        (Entity, &Element),
+        (Without<Air>, Without<Dirt>, Without<Sand>, Without<Food>),
+    >,
+    mut commands: Commands,
+) {
+    for (entity, element) in element_query.iter() {
+        match element {
+            Element::Air => {
+                commands.entity(entity).insert(Air);
+            }
+            Element::Dirt => {
+                commands.entity(entity).insert(Dirt);
+            }
+            Element::Sand => {
+                commands.entity(entity).insert(Sand);
+            }
+            Element::Food => {
+                commands.entity(entity).insert(Food);
+            }
+        }
     }
 }

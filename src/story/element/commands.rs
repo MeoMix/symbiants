@@ -1,4 +1,4 @@
-use super::{AirElementBundle, DirtElementBundle, Element, FoodElementBundle, SandElementBundle};
+use super::{Element, ElementBundle};
 use crate::story::{
     common::{position::Position, IdMap, Location},
     crater_simulation::crater::Crater,
@@ -163,42 +163,11 @@ pub fn spawn_element(
     location: Location,
     world: &mut World,
 ) -> Entity {
-    let (id, entity) = match element {
-        Element::Air => {
-            let element_bundle = AirElementBundle::new(position, location);
-            let element_bundle_id = element_bundle.id.clone();
+    let element_bundle = ElementBundle::new(element, position, location);
+    let id = element_bundle.id.clone();
+    let entity = world.spawn(element_bundle).id();
 
-            let entity = world.spawn(element_bundle).id();
-
-            (element_bundle_id, entity)
-        }
-        Element::Dirt => {
-            let element_bundle = DirtElementBundle::new(position, location);
-            let element_bundle_id = element_bundle.id.clone();
-
-            let entity = world.spawn(element_bundle).id();
-
-            (element_bundle_id, entity)
-        }
-        Element::Sand => {
-            let element_bundle = SandElementBundle::new(position, location);
-            let element_bundle_id = element_bundle.id.clone();
-
-            let entity = world.spawn(element_bundle).id();
-
-            (element_bundle_id, entity)
-        }
-        Element::Food => {
-            let element_bundle = FoodElementBundle::new(position, location);
-            let element_bundle_id = element_bundle.id.clone();
-
-            let entity = world.spawn(element_bundle).id();
-
-            (element_bundle_id, entity)
-        }
-    };
-
-    world.resource_mut::<IdMap>().0.insert(id.clone(), entity);
+    world.resource_mut::<IdMap>().0.insert(id, entity);
 
     entity
 }

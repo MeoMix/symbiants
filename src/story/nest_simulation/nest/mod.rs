@@ -8,9 +8,13 @@ pub mod ui;
 use crate::{
     settings::Settings,
     story::{
+        ant::{
+            commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation,
+            AntRole, Facing, Initiative,
+        },
         common::{position::Position, register, Id, Location},
-        element::{Element, AirElementBundle, DirtElementBundle},
-        grid::{elements_cache::ElementsCache, Grid}, ant::{AntColor, AntOrientation, AntInventory, AntRole, AntName, Initiative, Facing, Angle, commands::AntCommandsExt},
+        element::{Element, ElementBundle},
+        grid::{elements_cache::ElementsCache, Grid},
     },
 };
 
@@ -61,15 +65,19 @@ pub fn setup_nest_elements(settings: Res<Settings>, mut commands: Commands) {
 
             // FIXME: These should be commands.spawn_element but need to fix circularity with expecting Nest to exist.
             if y <= settings.get_surface_level() {
-                commands.spawn(AirElementBundle::new(position, Location::Nest));
+                commands.spawn(ElementBundle::new(Element::Air, position, Location::Nest));
             } else {
-                commands.spawn(DirtElementBundle::new(position, Location::Nest));
+                commands.spawn(ElementBundle::new(Element::Dirt, position, Location::Nest));
             }
         }
     }
 }
 
-pub fn setup_nest_ants(settings: Res<Settings>, mut rng: ResMut<GlobalRng>, mut commands: Commands) {
+pub fn setup_nest_ants(
+    settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
+    mut commands: Commands,
+) {
     let mut rng = rng.reborrow();
 
     // Newly created queens instinctively start building a nest.

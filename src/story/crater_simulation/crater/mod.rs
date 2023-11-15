@@ -8,7 +8,7 @@ use crate::{
     settings::Settings,
     story::{
         common::{position::Position, register, Id, Location},
-        element::{Element, AirElementBundle},
+        element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
 };
@@ -39,7 +39,7 @@ pub fn setup_crater_elements(settings: Res<Settings>, mut commands: Commands) {
     for y in 0..settings.crater_height {
         for x in 0..settings.crater_width {
             let position = Position::new(x, y);
-            commands.spawn(AirElementBundle::new(position, Location::Crater));
+            commands.spawn(ElementBundle::new(Element::Air, position, Location::Crater));
         }
     }
 }

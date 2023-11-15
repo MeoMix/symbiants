@@ -6,7 +6,7 @@ use crate::story::{
     ant::AntInventory,
     common::{position::Position, Id, IdMap, Location},
     crater_simulation::crater::Crater,
-    element::{commands::spawn_element, AirElementBundle, Element},
+    element::{commands::spawn_element, ElementBundle, Element},
     grid::Grid,
     nest_simulation::nest::Nest,
 };
@@ -147,7 +147,7 @@ impl Command for DigElementCommand {
         world.entity_mut(element_entity).despawn();
 
         let air_entity = world
-            .spawn(AirElementBundle::new(self.target_position, Location::Nest))
+            .spawn(ElementBundle::new(Element::Air, self.target_position, Location::Nest))
             .id();
 
         let mut grid = match self.location {

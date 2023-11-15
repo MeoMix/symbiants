@@ -416,7 +416,7 @@ pub fn gravity_set_stability(
 // #[cfg(test)]
 // pub mod sand_gravity_tests {
 //     use crate::{
-//         element::{AirElementBundle, SandElementBundle},
+//         element::{ElementBundle, SandElementBundle},
 //         grid::WorldSaveState,
 //     };
 
@@ -449,9 +449,9 @@ pub fn gravity_set_stability(
 //                         let position = Position::new(x as isize, y as isize);
 
 //                         let entity = match element {
-//                             Element::Air => app.world.spawn(AirElementBundle::new(position)).id(),
-//                             Element::Dirt => app.world.spawn(DirtElementBundle::new(position)).id(),
-//                             Element::Sand => app.world.spawn(SandElementBundle::new(position)).id(),
+//                             Element::Air => app.world.spawn(ElementBundle::new(Element::Air, position)).id(),
+//                             Element::Dirt => app.world.spawn(ElementBundle::new(Element::Dirt, position)).id(),
+//                             Element::Sand => app.world.spawn(ElementBundle::new(Element::Sand, position)).id(),
 //                         };
 
 //                         (position, entity)
