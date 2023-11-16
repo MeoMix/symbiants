@@ -14,6 +14,12 @@ pub mod ui;
     Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Reflect, Default, Serialize, Deserialize,
 )]
 #[reflect(Component)]
+pub struct Zone;
+
+#[derive(
+    Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Reflect, Default, Serialize, Deserialize,
+)]
+#[reflect(Component)]
 pub enum Location {
     #[default]
     Nest,
@@ -58,6 +64,7 @@ pub fn register_common(
     register::<Uuid>(&app_type_registry, &mut saveable_registry);
     register::<Position>(&app_type_registry, &mut saveable_registry);
     register::<Location>(&app_type_registry, &mut saveable_registry);
+    register::<Zone>(&app_type_registry, &mut saveable_registry);
 }
 
 pub fn pre_setup_common(mut commands: Commands) {

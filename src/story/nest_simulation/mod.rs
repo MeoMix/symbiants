@@ -67,24 +67,30 @@ use crate::{
 
 use self::{
     background::{setup_background, teardown_background, update_sky_background},
-    gravity::{gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable, register_gravity, gravity_set_stability},
+    gravity::{
+        gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
+        gravity_set_stability, register_gravity,
+    },
     nest::{
-        register_nest, setup_nest, setup_nest_grid, teardown_nest,
+        register_nest, setup_nest, setup_nest_ants, setup_nest_elements, setup_nest_grid,
+        teardown_nest,
         ui::{
             on_added_at_nest, on_added_nest_visible_grid, on_nest_removed_visible_grid,
             on_spawn_nest,
         },
-        Nest, setup_nest_elements, setup_nest_ants,
+        Nest,
     },
 };
 
 use super::{
-    common::denormalize_location,
+    ant::nesting::ants_nesting_start,
+    common::{denormalize_location, Zone},
     crater_simulation::crater::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
     },
-    grid::VisibleGridState, element::denormalize_element, ant::nesting::ants_nesting_start,
+    element::denormalize_element,
+    grid::VisibleGridState,
 };
 
 pub struct NestSimulationPlugin;
@@ -476,7 +482,10 @@ fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) 
 // HACK: i'm reusing the same entity for view + model, but creating model first and reactively handling view props
 // this results in warnings when I attach background as a child of nest because nest hasn't gained spatial bundle yet
 // I would just spawn nest with it, but it's not persisted, so I need to insert it after loading Nest from storage
-pub fn ensure_nest_spatial_bundle(nest_query: Query<Entity, With<Nest>>, mut commands: Commands) {
+pub fn ensure_nest_spatial_bundle(
+    nest_query: Query<Entity, (With<Zone>, With<Nest>)>,
+    mut commands: Commands,
+) {
     commands
         .entity(nest_query.single())
         .insert(SpatialBundle::default());

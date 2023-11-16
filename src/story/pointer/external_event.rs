@@ -1,6 +1,6 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
-    common::{position::Position, IdMap, Location},
+    common::{position::Position, IdMap, Location, Zone},
     grid::{Grid, VisibleGrid, VisibleGridState},
     nest_simulation::nest::Nest,
     ui::selection_menu::Selected, crater_simulation::crater::Crater,
@@ -22,15 +22,16 @@ use crate::settings::Settings;
 
 use super::ExternalSimulationEvent;
 
+// TODO: clean this up - it's become a very messy dumping ground.
 /// Process user input events at the start of the FixedUpdate simulation loop.
 /// Need to process them manually because they'd be cleared at the end of the next Update
 /// which might occur before the next time FixedUpdate runs.
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
-    nest_query: Query<&Grid, With<Nest>>,
-    nest2_query: Query<Entity, With<Nest>>,
-    crater2_query: Query<Entity, With<Crater>>,
+    nest_query: Query<&Grid, (With<Zone>, With<Nest>)>,
+    nest2_query: Query<Entity, (With<Zone>, With<Nest>)>,
+    crater2_query: Query<Entity, (With<Zone>, With<Crater>)>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,

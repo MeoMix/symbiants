@@ -10,6 +10,8 @@ use self::{
     crater::{setup_crater, setup_crater_elements, setup_crater_grid, teardown_crater, Crater},
 };
 
+use super::common::Zone;
+
 pub struct CraterSimulationPlugin;
 
 impl Plugin for CraterSimulationPlugin {
@@ -46,7 +48,7 @@ impl Plugin for CraterSimulationPlugin {
 // this results in warnings when I attach background as a child of crater because crater hasn't gained spatial bundle yet
 // I would just spawn crater with it, but it's not persisted, so I need to insert it after loading Crater from storage
 pub fn ensure_crater_spatial_bundle(
-    crater_query: Query<Entity, With<Crater>>,
+    crater_query: Query<Entity, (With<Zone>, With<Crater>)>,
     mut commands: Commands,
 ) {
     commands

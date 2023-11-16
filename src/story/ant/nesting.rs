@@ -34,6 +34,7 @@ pub fn register_nesting(
     register::<Nesting>(&app_type_registry, &mut saveable_registry);
 }
 
+// TODO: double-check I didn't introduce a bug here when loading save - does this reapply nesting to queen on load? if so, filter on.. birthing? add a "Nested" concept?
 // TODO: perf - prefer to query directly for Queen rather than filtering through all workers
 pub fn ants_nesting_start(
     ant_query: Query<(Entity, &AntRole), Added<Ant>>,
