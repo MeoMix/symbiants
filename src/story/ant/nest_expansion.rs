@@ -9,10 +9,10 @@ use crate::{
     settings::Settings,
     story::{
         ant::commands::AntCommandsExt,
-        common::{position::Position, Location},
+        common::position::Position,
         element::Element,
         grid::Grid,
-        nest_simulation::nest::{Nest, AtNest},
+        nest_simulation::nest::{AtNest, Nest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };
@@ -20,14 +20,17 @@ use crate::{
 use super::{AntInventory, AntOrientation, AntRole, Initiative};
 
 pub fn ants_nest_expansion(
-    ants_query: Query<(
-        &AntRole,
-        &AntOrientation,
-        &AntInventory,
-        &Initiative,
-        &Position,
-        Entity,
-    ), With<AtNest>>,
+    ants_query: Query<
+        (
+            &AntRole,
+            &AntOrientation,
+            &AntInventory,
+            &Initiative,
+            &Position,
+            Entity,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -90,7 +93,7 @@ pub fn ants_nest_expansion(
             }
 
             let dig_target_entity = *grid.elements().element_entity(dirt_position);
-            commands.dig(ant_entity, dirt_position, dig_target_entity, Location::Nest);
+            commands.dig(ant_entity, dirt_position, dig_target_entity, AtNest);
             commands.spawn_pheromone(
                 dirt_position,
                 Pheromone::Tunnel,

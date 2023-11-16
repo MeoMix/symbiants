@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
-use super::common::Location;
+use super::common::Zone;
 
 pub mod commands;
 pub mod ui;
@@ -45,20 +45,23 @@ impl Element {
 }
 
 #[derive(Bundle)]
-pub struct ElementBundle {
+pub struct ElementBundle<Z>
+where
+    Z: Zone + Component,
+{
     id: Id,
     element: Element,
     position: Position,
-    location: Location,
+    zone: Z,
 }
 
-impl ElementBundle {
-    pub fn new(element: Element, position: Position, location: Location) -> Self {
+impl<Z: Zone + Component> ElementBundle<Z> {
+    pub fn new(element: Element, position: Position, zone: Z) -> Self {
         Self {
             id: Id::default(),
             element,
             position,
-            location,
+            zone,
         }
     }
 }

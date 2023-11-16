@@ -1,7 +1,10 @@
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, Location}, element::Element, grid::Grid, nest_simulation::nest::{Nest, AtNest},
+        common::position::Position,
+        element::Element,
+        grid::Grid,
+        nest_simulation::nest::{AtNest, Nest},
     },
 };
 
@@ -10,14 +13,17 @@ use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
 pub fn ants_dig(
-    ants_query: Query<(
-        &AntOrientation,
-        &AntInventory,
-        &Initiative,
-        &Position,
-        &AntRole,
-        Entity,
-    ), With<AtNest>>,
+    ants_query: Query<
+        (
+            &AntOrientation,
+            &AntInventory,
+            &Initiative,
+            &Position,
+            &AntRole,
+            Entity,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
@@ -63,14 +69,17 @@ fn try_dig(
     ant_role: &AntRole,
     dig_position: Position,
     elements_query: &Query<&Element>,
-    ants_query: &Query<(
-        &AntOrientation,
-        &AntInventory,
-        &Initiative,
-        &Position,
-        &AntRole,
-        Entity,
-    ), With<AtNest>>,
+    ants_query: &Query<
+        (
+            &AntOrientation,
+            &AntInventory,
+            &Initiative,
+            &Position,
+            &AntRole,
+            Entity,
+        ),
+        With<AtNest>,
+    >,
     nest_query: &Query<(&Grid, &Nest)>,
     commands: &mut Commands,
     settings: &Res<Settings>,
@@ -102,7 +111,7 @@ fn try_dig(
         });
 
         if adjacent_queen.is_some() {
-            commands.dig(ant_entity, dig_position, *element_entity, Location::Nest);
+            commands.dig(ant_entity, dig_position, *element_entity, AtNest);
 
             return true;
         }
@@ -124,7 +133,7 @@ fn try_dig(
     }
 
     if dig {
-        commands.dig(ant_entity, dig_position, *element_entity, Location::Nest);
+        commands.dig(ant_entity, dig_position, *element_entity, AtNest);
 
         return true;
     }

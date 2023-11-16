@@ -84,7 +84,6 @@ use self::{
 
 use super::{
     ant::nesting::ants_nesting_start,
-    common::{denormalize_location, Zone},
     crater_simulation::crater::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
@@ -180,7 +179,6 @@ impl Plugin for NestSimulationPlugin {
             FixedUpdate,
             (
                 (process_external_event, apply_deferred).chain(),
-                (denormalize_location, apply_deferred).chain(),
                 (denormalize_element, apply_deferred).chain(),
                 ((
                     (
@@ -482,10 +480,7 @@ fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) 
 // HACK: i'm reusing the same entity for view + model, but creating model first and reactively handling view props
 // this results in warnings when I attach background as a child of nest because nest hasn't gained spatial bundle yet
 // I would just spawn nest with it, but it's not persisted, so I need to insert it after loading Nest from storage
-pub fn ensure_nest_spatial_bundle(
-    nest_query: Query<Entity, (With<Zone>, With<Nest>)>,
-    mut commands: Commands,
-) {
+pub fn ensure_nest_spatial_bundle(nest_query: Query<Entity, With<Nest>>, mut commands: Commands) {
     commands
         .entity(nest_query.single())
         .insert(SpatialBundle::default());

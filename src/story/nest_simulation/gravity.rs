@@ -1,8 +1,10 @@
+use std::marker::PhantomData;
+
 use crate::{
     settings::Settings,
     story::{
         ant::{AntOrientation, Dead, Initiative},
-        common::{position::Position, register, Location},
+        common::{position::Position, register},
         element::{commands::ElementCommandsExt, Air, Element},
         grid::Grid,
         nest_simulation::nest::Nest,
@@ -39,7 +41,7 @@ pub fn register_gravity(
 // TODO: Add tests for ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
 
-// Search for a valid location for an element to fall into by searching to the
+// Search for a valid zone for an element to fall into by searching to the
 // bottom left/center/right of a given position. Prioritize falling straight down
 // and do not fall if surrounded by non-air
 fn get_element_fall_position(
@@ -233,40 +235,16 @@ pub fn gravity_mark_unstable(
         if let Some(entity) = grid.elements().get_element_entity(position) {
             if let Ok(element) = elements_query.get(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        true,
-                        Unstable,
-                        Location::Nest,
-                    );
+                    commands.toggle_element_command(*entity, position, true, Unstable, PhantomData::<AtNest>);
 
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        false,
-                        Stable,
-                        Location::Nest,
-                    );
+                    commands.toggle_element_command(*entity, position, false, Stable, PhantomData::<AtNest>);
                 }
 
                 // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
                 if *element == Element::Dirt && nest.is_aboveground(&position) {
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        true,
-                        Unstable,
-                        Location::Nest,
-                    );
+                    commands.toggle_element_command(*entity, position, true, Unstable, PhantomData::<AtNest>);
 
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        false,
-                        Stable,
-                        Location::Nest,
-                    );
+                    commands.toggle_element_command(*entity, position, false, Stable, PhantomData::<AtNest>);
                 }
             }
         }
@@ -284,8 +262,8 @@ pub fn gravity_mark_stable(
 ) {
     for (position, entity) in unstable_element_query.iter() {
         if !position.is_changed() {
-            commands.toggle_element_command(entity, *position, false, Unstable, Location::Nest);
-            commands.toggle_element_command(entity, *position, true, Stable, Location::Nest);
+            commands.toggle_element_command(entity, *position, false, Unstable, PhantomData::<AtNest>);
+            commands.toggle_element_command(entity, *position, true, Stable, PhantomData::<AtNest>);
         }
     }
 }

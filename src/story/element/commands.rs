@@ -1,91 +1,94 @@
+use std::marker::PhantomData;
+
 use super::{Element, ElementBundle};
 use crate::story::{
-    common::{position::Position, IdMap, Location},
-    crater_simulation::crater::Crater,
+    common::{position::Position, IdMap, Zone},
     grid::Grid,
-    nest_simulation::nest::Nest,
 };
 use bevy::{ecs::system::Command, prelude::*};
 
 pub trait ElementCommandsExt {
-    fn replace_element(
+    fn replace_element<Z: Component + Zone>(
         &mut self,
         position: Position,
         element: Element,
         target_element: Entity,
-        location: Location,
+        zone: Z,
     );
-    fn spawn_element(&mut self, position: Position, element: Element, location: Location);
-    fn toggle_element_command<C: Component>(
+    fn spawn_element<Z: Component + Zone>(
+        &mut self,
+        position: Position,
+        element: Element,
+        zone: Z,
+    );
+    fn toggle_element_command<C: Component, Z: Component + Zone>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
         toggle: bool,
         component: C,
-        location: Location,
+        zone: PhantomData<Z>,
     );
 }
 
 impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
-    fn replace_element(
+    fn replace_element<Z: Component + Zone>(
         &mut self,
         position: Position,
         element: Element,
         target_element: Entity,
-        location: Location,
+        zone: Z,
     ) {
         self.add(ReplaceElementCommand {
             position,
             target_element,
             element,
-            location,
+            zone,
         })
     }
 
-    fn spawn_element(&mut self, position: Position, element: Element, location: Location) {
+    fn spawn_element<Z: Component + Zone>(
+        &mut self,
+        position: Position,
+        element: Element,
+        zone: Z,
+    ) {
         self.add(SpawnElementCommand {
             element,
             position,
-            location,
+            zone,
         })
     }
 
-    fn toggle_element_command<C: Component>(
+    fn toggle_element_command<C: Component, Z: Component + Zone>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
         toggle: bool,
         component: C,
-        location: Location,
+        zone: PhantomData<Z>,
     ) {
-        self.add(ToggleElementCommand::<C> {
+        self.add(ToggleElementCommand::<C, Z> {
             target_element_entity,
             position,
             toggle,
             component,
-            location,
+            zone,
         })
     }
 }
 
-struct ReplaceElementCommand {
+struct ReplaceElementCommand<Z: Component + Zone> {
     target_element: Entity,
     element: Element,
     position: Position,
     // TODO: maybe just infer this from target_element
-    location: Location,
+    zone: Z,
 }
 
-impl Command for ReplaceElementCommand {
+impl<Z: Component + Zone> Command for ReplaceElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single(world),
-        };
+        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
         let existing_entity = match grid.elements().get_element_entity(self.position) {
             Some(entity) => entity,
@@ -102,37 +105,25 @@ impl Command for ReplaceElementCommand {
 
         world.entity_mut(*existing_entity).despawn();
 
-        let entity = spawn_element(self.element, self.position, self.location, world);
+        let entity = spawn_element(self.element, self.position, self.zone, world);
 
-        let mut grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single_mut(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single_mut(world),
-        };
+        let mut grid = world
+            .query_filtered::<&mut Grid, With<Z>>()
+            .single_mut(world);
 
         grid.elements_mut().set_element(self.position, entity);
     }
 }
 
-struct SpawnElementCommand {
+struct SpawnElementCommand<Z: Component + Zone> {
     element: Element,
     position: Position,
-    location: Location,
+    zone: Z,
 }
 
-impl Command for SpawnElementCommand {
+impl<Z: Component + Zone> Command for SpawnElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single(world),
-        };
+        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
         if let Some(existing_entity) = grid.elements().get_element_entity(self.position) {
             info!(
@@ -142,28 +133,23 @@ impl Command for SpawnElementCommand {
             return;
         }
 
-        let entity = spawn_element(self.element, self.position, self.location, world);
+        let entity = spawn_element(self.element, self.position, self.zone, world);
 
-        let mut grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single_mut(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single_mut(world),
-        };
+        let mut grid = world
+            .query_filtered::<&mut Grid, With<Z>>()
+            .single_mut(world);
 
         grid.elements_mut().set_element(self.position, entity);
     }
 }
 
-pub fn spawn_element(
+pub fn spawn_element<Z: Component + Zone>(
     element: Element,
     position: Position,
-    location: Location,
+    zone: Z,
     world: &mut World,
 ) -> Entity {
-    let element_bundle = ElementBundle::new(element, position, location);
+    let element_bundle = ElementBundle::new(element, position, zone);
     let id = element_bundle.id.clone();
     let entity = world.spawn(element_bundle).id();
 
@@ -172,24 +158,17 @@ pub fn spawn_element(
     entity
 }
 
-struct ToggleElementCommand<C: Component> {
+struct ToggleElementCommand<C: Component, Z: Component + Zone> {
     position: Position,
     target_element_entity: Entity,
     toggle: bool,
     component: C,
-    location: Location,
+    zone: PhantomData<Z>,
 }
 
-impl<C: Component> Command for ToggleElementCommand<C> {
+impl<C: Component, Z: Component + Zone> Command for ToggleElementCommand<C, Z> {
     fn apply(self, world: &mut World) {
-        let grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single(world),
-        };
+        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
         let element_entity = match grid.elements().get_element_entity(self.position) {
             Some(entity) => *entity,

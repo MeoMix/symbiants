@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, register, Id, Location, Zone},
+        common::{position::Position, register, Id, Zone},
         element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
@@ -16,6 +16,8 @@ use crate::{
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AtCrater;
+
+impl Zone for AtCrater {}
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Crater is trivially regenerated on app startup from persisted state.
@@ -32,7 +34,7 @@ pub fn register_crater(
 }
 
 pub fn setup_crater(mut commands: Commands) {
-    commands.spawn((Zone, Crater, Id::default()));
+    commands.spawn((Crater, AtCrater, Id::default()));
 }
 
 /// Creates a new grid of Elements. The grid is densley populated.
@@ -44,14 +46,14 @@ pub fn setup_crater_elements(settings: Res<Settings>, mut commands: Commands) {
     for y in 0..settings.crater_height {
         for x in 0..settings.crater_width {
             let position = Position::new(x, y);
-            commands.spawn(ElementBundle::new(Element::Air, position, Location::Crater));
+            commands.spawn(ElementBundle::new(Element::Air, position, AtCrater));
         }
     }
 }
 
 pub fn setup_crater_grid(
     element_query: Query<(&mut Position, Entity), With<Element>>,
-    crater_query: Query<Entity, (With<Zone>, With<Crater>)>,
+    crater_query: Query<Entity, With<Crater>>,
     settings: Res<Settings>,
     mut commands: Commands,
 ) {
@@ -71,10 +73,7 @@ pub fn setup_crater_grid(
     ),));
 }
 
-pub fn teardown_crater(
-    mut commands: Commands,
-    crater_entity_query: Query<Entity, (With<Zone>, With<Crater>)>,
-) {
+pub fn teardown_crater(mut commands: Commands, crater_entity_query: Query<Entity, With<Crater>>) {
     let crater_entity = crater_entity_query.single();
 
     commands.entity(crater_entity).despawn();

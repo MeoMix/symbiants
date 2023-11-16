@@ -1,6 +1,7 @@
 use crate::story::{
-    common::{position::Position, register, Location},
-    story_time::DEFAULT_TICKS_PER_SECOND, nest_simulation::nest::AtNest,
+    common::{position::Position, register},
+    nest_simulation::nest::AtNest,
+    story_time::DEFAULT_TICKS_PER_SECOND,
 };
 
 use super::{
@@ -58,13 +59,16 @@ pub fn register_birthing(
 }
 
 pub fn ants_birthing(
-    mut ants_birthing_query: Query<(
-        &mut Birthing,
-        &Position,
-        &AntColor,
-        &AntOrientation,
-        &mut Initiative,
-    ), With<AtNest>>,
+    mut ants_birthing_query: Query<
+        (
+            &mut Birthing,
+            &Position,
+            &AntColor,
+            &AntOrientation,
+            &mut Initiative,
+        ),
+        With<AtNest>,
+    >,
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
 ) {
@@ -94,7 +98,7 @@ pub fn ants_birthing(
                 AntRole::Worker,
                 AntName::random(&mut rng.reborrow()),
                 Initiative::new(&mut rng.reborrow()),
-                Location::Nest,
+                AtNest,
             );
 
             birthing.reset();

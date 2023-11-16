@@ -2,17 +2,17 @@ use bevy::prelude::*;
 
 use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory},
-    common::{position::Position, Location},
+    common::position::Position,
     element::Element,
     grid::Grid,
-    nest_simulation::nest::{Nest, AtNest},
+    nest_simulation::nest::{AtNest, Nest},
 };
 
 use super::Dead;
 
 /// Force ants to drop, or despawn, their inventory upon death.
 /// TODO:
-///     * It might be preferable to find an adjacent, available location to move inventory to rather than despawning.
+///     * It might be preferable to find an adjacent, available zone to move inventory to rather than despawning.
 pub fn on_ants_add_dead(
     ants_query: Query<(Entity, &Position, &AntInventory), (Added<Dead>, With<AtNest>)>,
     mut commands: Commands,
@@ -29,7 +29,7 @@ pub fn on_ants_add_dead(
                 .elements()
                 .is_element(&elements_query, *ant_position, Element::Air)
             {
-                commands.drop(ant_entity, *ant_position, *element_entity, Location::Nest);
+                commands.drop(ant_entity, *ant_position, *element_entity, AtNest);
             } else {
                 commands.entity(*element_entity).remove_parent().despawn();
             }

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::story::{
     ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
-    common::{position::Position, Location},
+    common::position::Position,
     element::Element,
     grid::Grid,
     nest_simulation::nest::{AtNest, Nest},
@@ -168,7 +168,7 @@ fn try_dig(
         return false;
     }
 
-    commands.dig(*ant_entity, *dig_position, *element_entity, Location::Nest);
+    commands.dig(*ant_entity, *dig_position, *element_entity, AtNest);
 
     true
 }

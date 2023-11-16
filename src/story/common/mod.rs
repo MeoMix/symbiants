@@ -5,26 +5,11 @@ use uuid::Uuid;
 
 use self::position::Position;
 
-use super::{crater_simulation::crater::AtCrater, nest_simulation::nest::AtNest};
-
 pub mod position;
 pub mod ui;
 
-#[derive(
-    Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Reflect, Default, Serialize, Deserialize,
-)]
-#[reflect(Component)]
-pub struct Zone;
-
-#[derive(
-    Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Reflect, Default, Serialize, Deserialize,
-)]
-#[reflect(Component)]
-pub enum Location {
-    #[default]
-    Nest,
-    Crater,
-}
+/// Use an empty trait to mark Nest and Crater zones to ensure strong type safety in generic systems.
+pub trait Zone {}
 
 // TODO: clean up IdMap on Id component removal.
 /// Note the intentional omission of reflection/serialization.
@@ -63,8 +48,6 @@ pub fn register_common(
     register::<Option<Id>>(&app_type_registry, &mut saveable_registry);
     register::<Uuid>(&app_type_registry, &mut saveable_registry);
     register::<Position>(&app_type_registry, &mut saveable_registry);
-    register::<Location>(&app_type_registry, &mut saveable_registry);
-    register::<Zone>(&app_type_registry, &mut saveable_registry);
 }
 
 pub fn pre_setup_common(mut commands: Commands) {
@@ -74,28 +57,5 @@ pub fn pre_setup_common(mut commands: Commands) {
 pub fn setup_common(id_query: Query<(&Id, Entity)>, mut id_map: ResMut<IdMap>) {
     for (id, entity) in id_query.iter() {
         id_map.0.insert(id.clone(), entity);
-    }
-}
-
-// TODO: Support changing location not just adding
-/// Whenever an Entity gains a Location - denormalize it by taking the Location's enum value, mapping it to a Component,
-/// and inserting that onto the given Entity. This allows for O(1) filtering of entities within a given location by paying
-/// a filtering cost upfront.
-pub fn denormalize_location(
-    location_query: Query<
-        (Entity, &Location),
-        (Without<AtNest>, Without<AtCrater>, Added<Location>),
-    >,
-    mut commands: Commands,
-) {
-    for (entity, location) in location_query.iter() {
-        match location {
-            Location::Nest => {
-                commands.entity(entity).insert(AtNest);
-            }
-            Location::Crater => {
-                commands.entity(entity).insert(AtCrater);
-            }
-        }
     }
 }

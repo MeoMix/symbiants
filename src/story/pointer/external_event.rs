@@ -1,9 +1,10 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
-    common::{position::Position, IdMap, Location, Zone},
+    common::{position::Position, IdMap},
+    crater_simulation::crater::Crater,
     grid::{Grid, VisibleGrid, VisibleGridState},
-    nest_simulation::nest::Nest,
-    ui::selection_menu::Selected, crater_simulation::crater::Crater,
+    nest_simulation::nest::{AtNest, Nest},
+    ui::selection_menu::Selected,
 };
 
 use bevy::prelude::*;
@@ -29,9 +30,9 @@ use super::ExternalSimulationEvent;
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
-    nest_query: Query<&Grid, (With<Zone>, With<Nest>)>,
-    nest2_query: Query<Entity, (With<Zone>, With<Nest>)>,
-    crater2_query: Query<Entity, (With<Zone>, With<Crater>)>,
+    nest_query: Query<&Grid, With<Nest>>,
+    nest2_query: Query<Entity, With<Nest>>,
+    crater2_query: Query<Entity, With<Crater>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
@@ -45,17 +46,24 @@ pub fn process_external_event(
     for event in external_simulation_events.drain() {
         let pointer_action = event.action;
         if pointer_action == PointerAction::ShowCrater {
-            commands.entity(nest2_query.single()).remove::<VisibleGrid>();
+            commands
+                .entity(nest2_query.single())
+                .remove::<VisibleGrid>();
             commands.entity(crater2_query.single()).insert(VisibleGrid);
             next_visible_grid_state.set(VisibleGridState::Crater);
             return;
         } else if pointer_action == PointerAction::ShowNest {
             commands.entity(nest2_query.single()).insert(VisibleGrid);
-            commands.entity(crater2_query.single()).remove::<VisibleGrid>();
+            commands
+                .entity(crater2_query.single())
+                .remove::<VisibleGrid>();
             next_visible_grid_state.set(VisibleGridState::Nest);
             return;
         } else if event.position.is_none() {
-            info!("Expected grid position to be set for pointer action: {:?}", pointer_action);
+            info!(
+                "Expected grid position to be set for pointer action: {:?}",
+                pointer_action
+            );
             return;
         }
 
@@ -102,7 +110,7 @@ pub fn process_external_event(
                 .is_element(&elements_query, grid_position, Element::Air)
             {
                 if let Some(entity) = nest.elements().get_element_entity(grid_position) {
-                    commands.replace_element(grid_position, Element::Food, *entity, Location::Nest);
+                    commands.replace_element(grid_position, Element::Food, *entity, AtNest);
                 }
             }
         } else if pointer_action == PointerAction::Sand {
@@ -111,7 +119,7 @@ pub fn process_external_event(
                 .is_element(&elements_query, grid_position, Element::Air)
             {
                 if let Some(entity) = nest.elements().get_element_entity(grid_position) {
-                    commands.replace_element(grid_position, Element::Sand, *entity, Location::Nest);
+                    commands.replace_element(grid_position, Element::Sand, *entity, AtNest);
                 }
             }
         } else if pointer_action == PointerAction::Dirt {
@@ -120,12 +128,12 @@ pub fn process_external_event(
                 .is_element(&elements_query, grid_position, Element::Air)
             {
                 if let Some(entity) = nest.elements().get_element_entity(grid_position) {
-                    commands.replace_element(grid_position, Element::Dirt, *entity, Location::Nest);
+                    commands.replace_element(grid_position, Element::Dirt, *entity, AtNest);
                 }
             }
         } else if pointer_action == PointerAction::DespawnElement {
             if let Some(entity) = nest.elements().get_element_entity(grid_position) {
-                commands.replace_element(grid_position, Element::Air, *entity, Location::Nest);
+                commands.replace_element(grid_position, Element::Air, *entity, AtNest);
             }
         } else if pointer_action == PointerAction::SpawnWorkerAnt {
             if nest
@@ -140,7 +148,7 @@ pub fn process_external_event(
                     AntRole::Worker,
                     AntName::random(&mut rng.reborrow()),
                     Initiative::new(&mut rng.reborrow()),
-                    Location::Nest,
+                    AtNest,
                 );
             }
         } else if pointer_action == PointerAction::KillAnt {

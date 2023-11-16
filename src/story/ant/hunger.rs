@@ -5,10 +5,10 @@ use super::{
     AntInventory, AntOrientation, AntRole, Dead, Initiative,
 };
 use crate::story::{
-    common::{position::Position, IdMap, Location},
+    common::{position::Position, IdMap},
     element::Element,
     grid::Grid,
-    nest_simulation::nest::{Nest, AtNest},
+    nest_simulation::nest::{AtNest, Nest},
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;
@@ -77,15 +77,18 @@ pub fn ants_hunger_tick(mut ants_hunger_query: Query<&mut Hunger, (Without<Dead>
 
 // TODO: hunger should apply to ants AtCrater too
 pub fn ants_hunger_act(
-    mut ants_hunger_query: Query<(
-        Entity,
-        &Hunger,
-        &mut Digestion,
-        &AntOrientation,
-        &Position,
-        &mut AntInventory,
-        &mut Initiative,
-    ), With<AtNest>>,
+    mut ants_hunger_query: Query<
+        (
+            Entity,
+            &Hunger,
+            &mut Digestion,
+            &AntOrientation,
+            &Position,
+            &mut AntInventory,
+            &mut Initiative,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
@@ -114,7 +117,7 @@ pub fn ants_hunger_act(
                     .is_element(&elements_query, ahead_position, Element::Food)
                 {
                     let food_entity = grid.elements().get_element_entity(ahead_position).unwrap();
-                    commands.dig(ant_entity, ahead_position, *food_entity, Location::Nest);
+                    commands.dig(ant_entity, ahead_position, *food_entity, AtNest);
                 }
             } else {
                 let element_entity = id_map.0.get(inventory.0.as_ref().unwrap()).unwrap();
@@ -144,16 +147,19 @@ pub fn ants_hunger_act(
 // Step 2: For each hungry-or-worse ant, look at the position directly in front of it.
 // Step 3: If there is an ant in that position, and if that ant is facing towards the hungry ant, then transfer food to the hungry ant.
 pub fn ants_regurgitate(
-    mut ants_hunger_query: Query<(
-        Entity,
-        &Hunger,
-        &mut Digestion,
-        &AntOrientation,
-        &Position,
-        &mut AntInventory,
-        &mut Initiative,
-        &mut AntRole,
-    ), With<AtNest>>,
+    mut ants_hunger_query: Query<
+        (
+            Entity,
+            &Hunger,
+            &mut Digestion,
+            &AntOrientation,
+            &Position,
+            &mut AntInventory,
+            &mut Initiative,
+            &mut AntRole,
+        ),
+        With<AtNest>,
+    >,
     mut commands: Commands,
 ) {
     let peckish_ants = ants_hunger_query

@@ -1,10 +1,10 @@
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, IdMap, Location},
+        common::{position::Position, IdMap},
         element::Element,
         grid::Grid,
-        nest_simulation::nest::{Nest, AtNest},
+        nest_simulation::nest::{AtNest, Nest},
     },
 };
 
@@ -13,14 +13,17 @@ use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
 pub fn ants_drop(
-    ants_query: Query<(
-        &AntOrientation,
-        &AntInventory,
-        &Initiative,
-        &Position,
-        &AntRole,
-        Entity,
-    ), With<AtNest>>,
+    ants_query: Query<
+        (
+            &AntOrientation,
+            &AntInventory,
+            &Initiative,
+            &Position,
+            &AntRole,
+            Entity,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
@@ -42,7 +45,7 @@ pub fn ants_drop(
         // TODO: drop ahead not where at?
         if rng.f32() < settings.probabilities.random_drop {
             let target_element_entity = grid.elements().element_entity(*position);
-            commands.drop(ant_entity, *position, *target_element_entity, Location::Nest);
+            commands.drop(ant_entity, *position, *target_element_entity, AtNest);
             continue;
         }
 
@@ -111,7 +114,7 @@ pub fn ants_drop(
         if drop_sand || drop_food {
             // Drop inventory in front of ant
             let target_element_entity = grid.elements().element_entity(ahead_position);
-            commands.drop(ant_entity, ahead_position, *target_element_entity, Location::Nest);
+            commands.drop(ant_entity, ahead_position, *target_element_entity, AtNest);
             continue;
         }
     }

@@ -9,10 +9,10 @@ use crate::{
             commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
             Initiative,
         },
-        common::{position::Position, Location},
+        common::position::Position,
         element::Element,
         grid::Grid,
-        nest_simulation::nest::{Nest, AtNest},
+        nest_simulation::nest::{AtNest, Nest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
 };
@@ -29,7 +29,10 @@ pub struct Tunneling(pub isize);
 // and when they hit that marker, they will look around them in all directions and, if they see any adjacent dirt, they will dig one piece of it and go back into "haul dirt" mode
 // if they do not see any adjacent dirt, they clean up the pheromone and, in the case of the queen, shift to giving birth
 pub fn ants_tunnel_pheromone_move(
-    mut ants_query: Query<(&mut AntOrientation, &mut Initiative, &mut Position), (With<Tunneling>, With<AtNest>)>,
+    mut ants_query: Query<
+        (&mut AntOrientation, &mut Initiative, &mut Position),
+        (With<Tunneling>, With<AtNest>),
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     mut rng: ResMut<GlobalRng>,
@@ -106,14 +109,17 @@ pub fn ants_tunnel_pheromone_move(
 }
 
 pub fn ants_tunnel_pheromone_act(
-    ants_query: Query<(
-        &AntOrientation,
-        &AntInventory,
-        &Initiative,
-        &Position,
-        Entity,
-        &Tunneling,
-    ), With<AtNest>>,
+    ants_query: Query<
+        (
+            &AntOrientation,
+            &AntInventory,
+            &Initiative,
+            &Position,
+            Entity,
+            &Tunneling,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
@@ -154,7 +160,7 @@ pub fn ants_tunnel_pheromone_act(
 
         let dig_position = orientation.get_ahead_position(position);
         let dig_target_entity = *grid.elements().element_entity(dig_position);
-        commands.dig(ant_entity, dig_position, dig_target_entity, Location::Nest);
+        commands.dig(ant_entity, dig_position, dig_target_entity, AtNest);
 
         // Reduce PheromoneStrength by 1 because not digging at ant_position, but ant_position + 1.
         // If this didn't occur then either the ant would need to apply strength-1 to itself when stepping onto a tile, or
@@ -175,7 +181,12 @@ pub fn ants_tunnel_pheromone_act(
 pub fn ants_add_tunnel_pheromone(
     ants_query: Query<
         (Entity, &Position, &AntInventory, &AntOrientation),
-        (Changed<Position>, With<Initiative>, Without<Birthing>, With<AtNest>),
+        (
+            Changed<Position>,
+            With<Initiative>,
+            Without<Birthing>,
+            With<AtNest>,
+        ),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,
@@ -203,7 +214,9 @@ pub fn ants_add_tunnel_pheromone(
 }
 
 /// Whenever an ant takes a step it loses 1 Tunneling pheromone.
-pub fn ants_fade_tunnel_pheromone(mut ants_query: Query<&mut Tunneling, (Changed<Position>, With<AtNest>)>) {
+pub fn ants_fade_tunnel_pheromone(
+    mut ants_query: Query<&mut Tunneling, (Changed<Position>, With<AtNest>)>,
+) {
     for mut tunneling in ants_query.iter_mut() {
         tunneling.0 -= 1;
     }
@@ -215,7 +228,7 @@ pub fn ants_fade_tunnel_pheromone(mut ants_query: Query<&mut Tunneling, (Changed
 pub fn ants_remove_tunnel_pheromone(
     mut ants_query: Query<
         (Entity, &Position, &AntInventory, &Tunneling),
-        (Or<(Changed<Position>, Changed<AntInventory>)>, With<AtNest>)
+        (Or<(Changed<Position>, Changed<AntInventory>)>, With<AtNest>),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap>,

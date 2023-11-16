@@ -12,7 +12,7 @@ use crate::{
             digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
             AntName, AntOrientation, AntRole, Facing, Initiative,
         },
-        common::{position::Position, register, Id, Location, Zone},
+        common::{position::Position, register, Id, Zone},
         element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
@@ -21,6 +21,8 @@ use crate::{
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AtNest;
+
+impl Zone for AtNest {}
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -55,7 +57,11 @@ pub fn register_nest(
 }
 
 pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
-    commands.spawn((Zone, Nest::new(settings.get_surface_level()), Id::default()));
+    commands.spawn((
+        Nest::new(settings.get_surface_level()),
+        AtNest,
+        Id::default(),
+    ));
 }
 
 /// Creates a new grid of Elements. The grid is densley populated.
@@ -69,9 +75,9 @@ pub fn setup_nest_elements(settings: Res<Settings>, mut commands: Commands) {
             let position = Position::new(x, y);
 
             if y <= settings.get_surface_level() {
-                commands.spawn(ElementBundle::new(Element::Air, position, Location::Nest));
+                commands.spawn(ElementBundle::new(Element::Air, position, AtNest));
             } else {
-                commands.spawn(ElementBundle::new(Element::Dirt, position, Location::Nest));
+                commands.spawn(ElementBundle::new(Element::Dirt, position, AtNest));
             }
         }
     }
@@ -93,7 +99,7 @@ pub fn setup_nest_ants(
         AntRole::Queen,
         AntName(String::from("Queen")),
         Initiative::new(&mut rng),
-        Location::Nest,
+        AtNest,
         Hunger::new(settings.max_hunger_time),
         Digestion::new(settings.max_digestion_time),
     );
@@ -110,7 +116,7 @@ pub fn setup_nest_ants(
                 AntRole::Worker,
                 AntName::random(&mut rng),
                 Initiative::new(&mut rng),
-                Location::Nest,
+                AtNest,
                 Hunger::new(settings.max_hunger_time),
                 Digestion::new(settings.max_digestion_time),
             )
@@ -126,7 +132,7 @@ pub fn setup_nest_ants(
 /// This is used to speed up most logic because there's a consistent need throughout the application to know what elements are
 /// at or near a given position.
 pub fn setup_nest_grid(
-    nest_query: Query<Entity, (With<Zone>, With<Nest>)>,
+    nest_query: Query<Entity, With<Nest>>,
     element_query: Query<(&mut Position, Entity), With<Element>>,
     settings: Res<Settings>,
     mut commands: Commands,
@@ -147,10 +153,7 @@ pub fn setup_nest_grid(
     ),));
 }
 
-pub fn teardown_nest(
-    mut commands: Commands,
-    nest_entity_query: Query<Entity, (With<Zone>, With<Nest>)>,
-) {
+pub fn teardown_nest(mut commands: Commands, nest_entity_query: Query<Entity, With<Nest>>) {
     let nest_entity = nest_entity_query.single();
 
     commands.entity(nest_entity).despawn();

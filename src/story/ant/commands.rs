@@ -4,22 +4,20 @@ use bevy::{ecs::system::Command, prelude::*};
 
 use crate::story::{
     ant::AntInventory,
-    common::{position::Position, Id, IdMap, Location},
-    crater_simulation::crater::Crater,
+    common::{position::Position, Id, IdMap, Zone},
     element::{commands::spawn_element, Element, ElementBundle},
     grid::Grid,
-    nest_simulation::nest::Nest,
 };
 
 use crate::settings::Settings;
 
 use super::{
-    digestion::Digestion, hunger::Hunger, Ant, AntColor, AntName, AntOrientation, AntRole,
-    Initiative, InventoryItemBundle, AntBundle,
+    digestion::Digestion, hunger::Hunger, Ant, AntBundle, AntColor, AntName, AntOrientation,
+    AntRole, Initiative, InventoryItemBundle,
 };
 
 pub trait AntCommandsExt {
-    fn spawn_ant(
+    fn spawn_ant<Z: Component + Zone>(
         &mut self,
         position: Position,
         color: AntColor,
@@ -28,26 +26,26 @@ pub trait AntCommandsExt {
         role: AntRole,
         name: AntName,
         initiative: Initiative,
-        location: Location,
+        zone: Z,
     );
-    fn dig(
+    fn dig<Z: Component + Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
-        location: Location,
+        zone: Z,
     );
-    fn drop(
+    fn drop<Z: Component + Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
-        location: Location,
+        zone: Z,
     );
 }
 
 impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
-    fn spawn_ant(
+    fn spawn_ant<Z: Component + Zone>(
         &mut self,
         position: Position,
         color: AntColor,
@@ -56,7 +54,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         role: AntRole,
         name: AntName,
         initiative: Initiative,
-        location: Location,
+        zone: Z,
     ) {
         self.add(SpawnAntCommand {
             position,
@@ -66,59 +64,52 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
             role,
             name,
             initiative,
-            location,
+            zone,
         });
     }
 
-    fn dig(
+    fn dig<Z: Component + Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
-        location: Location,
+        zone: Z,
     ) {
         self.add(DigElementCommand {
             ant_entity,
             target_position,
             target_element_entity,
-            location,
+            zone,
         });
     }
 
-    fn drop(
+    fn drop<Z: Component + Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
-        location: Location,
+        zone: Z,
     ) {
         self.add(DropElementCommand {
             ant_entity,
             target_position,
             target_element_entity,
-            location,
+            zone,
         });
     }
 }
 
-struct DigElementCommand {
+struct DigElementCommand<Z: Component + Zone> {
     ant_entity: Entity,
     target_element_entity: Entity,
     target_position: Position,
-    location: Location,
+    zone: Z,
 }
 
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
-impl Command for DigElementCommand {
+impl<Z: Component + Zone> Command for DigElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single(world),
-        };
+        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
         let element_entity = match grid.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
@@ -150,18 +141,13 @@ impl Command for DigElementCommand {
             .spawn(ElementBundle::new(
                 Element::Air,
                 self.target_position,
-                Location::Nest,
+                self.zone,
             ))
             .id();
 
-        let mut grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single_mut(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single_mut(world),
-        };
+        let mut grid = world
+            .query_filtered::<&mut Grid, With<Z>>()
+            .single_mut(world);
 
         grid.elements_mut()
             .set_element(self.target_position, air_entity);
@@ -201,23 +187,16 @@ impl Command for DigElementCommand {
     }
 }
 
-struct DropElementCommand {
+struct DropElementCommand<Z: Component + Zone> {
     ant_entity: Entity,
     target_element_entity: Entity,
     target_position: Position,
-    location: Location,
+    zone: Z,
 }
 
-impl Command for DropElementCommand {
+impl<Z: Component + Zone> Command for DropElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = match self.location {
-            Location::Nest => world
-                .query_filtered::<&mut Grid, With<Nest>>()
-                .single(world),
-            Location::Crater => world
-                .query_filtered::<&mut Grid, With<Crater>>()
-                .single(world),
-        };
+        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
         let air_entity = match grid.elements().get_element_entity(self.target_position) {
             Some(entity) => *entity,
@@ -255,12 +234,13 @@ impl Command for DropElementCommand {
         let element = world.get::<Element>(inventory_item_entity).unwrap();
 
         // Add element to world.
-        let element_entity = spawn_element(*element, self.target_position, Location::Nest, world);
+        let element_entity = spawn_element(*element, self.target_position, self.zone, world);
 
-        world
-            .query_filtered::<&mut Grid, With<Nest>>()
-            .single_mut(world)
-            .elements_mut()
+        let mut grid = world
+            .query_filtered::<&mut Grid, With<Z>>()
+            .single_mut(world);
+
+        grid.elements_mut()
             .set_element(self.target_position, element_entity);
 
         // Remove element from ant inventory.
@@ -280,7 +260,7 @@ impl Command for DropElementCommand {
     }
 }
 
-struct SpawnAntCommand {
+struct SpawnAntCommand<Z: Component + Zone> {
     position: Position,
     color: AntColor,
     orientation: AntOrientation,
@@ -288,10 +268,10 @@ struct SpawnAntCommand {
     role: AntRole,
     name: AntName,
     initiative: Initiative,
-    location: Location,
+    zone: Z,
 }
 
-impl Command for SpawnAntCommand {
+impl<Z: Component + Zone> Command for SpawnAntCommand<Z> {
     fn apply(self, world: &mut World) {
         let settings = world.resource::<Settings>();
         let id = Id::default();
@@ -307,7 +287,7 @@ impl Command for SpawnAntCommand {
                 initiative: self.initiative,
                 name: self.name,
                 color: self.color,
-                location: self.location,
+                zone: self.zone,
                 hunger: Hunger::new(settings.max_hunger_time),
                 digestion: Digestion::new(settings.max_digestion_time),
             })

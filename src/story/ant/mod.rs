@@ -10,7 +10,7 @@ use self::{
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{common::Location, element::Element, nest_simulation::nest::AtNest};
+use super::{common::Zone, element::Element, nest_simulation::nest::AtNest};
 use bevy::prelude::*;
 
 pub mod birthing;
@@ -31,7 +31,10 @@ pub mod ui;
 pub mod walk;
 
 #[derive(Bundle)]
-pub struct AntBundle {
+pub struct AntBundle<Z>
+where
+    Z: Zone + Component,
+{
     id: Id,
     ant: Ant,
     position: Position,
@@ -43,10 +46,10 @@ pub struct AntBundle {
     hunger: Hunger,
     digestion: Digestion,
     inventory: AntInventory,
-    location: Location,
+    zone: Z,
 }
 
-impl AntBundle {
+impl<Z: Zone + Component> AntBundle<Z> {
     pub fn new(
         position: Position,
         color: AntColor,
@@ -55,7 +58,7 @@ impl AntBundle {
         role: AntRole,
         name: AntName,
         initiative: Initiative,
-        location: Location,
+        zone: Z,
         // TODO: maybe these should be inserted onto entity via system afterward? otherwise constructor will grow indefinitely
         hunger: Hunger,
         digestion: Digestion,
@@ -71,7 +74,7 @@ impl AntBundle {
             role,
             name,
             initiative,
-            location,
+            zone,
             hunger,
             digestion,
         }

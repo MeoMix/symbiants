@@ -110,7 +110,7 @@ pub fn ants_walk(
 
             initiative.consume_movement();
         } else {
-            // SPECIAL CASE: if underground then an out-of-bounds location is considered dirt to walk on
+            // SPECIAL CASE: if underground then an out-of-bounds zone is considered dirt to walk on
             if nest.is_underground(&foot_position) {
                 // Just move forward
                 *position = ahead_position;
@@ -165,7 +165,7 @@ fn is_valid_location(
     grid: &Grid,
     nest: &Nest,
 ) -> bool {
-    // Need air at the ants' body for it to be a legal ant location.
+    // Need air at the ants' body for it to be a legal ant zone.
     let Some(entity) = grid.elements().get_element_entity(position) else {
         return false;
     };
@@ -177,10 +177,10 @@ fn is_valid_location(
         return false;
     }
 
-    // Get the location beneath the ants' feet and check for air
+    // Get the zone beneath the ants' feet and check for air
     let below_position = orientation.get_below_position(&position);
     let Some(entity) = grid.elements().get_element_entity(below_position) else {
-        // SPECIAL CASE: if underground then an out-of-bounds location is considered dirt to walk on
+        // SPECIAL CASE: if underground then an out-of-bounds zone is considered dirt to walk on
         if nest.is_underground(&below_position) {
             return true;
         }

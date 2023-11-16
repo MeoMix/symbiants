@@ -2,7 +2,7 @@ use crate::{
     settings::Settings,
     story::{
         ant::birthing::Birthing,
-        common::{position::Position, register, Location},
+        common::{position::Position, register},
         element::Element,
         grid::Grid,
         nest_simulation::nest::{AtNest, Nest},
@@ -13,8 +13,8 @@ use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Facing,
-    Initiative, AntRole, Ant,
+    commands::AntCommandsExt, walk::get_turned_orientation, Ant, AntInventory, AntOrientation,
+    AntRole, Facing, Initiative,
 };
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
@@ -173,7 +173,7 @@ pub fn ants_nesting_action(
     }
 }
 
-/// Returns true if ant is at a valid location to begin digging out a nest chamber.
+/// Returns true if ant is at a valid zone to begin digging out a nest chamber.
 /// This requires six things:
 ///     1) The ant must not already be creating a nest.
 ///     2) The ant must not be carrying anything.
@@ -222,7 +222,7 @@ fn can_start_nesting(
 /// Start digging a nest by digging its entrance underneath the ant's current position
 /// TODO:
 ///     * `commands.dig` could fail (conceptually, if worker ants existed) and, if it did fail, it would be wrong to mark the nest as having been started.
-///     * Prefer marking nest location with pheromone rather than tracking position.
+///     * Prefer marking nest zone with pheromone rather than tracking position.
 fn start_digging_nest(
     ant_position: &Position,
     ant_orientation: &AntOrientation,
@@ -235,7 +235,7 @@ fn start_digging_nest(
     // TODO: consider just marking tile with pheromone rather than digging immediately
     let dig_position = ant_orientation.get_below_position(ant_position);
     let dig_target_entity = nest.elements().element_entity(dig_position);
-    commands.dig(ant_entity, dig_position, *dig_target_entity, Location::Nest);
+    commands.dig(ant_entity, dig_position, *dig_target_entity, AtNest);
 
     *nesting = Nesting::Started(dig_position);
     commands.spawn_pheromone(
@@ -245,7 +245,7 @@ fn start_digging_nest(
     );
 }
 
-/// Returns true if ant is at a valid location to settle down and begin giving birth.
+/// Returns true if ant is at a valid zone to settle down and begin giving birth.
 /// This requires four things:
 ///     1) The ant must be underground.
 ///     2) The ant must be horizontal - newborn ants shouldn't fall.
@@ -323,12 +323,7 @@ fn finish_digging_nest(
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);
         let drop_target_entity = nest.elements().element_entity(drop_position);
-        commands.drop(
-            ant_entity,
-            drop_position,
-            *drop_target_entity,
-            Location::Nest,
-        );
+        commands.drop(ant_entity, drop_position, *drop_target_entity, AtNest);
     } else {
         // TODO: This seems wrong. Everywhere else initiative is hidden behind custom action commands.
         // Ensure that ant doesn't try to move or act after settling down
