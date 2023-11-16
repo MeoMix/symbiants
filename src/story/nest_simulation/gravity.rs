@@ -41,7 +41,7 @@ pub fn register_gravity(
 // TODO: Add tests for ant gravity
 // TODO: It would be nice to be able to assert an entire map using shorthand like element_grid
 
-// Search for a valid zone for an element to fall into by searching to the
+// Search for a valid position for an element to fall into by searching to the
 // bottom left/center/right of a given position. Prioritize falling straight down
 // and do not fall if surrounded by non-air
 fn get_element_fall_position(

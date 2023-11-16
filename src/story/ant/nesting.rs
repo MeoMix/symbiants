@@ -173,7 +173,7 @@ pub fn ants_nesting_action(
     }
 }
 
-/// Returns true if ant is at a valid zone to begin digging out a nest chamber.
+/// Returns true if ant is at a valid position to begin digging out a nest chamber.
 /// This requires six things:
 ///     1) The ant must not already be creating a nest.
 ///     2) The ant must not be carrying anything.
@@ -245,7 +245,7 @@ fn start_digging_nest(
     );
 }
 
-/// Returns true if ant is at a valid zone to settle down and begin giving birth.
+/// Returns true if ant is at a valid position to settle down and begin giving birth.
 /// This requires four things:
 ///     1) The ant must be underground.
 ///     2) The ant must be horizontal - newborn ants shouldn't fall.
