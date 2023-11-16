@@ -35,6 +35,11 @@ pub fn setup_crater(mut commands: Commands) {
     commands.spawn((Crater, Id::default()));
 }
 
+/// Creates a new grid of Elements. The grid is densley populated.
+/// Note the intentional omission of calling `commands.spawn_element`. This is because 
+/// `spawn_element` writes to the grid cache, which is not yet initialized. The grid cache will
+/// be updated after this function is called. This keeps cache initialization parity between
+/// creating a new world and loading an existing world.
 pub fn setup_crater_elements(settings: Res<Settings>, mut commands: Commands) {
     for y in 0..settings.crater_height {
         for x in 0..settings.crater_width {

@@ -6,7 +6,7 @@ use crate::story::{
     ant::AntInventory,
     common::{position::Position, Id, IdMap, Location},
     crater_simulation::crater::Crater,
-    element::{commands::spawn_element, ElementBundle, Element},
+    element::{commands::spawn_element, Element, ElementBundle},
     grid::Grid,
     nest_simulation::nest::Nest,
 };
@@ -14,8 +14,8 @@ use crate::story::{
 use crate::settings::Settings;
 
 use super::{
-    digestion::Digestion, hunger::Hunger, nesting::Nesting, Ant, AntColor, AntName, AntOrientation,
-    AntRole, Initiative, InventoryItemBundle,
+    digestion::Digestion, hunger::Hunger, Ant, AntColor, AntName, AntOrientation, AntRole,
+    Initiative, InventoryItemBundle, AntBundle,
 };
 
 pub trait AntCommandsExt {
@@ -147,7 +147,11 @@ impl Command for DigElementCommand {
         world.entity_mut(element_entity).despawn();
 
         let air_entity = world
-            .spawn(ElementBundle::new(Element::Air, self.target_position, Location::Nest))
+            .spawn(ElementBundle::new(
+                Element::Air,
+                self.target_position,
+                Location::Nest,
+            ))
             .id();
 
         let mut grid = match self.location {
@@ -293,25 +297,21 @@ impl Command for SpawnAntCommand {
         let id = Id::default();
 
         let entity = world
-            .spawn((
-                id.clone(),
-                Ant,
-                self.position,
-                self.orientation,
-                self.inventory,
-                self.role,
-                self.initiative,
-                self.name,
-                self.color,
-                self.location,
-                Hunger::new(settings.max_hunger_time),
-                Digestion::new(settings.max_digestion_time),
-            ))
+            .spawn(AntBundle {
+                id: id.clone(),
+                ant: Ant,
+                position: self.position,
+                orientation: self.orientation,
+                inventory: self.inventory,
+                role: self.role,
+                initiative: self.initiative,
+                name: self.name,
+                color: self.color,
+                location: self.location,
+                hunger: Hunger::new(settings.max_hunger_time),
+                digestion: Digestion::new(settings.max_digestion_time),
+            })
             .id();
-
-        if self.role == AntRole::Queen {
-            world.entity_mut(entity).insert(Nesting::default());
-        }
 
         world.resource_mut::<IdMap>().0.insert(id, entity);
     }

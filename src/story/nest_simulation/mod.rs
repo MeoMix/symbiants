@@ -84,7 +84,7 @@ use super::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
     },
-    grid::VisibleGridState, element::denormalize_element,
+    grid::VisibleGridState, element::denormalize_element, ant::nesting::ants_nesting_start,
 };
 
 pub struct NestSimulationPlugin;
@@ -217,6 +217,7 @@ impl Plugin for NestSimulationPlugin {
                             .chain(),
                         (
                             // Apply Nesting Logic
+                            ants_nesting_start,
                             ants_nesting_movement,
                             ants_nesting_action,
                             apply_deferred,

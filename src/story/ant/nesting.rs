@@ -5,7 +5,7 @@ use crate::{
         common::{position::Position, register, Location},
         element::Element,
         grid::Grid,
-        nest_simulation::nest::{Nest, AtNest},
+        nest_simulation::nest::{AtNest, Nest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, Facing,
-    Initiative,
+    Initiative, AntRole, Ant,
 };
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
@@ -34,17 +34,32 @@ pub fn register_nesting(
     register::<Nesting>(&app_type_registry, &mut saveable_registry);
 }
 
+// TODO: perf - prefer to query directly for Queen rather than filtering through all workers
+pub fn ants_nesting_start(
+    ant_query: Query<(Entity, &AntRole), Added<Ant>>,
+    mut commands: Commands,
+) {
+    for (ant_entity, ant_role) in ant_query.iter() {
+        if *ant_role == AntRole::Queen {
+            commands.entity(ant_entity).insert(Nesting::default());
+        }
+    }
+}
+
 /// Ants that are building the initial nest (usually just a queen) should prioritize making it back to the nest
 /// quickly rather than wandering aimlessly on the surface. They still need to wait until they drop their inventory
 /// otherwise they won't walk away from the nest their excavated dirt.
 pub fn ants_nesting_movement(
-    mut ants_query: Query<(
-        &mut Initiative,
-        &Position,
-        &mut AntOrientation,
-        &AntInventory,
-        &Nesting,
-    ), With<AtNest>>,
+    mut ants_query: Query<
+        (
+            &mut Initiative,
+            &Position,
+            &mut AntOrientation,
+            &AntInventory,
+            &Nesting,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     mut rng: ResMut<GlobalRng>,
@@ -92,14 +107,17 @@ pub fn ants_nesting_movement(
 }
 
 pub fn ants_nesting_action(
-    mut ants_query: Query<(
-        &mut Nesting,
-        &AntOrientation,
-        &AntInventory,
-        &mut Initiative,
-        &Position,
-        Entity,
-    ), With<AtNest>>,
+    mut ants_query: Query<
+        (
+            &mut Nesting,
+            &AntOrientation,
+            &AntInventory,
+            &mut Initiative,
+            &Position,
+            Entity,
+        ),
+        With<AtNest>,
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     settings: Res<Settings>,
@@ -304,7 +322,12 @@ fn finish_digging_nest(
     if ant_inventory.0 != None {
         let drop_position = ant_orientation.get_ahead_position(ant_position);
         let drop_target_entity = nest.elements().element_entity(drop_position);
-        commands.drop(ant_entity, drop_position, *drop_target_entity, Location::Nest);
+        commands.drop(
+            ant_entity,
+            drop_position,
+            *drop_target_entity,
+            Location::Nest,
+        );
     } else {
         // TODO: This seems wrong. Everywhere else initiative is hidden behind custom action commands.
         // Ensure that ant doesn't try to move or act after settling down

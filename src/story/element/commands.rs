@@ -16,7 +16,7 @@ pub trait ElementCommandsExt {
         location: Location,
     );
     fn spawn_element(&mut self, position: Position, element: Element, location: Location);
-    fn toggle_element_command<C: Component + Send + Sync + 'static>(
+    fn toggle_element_command<C: Component>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
@@ -50,7 +50,7 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         })
     }
 
-    fn toggle_element_command<C: Component + Send + Sync + 'static>(
+    fn toggle_element_command<C: Component>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
@@ -172,7 +172,7 @@ pub fn spawn_element(
     entity
 }
 
-struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
+struct ToggleElementCommand<C: Component> {
     position: Position,
     target_element_entity: Entity,
     toggle: bool,
@@ -180,7 +180,7 @@ struct ToggleElementCommand<C: Component + Send + Sync + 'static> {
     location: Location,
 }
 
-impl<C: Component + Send + Sync + 'static> Command for ToggleElementCommand<C> {
+impl<C: Component> Command for ToggleElementCommand<C> {
     fn apply(self, world: &mut World) {
         let grid = match self.location {
             Location::Nest => world

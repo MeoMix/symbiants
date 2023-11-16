@@ -46,6 +46,38 @@ pub struct AntBundle {
     location: Location,
 }
 
+impl AntBundle {
+    pub fn new(
+        position: Position,
+        color: AntColor,
+        orientation: AntOrientation,
+        inventory: AntInventory,
+        role: AntRole,
+        name: AntName,
+        initiative: Initiative,
+        location: Location,
+        // TODO: maybe these should be appended on after? idk
+        hunger: Hunger,
+        digestion: Digestion,
+    ) -> Self {
+        Self {
+            id: Id::default(),
+            ant: Ant,
+            // Queen always spawns in the center. She'll fall from the sky in the future.
+            position,
+            color,
+            orientation,
+            inventory,
+            role,
+            name,
+            initiative,
+            location,
+            hunger,
+            digestion,
+        }
+    }
+}
+
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AntName(pub String);

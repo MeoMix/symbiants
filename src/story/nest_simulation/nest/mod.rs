@@ -9,8 +9,8 @@ use crate::{
     settings::Settings,
     story::{
         ant::{
-            commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation,
-            AntRole, Facing, Initiative,
+            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
+            AntName, AntOrientation, AntRole, Facing, Initiative,
         },
         common::{position::Position, register, Id, Location},
         element::{Element, ElementBundle},
@@ -58,12 +58,16 @@ pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
     commands.spawn((Nest::new(settings.get_surface_level()), Id::default()));
 }
 
+/// Creates a new grid of Elements. The grid is densley populated.
+/// Note the intentional omission of calling `commands.spawn_element`. This is because
+/// `spawn_element` writes to the grid cache, which is not yet initialized. The grid cache will
+/// be updated after this function is called. This keeps cache initialization parity between
+/// creating a new world and loading an existing world.
 pub fn setup_nest_elements(settings: Res<Settings>, mut commands: Commands) {
     for y in 0..settings.nest_height {
         for x in 0..settings.nest_width {
             let position = Position::new(x, y);
 
-            // FIXME: These should be commands.spawn_element but need to fix circularity with expecting Nest to exist.
             if y <= settings.get_surface_level() {
                 commands.spawn(ElementBundle::new(Element::Air, position, Location::Nest));
             } else {
@@ -80,8 +84,7 @@ pub fn setup_nest_ants(
 ) {
     let mut rng = rng.reborrow();
 
-    // Newly created queens instinctively start building a nest.
-    commands.spawn_ant(
+    let queen_ant_bundle = AntBundle::new(
         // Queen always spawns in the center. She'll fall from the sky in the future.
         Position::new(settings.nest_width / 2, settings.get_surface_level()),
         AntColor(settings.ant_color),
@@ -91,21 +94,30 @@ pub fn setup_nest_ants(
         AntName(String::from("Queen")),
         Initiative::new(&mut rng),
         Location::Nest,
+        Hunger::new(settings.max_hunger_time),
+        Digestion::new(settings.max_digestion_time),
     );
 
-    for _ in 0..settings.initial_ant_worker_count {
-        // TODO: Prefer spawn_batch but would need to create custom command for spawning batch ants
-        commands.spawn_ant(
-            settings.get_random_surface_position(&mut rng),
-            AntColor(settings.ant_color),
-            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-            AntInventory::default(),
-            AntRole::Worker,
-            AntName::random(&mut rng),
-            Initiative::new(&mut rng),
-            Location::Nest,
-        );
-    }
+    commands.spawn(queen_ant_bundle);
+
+    let worker_ant_bundles = (0..settings.initial_ant_worker_count)
+        .map(|_| {
+            AntBundle::new(
+                settings.get_random_surface_position(&mut rng),
+                AntColor(settings.ant_color),
+                AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+                AntInventory::default(),
+                AntRole::Worker,
+                AntName::random(&mut rng),
+                Initiative::new(&mut rng),
+                Location::Nest,
+                Hunger::new(settings.max_hunger_time),
+                Digestion::new(settings.max_digestion_time),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    commands.spawn_batch(worker_ant_bundles)
 }
 
 /// Called after creating a new story, or loading an existing story from storage.
