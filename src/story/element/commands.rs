@@ -8,20 +8,20 @@ use crate::story::{
 use bevy::{ecs::system::Command, prelude::*};
 
 pub trait ElementCommandsExt {
-    fn replace_element<Z: Component + Zone>(
+    fn replace_element<Z: Zone>(
         &mut self,
         position: Position,
         element: Element,
         target_element: Entity,
         zone: Z,
     );
-    fn spawn_element<Z: Component + Zone>(
+    fn spawn_element<Z: Zone>(
         &mut self,
         position: Position,
         element: Element,
         zone: Z,
     );
-    fn toggle_element_command<C: Component, Z: Component + Zone>(
+    fn toggle_element_command<C: Component, Z: Zone>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
@@ -32,7 +32,7 @@ pub trait ElementCommandsExt {
 }
 
 impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
-    fn replace_element<Z: Component + Zone>(
+    fn replace_element<Z: Zone>(
         &mut self,
         position: Position,
         element: Element,
@@ -47,7 +47,7 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         })
     }
 
-    fn spawn_element<Z: Component + Zone>(
+    fn spawn_element<Z: Zone>(
         &mut self,
         position: Position,
         element: Element,
@@ -60,7 +60,7 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         })
     }
 
-    fn toggle_element_command<C: Component, Z: Component + Zone>(
+    fn toggle_element_command<C: Component, Z: Zone>(
         &mut self,
         target_element_entity: Entity,
         position: Position,
@@ -78,7 +78,7 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
     }
 }
 
-struct ReplaceElementCommand<Z: Component + Zone> {
+struct ReplaceElementCommand<Z: Zone> {
     target_element: Entity,
     element: Element,
     position: Position,
@@ -86,7 +86,7 @@ struct ReplaceElementCommand<Z: Component + Zone> {
     zone: Z,
 }
 
-impl<Z: Component + Zone> Command for ReplaceElementCommand<Z> {
+impl<Z: Zone> Command for ReplaceElementCommand<Z> {
     fn apply(self, world: &mut World) {
         let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
@@ -115,13 +115,13 @@ impl<Z: Component + Zone> Command for ReplaceElementCommand<Z> {
     }
 }
 
-struct SpawnElementCommand<Z: Component + Zone> {
+struct SpawnElementCommand<Z: Zone> {
     element: Element,
     position: Position,
     zone: Z,
 }
 
-impl<Z: Component + Zone> Command for SpawnElementCommand<Z> {
+impl<Z: Zone> Command for SpawnElementCommand<Z> {
     fn apply(self, world: &mut World) {
         let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
@@ -143,7 +143,7 @@ impl<Z: Component + Zone> Command for SpawnElementCommand<Z> {
     }
 }
 
-pub fn spawn_element<Z: Component + Zone>(
+pub fn spawn_element<Z: Zone>(
     element: Element,
     position: Position,
     zone: Z,
@@ -158,7 +158,7 @@ pub fn spawn_element<Z: Component + Zone>(
     entity
 }
 
-struct ToggleElementCommand<C: Component, Z: Component + Zone> {
+struct ToggleElementCommand<C: Component, Z: Zone> {
     position: Position,
     target_element_entity: Entity,
     toggle: bool,
@@ -166,7 +166,7 @@ struct ToggleElementCommand<C: Component, Z: Component + Zone> {
     zone: PhantomData<Z>,
 }
 
-impl<C: Component, Z: Component + Zone> Command for ToggleElementCommand<C, Z> {
+impl<C: Component, Z: Zone> Command for ToggleElementCommand<C, Z> {
     fn apply(self, world: &mut World) {
         let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 

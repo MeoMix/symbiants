@@ -17,7 +17,7 @@ use super::{
 };
 
 pub trait AntCommandsExt {
-    fn spawn_ant<Z: Component + Zone>(
+    fn spawn_ant<Z: Zone>(
         &mut self,
         position: Position,
         color: AntColor,
@@ -28,14 +28,14 @@ pub trait AntCommandsExt {
         initiative: Initiative,
         zone: Z,
     );
-    fn dig<Z: Component + Zone>(
+    fn dig<Z: Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
         target_element_entity: Entity,
         zone: Z,
     );
-    fn drop<Z: Component + Zone>(
+    fn drop<Z: Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
@@ -45,7 +45,7 @@ pub trait AntCommandsExt {
 }
 
 impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
-    fn spawn_ant<Z: Component + Zone>(
+    fn spawn_ant<Z: Zone>(
         &mut self,
         position: Position,
         color: AntColor,
@@ -68,7 +68,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         });
     }
 
-    fn dig<Z: Component + Zone>(
+    fn dig<Z: Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
@@ -83,7 +83,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         });
     }
 
-    fn drop<Z: Component + Zone>(
+    fn drop<Z: Zone>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
@@ -99,7 +99,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
     }
 }
 
-struct DigElementCommand<Z: Component + Zone> {
+struct DigElementCommand<Z: Zone> {
     ant_entity: Entity,
     target_element_entity: Entity,
     target_position: Position,
@@ -107,7 +107,7 @@ struct DigElementCommand<Z: Component + Zone> {
 }
 
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
-impl<Z: Component + Zone> Command for DigElementCommand<Z> {
+impl<Z: Zone> Command for DigElementCommand<Z> {
     fn apply(self, world: &mut World) {
         let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
@@ -187,14 +187,14 @@ impl<Z: Component + Zone> Command for DigElementCommand<Z> {
     }
 }
 
-struct DropElementCommand<Z: Component + Zone> {
+struct DropElementCommand<Z: Zone> {
     ant_entity: Entity,
     target_element_entity: Entity,
     target_position: Position,
     zone: Z,
 }
 
-impl<Z: Component + Zone> Command for DropElementCommand<Z> {
+impl<Z: Zone> Command for DropElementCommand<Z> {
     fn apply(self, world: &mut World) {
         let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
 
@@ -260,7 +260,7 @@ impl<Z: Component + Zone> Command for DropElementCommand<Z> {
     }
 }
 
-struct SpawnAntCommand<Z: Component + Zone> {
+struct SpawnAntCommand<Z: Zone> {
     position: Position,
     color: AntColor,
     orientation: AntOrientation,
@@ -271,7 +271,7 @@ struct SpawnAntCommand<Z: Component + Zone> {
     zone: Z,
 }
 
-impl<Z: Component + Zone> Command for SpawnAntCommand<Z> {
+impl<Z: Zone> Command for SpawnAntCommand<Z> {
     fn apply(self, world: &mut World) {
         let settings = world.resource::<Settings>();
         let id = Id::default();

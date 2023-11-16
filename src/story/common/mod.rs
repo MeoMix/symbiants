@@ -9,7 +9,7 @@ pub mod position;
 pub mod ui;
 
 /// Use an empty trait to mark Nest and Crater zones to ensure strong type safety in generic systems.
-pub trait Zone {}
+pub trait Zone: Component {}
 
 // TODO: clean up IdMap on Id component removal.
 /// Note the intentional omission of reflection/serialization.

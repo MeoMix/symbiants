@@ -47,7 +47,7 @@ impl Element {
 #[derive(Bundle)]
 pub struct ElementBundle<Z>
 where
-    Z: Zone + Component,
+    Z: Zone,
 {
     id: Id,
     element: Element,
@@ -55,7 +55,7 @@ where
     zone: Z,
 }
 
-impl<Z: Zone + Component> ElementBundle<Z> {
+impl<Z: Zone> ElementBundle<Z> {
     pub fn new(element: Element, position: Position, zone: Z) -> Self {
         Self {
             id: Id::default(),

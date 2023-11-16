@@ -33,7 +33,7 @@ pub mod walk;
 #[derive(Bundle)]
 pub struct AntBundle<Z>
 where
-    Z: Zone + Component,
+    Z: Zone,
 {
     id: Id,
     ant: Ant,
@@ -49,7 +49,7 @@ where
     zone: Z,
 }
 
-impl<Z: Zone + Component> AntBundle<Z> {
+impl<Z: Zone> AntBundle<Z> {
     pub fn new(
         position: Position,
         color: AntColor,
