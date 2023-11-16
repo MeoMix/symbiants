@@ -56,7 +56,7 @@ impl AntBundle {
         name: AntName,
         initiative: Initiative,
         location: Location,
-        // TODO: maybe these should be appended on after? idk
+        // TODO: maybe these should be inserted onto entity via system afterward? otherwise constructor will grow indefinitely
         hunger: Hunger,
         digestion: Digestion,
     ) -> Self {
