@@ -121,8 +121,8 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
             (
+                (setup_settings, apply_deferred).chain(),
                 (
-                    (setup_settings, apply_deferred).chain(),
                     (setup_nest, apply_deferred).chain(),
                     (setup_nest_elements, apply_deferred).chain(),
                     (setup_nest_ants, apply_deferred).chain(),

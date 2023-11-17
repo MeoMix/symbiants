@@ -27,17 +27,21 @@ pub enum Nesting {
     Started(Position),
 }
 
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
+pub struct Nested;
+
 pub fn register_nesting(
     app_type_registry: ResMut<AppTypeRegistry>,
     mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
     register::<Nesting>(&app_type_registry, &mut saveable_registry);
+    register::<Nested>(&app_type_registry, &mut saveable_registry);
 }
 
-// TODO: double-check I didn't introduce a bug here when loading save - does this reapply nesting to queen on load? if so, filter on.. birthing? add a "Nested" concept?
 // TODO: perf - prefer to query directly for Queen rather than filtering through all workers
 pub fn ants_nesting_start(
-    ant_query: Query<(Entity, &AntRole), Added<Ant>>,
+    ant_query: Query<(Entity, &AntRole), Without<Nested>>,
     mut commands: Commands,
 ) {
     for (ant_entity, ant_role) in ant_query.iter() {
@@ -318,6 +322,7 @@ fn finish_digging_nest(
     commands
         .entity(ant_entity)
         .remove::<Nesting>()
+        .insert(Nested)
         .insert(Birthing::new(settings.max_birthing_time));
 
     if ant_inventory.0 != None {
