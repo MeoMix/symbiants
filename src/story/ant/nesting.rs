@@ -13,7 +13,7 @@ use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    commands::AntCommandsExt, walk::get_turned_orientation, Ant, AntInventory, AntOrientation,
+    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
     AntRole, Facing, Initiative,
 };
 use bevy::prelude::*;

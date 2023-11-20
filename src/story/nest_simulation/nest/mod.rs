@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
-use bevy_turborand::GlobalRng;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
 pub mod ui;
@@ -57,11 +57,11 @@ pub fn register_nest(
 }
 
 pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
-    commands.spawn((
-        Nest::new(settings.get_surface_level()),
-        AtNest,
-        Id::default(),
-    ));
+    let surface_level = (settings.nest_height as f32
+        - (settings.nest_height as f32 * settings.initial_dirt_percent))
+        as isize;
+
+    commands.spawn((Nest::new(surface_level), AtNest, Id::default()));
 }
 
 /// Creates a new grid of Elements. The grid is densley populated.
@@ -69,12 +69,18 @@ pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
 /// `spawn_element` writes to the grid cache, which is not yet initialized. The grid cache will
 /// be updated after this function is called. This keeps cache initialization parity between
 /// creating a new world and loading an existing world.
-pub fn setup_nest_elements(settings: Res<Settings>, mut commands: Commands) {
+pub fn setup_nest_elements(
+    nest_query: Query<&Nest>,
+    settings: Res<Settings>,
+    mut commands: Commands,
+) {
+    let nest = nest_query.single();
+
     for y in 0..settings.nest_height {
         for x in 0..settings.nest_width {
             let position = Position::new(x, y);
 
-            if y <= settings.get_surface_level() {
+            if y <= nest.surface_level {
                 commands.spawn(ElementBundle::new(Element::Air, position, AtNest));
             } else {
                 commands.spawn(ElementBundle::new(Element::Dirt, position, AtNest));
@@ -84,15 +90,17 @@ pub fn setup_nest_elements(settings: Res<Settings>, mut commands: Commands) {
 }
 
 pub fn setup_nest_ants(
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
+    let nest = nest_query.single();
     let mut rng = rng.reborrow();
 
     let queen_ant_bundle = AntBundle::new(
         // Queen always spawns in the center. She'll fall from the sky in the future.
-        Position::new(settings.nest_width / 2, settings.get_surface_level()),
+        Position::new(settings.nest_width / 2, nest.surface_level),
         AntColor(settings.ant_color),
         AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
         AntInventory::default(),
@@ -108,8 +116,12 @@ pub fn setup_nest_ants(
 
     let worker_ant_bundles = (0..settings.initial_ant_worker_count)
         .map(|_| {
+            // TODO: maybe method on nest now
+            let random_surface_position =
+                Position::new(rng.isize(0..settings.nest_width), nest.surface_level);
+
             AntBundle::new(
-                settings.get_random_surface_position(&mut rng),
+                random_surface_position,
                 AntColor(settings.ant_color),
                 AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
                 AntInventory::default(),
@@ -146,11 +158,11 @@ pub fn setup_nest_grid(
         elements_cache[position.y as usize][position.x as usize] = entity;
     }
 
-    commands.entity(nest_query.single()).insert((Grid::new(
+    commands.entity(nest_query.single()).insert(Grid::new(
         settings.nest_width,
         settings.nest_height,
         ElementsCache::new(elements_cache),
-    ),));
+    ));
 }
 
 pub fn teardown_nest(mut commands: Commands, nest_entity_query: Query<Entity, With<Nest>>) {

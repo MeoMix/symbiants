@@ -1,8 +1,7 @@
 use bevy::{prelude::*, reflect::Reflect};
 use bevy_save::SaveableRegistry;
-use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::story::common::{position::Position, register};
+use crate::story::common::register;
 
 #[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {
@@ -42,18 +41,6 @@ pub struct Settings {
     pub max_birthing_time: isize,
     pub is_breathwork_scheduled: bool,
     pub probabilities: Probabilities,
-}
-
-// TODO: It feels weird to put these methods here rather than on Nest, but I need access to these
-// calculations when creating a new Nest instance.
-impl Settings {
-    pub fn get_surface_level(&self) -> isize {
-        (self.nest_height as f32 - (self.nest_height as f32 * self.initial_dirt_percent)) as isize
-    }
-
-    pub fn get_random_surface_position(&self, rng: &mut Mut<GlobalRng>) -> Position {
-        Position::new(rng.isize(0..self.nest_width), self.get_surface_level())
-    }
 }
 
 impl Default for Settings {

@@ -3,11 +3,17 @@ pub mod crater;
 
 use bevy::prelude::*;
 
-use crate::{app_state::{finalize_startup, AppState}, settings::setup_settings};
+use crate::{
+    app_state::{finalize_startup, AppState},
+    settings::setup_settings,
+};
 
 use self::{
     background::{setup_background, teardown_background},
-    crater::{setup_crater, setup_crater_elements, setup_crater_grid, teardown_crater, Crater},
+    crater::{
+        setup_crater, setup_crater_ants, setup_crater_elements, setup_crater_grid, teardown_crater,
+        Crater,
+    },
 };
 
 pub struct CraterSimulationPlugin;
@@ -19,6 +25,7 @@ impl Plugin for CraterSimulationPlugin {
             ((
                 (setup_crater, apply_deferred).chain(),
                 (setup_crater_elements, apply_deferred).chain(),
+                (setup_crater_ants, apply_deferred).chain(),
             )
                 .chain()
                 .before(finalize_startup)

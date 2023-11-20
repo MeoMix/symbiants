@@ -13,7 +13,7 @@ use crate::{
             Element,
         },
         grid::Grid,
-        nest_simulation::nest::{Nest, AtNest},
+        nest_simulation::nest::{AtNest, Nest},
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
@@ -174,16 +174,19 @@ pub fn on_spawn_ant(
 }
 
 pub fn rerender_ants(
-    ants_query: Query<(
-        Entity,
-        &Position,
-        &AntColor,
-        &AntOrientation,
-        &AntName,
-        &AntRole,
-        &AntInventory,
-        Option<&Dead>,
-    ), With<AtNest>>,
+    ants_query: Query<
+        (
+            Entity,
+            &Position,
+            &AntColor,
+            &AntOrientation,
+            &AntName,
+            &AntRole,
+            &AntInventory,
+            Option<&Dead>,
+        ),
+        With<AtNest>,
+    >,
     label_query: Query<Entity, With<AntLabel>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,

@@ -2,11 +2,16 @@ pub mod ui;
 
 use bevy::prelude::*;
 use bevy_save::SaveableRegistry;
+use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     settings::Settings,
     story::{
+        ant::{
+            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
+            AntName, AntOrientation, AntRole, Facing, Initiative,
+        },
         common::{position::Position, register, Id, Zone},
         element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
@@ -49,6 +54,37 @@ pub fn setup_crater_elements(settings: Res<Settings>, mut commands: Commands) {
             commands.spawn(ElementBundle::new(Element::Air, position, AtCrater));
         }
     }
+}
+
+pub fn setup_crater_ants(
+    settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
+    mut commands: Commands,
+) {
+    let mut rng = rng.reborrow();
+
+    let worker_ant_bundles = (0..1)
+        .map(|_| {
+            let center_crater_position =
+                Position::new(settings.crater_width / 2, settings.crater_height / 2);
+
+            AntBundle::new(
+                center_crater_position,
+                AntColor(settings.ant_color),
+                // TODO: not positive AntOrientation makes sense in the context of Crater but going to try for now
+                AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
+                AntInventory::default(),
+                AntRole::Worker,
+                AntName::random(&mut rng),
+                Initiative::new(&mut rng),
+                AtCrater,
+                Hunger::new(settings.max_hunger_time),
+                Digestion::new(settings.max_digestion_time),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    commands.spawn_batch(worker_ant_bundles)
 }
 
 pub fn setup_crater_grid(
