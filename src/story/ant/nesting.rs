@@ -41,7 +41,7 @@ pub fn register_nesting(
 
 // TODO: perf - prefer to query directly for Queen rather than filtering through all workers
 pub fn ants_nesting_start(
-    ant_query: Query<(Entity, &AntRole), Without<Nested>>,
+    ant_query: Query<(Entity, &AntRole), (Without<Nesting>, Without<Nested>)>,
     mut commands: Commands,
 ) {
     for (ant_entity, ant_role) in ant_query.iter() {
