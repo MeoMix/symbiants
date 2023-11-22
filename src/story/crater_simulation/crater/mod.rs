@@ -88,7 +88,7 @@ pub fn setup_crater_ants(
 }
 
 pub fn setup_crater_grid(
-    element_query: Query<(&mut Position, Entity), With<Element>>,
+    element_query: Query<(&mut Position, Entity), (With<Element>, With<AtCrater>)>,
     crater_query: Query<Entity, With<Crater>>,
     settings: Res<Settings>,
     mut commands: Commands,

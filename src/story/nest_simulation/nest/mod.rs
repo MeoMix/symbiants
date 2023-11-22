@@ -145,7 +145,7 @@ pub fn setup_nest_ants(
 /// at or near a given position.
 pub fn setup_nest_grid(
     nest_query: Query<Entity, With<Nest>>,
-    element_query: Query<(&mut Position, Entity), With<Element>>,
+    element_query: Query<(&mut Position, Entity), (With<Element>, With<AtNest>)>,
     settings: Res<Settings>,
     mut commands: Commands,
 ) {

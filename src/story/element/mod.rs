@@ -77,6 +77,7 @@ pub fn register_element(
     register::<Sand>(&app_type_registry, &mut saveable_registry);
 }
 
+// TODO: filter?
 pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {
     for element_entity in element_query.iter() {
         commands.entity(element_entity).despawn_recursive();

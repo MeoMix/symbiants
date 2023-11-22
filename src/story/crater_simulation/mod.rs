@@ -20,33 +20,33 @@ pub struct CraterSimulationPlugin;
 
 impl Plugin for CraterSimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            OnEnter(AppState::CreateNewStory),
-            ((
-                (setup_crater, apply_deferred).chain(),
-                (setup_crater_elements, apply_deferred).chain(),
-                (setup_crater_ants, apply_deferred).chain(),
-            )
-                .chain()
-                .before(finalize_startup)
-                .after(setup_settings))
-            .chain(),
-        );
+        // app.add_systems(
+        //     OnEnter(AppState::CreateNewStory),
+        //     ((
+        //         (setup_crater, apply_deferred).chain(),
+        //         (setup_crater_elements, apply_deferred).chain(),
+        //         (setup_crater_ants, apply_deferred).chain(),
+        //     )
+        //         .chain()
+        //         .before(finalize_startup)
+        //         .after(setup_settings))
+        //     .chain(),
+        // );
 
-        app.add_systems(
-            OnEnter(AppState::FinishSetup),
-            (
-                (ensure_crater_spatial_bundle, apply_deferred).chain(),
-                (setup_crater_grid, apply_deferred).chain(),
-                (setup_background, apply_deferred).chain(),
-            )
-                .chain(),
-        );
+        // app.add_systems(
+        //     OnEnter(AppState::FinishSetup),
+        //     (
+        //         (ensure_crater_spatial_bundle, apply_deferred).chain(),
+        //         (setup_crater_grid, apply_deferred).chain(),
+        //         (setup_background, apply_deferred).chain(),
+        //     )
+        //         .chain(),
+        // );
 
-        app.add_systems(
-            OnEnter(AppState::Cleanup),
-            (teardown_background, teardown_crater),
-        );
+        // app.add_systems(
+        //     OnEnter(AppState::Cleanup),
+        //     (teardown_background, teardown_crater),
+        // );
     }
 }
 
