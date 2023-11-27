@@ -283,90 +283,59 @@ impl Plugin for NestSimulationPlugin {
                 // rate_of_time needs to run when app is paused because fixed_time accumulations need to be cleared while app is paused
                 // to prevent running FixedUpdate schedule repeatedly (while no-oping) when coming back to a hidden tab with a paused sim.
                 (update_story_real_world_time, set_rate_of_time).chain(),
-                // Bevy doesn't have support for PreUpdate/PostUpdate lifecycle from within FixedUpdate.
-                // In an attempt to simulate this behavior, manually call `apply_deferred` because this would occur
-                // when moving out of the Update stage and into the PostUpdate stage.
-                // This is an important action which prevents panics while maintaining simpler code.
-                // Without this, an Element might be spawned, and then despawned, with its initial render command still enqueued.
-                // This would result in a panic due to missing Element entity unless the render command was rewritten manually
-                // to safeguard against missing entity at time of command application.
-                apply_deferred,
-                // Ensure render state reflects simulation state after having applied movements and command updates.
-                // Must run in FixedUpdate otherwise change detection won't properly work if FixedUpdate loop runs multiple times in a row.
-                // Must run even when simulation is paused to reflect user input.
-                (
-                    // Spawn
-                    (
-                        on_spawn_nest,
-                        on_spawn_ant,
-                        on_spawn_element,
-                        on_spawn_pheromone,
-                    )
-                        .chain(),
-                    // Despawn
-                    (on_despawn_ant,).chain(),
-                    // Added
-                    (
-                        on_added_ant_dead,
-                        on_added_ant_emote,
-                        on_added_selected,
-                        on_added_at_nest,
-                        on_added_at_crater,
-                        on_added_nest_visible_grid,
-                    )
-                        .chain(),
-                    // Removed
-                    (
-                        on_removed_selected,
-                        on_removed_emote,
-                        on_nest_removed_visible_grid,
-                    )
-                        .chain(),
-                    // Updated
-                    (
-                        on_update_ant_position,
-                        on_update_ant_orientation,
-                        on_update_ant_color,
-                        on_update_ant_inventory,
-                        on_update_element_position,
-                        on_update_pheromone_visibility,
-                    )
-                        .chain(),
-                )
-                    .chain()
-                    .run_if(
-                        not(in_state(StoryPlaybackState::FastForwarding))
-                            .and_then(in_state(VisibleGridState::Nest)),
-                    ),
-                (
-                    // Spawn
-                    // Despawn
-                    // Added
-                    on_added_crater_visible_grid,
-                    // Removed
-                    on_crater_removed_visible_grid,
-                    // Updated
-                )
-                    .chain()
-                    .run_if(
-                        not(in_state(StoryPlaybackState::FastForwarding))
-                            .and_then(in_state(VisibleGridState::Crater)),
-                    ),
-                |world: &mut World| {
-                    // DANGER:
-                    // This is probably the most questionable piece of code in this codebase.
-                    // Systems within FixedUpdate depend on RemovedComponents<T>, but this isn't cleared until
-                    // end-of-frame. If FixedUpdate runs multiple times before yielding then RemovedComponents<T>
-                    // will contain stale entries and panics will occur.
-                    // Calling this *BREAKS* change tracking in stages past FixedUpdate because it clears
-                    // any existing, tracked events. This is OK because change detection of the simulation isn't needed
-                    // outside of FixedUpdate.
-                    // TODO: It might be desirable to move this to the top of FixedUpdate rather than the bottom
-                    world.clear_trackers();
-                },
             )
                 .run_if(in_state(AppState::TellStory))
                 .chain(),
+        );
+
+        // Declare all rendering systems within Update. No need to chain systems because all rendering systems
+        // depend on simulation state which is updated within FixedUpdate.
+        // IMPORTANT:
+        // RemovedComponents<T> may contain stale/duplicate information when queried within Update
+        // This occurs because the FixedUpdate schedule may run multiple times before yielding to Update
+        app.add_systems(
+            Update,
+            (
+                // Spawn
+                (
+                    on_spawn_nest,
+                    on_spawn_ant,
+                    on_spawn_element,
+                    on_spawn_pheromone,
+                ),
+                // Despawn
+                (on_despawn_ant,),
+                // Added
+                (
+                    on_added_ant_dead,
+                    on_added_ant_emote,
+                    on_added_selected,
+                    on_added_at_nest,
+                    on_added_at_crater,
+                    on_added_nest_visible_grid,
+                ),
+                // Removed
+                (
+                    on_removed_selected,
+                    on_removed_emote,
+                    on_nest_removed_visible_grid,
+                ),
+                // Updated
+                (
+                    on_update_ant_position,
+                    on_update_ant_orientation,
+                    on_update_ant_color,
+                    on_update_ant_inventory,
+                    on_update_element_position,
+                    on_update_pheromone_visibility,
+                ),
+            )
+                .run_if(
+                    in_state(AppState::TellStory).and_then(
+                        not(in_state(StoryPlaybackState::FastForwarding))
+                            .and_then(in_state(VisibleGridState::Nest)),
+                    ),
+                ),
         );
 
         app.add_systems(

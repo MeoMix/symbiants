@@ -230,12 +230,10 @@ pub fn on_despawn_ant(
     mut commands: Commands,
 ) {
     for ant_entity in &mut removed {
-        let (label_entity, _) = label_query
-            .iter()
-            .find(|(_, label)| label.0 == ant_entity)
-            .unwrap();
-
-        commands.entity(label_entity).despawn();
+        if let Some((label_entity, _)) = label_query.iter().find(|(_, label)| label.0 == ant_entity)
+        {
+            commands.entity(label_entity).despawn();
+        }
     }
 }
 

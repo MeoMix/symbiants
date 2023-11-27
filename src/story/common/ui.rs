@@ -42,15 +42,15 @@ pub fn on_removed_selected(
     mut commands: Commands,
 ) {
     for entity in &mut removed {
-        let (selection_sprite_entity, _) = selection_sprite_query
+        if let Some((selection_sprite_entity, _)) = selection_sprite_query
             .iter()
             .find(|(_, selection_sprite)| selection_sprite.parent_entity == entity)
-            .unwrap();
-
-        // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-        commands
-            .entity(selection_sprite_entity)
-            .remove_parent()
-            .despawn();
+        {
+            // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+            commands
+                .entity(selection_sprite_entity)
+                .remove_parent()
+                .despawn();
+        }
     }
 }

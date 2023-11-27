@@ -46,10 +46,8 @@ pub fn on_nest_removed_visible_grid(
     mut commands: Commands,
 ) {
     for entity in &mut removed {
-        let nest_query_result = nest_query.get(entity);
-
         // If Nest was the one who had VisibleGrid removed
-        if nest_query_result.is_ok() {
+        if let Ok(_) = nest_query.get(entity) {
             for at_nest_entity in at_nest_query.iter() {
                 commands.entity(at_nest_entity).insert(Visibility::Hidden);
             }
