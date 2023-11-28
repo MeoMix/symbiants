@@ -2,7 +2,7 @@ mod background;
 pub mod gravity;
 pub mod nest;
 
-use bevy::{asset::LoadState, prelude::*};
+use bevy::{asset::LoadState, prelude::*, ecs::schedule::ScheduleLabel, app::{MainScheduleOrder, RunFixedUpdateLoop}};
 
 use crate::{
     app_state::{
@@ -89,13 +89,23 @@ use super::{
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
     },
     element::denormalize_element,
-    grid::VisibleGridState,
+    grid::VisibleGridState, simulation_timestep::{run_simulation_update_schedule, SimulationTime},
 };
+
+#[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
+pub struct RunSimulationUpdateLoop; 
+
+#[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
+pub struct SimulationUpdate;
 
 pub struct NestSimulationPlugin;
 
 impl Plugin for NestSimulationPlugin {
     fn build(&self, app: &mut App) {
+        // TODO: timing of this is weird/important, want to have schedule setup early
+        app.init_resource::<SimulationTime>();
+        app.add_systems(PreStartup, insert_simulation_schedule);
+
         app.add_systems(
             OnEnter(AppState::BeginSetup),
             (
@@ -153,7 +163,7 @@ impl Plugin for NestSimulationPlugin {
         // If this is ran OnEnter FinishSetup then the accumulated time will be reset to zero before FixedUpdate runs.
         app.add_systems(OnExit(AppState::FinishSetup), setup_story_time);
 
-        // IMPORTANT: don't process user input in FixedUpdate because events in FixedUpdate are broken
+        // IMPORTANT: don't process user input in FixedUpdate/SimulationUpdate because event reads can be missed
         // https://github.com/bevyengine/bevy/issues/7691
         app.add_systems(
             Update,
@@ -175,8 +185,11 @@ impl Plugin for NestSimulationPlugin {
             check_textures.run_if(in_state(AppState::BeginSetup)),
         );
 
+        app.init_schedule(RunSimulationUpdateLoop);
+        app.add_systems(RunSimulationUpdateLoop, run_simulation_update_schedule);
+
         app.add_systems(
-            FixedUpdate,
+            SimulationUpdate,
             (
                 (process_external_event, apply_deferred).chain(),
                 (denormalize_element, apply_deferred).chain(),
@@ -453,4 +466,8 @@ pub fn ensure_nest_spatial_bundle(nest_query: Query<Entity, With<Nest>>, mut com
     commands
         .entity(nest_query.single())
         .insert(SpatialBundle::default());
+}
+
+pub fn insert_simulation_schedule(mut main_schedule_order: ResMut<MainScheduleOrder>) {
+    main_schedule_order.insert_after(RunFixedUpdateLoop, RunSimulationUpdateLoop);
 }

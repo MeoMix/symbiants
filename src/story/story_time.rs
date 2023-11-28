@@ -6,6 +6,8 @@ use std::time::Duration;
 
 use crate::story::common::register;
 
+use super::simulation_timestep::SimulationTime;
+
 pub const DEFAULT_TICKS_PER_SECOND: isize = 10;
 pub const MAX_USER_TICKS_PER_SECOND: isize = 1_500;
 pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 50_000;
@@ -161,7 +163,7 @@ impl StoryTime {
     }
 }
 
-/// Store TicksPerSecond separately from FixedTime because when we're fast forwarding time we won't update TicksPerSecond.
+/// Store TicksPerSecond separately from SimulationTime because when we're fast forwarding time we won't update TicksPerSecond.
 /// This enables resetting back to a user-defined ticks-per-second (adjusted via UI) rather than the default ticks-per-second.
 #[derive(Resource)]
 pub struct TicksPerSecond(pub isize);
@@ -201,18 +203,22 @@ pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryTime>();
     commands.init_resource::<FastForwardingStateInfo>();
     commands.init_resource::<TicksPerSecond>();
-    commands.insert_resource(FixedTime::new_from_secs(
+
+
+    info!("pre_setup_story_time - inserting SimulationTime");
+
+    commands.insert_resource(SimulationTime::new_from_secs(
         1.0 / DEFAULT_TICKS_PER_SECOND as f32,
     ));
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,
-/// record this value into FixedTime, and anticipate further processing.
-/// Write to FixedTime because, in another scenario where the app is paused not closed, FixedTime
+/// record this value into SimulationTime, and anticipate further processing.
+/// Write to SimulationTime because, in another scenario where the app is paused not closed, SimulationTime
 /// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
 pub fn setup_story_time(
     mut story_real_world_time: ResMut<StoryRealWorldTime>,
-    mut fixed_time: ResMut<FixedTime>,
+    mut simulation_time: ResMut<SimulationTime>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
     mut story_elapsed_ticks: ResMut<StoryTime>,
     ticks_per_second: Res<TicksPerSecond>,
@@ -240,7 +246,7 @@ pub fn setup_story_time(
 
         // If we are tracking real world time then determine how many ticks the time past 24hrs represents
         // add that to the "elapsed ticks" tracker so that real-world time in game advances.
-        fixed_time.tick(Duration::from_secs(delta_seconds as u64));
+        simulation_time.tick(Duration::from_secs(delta_seconds as u64));
     }
 
     next_story_playback_state.set(StoryPlaybackState::Playing);
@@ -252,15 +258,15 @@ pub fn teardown_story_time(mut commands: Commands) {
     commands.remove_resource::<FastForwardingStateInfo>();
     commands.remove_resource::<TicksPerSecond>();
 
-    // `FixedTime` is managed by Bevy and can't be removed with panic occurring.
-    commands.insert_resource(FixedTime::default());
+    // `SimulationTime` is managed by Bevy and can't be removed with panic occurring.
+    commands.insert_resource(SimulationTime::default());
 }
 
 /// Control whether the app runs at the default or fast tick rate.
-/// Checks if FixedTime is showing a time de-sync and adjusts tick rate to compensate.
+/// Checks if SimulationTime is showing a time de-sync and adjusts tick rate to compensate.
 /// Once compensated tick rate has been processed then reset back to default tick rate.
 pub fn set_rate_of_time(
-    mut fixed_time: ResMut<FixedTime>,
+    mut simulation_time: ResMut<SimulationTime>,
     mut fast_forward_state_info: ResMut<FastForwardingStateInfo>,
     ticks_per_second: Res<TicksPerSecond>,
     story_playback_state: Res<State<StoryPlaybackState>>,
@@ -268,19 +274,19 @@ pub fn set_rate_of_time(
 ) {
     if fast_forward_state_info.pending_ticks == 0 {
         if *story_playback_state == StoryPlaybackState::FastForwarding {
-            fixed_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
+            simulation_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
 
             next_story_playback_state.set(StoryPlaybackState::Playing);
             fast_forward_state_info.initial_pending_ticks = 0;
         } else {
-            let accumulated_time = fixed_time.accumulated();
+            let accumulated_time = simulation_time.accumulated();
 
             if accumulated_time.as_secs() > 1 {
-                // Reset fixed_time to zero and run the main Update schedule. This prevents the UI from becoming unresponsive for large time values.
+                // Reset simulation_time to zero and run the main Update schedule. This prevents the UI from becoming unresponsive for large time values.
                 // The UI becomes unresponsive because the FixedUpdate schedule, when behind, will run in a loop without yielding until it catches up.
-                fixed_time.period = accumulated_time;
-                let _ = fixed_time.expend();
-                fixed_time.period =
+                simulation_time.period = accumulated_time;
+                let _ = simulation_time.expend();
+                simulation_time.period =
                     Duration::from_secs_f32(1.0 / (MAX_SYSTEM_TICKS_PER_SECOND as f32));
                 // Rely on FastForwarding state, rather than updating TicksPerSecond, so when exiting FastForwarding it's possible to restore to user-defined TicksPerSecond.
 
@@ -312,16 +318,16 @@ pub fn update_story_elapsed_ticks(mut story_time: ResMut<StoryTime>) {
 }
 
 pub fn update_time_scale(
-    mut fixed_time: ResMut<FixedTime>,
+    mut simulation_time: ResMut<SimulationTime>,
     ticks_per_second: Res<TicksPerSecond>,
     next_story_playback_state: Res<NextState<StoryPlaybackState>>,
 ) {
-    // Don't unintentionally overwrite fixed_time.period when shifting into FastForwarding.
+    // Don't unintentionally overwrite simulation_time.period when shifting into FastForwarding.
     if next_story_playback_state.0 == Some(StoryPlaybackState::FastForwarding) {
         return;
     }
 
-    fixed_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
+    simulation_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
 }
 
 fn decimal_hours_to_hours_minutes(decimal_hours: f32) -> (f32, f32) {
