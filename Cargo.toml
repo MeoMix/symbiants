@@ -24,7 +24,7 @@ bevy = { version = "0.11.3", default-features = false, features = [
   "png",
 ] }
 bevy_egui = { version = "0.22.0" }
-bevy_save = { version = "0.9.1" }
+bevy_save = { version = "0.9.3" }
 bevy_turborand = { version = "0.6.0" }
 chrono = { version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.188", features = ["derive"] }
