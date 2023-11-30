@@ -38,7 +38,7 @@ fn window_resize(
 
     let primary_window_entity = primary_window_query.single();
 
-    for resize_event in resize_events.iter() {
+    for resize_event in resize_events.read() {
         if resize_event.window == primary_window_entity {
             main_camera_query.single_mut().scale = get_best_fit_scale(
                 resize_event.width,

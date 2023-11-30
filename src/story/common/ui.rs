@@ -41,7 +41,7 @@ pub fn on_removed_selected(
     selection_sprite_query: Query<(Entity, &SelectionSprite)>,
     mut commands: Commands,
 ) {
-    for entity in &mut removed {
+    for entity in &mut removed.read() {
         if let Some((selection_sprite_entity, _)) = selection_sprite_query
             .iter()
             .find(|(_, selection_sprite)| selection_sprite.parent_entity == entity)

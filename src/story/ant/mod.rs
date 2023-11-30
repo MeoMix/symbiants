@@ -1,4 +1,3 @@
-use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
@@ -420,27 +419,24 @@ pub fn ants_initiative(
     }
 }
 
-pub fn register_ant(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Ant>(&app_type_registry, &mut saveable_registry);
-    register::<AntName>(&app_type_registry, &mut saveable_registry);
-    register::<AntColor>(&app_type_registry, &mut saveable_registry);
-    register::<Dead>(&app_type_registry, &mut saveable_registry);
-    register::<Asleep>(&app_type_registry, &mut saveable_registry);
-    register::<Initiative>(&app_type_registry, &mut saveable_registry);
-    register::<AntOrientation>(&app_type_registry, &mut saveable_registry);
-    register::<Facing>(&app_type_registry, &mut saveable_registry);
-    register::<Angle>(&app_type_registry, &mut saveable_registry);
-    register::<AntRole>(&app_type_registry, &mut saveable_registry);
-    register::<Hunger>(&app_type_registry, &mut saveable_registry);
-    register::<Digestion>(&app_type_registry, &mut saveable_registry);
-    register::<AntInventory>(&app_type_registry, &mut saveable_registry);
-    register::<InventoryItem>(&app_type_registry, &mut saveable_registry);
-    register::<Birthing>(&app_type_registry, &mut saveable_registry);
-    register::<Tunneling>(&app_type_registry, &mut saveable_registry);
-    register::<Chambering>(&app_type_registry, &mut saveable_registry);
+pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Ant>(&app_type_registry);
+    register::<AntName>(&app_type_registry);
+    register::<AntColor>(&app_type_registry);
+    register::<Dead>(&app_type_registry);
+    register::<Asleep>(&app_type_registry);
+    register::<Initiative>(&app_type_registry);
+    register::<AntOrientation>(&app_type_registry);
+    register::<Facing>(&app_type_registry);
+    register::<Angle>(&app_type_registry);
+    register::<AntRole>(&app_type_registry);
+    register::<Hunger>(&app_type_registry);
+    register::<Digestion>(&app_type_registry);
+    register::<AntInventory>(&app_type_registry);
+    register::<InventoryItem>(&app_type_registry);
+    register::<Birthing>(&app_type_registry);
+    register::<Tunneling>(&app_type_registry);
+    register::<Chambering>(&app_type_registry);
 }
 
 pub fn teardown_ant(

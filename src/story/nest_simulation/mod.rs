@@ -2,7 +2,12 @@ mod background;
 pub mod gravity;
 pub mod nest;
 
-use bevy::{asset::LoadState, prelude::*, ecs::schedule::ScheduleLabel, app::{MainScheduleOrder, RunFixedUpdateLoop}};
+use bevy::{
+    app::{MainScheduleOrder, RunFixedUpdateLoop},
+    asset::LoadState,
+    ecs::schedule::ScheduleLabel,
+    prelude::*,
+};
 
 use crate::{
     app_state::{
@@ -89,11 +94,12 @@ use super::{
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
     },
     element::denormalize_element,
-    grid::VisibleGridState, simulation_timestep::{run_simulation_update_schedule, SimulationTime},
+    grid::VisibleGridState,
+    simulation_timestep::{run_simulation_update_schedule, SimulationTime},
 };
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
-pub struct RunSimulationUpdateLoop; 
+pub struct RunSimulationUpdateLoop;
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SimulationUpdate;
@@ -412,20 +418,20 @@ fn load_textures(asset_server: Res<AssetServer>, mut commands: Commands) {
     // Intentionally not using SpriteSheet/TextureAtlas due to subpixel rounding causing bleed artifacts.
     let dirt_handles = (0..=15)
         .map(|i| format!("textures/element/dirt/{}.png", i))
-        .map(|path| asset_server.load_untyped(path))
+        .map(|path| asset_server.load::<Image>(path))
         .collect();
 
     let sand_handles = (0..=15)
         .map(|i| format!("textures/element/sand/{}.png", i))
-        .map(|path| asset_server.load_untyped(path))
+        .map(|path| asset_server.load::<Image>(path))
         .collect();
 
     let food_handles = (0..=15)
         .map(|i| format!("textures/element/food/{}.png", i))
-        .map(|path| asset_server.load_untyped(path))
+        .map(|path| asset_server.load::<Image>(path))
         .collect();
 
-    let air_handle = asset_server.load_untyped("textures/element/air/air.png");
+    let air_handle = asset_server.load::<Image>("textures/element/air/air.png");
 
     commands.insert_resource(ElementSpriteHandles {
         dirt: dirt_handles,
@@ -440,9 +446,12 @@ fn check_textures(
     element_sprite_handles: ResMut<ElementSpriteHandles>,
     asset_server: Res<AssetServer>,
 ) {
-    if let LoadState::Loaded =
-        asset_server.get_group_load_state(element_sprite_handles.handle_ids())
-    {
+    let loaded = element_sprite_handles
+        .get_handles()
+        .iter()
+        .all(|&image_handle| asset_server.load_state(image_handle) == LoadState::Loaded);
+
+    if loaded {
         next_state.set(AppState::TryLoadSave);
     }
 }

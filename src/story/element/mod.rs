@@ -1,6 +1,5 @@
 use crate::story::common::{position::Position, register, Id};
 use bevy::prelude::*;
-use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
 use super::common::Zone;
@@ -66,15 +65,12 @@ impl<Z: Zone> ElementBundle<Z> {
     }
 }
 
-pub fn register_element(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Element>(&app_type_registry, &mut saveable_registry);
-    register::<Air>(&app_type_registry, &mut saveable_registry);
-    register::<Food>(&app_type_registry, &mut saveable_registry);
-    register::<Dirt>(&app_type_registry, &mut saveable_registry);
-    register::<Sand>(&app_type_registry, &mut saveable_registry);
+pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Element>(&app_type_registry);
+    register::<Air>(&app_type_registry);
+    register::<Food>(&app_type_registry);
+    register::<Dirt>(&app_type_registry);
+    register::<Sand>(&app_type_registry);
 }
 
 // TODO: filter?

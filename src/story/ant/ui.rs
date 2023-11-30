@@ -229,7 +229,7 @@ pub fn on_despawn_ant(
     label_query: Query<(Entity, &AntLabel)>,
     mut commands: Commands,
 ) {
-    for ant_entity in &mut removed {
+    for ant_entity in &mut removed.read() {
         if let Some((label_entity, _)) = label_query.iter().find(|(_, label)| label.0 == ant_entity)
         {
             commands.entity(label_entity).despawn();
@@ -390,7 +390,7 @@ pub fn on_removed_emote(
     emote_ui_query: Query<(Entity, &EmoteSprite)>,
     mut commands: Commands,
 ) {
-    for entity in &mut removed {
+    for entity in &mut removed.read() {
         if let Some((emote_ui_entity, _)) = emote_ui_query
             .iter()
             .find(|&(_, ui)| ui.parent_entity == entity)

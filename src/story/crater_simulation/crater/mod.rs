@@ -1,7 +1,6 @@
 pub mod ui;
 
 use bevy::prelude::*;
-use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
@@ -30,12 +29,9 @@ impl Zone for AtCrater {}
 #[reflect(Component)]
 pub struct Crater;
 
-pub fn register_crater(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Crater>(&app_type_registry, &mut saveable_registry);
-    register::<AtCrater>(&app_type_registry, &mut saveable_registry);
+pub fn register_crater(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Crater>(&app_type_registry);
+    register::<AtCrater>(&app_type_registry);
 }
 
 pub fn setup_crater(mut commands: Commands) {

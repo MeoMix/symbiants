@@ -45,7 +45,7 @@ pub fn on_nest_removed_visible_grid(
     at_nest_query: Query<Entity, With<AtNest>>,
     mut commands: Commands,
 ) {
-    for entity in &mut removed {
+    for entity in &mut removed.read() {
         // If Nest was the one who had VisibleGrid removed
         if let Ok(_) = nest_query.get(entity) {
             for at_nest_entity in at_nest_query.iter() {

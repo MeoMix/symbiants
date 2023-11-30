@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_save::SaveableRegistry;
+
 use chrono::Datelike;
 use chrono::{DateTime, LocalResult, NaiveDate, TimeZone, Timelike, Utc};
 use std::time::Duration;
@@ -119,7 +119,7 @@ impl StoryTime {
 
     pub fn is_within_schedule_window(&self) -> bool {
         let time_info = self.as_time_info();
-        
+
         let (sunrise, _) = self.get_sunrise_sunset_decimal_hours();
         let (hours, _) = decimal_hours_to_hours_minutes(sunrise);
 
@@ -189,12 +189,9 @@ pub enum StoryPlaybackState {
     FastForwarding,
 }
 
-pub fn register_story_time(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<StoryRealWorldTime>(&app_type_registry, &mut saveable_registry);
-    register::<StoryTime>(&app_type_registry, &mut saveable_registry);
+pub fn register_story_time(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<StoryRealWorldTime>(&app_type_registry);
+    register::<StoryTime>(&app_type_registry);
 }
 
 // TODO: awkward timing for this - need to have resources available before calling load (why?)
@@ -203,9 +200,6 @@ pub fn pre_setup_story_time(mut commands: Commands) {
     commands.init_resource::<StoryTime>();
     commands.init_resource::<FastForwardingStateInfo>();
     commands.init_resource::<TicksPerSecond>();
-
-
-    info!("pre_setup_story_time - inserting SimulationTime");
 
     commands.insert_resource(SimulationTime::new_from_secs(
         1.0 / DEFAULT_TICKS_PER_SECOND as f32,

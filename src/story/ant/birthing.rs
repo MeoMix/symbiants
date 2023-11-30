@@ -10,7 +10,6 @@ use super::{
 };
 
 use bevy::prelude::*;
-use bevy_save::SaveableRegistry;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
@@ -51,11 +50,8 @@ impl Birthing {
     }
 }
 
-pub fn register_birthing(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Birthing>(&app_type_registry, &mut saveable_registry);
+pub fn register_birthing(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Birthing>(&app_type_registry);
 }
 
 pub fn ants_birthing(

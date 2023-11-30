@@ -12,7 +12,6 @@ use crate::{
 };
 
 use bevy::{prelude::*, utils::HashSet};
-use bevy_save::SaveableRegistry;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use super::nest::AtNest;
@@ -29,12 +28,9 @@ pub struct Unstable;
 #[reflect(Component)]
 pub struct Stable;
 
-pub fn register_gravity(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Unstable>(&app_type_registry, &mut saveable_registry);
-    register::<Stable>(&app_type_registry, &mut saveable_registry);
+pub fn register_gravity(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Unstable>(&app_type_registry);
+    register::<Stable>(&app_type_registry);
 }
 
 // TODO: How to do an exact match when running a test?
@@ -235,16 +231,40 @@ pub fn gravity_mark_unstable(
         if let Some(entity) = grid.elements().get_element_entity(position) {
             if let Ok(element) = elements_query.get(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
-                    commands.toggle_element_command(*entity, position, true, Unstable, PhantomData::<AtNest>);
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        true,
+                        Unstable,
+                        PhantomData::<AtNest>,
+                    );
 
-                    commands.toggle_element_command(*entity, position, false, Stable, PhantomData::<AtNest>);
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        false,
+                        Stable,
+                        PhantomData::<AtNest>,
+                    );
                 }
 
                 // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
                 if *element == Element::Dirt && nest.is_aboveground(&position) {
-                    commands.toggle_element_command(*entity, position, true, Unstable, PhantomData::<AtNest>);
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        true,
+                        Unstable,
+                        PhantomData::<AtNest>,
+                    );
 
-                    commands.toggle_element_command(*entity, position, false, Stable, PhantomData::<AtNest>);
+                    commands.toggle_element_command(
+                        *entity,
+                        position,
+                        false,
+                        Stable,
+                        PhantomData::<AtNest>,
+                    );
                 }
             }
         }
@@ -262,7 +282,13 @@ pub fn gravity_mark_stable(
 ) {
     for (position, entity) in unstable_element_query.iter() {
         if !position.is_changed() {
-            commands.toggle_element_command(entity, *position, false, Unstable, PhantomData::<AtNest>);
+            commands.toggle_element_command(
+                entity,
+                *position,
+                false,
+                Unstable,
+                PhantomData::<AtNest>,
+            );
             commands.toggle_element_command(entity, *position, true, Stable, PhantomData::<AtNest>);
         }
     }

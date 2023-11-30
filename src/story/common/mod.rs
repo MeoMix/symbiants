@@ -1,5 +1,4 @@
 use bevy::{prelude::*, reflect::GetTypeRegistration, utils::HashMap};
-use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -29,25 +28,16 @@ impl Default for Id {
 }
 
 /// Register a given type such that it is valid to use with `bevy_save`.
-pub fn register<T: GetTypeRegistration>(
-    app_type_registry: &ResMut<AppTypeRegistry>,
-    saveable_registry: &mut ResMut<SaveableRegistry>,
-) {
+pub fn register<T: GetTypeRegistration>(app_type_registry: &ResMut<AppTypeRegistry>) {
     // Enable reflection
     app_type_registry.write().register::<T>();
-
-    // Enable serialization
-    saveable_registry.register::<T>();
 }
 
-pub fn register_common(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Id>(&app_type_registry, &mut saveable_registry);
-    register::<Option<Id>>(&app_type_registry, &mut saveable_registry);
-    register::<Uuid>(&app_type_registry, &mut saveable_registry);
-    register::<Position>(&app_type_registry, &mut saveable_registry);
+pub fn register_common(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Id>(&app_type_registry);
+    register::<Option<Id>>(&app_type_registry);
+    register::<Uuid>(&app_type_registry);
+    register::<Position>(&app_type_registry);
 }
 
 pub fn pre_setup_common(mut commands: Commands) {

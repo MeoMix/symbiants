@@ -1,5 +1,5 @@
 use bevy::{prelude::*, utils::HashMap};
-use bevy_save::SaveableRegistry;
+
 use serde::{Deserialize, Serialize};
 
 use crate::story::{
@@ -89,11 +89,10 @@ pub struct PheromoneMap(pub HashMap<Position, Entity>);
 /// because it's able to be trivially regenerated at runtime.
 pub fn register_pheromone(
     app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
-    register::<Pheromone>(&app_type_registry, &mut saveable_registry);
-    register::<PheromoneStrength>(&app_type_registry, &mut saveable_registry);
-    register::<PheromoneDuration>(&app_type_registry, &mut saveable_registry);
+    register::<Pheromone>(&app_type_registry);
+    register::<PheromoneStrength>(&app_type_registry);
+    register::<PheromoneDuration>(&app_type_registry);
 }
 
 /// Called after creating a new story, or loading an existing story from storage.

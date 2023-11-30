@@ -10,7 +10,7 @@ use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
-use bevy_save::{SavePlugin, SaveableRegistry};
+use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
@@ -23,7 +23,7 @@ pub struct SymbiantsPlugin;
 
 impl Plugin for SymbiantsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<SaveableRegistry>();
+        // app.insert_resource(AssetMetaCheck::Never);
         app.init_resource::<GlobalRng>();
 
         app.add_state::<AppState>();

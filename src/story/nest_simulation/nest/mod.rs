@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_save::SaveableRegistry;
+
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
@@ -50,10 +50,9 @@ impl Nest {
 
 pub fn register_nest(
     app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
 ) {
-    register::<Nest>(&app_type_registry, &mut saveable_registry);
-    register::<AtNest>(&app_type_registry, &mut saveable_registry);
+    register::<Nest>(&app_type_registry);
+    register::<AtNest>(&app_type_registry);
 }
 
 pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {

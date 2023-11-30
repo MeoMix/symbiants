@@ -40,7 +40,7 @@ pub fn on_crater_removed_visible_grid(
     at_crater_query: Query<Entity, With<AtCrater>>,
     mut commands: Commands,
 ) {
-    for entity in &mut removed {
+    for entity in &mut removed.read() {
         // If Crater was the one who had VisibleGrid removed
         if let Ok(_) = crater_query.get(entity) {
             for at_crater_entity in at_crater_query.iter() {

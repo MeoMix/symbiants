@@ -12,7 +12,7 @@ crate-type = ["cdylib", "rlib"]
 fs_extra = "1.2"
 
 [dependencies]
-bevy = { version = "0.11.3", default-features = false, features = [
+bevy = { version = "0.12.0", default-features = false, features = [
   "bevy_asset",
   "bevy_scene",
   "bevy_winit",
@@ -23,9 +23,9 @@ bevy = { version = "0.11.3", default-features = false, features = [
   "default_font",
   "png",
 ] }
-bevy_egui = { version = "0.22.0" }
-bevy_save = { version = "0.9.3" }
-bevy_turborand = { version = "0.6.0" }
+bevy_egui = { version = "0.23.0" }
+bevy_save = { version = "0.11.1" }
+bevy_turborand = { version = "0.7.0" }
 chrono = { version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.188", features = ["derive"] }
 sun-times = { version = "0.2.0" }
@@ -48,7 +48,7 @@ web-sys = { version = "0.3.64", features = [
 
 # Linux builds require x11 or wayland for display.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy = { version = "0.11.3", default-features = false, features = [
+bevy = { version = "0.12.0", default-features = false, features = [
   "x11",
   # TODO: support wayland w/ hardware accelerated GPU rendering. Currently crashes on startup and forces a Docker container restart.
   # "wayland",

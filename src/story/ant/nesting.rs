@@ -9,12 +9,11 @@ use crate::{
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
 };
-use bevy_save::SaveableRegistry;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
-    AntRole, Facing, Initiative,
+    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, AntRole,
+    Facing, Initiative,
 };
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
@@ -31,12 +30,9 @@ pub enum Nesting {
 #[reflect(Component)]
 pub struct Nested;
 
-pub fn register_nesting(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Nesting>(&app_type_registry, &mut saveable_registry);
-    register::<Nested>(&app_type_registry, &mut saveable_registry);
+pub fn register_nesting(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Nesting>(&app_type_registry);
+    register::<Nested>(&app_type_registry);
 }
 
 // TODO: perf - prefer to query directly for Queen rather than filtering through all workers

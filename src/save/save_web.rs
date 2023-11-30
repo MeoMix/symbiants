@@ -1,10 +1,11 @@
 use bevy::prelude::*;
-use bevy_save::DespawnMode;
-use bevy_save::MappingMode;
-use bevy_save::{Build, Snapshot, SnapshotSerializer, WorldSaveableExt};
-use brotli::{enc::BrotliEncoderInitParams, CompressorWriter, Decompressor};
+use bevy_save::{
+    Backend, DefaultDebugFormat, Error, Format, Pipeline, Snapshot, SnapshotBuilder,
+    SnapshotSerializer, WorldSaveableExt,
+};
+use brotli::enc::BrotliEncoderInitParams;
 use gloo_storage::{LocalStorage, Storage};
-use rmp_serde::{Deserializer, Serializer};
+use serde::de::DeserializeSeed;
 use serde::Serialize;
 use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
@@ -14,6 +15,8 @@ use crate::settings::Settings;
 use crate::story::common::Id;
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
+const LOAD_ERROR: &str = "Failed to load world state from local storage";
+const DECOMPRESS_ERROR: &str = "Failed to decompress data";
 
 static SAVE_SNAPSHOT: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 
@@ -23,7 +26,7 @@ static SAVE_SNAPSHOT: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 /// NOTE: intentionally don't run immediately on first run because it's expensive and nothing has changed.
 /// Let the full interval pass before creating anything rather than initializing on first run then waiting.
 pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save_time: Local<f32>) {
-    let current_time = world.resource::<Time>().raw_elapsed_seconds();
+    let current_time = world.resource::<Time<Real>>().elapsed_seconds();
     let snapshot_interval = world.resource::<Settings>().snapshot_interval;
     if current_time - *last_snapshot_time < snapshot_interval as f32 {
         return;
@@ -48,7 +51,7 @@ pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save
 
 fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     let mut buffer: Vec<u8> = Vec::new();
-    let mut serde = Serializer::new(&mut buffer);
+    let mut serde = rmp_serde::Serializer::new(&mut buffer);
     // Persistent entities must have an Id marker because Id is fit for uniquely identifying across sessions.
     let mut id_query = world.query_filtered::<Entity, With<Id>>();
 
@@ -77,7 +80,7 @@ fn write_save_snapshot() -> bool {
     let mut params = BrotliEncoderInitParams();
     params.quality = 1; // Max compression (0-11 range)
 
-    let mut compressed_data = CompressorWriter::with_params(Vec::new(), 4096, &params);
+    let mut compressed_data = brotli::CompressorWriter::with_params(Vec::new(), 4096, &params);
     compressed_data
         .write_all(&save_snapshot.as_ref().unwrap())
         .expect("Failed to write to compressor");
@@ -134,41 +137,85 @@ pub fn teardown_save() {
 }
 
 pub fn load(world: &mut World) -> bool {
-    LocalStorage::get::<Vec<u8>>(LOCAL_STORAGE_KEY)
-        .map_err(|e| {
-            error!("Failed to load world state from local storage: {:?}", e);
-        })
-        .and_then(|compressed_saved_state| {
-            let mut decompressor = Decompressor::new(&compressed_saved_state[..], 4096);
-            let mut decompressed_data = Vec::new();
+    let mut id_query = world.query_filtered::<Entity, With<Id>>();
+    let id_entities = id_query.iter(world).collect();
 
-            if let Err(e) = decompressor.read_to_end(&mut decompressed_data) {
-                error!("Failed to decompress data: {:?}", e);
-            }
+    world.load(SaveLoadPipeline::new(id_entities)).is_ok()
+}
 
-            // let saved_state = String::from_utf8(decompressed_data).map_err(|e| {
-            //     error!("Failed to convert decompressed bytes to string: {:?}", e);
-            // })?;
+struct SaveLoadPipeline {
+    key: String,
+    id_entities: Vec<Entity>,
+}
 
-            let mut serde = Deserializer::new(&decompressed_data[..]);
+impl SaveLoadPipeline {
+    pub fn new(id_entities: Vec<Entity>) -> Self {
+        Self {
+            key: LOCAL_STORAGE_KEY.to_string(),
+            id_entities,
+        }
+    }
+}
 
-            // let mut serde = Deserializer::from_str(&saved_state);
+impl Pipeline for SaveLoadPipeline {
+    type Backend = CompressedWebStorageBackend;
+    type Format = DefaultDebugFormat;
 
-            if let Ok(applier) = world.deserialize_applier(&mut serde) {
-                return applier
-                    // Prefer these values because they're the Bevy default (rather than bevy_save),
-                    // and because they're necessary to be able to call `clear_empty()` on the snapshot serializer.
-                    // `clear_empty()` is useful because view-related entities don't need to have empty entries persisted, but
-                    // with the default AppDespawnMode setting - it would result in Window getting despawned.
-                    .despawn(DespawnMode::None)
-                    .mapping(MappingMode::Strict)
-                    .apply()
-                    .map_err(|e| {
-                        error!("Deserialization error: {:?}", e);
-                    });
-            }
+    type Key<'a> = &'a str;
 
-            Err(())
-        })
-        .is_ok()
+    fn key(&self) -> Self::Key<'_> {
+        &self.key
+    }
+
+    fn capture_seed(&self, builder: SnapshotBuilder) -> Snapshot {
+        builder
+            .extract_entities(self.id_entities.iter().cloned())
+            .extract_all_resources()
+            .build()
+    }
+
+    fn apply_seed(&self, world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
+        snapshot.applier(world).apply()
+    }
+}
+
+// TODO: this is wasm-only and need to ensure that is enforced better.
+// TODO: This is a Resource but I didn't see bevy_save register it?
+#[derive(Default, Resource)]
+pub struct CompressedWebStorageBackend;
+
+impl<'a> Backend<&'a str> for CompressedWebStorageBackend {
+    fn save<F: Format, T: Serialize>(&self, _key: &str, _value: T) -> Result<(), Error> {
+        Err(Error::custom(
+            "Not implemented - expected to save by writing snapshot manually for now",
+        ))
+    }
+
+    fn load<'de, F: Format, T: DeserializeSeed<'de>>(
+        &self,
+        key: &str,
+        seed: T,
+    ) -> Result<T::Value, Error> {
+        // Attempt to retrieve the compressed state from local storage
+        let compressed_saved_state = LocalStorage::get::<Vec<u8>>(key).map_err(|e| {
+            error!("{}: {:?}", LOAD_ERROR, e);
+            Error::custom(LOAD_ERROR)
+        })?;
+
+        // Initialize the decompressor
+        let mut decompressor = brotli::Decompressor::new(&compressed_saved_state[..], 4096);
+        let mut decompressed_data = Vec::new();
+
+        // Attempt to decompress the data
+        decompressor
+            .read_to_end(&mut decompressed_data)
+            .map_err(|e| {
+                error!("{}: {:?}", DECOMPRESS_ERROR, e);
+                Error::custom(DECOMPRESS_ERROR)
+            })?;
+
+        // Deserialize the data
+        let mut deserializer = rmp_serde::Deserializer::new(&decompressed_data[..]);
+        seed.deserialize(&mut deserializer).map_err(Error::loading)
+    }
 }

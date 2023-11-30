@@ -1,5 +1,4 @@
 use bevy::{prelude::*, reflect::Reflect};
-use bevy_save::SaveableRegistry;
 
 use crate::story::common::register;
 
@@ -91,12 +90,9 @@ impl Default for Settings {
     }
 }
 
-pub fn register_settings(
-    app_type_registry: ResMut<AppTypeRegistry>,
-    mut saveable_registry: ResMut<SaveableRegistry>,
-) {
-    register::<Settings>(&app_type_registry, &mut saveable_registry);
-    register::<Probabilities>(&app_type_registry, &mut saveable_registry);
+pub fn register_settings(app_type_registry: ResMut<AppTypeRegistry>) {
+    register::<Settings>(&app_type_registry);
+    register::<Probabilities>(&app_type_registry);
 }
 
 pub fn setup_settings(mut commands: Commands) {

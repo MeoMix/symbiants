@@ -1,23 +1,27 @@
 use super::Element;
-use crate::story::{common::position::Position, grid::Grid, nest_simulation::nest::{Nest, AtNest}};
-use bevy::{asset::HandleId, prelude::*};
+use crate::story::{
+    common::position::Position,
+    grid::Grid,
+    nest_simulation::nest::{AtNest, Nest},
+};
+use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct ElementSpriteHandles {
-    pub dirt: Vec<HandleUntyped>,
-    pub sand: Vec<HandleUntyped>,
-    pub food: Vec<HandleUntyped>,
-    pub air: HandleUntyped,
+    pub dirt: Vec<Handle<Image>>,
+    pub sand: Vec<Handle<Image>>,
+    pub food: Vec<Handle<Image>>,
+    pub air: Handle<Image>,
 }
 
 impl ElementSpriteHandles {
-    pub fn handle_ids(&self) -> Vec<HandleId> {
+    pub fn get_handles(&self) -> Vec<&Handle<Image>> {
         let handles = [&self.dirt, &self.sand, &self.food];
 
         handles
             .iter()
-            .flat_map(|handle_vec| handle_vec.iter().map(|handle| handle.id()))
-            .chain(std::iter::once(self.air.id()))
+            .flat_map(|handle_vec| handle_vec.iter().map(|handle| handle))
+            .chain(std::iter::once(&self.air))
             .collect()
     }
 }
@@ -36,10 +40,10 @@ pub fn get_element_texture(
 ) -> Handle<Image> {
     match element {
         // Air is transparent - reveals background color such as tunnel or sky
-        Element::Air => element_sprite_handles.air.clone().typed(),
-        Element::Dirt => element_sprite_handles.dirt[index].clone().typed(),
-        Element::Sand => element_sprite_handles.sand[index].clone().typed(),
-        Element::Food => element_sprite_handles.food[index].clone().typed(),
+        Element::Air => element_sprite_handles.air.clone(),
+        Element::Dirt => element_sprite_handles.dirt[index].clone(),
+        Element::Sand => element_sprite_handles.sand[index].clone(),
+        Element::Food => element_sprite_handles.food[index].clone(),
     }
 }
 

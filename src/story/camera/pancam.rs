@@ -129,7 +129,7 @@ fn camera_mouse_zoom(
 ) {
     let pixels_per_line = 100.; // Maybe make configurable?
     let scroll = scroll_events
-        .iter()
+        .read()
         .map(|ev| match ev.unit {
             MouseScrollUnit::Pixel => ev.y,
             MouseScrollUnit::Line => ev.y * pixels_per_line,
@@ -254,7 +254,7 @@ fn event_pan(
     mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection, &Camera, &GlobalTransform)>,
     mut events: EventReader<Pan>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         let window = primary_window.single();
         let window_size = Vec2::new(window.width(), window.height());
 
