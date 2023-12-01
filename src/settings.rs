@@ -1,7 +1,5 @@
 use bevy::{prelude::*, reflect::Reflect};
 
-use crate::story::common::register;
-
 #[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {
     pub random_drop: f32,             // drop while wandering
@@ -91,8 +89,8 @@ impl Default for Settings {
 }
 
 pub fn register_settings(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<Settings>(&app_type_registry);
-    register::<Probabilities>(&app_type_registry);
+    app_type_registry.write().register::<Settings>();
+    app_type_registry.write().register::<Probabilities>();
 }
 
 pub fn setup_settings(mut commands: Commands) {

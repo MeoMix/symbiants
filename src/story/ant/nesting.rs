@@ -2,7 +2,7 @@ use crate::{
     settings::Settings,
     story::{
         ant::birthing::Birthing,
-        common::{position::Position, register},
+        common::position::Position,
         element::Element,
         grid::Grid,
         nest_simulation::nest::{AtNest, Nest},
@@ -31,8 +31,8 @@ pub enum Nesting {
 pub struct Nested;
 
 pub fn register_nesting(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<Nesting>(&app_type_registry);
-    register::<Nested>(&app_type_registry);
+    app_type_registry.write().register::<Nesting>();
+    app_type_registry.write().register::<Nested>();
 }
 
 // TODO: perf - prefer to query directly for Queen rather than filtering through all workers

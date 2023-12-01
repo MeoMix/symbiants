@@ -3,7 +3,7 @@ use bevy::{prelude::*, utils::HashMap};
 use serde::{Deserialize, Serialize};
 
 use crate::story::{
-    common::{position::Position, register},
+    common::position::Position,
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
 };
 
@@ -87,12 +87,10 @@ pub struct PheromoneMap(pub HashMap<Position, Entity>);
 
 /// Note the intentional omission of PheromoneMap. It would be wasteful to persist
 /// because it's able to be trivially regenerated at runtime.
-pub fn register_pheromone(
-    app_type_registry: ResMut<AppTypeRegistry>,
-) {
-    register::<Pheromone>(&app_type_registry);
-    register::<PheromoneStrength>(&app_type_registry);
-    register::<PheromoneDuration>(&app_type_registry);
+pub fn register_pheromone(app_type_registry: ResMut<AppTypeRegistry>) {
+    app_type_registry.write().register::<Pheromone>();
+    app_type_registry.write().register::<PheromoneStrength>();
+    app_type_registry.write().register::<PheromoneDuration>();
 }
 
 /// Called after creating a new story, or loading an existing story from storage.

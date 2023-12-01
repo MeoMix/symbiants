@@ -1,4 +1,4 @@
-use crate::story::common::{position::Position, register};
+use crate::story::common::position::Position;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -64,11 +64,11 @@ impl<Z: Zone> ElementBundle<Z> {
 }
 
 pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<Element>(&app_type_registry);
-    register::<Air>(&app_type_registry);
-    register::<Food>(&app_type_registry);
-    register::<Dirt>(&app_type_registry);
-    register::<Sand>(&app_type_registry);
+    app_type_registry.write().register::<Element>();
+    app_type_registry.write().register::<Air>();
+    app_type_registry.write().register::<Food>();
+    app_type_registry.write().register::<Dirt>();
+    app_type_registry.write().register::<Sand>();
 }
 
 // TODO: filter?

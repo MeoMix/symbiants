@@ -4,7 +4,7 @@ use crate::{
     settings::Settings,
     story::{
         ant::{AntOrientation, Dead, Initiative},
-        common::{position::Position, register},
+        common::position::Position,
         element::{commands::ElementCommandsExt, Air, Element},
         grid::Grid,
         nest_simulation::nest::Nest,
@@ -29,8 +29,8 @@ pub struct Unstable;
 pub struct Stable;
 
 pub fn register_gravity(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<Unstable>(&app_type_registry);
-    register::<Stable>(&app_type_registry);
+    app_type_registry.write().register::<Unstable>();
+    app_type_registry.write().register::<Stable>();
 }
 
 // TODO: How to do an exact match when running a test?

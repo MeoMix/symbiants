@@ -11,7 +11,7 @@ use crate::{
             digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
             AntName, AntOrientation, AntRole, Facing, Initiative,
         },
-        common::{position::Position, register, Zone},
+        common::{position::Position, Zone},
         element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
@@ -30,8 +30,8 @@ impl Zone for AtCrater {}
 pub struct Crater;
 
 pub fn register_crater(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<Crater>(&app_type_registry);
-    register::<AtCrater>(&app_type_registry);
+    app_type_registry.write().register::<Crater>();
+    app_type_registry.write().register::<AtCrater>();
 }
 
 pub fn setup_crater(mut commands: Commands) {

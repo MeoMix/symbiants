@@ -4,8 +4,6 @@ use chrono::Datelike;
 use chrono::{DateTime, LocalResult, NaiveDate, TimeZone, Timelike, Utc};
 use std::time::Duration;
 
-use crate::story::common::register;
-
 use super::simulation_timestep::SimulationTime;
 
 pub const DEFAULT_TICKS_PER_SECOND: isize = 10;
@@ -190,8 +188,8 @@ pub enum StoryPlaybackState {
 }
 
 pub fn register_story_time(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<StoryRealWorldTime>(&app_type_registry);
-    register::<StoryTime>(&app_type_registry);
+    app_type_registry.write().register::<StoryRealWorldTime>();
+    app_type_registry.write().register::<StoryTime>();
 }
 
 // TODO: awkward timing for this - need to have resources available before calling load (why?)

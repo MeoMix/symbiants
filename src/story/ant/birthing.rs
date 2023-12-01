@@ -1,7 +1,5 @@
 use crate::story::{
-    common::{position::Position, register},
-    nest_simulation::nest::AtNest,
-    story_time::DEFAULT_TICKS_PER_SECOND,
+    common::position::Position, nest_simulation::nest::AtNest, story_time::DEFAULT_TICKS_PER_SECOND,
 };
 
 use super::{
@@ -51,7 +49,7 @@ impl Birthing {
 }
 
 pub fn register_birthing(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<Birthing>(&app_type_registry);
+    app_type_registry.write().register::<Birthing>();
 }
 
 pub fn ants_birthing(

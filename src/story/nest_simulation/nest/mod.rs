@@ -12,7 +12,7 @@ use crate::{
             digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
             AntName, AntOrientation, AntRole, Facing, Initiative,
         },
-        common::{position::Position, register, Zone},
+        common::{position::Position, Zone},
         element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
@@ -49,8 +49,8 @@ impl Nest {
 }
 
 pub fn register_nest(app_type_registry: ResMut<AppTypeRegistry>) {
-    register::<Nest>(&app_type_registry);
-    register::<AtNest>(&app_type_registry);
+    app_type_registry.write().register::<Nest>();
+    app_type_registry.write().register::<AtNest>();
 }
 
 pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
