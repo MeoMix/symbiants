@@ -1,4 +1,4 @@
-use crate::story::common::{position::Position, register, Id};
+use crate::story::common::{position::Position, register};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +48,6 @@ pub struct ElementBundle<Z>
 where
     Z: Zone,
 {
-    id: Id,
     element: Element,
     position: Position,
     zone: Z,
@@ -57,7 +56,6 @@ where
 impl<Z: Zone> ElementBundle<Z> {
     pub fn new(element: Element, position: Position, zone: Z) -> Self {
         Self {
-            id: Id::default(),
             element,
             position,
             zone,

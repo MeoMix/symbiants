@@ -1,6 +1,6 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
-    common::{position::Position, IdMap},
+    common::position::Position,
     crater_simulation::crater::Crater,
     grid::{Grid, VisibleGrid, VisibleGridState},
     nest_simulation::nest::{AtNest, Nest},
@@ -38,7 +38,6 @@ pub fn process_external_event(
     elements_query: Query<&Element>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
     selected_entity_query: Query<Entity, With<Selected>>,
-    id_map: Res<IdMap>,
     mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
 ) {
     let nest = nest_query.single();
@@ -165,8 +164,7 @@ pub fn process_external_event(
                 })
             {
                 // TODO: This should happen automatically when an ant is despawned
-                if let Some(inventory_element_id) = &inventory.0 {
-                    let element_entity = id_map.0.get(inventory_element_id).unwrap();
+                if let Some(element_entity) = &inventory.0 {
                     commands.entity(*element_entity).despawn();
                 }
 

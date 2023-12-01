@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::{Element, ElementBundle};
 use crate::story::{
-    common::{position::Position, IdMap, Zone},
+    common::{position::Position, Zone},
     grid::Grid,
 };
 use bevy::{ecs::system::Command, prelude::*};
@@ -15,12 +15,7 @@ pub trait ElementCommandsExt {
         target_element: Entity,
         zone: Z,
     );
-    fn spawn_element<Z: Zone>(
-        &mut self,
-        position: Position,
-        element: Element,
-        zone: Z,
-    );
+    fn spawn_element<Z: Zone>(&mut self, position: Position, element: Element, zone: Z);
     fn toggle_element_command<C: Component, Z: Zone>(
         &mut self,
         target_element_entity: Entity,
@@ -47,12 +42,7 @@ impl<'w, 's> ElementCommandsExt for Commands<'w, 's> {
         })
     }
 
-    fn spawn_element<Z: Zone>(
-        &mut self,
-        position: Position,
-        element: Element,
-        zone: Z,
-    ) {
+    fn spawn_element<Z: Zone>(&mut self, position: Position, element: Element, zone: Z) {
         self.add(SpawnElementCommand {
             element,
             position,
@@ -105,7 +95,9 @@ impl<Z: Zone> Command for ReplaceElementCommand<Z> {
 
         world.entity_mut(*existing_entity).despawn();
 
-        let entity = spawn_element(self.element, self.position, self.zone, world);
+        let entity = world
+            .spawn(ElementBundle::new(self.element, self.position, self.zone))
+            .id();
 
         let mut grid = world
             .query_filtered::<&mut Grid, With<Z>>()
@@ -133,7 +125,9 @@ impl<Z: Zone> Command for SpawnElementCommand<Z> {
             return;
         }
 
-        let entity = spawn_element(self.element, self.position, self.zone, world);
+        let entity = world
+            .spawn(ElementBundle::new(self.element, self.position, self.zone))
+            .id();
 
         let mut grid = world
             .query_filtered::<&mut Grid, With<Z>>()
@@ -141,21 +135,6 @@ impl<Z: Zone> Command for SpawnElementCommand<Z> {
 
         grid.elements_mut().set_element(self.position, entity);
     }
-}
-
-pub fn spawn_element<Z: Zone>(
-    element: Element,
-    position: Position,
-    zone: Z,
-    world: &mut World,
-) -> Entity {
-    let element_bundle = ElementBundle::new(element, position, zone);
-    let id = element_bundle.id.clone();
-    let entity = world.spawn(element_bundle).id();
-
-    world.resource_mut::<IdMap>().0.insert(id, entity);
-
-    entity
 }
 
 struct ToggleElementCommand<C: Component, Z: Zone> {

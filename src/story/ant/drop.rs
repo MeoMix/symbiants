@@ -1,7 +1,7 @@
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, IdMap},
+        common::position::Position,
         element::Element,
         grid::Grid,
         nest_simulation::nest::{AtNest, Nest},
@@ -29,7 +29,6 @@ pub fn ants_drop(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
-    id_map: Res<IdMap>,
 ) {
     let (grid, nest) = nest_query.single();
 
@@ -67,9 +66,7 @@ pub fn ants_drop(
         }
 
         // There is an air gap directly ahead of the ant. Consider dropping inventory.
-        let inventory_item_element_entity = id_map.0.get(inventory.0.as_ref().unwrap()).unwrap();
-
-        let inventory_item_element = elements_query.get(*inventory_item_element_entity).unwrap();
+        let inventory_item_element = elements_query.get(inventory.0.unwrap()).unwrap();
 
         // Prioritize dropping sand above ground and food below ground.
         let drop_sand = *inventory_item_element == Element::Sand

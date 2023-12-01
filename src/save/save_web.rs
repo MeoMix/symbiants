@@ -26,7 +26,7 @@ use crate::{
             Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
             Initiative, InventoryItem,
         },
-        common::{position::Position, Id},
+        common::position::Position,
         crater_simulation::crater::{AtCrater, Crater},
         element::{Air, Dirt, Element, Food, Sand},
         nest_simulation::{
@@ -78,10 +78,18 @@ fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     let mut serde = rmp_serde::Serializer::new(&mut buffer);
 
     // Persistent entities must have an Id marker because Id is fit for uniquely identifying across sessions.
-    let mut id_query = world.query_filtered::<Entity, With<Id>>();
-    id_query.update_archetypes(world);
-    let readonly_id_query = id_query.as_readonly();
-    let snapshot = build_snapshot(world, readonly_id_query);
+    // NOTE: Technically this could also include InventoryItem, but Element matches it (just by chance for now though?)
+    let mut model_query = world.query_filtered::<Entity, Or<(
+        With<Ant>,
+        With<Element>,
+        With<Crater>,
+        With<Nest>,
+        With<Pheromone>,
+    )>>();
+
+    model_query.update_archetypes(world);
+    let readonly_model_query = model_query.as_readonly();
+    let snapshot = build_snapshot(world, readonly_model_query);
 
     let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
     let result = SnapshotSerializer::new(&snapshot, registry).serialize(&mut serde);
@@ -159,24 +167,52 @@ pub fn teardown_save() {
 }
 
 pub fn load(world: &mut World) -> bool {
-    let mut id_query = world.query_filtered::<Entity, With<Id>>();
-    id_query.update_archetypes(world);
+    let mut model_query = world.query_filtered::<Entity, Or<(
+        With<Ant>,
+        With<Element>,
+        With<Crater>,
+        With<Nest>,
+        With<Pheromone>,
+    )>>();
+    model_query.update_archetypes(world);
 
-    let readonly_id_query = id_query.as_readonly();
+    let readonly_model_query = model_query.as_readonly();
 
-    world.load(SaveLoadPipeline::new(readonly_id_query)).is_ok()
+    world
+        .load(SaveLoadPipeline::new(readonly_model_query))
+        .is_ok()
 }
 
 struct SaveLoadPipeline<'q> {
     key: String,
-    readonly_id_query: &'q QueryState<Entity, With<Id>>,
+    readonly_model_query: &'q QueryState<
+        Entity,
+        Or<(
+            With<Ant>,
+            With<Element>,
+            With<Crater>,
+            With<Nest>,
+            With<Pheromone>,
+        )>,
+    >,
 }
 
 impl<'q> SaveLoadPipeline<'q> {
-    pub fn new(readonly_id_query: &'q QueryState<Entity, With<Id>>) -> Self {
+    pub fn new(
+        readonly_model_query: &'q QueryState<
+            Entity,
+            Or<(
+                With<Ant>,
+                With<Element>,
+                With<Crater>,
+                With<Nest>,
+                With<Pheromone>,
+            )>,
+        >,
+    ) -> Self {
         Self {
             key: LOCAL_STORAGE_KEY.to_string(),
-            readonly_id_query,
+            readonly_model_query,
         }
     }
 }
@@ -192,7 +228,7 @@ impl<'q> Pipeline for SaveLoadPipeline<'q> {
     }
 
     fn capture_seed(&self, builder: SnapshotBuilder) -> Snapshot {
-        build_snapshot(builder.world(), self.readonly_id_query)
+        build_snapshot(builder.world(), self.readonly_model_query)
     }
 
     fn apply_seed(&self, world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
@@ -239,7 +275,19 @@ impl<'a> Backend<&'a str> for CompressedWebStorageBackend {
     }
 }
 
-fn build_snapshot(world: &World, readonly_id_query: &QueryState<Entity, With<Id>>) -> Snapshot {
+fn build_snapshot(
+    world: &World,
+    readonly_model_query: &QueryState<
+        Entity,
+        Or<(
+            With<Ant>,
+            With<Element>,
+            With<Crater>,
+            With<Nest>,
+            With<Pheromone>,
+        )>,
+    >,
+) -> Snapshot {
     Snapshot::builder(world)
         // TODO: Instead of doing all this - consider if denying just view-related Components would be more robust and/or keeping view and model entities separate.
         .deny_all()
@@ -257,8 +305,8 @@ fn build_snapshot(world: &World, readonly_id_query: &QueryState<Entity, With<Id>
         .allow::<Food>()
         .allow::<Dirt>()
         .allow::<Sand>()
-        .allow::<Id>()
-        .allow::<Option<Id>>()
+        .allow::<Entity>()
+        .allow::<Option<Entity>>()
         .allow::<Uuid>()
         .allow::<Position>()
         .allow::<Nesting>()
@@ -284,7 +332,7 @@ fn build_snapshot(world: &World, readonly_id_query: &QueryState<Entity, With<Id>
         .allow::<Settings>()
         .allow::<StoryTime>()
         .allow::<StoryRealWorldTime>()
-        .extract_entities(readonly_id_query.iter_manual(world))
+        .extract_entities(readonly_model_query.iter_manual(world))
         .extract_resource::<Settings>()
         .extract_resource::<StoryTime>()
         .extract_resource::<StoryRealWorldTime>()

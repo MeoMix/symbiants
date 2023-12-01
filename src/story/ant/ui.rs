@@ -7,7 +7,7 @@ use super::{
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, IdMap},
+        common::position::Position,
         element::{
             ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
             Element,
@@ -35,7 +35,6 @@ fn insert_ant_sprite(
     element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
     grid: &Grid,
-    id_map: &Res<IdMap>,
 ) {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
@@ -74,7 +73,6 @@ fn insert_ant_sprite(
                 inventory,
                 &elements_query,
                 &element_sprite_handles,
-                &id_map,
             ) {
                 parent.spawn(bundle);
             }
@@ -148,7 +146,6 @@ pub fn on_spawn_ant(
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
-    id_map: Res<IdMap>,
 ) {
     let grid = nest_query.single();
 
@@ -166,7 +163,6 @@ pub fn on_spawn_ant(
             &element_sprite_handles,
             &elements_query,
             &grid,
-            &id_map,
         );
 
         spawn_ant_label_text2d(&mut commands, position, name, entity, &grid);
@@ -193,7 +189,6 @@ pub fn rerender_ants(
     element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
-    id_map: Res<IdMap>,
 ) {
     let grid = nest_query.single();
 
@@ -217,7 +212,6 @@ pub fn rerender_ants(
             &element_sprite_handles,
             &elements_query,
             &grid,
-            &id_map,
         );
 
         spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &grid);
@@ -243,15 +237,11 @@ pub fn on_update_ant_inventory(
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     element_sprite_handles: Res<ElementSpriteHandles>,
-    id_map: Res<IdMap>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
-        if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
-            &inventory,
-            &elements_query,
-            &element_sprite_handles,
-            &id_map,
-        ) {
+        if let Some(inventory_item_bundle) =
+            get_inventory_item_sprite_bundle(&inventory, &elements_query, &element_sprite_handles)
+        {
             commands
                 .entity(entity)
                 .with_children(|ant: &mut ChildBuilder| {
@@ -286,16 +276,13 @@ fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
     elements_query: &Query<&Element>,
     element_sprite_handles: &Res<ElementSpriteHandles>,
-    id_map: &Res<IdMap>,
 ) -> Option<AntHeldElementSpriteBundle> {
-    let inventory_item_element_id = match &inventory.0 {
-        Some(inventory_item_element_id) => inventory_item_element_id,
+    let element_entity = match inventory.0 {
+        Some(element_entity) => element_entity,
         None => return None,
     };
 
-    // TODO: I am surprised this is working
-    let inventory_item_element_entity = id_map.0.get(inventory_item_element_id).unwrap();
-    let inventory_item_element = elements_query.get(*inventory_item_element_entity).unwrap();
+    let inventory_item_element = elements_query.get(element_entity).unwrap();
 
     let element_exposure = ElementExposure {
         north: true,

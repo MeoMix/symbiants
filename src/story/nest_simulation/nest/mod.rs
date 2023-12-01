@@ -12,7 +12,7 @@ use crate::{
             digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
             AntName, AntOrientation, AntRole, Facing, Initiative,
         },
-        common::{position::Position, register, Id, Zone},
+        common::{position::Position, register, Zone},
         element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
@@ -48,9 +48,7 @@ impl Nest {
     }
 }
 
-pub fn register_nest(
-    app_type_registry: ResMut<AppTypeRegistry>,
-) {
+pub fn register_nest(app_type_registry: ResMut<AppTypeRegistry>) {
     register::<Nest>(&app_type_registry);
     register::<AtNest>(&app_type_registry);
 }
@@ -60,7 +58,7 @@ pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
         - (settings.nest_height as f32 * settings.initial_dirt_percent))
         as isize;
 
-    commands.spawn((Nest::new(surface_level), AtNest, Id::default()));
+    commands.spawn((Nest::new(surface_level), AtNest));
 }
 
 /// Creates a new grid of Elements. The grid is densley populated.

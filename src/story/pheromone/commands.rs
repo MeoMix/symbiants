@@ -1,4 +1,4 @@
-use crate::story::{common::{position::Position, Id}, nest_simulation::nest::AtNest};
+use crate::story::{common::position::Position, nest_simulation::nest::AtNest};
 use bevy::{ecs::system::Command, prelude::*};
 
 use super::{Pheromone, PheromoneDuration, PheromoneMap, PheromoneStrength};
@@ -52,12 +52,11 @@ impl Command for SpawnPheromoneCommand {
 
         let pheromone_entity = world
             .spawn((
-                Id::default(),
                 self.position,
                 self.pheromone,
                 PheromoneDuration::default(),
                 self.pheromone_strength,
-                AtNest
+                AtNest,
             ))
             .id();
         world

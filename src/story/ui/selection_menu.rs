@@ -6,7 +6,7 @@ use crate::story::{
         birthing::Birthing, hunger::Hunger, sleep::Asleep, Ant, AntInventory, AntName, AntRole,
         Dead,
     },
-    common::{position::Position, IdMap},
+    common::position::Position,
     element::Element,
     pheromone::{Pheromone, PheromoneStrength},
 };
@@ -17,7 +17,6 @@ pub struct Selected;
 pub fn update_selection_menu(
     mut contexts: EguiContexts,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-
     selected_ant_query: Query<
         (
             &Hunger,
@@ -33,7 +32,6 @@ pub fn update_selection_menu(
     selected_element_query: Query<(&Element, &Position), With<Selected>>,
     pheromone_query: Query<(&Position, &Pheromone, &PheromoneStrength)>,
     elements_query: Query<&Element>,
-    id_map: Res<IdMap>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -72,10 +70,8 @@ pub fn update_selection_menu(
                 ui.label(&format!("Role: {:?}", ant_role));
                 ui.label(&format!("Hunger: {:.0}%", hunger.value()));
 
-                if let Some(inventory_element_id) = &inventory.0 {
-                    let entity = id_map.0.get(inventory_element_id).unwrap();
-                    let element = elements_query.get(*entity).unwrap();
-
+                if let Some(element_entity) = inventory.0 {
+                    let element = elements_query.get(element_entity).unwrap();
                     ui.label(&format!("Carrying: {:?}", element));
                 }
 

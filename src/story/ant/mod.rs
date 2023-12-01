@@ -2,7 +2,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
-use crate::story::common::{position::Position, register, Id};
+use crate::story::common::{position::Position, register};
 
 use self::{
     birthing::Birthing, chambering::Chambering, digestion::Digestion, hunger::Hunger,
@@ -10,7 +10,13 @@ use self::{
 };
 
 use super::{common::Zone, element::Element, nest_simulation::nest::AtNest};
-use bevy::prelude::*;
+use bevy::{
+    ecs::{
+        entity::{EntityMapper, MapEntities},
+        reflect::ReflectMapEntities,
+    },
+    prelude::*,
+};
 
 pub mod birthing;
 pub mod chambering;
@@ -34,7 +40,6 @@ pub struct AntBundle<Z>
 where
     Z: Zone,
 {
-    id: Id,
     ant: Ant,
     position: Position,
     orientation: AntOrientation,
@@ -63,7 +68,6 @@ impl<Z: Zone> AntBundle<Z> {
         digestion: Digestion,
     ) -> Self {
         Self {
-            id: Id::default(),
             ant: Ant,
             // Queen always spawns in the center. She'll fall from the sky in the future.
             position,
@@ -97,10 +101,17 @@ pub struct AntLabel(pub Entity);
 #[reflect(Component)]
 pub struct AntColor(pub Color);
 
-// TODO: GUID doesn't implement Copy so I've got .clone's() everywhere cuz I'm lazy
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
-#[reflect(Component)]
-pub struct AntInventory(pub Option<Id>);
+#[reflect(Component, MapEntities)]
+pub struct AntInventory(pub Option<Entity>);
+
+impl MapEntities for AntInventory {
+    fn map_entities(&mut self, entity_mapper: &mut EntityMapper) {
+        if let Some(entity) = self.0 {
+            self.0 = Some(entity_mapper.get_or_reserve(entity));
+        }
+    }
+}
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -122,23 +133,19 @@ pub enum AntRole {
 
 #[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct InventoryItem {
-    pub parent_id: Id,
-}
+pub struct InventoryItem;
 
 #[derive(Bundle)]
 pub struct InventoryItemBundle {
-    id: Id,
     element: Element,
     inventory_item: InventoryItem,
 }
 
 impl InventoryItemBundle {
-    pub fn new(element: Element, parent_id: Id) -> Self {
+    pub fn new(element: Element) -> Self {
         InventoryItemBundle {
-            id: Id::default(),
             element,
-            inventory_item: InventoryItem { parent_id },
+            inventory_item: InventoryItem,
         }
     }
 }

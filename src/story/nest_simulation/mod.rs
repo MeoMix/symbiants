@@ -46,7 +46,7 @@ use crate::{
             walk::{ants_stabilize_footing_movement, ants_walk},
         },
         common::{
-            pre_setup_common, register_common, setup_common,
+            register_common,
             ui::{on_added_selected, on_removed_selected},
         },
         element::{
@@ -126,7 +126,6 @@ impl Plugin for NestSimulationPlugin {
                 register_pheromone,
                 register_nest,
                 register_crater,
-                (pre_setup_common, apply_deferred).chain(),
                 load_textures,
             )
                 .chain(),
@@ -155,7 +154,6 @@ impl Plugin for NestSimulationPlugin {
                 (ensure_nest_spatial_bundle, apply_deferred).chain(),
                 (pre_setup_story_time, apply_deferred).chain(),
                 (setup_nest_grid, apply_deferred).chain(),
-                (setup_common, apply_deferred).chain(),
                 (setup_pointer, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
                 (setup_background, apply_deferred).chain(),

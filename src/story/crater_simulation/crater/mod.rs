@@ -11,7 +11,7 @@ use crate::{
             digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
             AntName, AntOrientation, AntRole, Facing, Initiative,
         },
-        common::{position::Position, register, Id, Zone},
+        common::{position::Position, register, Zone},
         element::{Element, ElementBundle},
         grid::{elements_cache::ElementsCache, Grid},
     },
@@ -35,7 +35,7 @@ pub fn register_crater(app_type_registry: ResMut<AppTypeRegistry>) {
 }
 
 pub fn setup_crater(mut commands: Commands) {
-    commands.spawn((Crater, AtCrater, Id::default()));
+    commands.spawn((Crater, AtCrater));
 }
 
 /// Creates a new grid of Elements. The grid is densley populated.

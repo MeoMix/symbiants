@@ -4,8 +4,8 @@ use bevy::{ecs::system::Command, prelude::*};
 
 use crate::story::{
     ant::AntInventory,
-    common::{position::Position, Id, IdMap, Zone},
-    element::{commands::spawn_element, Element, ElementBundle},
+    common::{position::Position, Zone},
+    element::{Element, ElementBundle},
     grid::Grid,
 };
 
@@ -158,25 +158,12 @@ impl<Z: Zone> Command for DigElementCommand<Z> {
             inventory_element = Element::Sand;
         }
 
-        let mut id_query = world.query::<(Entity, &Id)>();
-        let ant_id = id_query
-            .iter(world)
-            .find(|(entity, _)| *entity == self.ant_entity)
-            .map(|(_, id)| id)
-            .unwrap();
-
-        let inventory_item_bundle = InventoryItemBundle::new(inventory_element, ant_id.clone());
-        let inventory_item_element_id = inventory_item_bundle.id.clone();
-
-        let inventory_item_entity = world.spawn(inventory_item_bundle).id();
-
-        world
-            .resource_mut::<IdMap>()
-            .0
-            .insert(inventory_item_element_id.clone(), inventory_item_entity);
+        let inventory_item_entity = world
+            .spawn(InventoryItemBundle::new(inventory_element))
+            .id();
 
         match world.get_mut::<AntInventory>(self.ant_entity) {
-            Some(mut inventory) => inventory.0 = Some(inventory_item_element_id),
+            Some(mut inventory) => inventory.0 = Some(inventory_item_entity),
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
         };
 
@@ -219,22 +206,21 @@ impl<Z: Zone> Command for DropElementCommand<Z> {
             None => panic!("Failed to get inventory for ant {:?}", self.ant_entity),
         };
 
-        let inventory_item_id = match inventory.0.clone() {
+        let inventory_item_entity = match inventory.0.clone() {
             Some(element_id) => element_id,
             None => panic!("Ant {:?} has no element in inventory", self.ant_entity),
         };
 
-        let mut id_query = world.query::<(Entity, &Id)>();
-        let inventory_item_entity = id_query
-            .iter(world)
-            .find(|(_, id)| **id == inventory_item_id)
-            .map(|(entity, _)| entity)
-            .unwrap();
-
         let element = world.get::<Element>(inventory_item_entity).unwrap();
 
         // Add element to world.
-        let element_entity = spawn_element(*element, self.target_position, self.zone, world);
+        let element_entity = world
+            .spawn(ElementBundle::new(
+                *element,
+                self.target_position,
+                self.zone,
+            ))
+            .id();
 
         let mut grid = world
             .query_filtered::<&mut Grid, With<Z>>()
@@ -271,28 +257,23 @@ struct SpawnAntCommand<Z: Zone> {
     zone: Z,
 }
 
+// TODO: Get rid of this since I don't need to keep a cache synced anymore
 impl<Z: Zone> Command for SpawnAntCommand<Z> {
     fn apply(self, world: &mut World) {
         let settings = world.resource::<Settings>();
-        let id = Id::default();
 
-        let entity = world
-            .spawn(AntBundle {
-                id: id.clone(),
-                ant: Ant,
-                position: self.position,
-                orientation: self.orientation,
-                inventory: self.inventory,
-                role: self.role,
-                initiative: self.initiative,
-                name: self.name,
-                color: self.color,
-                zone: self.zone,
-                hunger: Hunger::new(settings.max_hunger_time),
-                digestion: Digestion::new(settings.max_digestion_time),
-            })
-            .id();
-
-        world.resource_mut::<IdMap>().0.insert(id, entity);
+        world.spawn(AntBundle {
+            ant: Ant,
+            position: self.position,
+            orientation: self.orientation,
+            inventory: self.inventory,
+            role: self.role,
+            initiative: self.initiative,
+            name: self.name,
+            color: self.color,
+            zone: self.zone,
+            hunger: Hunger::new(settings.max_hunger_time),
+            digestion: Digestion::new(settings.max_digestion_time),
+        });
     }
 }
