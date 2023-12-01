@@ -2878,7 +2878,6 @@ dependencies = [
  "rmp-serde",
  "serde",
  "sun-times",
- "uuid",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-sys",

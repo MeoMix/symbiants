@@ -29,7 +29,6 @@ bevy_turborand = { version = "0.7.0" }
 chrono = { version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.188", features = ["derive"] }
 sun-times = { version = "0.2.0" }
-uuid = { version = "1.4.1" }
 
 # WASM builds require extra dependencies for logging and persisting state to local storage.
 # WASM builds do not require x11 and cannot use dynamic_linking.

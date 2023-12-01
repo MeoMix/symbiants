@@ -8,7 +8,6 @@ use gloo_storage::{LocalStorage, Storage};
 use serde::de::DeserializeSeed;
 use serde::Serialize;
 use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
-use uuid::Uuid;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
@@ -307,7 +306,6 @@ fn build_snapshot(
         .allow::<Sand>()
         .allow::<Entity>()
         .allow::<Option<Entity>>()
-        .allow::<Uuid>()
         .allow::<Position>()
         .allow::<Nesting>()
         .allow::<Nested>()

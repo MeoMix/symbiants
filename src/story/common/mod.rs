@@ -1,5 +1,4 @@
 use bevy::{prelude::*, reflect::GetTypeRegistration};
-use uuid::Uuid;
 
 use self::position::Position;
 
@@ -18,6 +17,5 @@ pub fn register<T: GetTypeRegistration>(app_type_registry: &ResMut<AppTypeRegist
 pub fn register_common(app_type_registry: ResMut<AppTypeRegistry>) {
     register::<Entity>(&app_type_registry);
     register::<Option<Entity>>(&app_type_registry);
-    register::<Uuid>(&app_type_registry);
     register::<Position>(&app_type_registry);
 }
