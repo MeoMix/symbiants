@@ -2877,7 +2877,6 @@ dependencies = [
  "js-sys",
  "rmp-serde",
  "serde",
- "serde_json",
  "sun-times",
  "uuid",
  "wasm-bindgen",

@@ -12,26 +12,31 @@ use uuid::Uuid;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
-use crate::settings::Settings;
-use crate::story::ant::birthing::Birthing;
-use crate::story::ant::chambering::Chambering;
-use crate::story::ant::digestion::Digestion;
-use crate::story::ant::hunger::Hunger;
-use crate::story::ant::nesting::{Nested, Nesting};
-use crate::story::ant::sleep::Asleep;
-use crate::story::ant::tunneling::Tunneling;
-use crate::story::ant::{
-    Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing, Initiative,
-    InventoryItem,
+use crate::{
+    settings::Settings,
+    story::{
+        ant::{
+            birthing::Birthing,
+            chambering::Chambering,
+            digestion::Digestion,
+            hunger::Hunger,
+            nesting::{Nested, Nesting},
+            sleep::Asleep,
+            tunneling::Tunneling,
+            Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
+            Initiative, InventoryItem,
+        },
+        common::{position::Position, Id},
+        crater_simulation::crater::{AtCrater, Crater},
+        element::{Air, Dirt, Element, Food, Sand},
+        nest_simulation::{
+            gravity::{Stable, Unstable},
+            nest::{AtNest, Nest},
+        },
+        pheromone::{Pheromone, PheromoneDuration, PheromoneStrength},
+        story_time::{StoryRealWorldTime, StoryTime},
+    },
 };
-use crate::story::common::position::Position;
-use crate::story::common::Id;
-use crate::story::crater_simulation::crater::{AtCrater, Crater};
-use crate::story::element::{Air, Dirt, Element, Food, Sand};
-use crate::story::nest_simulation::gravity::{Stable, Unstable};
-use crate::story::nest_simulation::nest::{AtNest, Nest};
-use crate::story::pheromone::{Pheromone, PheromoneDuration, PheromoneStrength};
-use crate::story::story_time::{StoryRealWorldTime, StoryTime};
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";
 const LOAD_ERROR: &str = "Failed to load world state from local storage";
@@ -71,61 +76,14 @@ pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save
 fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     let mut buffer: Vec<u8> = Vec::new();
     let mut serde = rmp_serde::Serializer::new(&mut buffer);
+
     // Persistent entities must have an Id marker because Id is fit for uniquely identifying across sessions.
     let mut id_query = world.query_filtered::<Entity, With<Id>>();
-
-    let snapshot = Snapshot::builder(world)
-        // TODO: Instead of doing all this - consider if denying just view-related Components would be more robust and/or keeping view and model entities separate.
-        .deny_all()
-        .allow::<Pheromone>()
-        .allow::<PheromoneStrength>()
-        .allow::<PheromoneDuration>()
-        .allow::<Nest>()
-        .allow::<AtNest>()
-        .allow::<Crater>()
-        .allow::<AtCrater>()
-        .allow::<Unstable>()
-        .allow::<Stable>()
-        .allow::<Element>()
-        .allow::<Air>()
-        .allow::<Food>()
-        .allow::<Dirt>()
-        .allow::<Sand>()
-        .allow::<Id>()
-        .allow::<Option<Id>>()
-        .allow::<Uuid>()
-        .allow::<Position>()
-        .allow::<Nesting>()
-        .allow::<Nested>()
-        .allow::<Ant>()
-        .allow::<AntName>()
-        .allow::<AntColor>()
-        .allow::<Dead>()
-        .allow::<Asleep>()
-        .allow::<Initiative>()
-        .allow::<AntOrientation>()
-        .allow::<Facing>()
-        .allow::<Angle>()
-        .allow::<AntRole>()
-        .allow::<Hunger>()
-        .allow::<Digestion>()
-        .allow::<AntInventory>()
-        .allow::<InventoryItem>()
-        .allow::<Birthing>()
-        .allow::<Tunneling>()
-        .allow::<Chambering>()
-        .allow::<Birthing>()
-        .allow::<Settings>()
-        .allow::<StoryTime>()
-        .allow::<StoryRealWorldTime>()
-        .extract_entities(id_query.iter(world))
-        .extract_resource::<Settings>()
-        .extract_resource::<StoryTime>()
-        .extract_resource::<StoryRealWorldTime>()
-        .build();
+    id_query.update_archetypes(world);
+    let readonly_id_query = id_query.as_readonly();
+    let snapshot = build_snapshot(world, readonly_id_query);
 
     let registry: &AppTypeRegistry = world.resource::<AppTypeRegistry>();
-
     let result = SnapshotSerializer::new(&snapshot, registry).serialize(&mut serde);
 
     if result.is_ok() {
@@ -133,6 +91,7 @@ fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
     } else {
         error!("Failed to serialize snapshot: {:?}", result);
     }
+
     None
 }
 
@@ -201,26 +160,28 @@ pub fn teardown_save() {
 
 pub fn load(world: &mut World) -> bool {
     let mut id_query = world.query_filtered::<Entity, With<Id>>();
-    let id_entities = id_query.iter(world).collect();
+    id_query.update_archetypes(world);
 
-    world.load(SaveLoadPipeline::new(id_entities)).is_ok()
+    let readonly_id_query = id_query.as_readonly();
+
+    world.load(SaveLoadPipeline::new(readonly_id_query)).is_ok()
 }
 
-struct SaveLoadPipeline {
+struct SaveLoadPipeline<'q> {
     key: String,
-    id_entities: Vec<Entity>,
+    readonly_id_query: &'q QueryState<Entity, With<Id>>,
 }
 
-impl SaveLoadPipeline {
-    pub fn new(id_entities: Vec<Entity>) -> Self {
+impl<'q> SaveLoadPipeline<'q> {
+    pub fn new(readonly_id_query: &'q QueryState<Entity, With<Id>>) -> Self {
         Self {
             key: LOCAL_STORAGE_KEY.to_string(),
-            id_entities,
+            readonly_id_query,
         }
     }
 }
 
-impl Pipeline for SaveLoadPipeline {
+impl<'q> Pipeline for SaveLoadPipeline<'q> {
     type Backend = CompressedWebStorageBackend;
     type Format = DefaultDebugFormat;
 
@@ -231,55 +192,7 @@ impl Pipeline for SaveLoadPipeline {
     }
 
     fn capture_seed(&self, builder: SnapshotBuilder) -> Snapshot {
-        builder
-            // TODO: Instead of doing all this - consider if denying just view-related Components would be more robust and/or keeping view and model entities separate.
-            .deny_all()
-            .allow::<Pheromone>()
-            .allow::<PheromoneStrength>()
-            .allow::<PheromoneDuration>()
-            .allow::<Nest>()
-            .allow::<AtNest>()
-            .allow::<Crater>()
-            .allow::<AtCrater>()
-            .allow::<Unstable>()
-            .allow::<Stable>()
-            .allow::<Element>()
-            .allow::<Air>()
-            .allow::<Food>()
-            .allow::<Dirt>()
-            .allow::<Sand>()
-            .allow::<Id>()
-            .allow::<Option<Id>>()
-            .allow::<Uuid>()
-            .allow::<Position>()
-            .allow::<Nesting>()
-            .allow::<Nested>()
-            .allow::<Ant>()
-            .allow::<AntName>()
-            .allow::<AntColor>()
-            .allow::<Dead>()
-            .allow::<Asleep>()
-            .allow::<Initiative>()
-            .allow::<AntOrientation>()
-            .allow::<Facing>()
-            .allow::<Angle>()
-            .allow::<AntRole>()
-            .allow::<Hunger>()
-            .allow::<Digestion>()
-            .allow::<AntInventory>()
-            .allow::<InventoryItem>()
-            .allow::<Birthing>()
-            .allow::<Tunneling>()
-            .allow::<Chambering>()
-            .allow::<Birthing>()
-            .allow::<Settings>()
-            .allow::<StoryTime>()
-            .allow::<StoryRealWorldTime>()
-            .extract_entities(self.id_entities.iter().cloned())
-            .extract_resource::<Settings>()
-            .extract_resource::<StoryTime>()
-            .extract_resource::<StoryRealWorldTime>()
-            .build()
+        build_snapshot(builder.world(), self.readonly_id_query)
     }
 
     fn apply_seed(&self, world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
@@ -324,4 +237,56 @@ impl<'a> Backend<&'a str> for CompressedWebStorageBackend {
         let mut deserializer = rmp_serde::Deserializer::new(&decompressed_data[..]);
         seed.deserialize(&mut deserializer).map_err(Error::loading)
     }
+}
+
+fn build_snapshot(world: &World, readonly_id_query: &QueryState<Entity, With<Id>>) -> Snapshot {
+    Snapshot::builder(world)
+        // TODO: Instead of doing all this - consider if denying just view-related Components would be more robust and/or keeping view and model entities separate.
+        .deny_all()
+        .allow::<Pheromone>()
+        .allow::<PheromoneStrength>()
+        .allow::<PheromoneDuration>()
+        .allow::<Nest>()
+        .allow::<AtNest>()
+        .allow::<Crater>()
+        .allow::<AtCrater>()
+        .allow::<Unstable>()
+        .allow::<Stable>()
+        .allow::<Element>()
+        .allow::<Air>()
+        .allow::<Food>()
+        .allow::<Dirt>()
+        .allow::<Sand>()
+        .allow::<Id>()
+        .allow::<Option<Id>>()
+        .allow::<Uuid>()
+        .allow::<Position>()
+        .allow::<Nesting>()
+        .allow::<Nested>()
+        .allow::<Ant>()
+        .allow::<AntName>()
+        .allow::<AntColor>()
+        .allow::<Dead>()
+        .allow::<Asleep>()
+        .allow::<Initiative>()
+        .allow::<AntOrientation>()
+        .allow::<Facing>()
+        .allow::<Angle>()
+        .allow::<AntRole>()
+        .allow::<Hunger>()
+        .allow::<Digestion>()
+        .allow::<AntInventory>()
+        .allow::<InventoryItem>()
+        .allow::<Birthing>()
+        .allow::<Tunneling>()
+        .allow::<Chambering>()
+        .allow::<Birthing>()
+        .allow::<Settings>()
+        .allow::<StoryTime>()
+        .allow::<StoryRealWorldTime>()
+        .extract_entities(readonly_id_query.iter_manual(world))
+        .extract_resource::<Settings>()
+        .extract_resource::<StoryTime>()
+        .extract_resource::<StoryRealWorldTime>()
+        .build()
 }
