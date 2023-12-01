@@ -7,6 +7,7 @@ mod story;
 
 use app_state::AppState;
 use bevy::{
+    asset::AssetMetaCheck,
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
@@ -14,6 +15,7 @@ use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
+use save::CompressedWebStorageBackend;
 use story::{
     camera::CameraPlugin, crater_simulation::CraterSimulationPlugin, grid::VisibleGridState,
     nest_simulation::NestSimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin,
@@ -23,8 +25,11 @@ pub struct SymbiantsPlugin;
 
 impl Plugin for SymbiantsPlugin {
     fn build(&self, app: &mut App) {
-        // app.insert_resource(AssetMetaCheck::Never);
+        app.insert_resource(AssetMetaCheck::Never);
         app.init_resource::<GlobalRng>();
+
+        // TODO: better spot for this?
+        app.init_resource::<CompressedWebStorageBackend>();
 
         app.add_state::<AppState>();
         // TODO: call this in setup_story_time?
