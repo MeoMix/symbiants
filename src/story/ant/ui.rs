@@ -9,7 +9,7 @@ use crate::{
     story::{
         common::position::Position,
         element::{
-            ui::{get_element_index, get_element_texture, ElementExposure, ElementSpriteHandles},
+            ui::{get_element_index, ElementExposure, ElementTextureAtlasHandles},
             Element,
         },
         grid::Grid,
@@ -32,9 +32,9 @@ fn insert_ant_sprite(
     inventory: &AntInventory,
     dead: Option<&Dead>,
     asset_server: &Res<AssetServer>,
-    element_sprite_handles: &Res<ElementSpriteHandles>,
     elements_query: &Query<&Element>,
     grid: &Grid,
+    element_texture_atlas_handles: &Res<ElementTextureAtlasHandles>,
 ) {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
@@ -69,11 +69,9 @@ fn insert_ant_sprite(
             },
         ))
         .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-            if let Some(bundle) = get_inventory_item_sprite_bundle(
-                inventory,
-                &elements_query,
-                &element_sprite_handles,
-            ) {
+            if let Some(bundle) =
+                get_inventory_item_sprite_bundle(inventory, &elements_query, &element_texture_atlas_handles)
+            {
                 parent.spawn(bundle);
             }
 
@@ -143,9 +141,9 @@ pub fn on_spawn_ant(
         Added<Ant>,
     >,
     asset_server: Res<AssetServer>,
-    element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
+    element_texture_atlas_handles: Res<ElementTextureAtlasHandles>,
 ) {
     let grid = nest_query.single();
 
@@ -160,9 +158,9 @@ pub fn on_spawn_ant(
             inventory,
             dead,
             &asset_server,
-            &element_sprite_handles,
             &elements_query,
             &grid,
+            &element_texture_atlas_handles,
         );
 
         spawn_ant_label_text2d(&mut commands, position, name, entity, &grid);
@@ -186,9 +184,9 @@ pub fn rerender_ants(
     label_query: Query<Entity, With<AntLabel>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    element_sprite_handles: Res<ElementSpriteHandles>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
+    element_texture_atlas_handles: Res<ElementTextureAtlasHandles>,
 ) {
     let grid = nest_query.single();
 
@@ -209,9 +207,9 @@ pub fn rerender_ants(
             inventory,
             dead,
             &asset_server,
-            &element_sprite_handles,
             &elements_query,
             &grid,
+            &element_texture_atlas_handles,
         );
 
         spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &grid);
@@ -236,11 +234,11 @@ pub fn on_update_ant_inventory(
     mut query: Query<(Entity, &AntInventory, Option<&Children>), Changed<AntInventory>>,
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
-    element_sprite_handles: Res<ElementSpriteHandles>,
+    element_texture_atlas_handles: Res<ElementTextureAtlasHandles>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
         if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &elements_query, &element_sprite_handles)
+            get_inventory_item_sprite_bundle(&inventory, &elements_query, &element_texture_atlas_handles)
         {
             commands
                 .entity(entity)
@@ -268,21 +266,21 @@ pub struct InventoryItemSprite;
 
 #[derive(Bundle)]
 pub struct AntHeldElementSpriteBundle {
-    sprite_bundle: SpriteBundle,
+    sprite_sheet_bundle: SpriteSheetBundle,
     inventory_item_sprite: InventoryItemSprite,
 }
 
 fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
     elements_query: &Query<&Element>,
-    element_sprite_handles: &Res<ElementSpriteHandles>,
+    element_texture_atlas_handles: &Res<ElementTextureAtlasHandles>,
 ) -> Option<AntHeldElementSpriteBundle> {
     let element_entity = match inventory.0 {
         Some(element_entity) => element_entity,
         None => return None,
     };
 
-    let inventory_item_element = elements_query.get(element_entity).unwrap();
+    let element = elements_query.get(element_entity).unwrap();
 
     let element_exposure = ElementExposure {
         north: true,
@@ -291,24 +289,18 @@ fn get_inventory_item_sprite_bundle(
         west: true,
     };
 
-    let element_index = get_element_index(element_exposure);
+    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure));
+    sprite.custom_size = Some(Vec2::splat(1.0));
 
-    let sprite_bundle = SpriteBundle {
+    let sprite_sheet_bundle = SpriteSheetBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
-        sprite: Sprite {
-            custom_size: Some(Vec2::splat(1.0)),
-            ..default()
-        },
-        texture: get_element_texture(
-            inventory_item_element,
-            element_index,
-            &element_sprite_handles,
-        ),
+        sprite,
+        texture_atlas: element_texture_atlas_handles.get_handle(element).clone(),
         ..default()
     };
 
     Some(AntHeldElementSpriteBundle {
-        sprite_bundle,
+        sprite_sheet_bundle,
         inventory_item_sprite: InventoryItemSprite,
     })
 }

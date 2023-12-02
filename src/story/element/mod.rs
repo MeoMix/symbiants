@@ -22,7 +22,9 @@ pub struct Sand;
 #[reflect(Component)]
 pub struct Food;
 
-#[derive(Component, PartialEq, Copy, Clone, Debug, Serialize, Deserialize, Reflect, Default)]
+#[derive(
+    Component, Eq, Hash, PartialEq, Copy, Clone, Debug, Serialize, Deserialize, Reflect, Default,
+)]
 #[reflect(Component)]
 pub enum Element {
     #[default]

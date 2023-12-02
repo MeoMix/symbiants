@@ -4,7 +4,6 @@ pub mod nest;
 
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
-    asset::LoadState,
     ecs::schedule::ScheduleLabel,
     prelude::*,
 };
@@ -51,10 +50,7 @@ use crate::{
         },
         element::{
             register_element, teardown_element,
-            ui::{
-                on_spawn_element, on_update_element_position, rerender_elements,
-                ElementSpriteHandles,
-            },
+            ui::{on_spawn_element, on_update_element_position, rerender_elements},
         },
         pheromone::{
             pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
@@ -93,7 +89,10 @@ use super::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
     },
-    element::denormalize_element,
+    element::{
+        denormalize_element,
+        ui::{check_element_sprite_sheets_loaded, start_load_element_sprite_sheets},
+    },
     grid::VisibleGridState,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
 };
@@ -126,7 +125,7 @@ impl Plugin for NestSimulationPlugin {
                 register_pheromone,
                 register_nest,
                 register_crater,
-                load_textures,
+                start_load_element_sprite_sheets,
             )
                 .chain(),
         );
@@ -186,7 +185,7 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             Update,
-            check_textures.run_if(in_state(AppState::BeginSetup)),
+            check_element_sprite_sheets_loaded.run_if(in_state(AppState::BeginSetup)),
         );
 
         app.init_schedule(RunSimulationUpdateLoop);
@@ -407,50 +406,6 @@ impl Plugin for NestSimulationPlugin {
                 restart,
             ),
         );
-    }
-}
-
-fn load_textures(asset_server: Res<AssetServer>, mut commands: Commands) {
-    // NOTE: `asset_server.load_folder() isn't supported in WASM`
-    // BUG: https://github.com/bevyengine/bevy/issues/1949
-    // Intentionally not using SpriteSheet/TextureAtlas due to subpixel rounding causing bleed artifacts.
-    let dirt_handles = (0..=15)
-        .map(|i| format!("textures/element/dirt/{}.png", i))
-        .map(|path| asset_server.load::<Image>(path))
-        .collect();
-
-    let sand_handles = (0..=15)
-        .map(|i| format!("textures/element/sand/{}.png", i))
-        .map(|path| asset_server.load::<Image>(path))
-        .collect();
-
-    let food_handles = (0..=15)
-        .map(|i| format!("textures/element/food/{}.png", i))
-        .map(|path| asset_server.load::<Image>(path))
-        .collect();
-
-    let air_handle = asset_server.load::<Image>("textures/element/air/air.png");
-
-    commands.insert_resource(ElementSpriteHandles {
-        dirt: dirt_handles,
-        sand: sand_handles,
-        food: food_handles,
-        air: air_handle,
-    });
-}
-
-fn check_textures(
-    mut next_state: ResMut<NextState<AppState>>,
-    element_sprite_handles: ResMut<ElementSpriteHandles>,
-    asset_server: Res<AssetServer>,
-) {
-    let loaded = element_sprite_handles
-        .get_handles()
-        .iter()
-        .all(|&image_handle| asset_server.load_state(image_handle) == LoadState::Loaded);
-
-    if loaded {
-        next_state.set(AppState::TryLoadSave);
     }
 }
 
