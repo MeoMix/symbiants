@@ -1,6 +1,6 @@
 # NOTE: mold linker doesn't support rustlang/rust:nightly - requires Debian. Swapping to rust:nightly would require using lld linker.
 # NOTE: mold does not support wasm https://github.com/rui314/mold/issues/555
-FROM rust:1.71-bookworm
+FROM rust:1.74-bookworm
 # FROM rustlang/rust:nightly
 
 # xorg is older way of piping viewport to host machine, weston is Wayland (newer version).
