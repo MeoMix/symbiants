@@ -7,14 +7,14 @@ use crate::{
         nest_simulation::nest::{AtNest, Nest},
     },
 };
-use bevy::{asset::LoadState, prelude::*, utils::HashMap};
+use bevy::{asset::LoadState, prelude::*};
 
 pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    element_texture_atlas_handles: Res<ElementTextureAtlasHandles>,
+    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
 ) {
     let grid = nest_query.single();
 
@@ -26,7 +26,7 @@ pub fn on_spawn_element(
             &elements_query,
             &grid,
             &mut commands,
-            &element_texture_atlas_handles,
+            &element_texture_atlas_handle,
         );
 
         let adjacent_positions = position.get_adjacent_positions();
@@ -45,7 +45,7 @@ pub fn on_spawn_element(
                         &elements_query,
                         &grid,
                         &mut commands,
-                        &element_texture_atlas_handles,
+                        &element_texture_atlas_handle,
                     );
                 }
             }
@@ -60,7 +60,7 @@ fn update_element_sprite(
     elements_query: &Query<&Element>,
     grid: &Grid,
     commands: &mut Commands,
-    element_texture_atlas_handles: &Res<ElementTextureAtlasHandles>,
+    element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
 ) {
     if element == &Element::Air {
         return;
@@ -90,12 +90,12 @@ fn update_element_sprite(
         ),
     };
 
-    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure));
+    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure, *element));
     sprite.custom_size = Some(Vec2::splat(1.0));
 
     commands.entity(element_entity).insert(SpriteSheetBundle {
         sprite,
-        texture_atlas: element_texture_atlas_handles.get_handle(element).clone(),
+        texture_atlas: element_texture_atlas_handle.0.clone(),
         transform: Transform::from_translation(grid.grid_to_world_position(*element_position)),
         // TODO: Maintain existing visibility if set?
         ..default()
@@ -107,7 +107,7 @@ pub fn rerender_elements(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    element_texture_atlas_handles: Res<ElementTextureAtlasHandles>,
+    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
 ) {
     let grid = nest_query.single();
 
@@ -119,7 +119,7 @@ pub fn rerender_elements(
             &elements_query,
             &grid,
             &mut commands,
-            &element_texture_atlas_handles,
+            &element_texture_atlas_handle,
         );
     }
 }
@@ -129,7 +129,7 @@ pub fn on_update_element_position(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    element_texture_atlas_handles: Res<ElementTextureAtlasHandles>,
+    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
 ) {
     let grid = nest_query.single();
 
@@ -141,7 +141,7 @@ pub fn on_update_element_position(
             &elements_query,
             &grid,
             &mut commands,
-            &element_texture_atlas_handles,
+            &element_texture_atlas_handle,
         );
 
         let adjacent_positions = position.get_adjacent_positions();
@@ -160,7 +160,7 @@ pub fn on_update_element_position(
                         &elements_query,
                         &grid,
                         &mut commands,
-                        &element_texture_atlas_handles,
+                        &element_texture_atlas_handle,
                     );
                 }
             }
@@ -168,89 +168,35 @@ pub fn on_update_element_position(
     }
 }
 
+// TODO: remove pub
 #[derive(Resource)]
-pub struct ElementSpriteSheetHandles(HashMap<Element, Handle<Image>>);
-
-impl ElementSpriteSheetHandles {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (&Element, &Handle<Image>)> {
-        self.0.iter()
-    }
-
-    pub fn insert(&mut self, element: Element, handle: Handle<Image>) {
-        self.0.insert(element, handle);
-    }
-
-    pub fn get_all(&self) -> Vec<&Handle<Image>> {
-        self.0.values().collect()
-    }
-}
+pub struct ElementSpriteSheetHandle(pub Handle<Image>);
 
 #[derive(Resource)]
-pub struct ElementTextureAtlasHandles(HashMap<Element, Handle<TextureAtlas>>);
+pub struct ElementTextureAtlasHandle(pub Handle<TextureAtlas>);
 
-impl ElementTextureAtlasHandles {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
+pub fn start_load_element_sprite_sheet(asset_server: Res<AssetServer>, mut commands: Commands) {
+    let handle = asset_server.load::<Image>("textures/element/sprite_sheet.png");
 
-    pub fn insert(&mut self, element: Element, handle: Handle<TextureAtlas>) {
-        if element == Element::Air {
-            panic!("Air element should not be rendered");
-        }
-
-        self.0.insert(element, handle);
-    }
-
-    pub fn get_handle(&self, element: &Element) -> &Handle<TextureAtlas> {
-        if element == &Element::Air {
-            panic!("Air element should not be rendered");
-        }
-
-        self.0
-            .get(element)
-            .expect("Texture atlas not found for element")
-    }
+    commands.insert_resource(ElementSpriteSheetHandle { 0: handle });
 }
 
-pub fn start_load_element_sprite_sheets(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let mut sprite_sheet_handles = ElementSpriteSheetHandles::new();
-
-    for element in [Element::Dirt, Element::Food, Element::Sand] {
-        let element_str = format!("{:?}", element).to_lowercase();
-        let path = format!("textures/element/{}/sprite_sheet.png", element_str);
-        let handle = asset_server.load::<Image>(&path);
-        sprite_sheet_handles.insert(element, handle);
-    }
-
-    commands.insert_resource(sprite_sheet_handles);
-}
-
-pub fn check_element_sprite_sheets_loaded(
+pub fn check_element_sprite_sheet_loaded(
     mut next_state: ResMut<NextState<AppState>>,
-    element_sprite_sheet_handles: Res<ElementSpriteSheetHandles>,
+    element_sprite_sheet_handle: Res<ElementSpriteSheetHandle>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+
+    nest_query: Query<&Grid, With<Nest>>,
 ) {
-    let loaded = element_sprite_sheet_handles
-        .get_all()
-        .iter()
-        .all(|&image_handle| asset_server.load_state(image_handle) == LoadState::Loaded);
+    let loaded = asset_server.load_state(&element_sprite_sheet_handle.0) == LoadState::Loaded;
 
     if loaded {
-        let mut atlas_handles = ElementTextureAtlasHandles::new();
+        let texture_atlas = create_texture_atlas(element_sprite_sheet_handle.0.clone());
+        let atlas_handle = texture_atlases.add(texture_atlas);
 
-        for (element, image_handle) in element_sprite_sheet_handles.iter() {
-            let texture_atlas = create_texture_atlas(image_handle.clone());
-            let atlas_handle = texture_atlases.add(texture_atlas);
-            atlas_handles.insert(*element, atlas_handle);
-        }
-
-        commands.insert_resource(atlas_handles);
+        commands.insert_resource(ElementTextureAtlasHandle { 0: atlas_handle });
 
         next_state.set(AppState::TryLoadSave);
     }
@@ -263,7 +209,7 @@ fn create_texture_atlas(texture_handle: Handle<Image>) -> TextureAtlas {
     TextureAtlas::from_grid(
         texture_handle,
         Vec2::splat(120.0),
-        1,
+        3,
         16,
         Some(Vec2::splat(8.0)),
         Some(Vec2::splat(4.0)),
@@ -295,8 +241,8 @@ pub struct ElementExposure {
 // 13 - south/west/north exposed
 // 14 - west/north/east exposed
 // 15 - all exposed
-pub fn get_element_index(exposure: ElementExposure) -> usize {
-    match exposure {
+pub fn get_element_index(exposure: ElementExposure, element: Element) -> usize {
+    let row_index = match exposure {
         ElementExposure {
             north: false,
             east: false,
@@ -393,5 +339,14 @@ pub fn get_element_index(exposure: ElementExposure) -> usize {
             south: true,
             west: true,
         } => 15,
-    }
+    };
+
+    let column_index = match element {
+        Element::Dirt => 0,
+        Element::Food => 1,
+        Element::Sand => 2,
+        _ => panic!("Element {:?} not supported", element),
+    };
+
+    row_index * 3 + column_index
 }

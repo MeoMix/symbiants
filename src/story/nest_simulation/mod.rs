@@ -91,7 +91,7 @@ use super::{
     },
     element::{
         denormalize_element,
-        ui::{check_element_sprite_sheets_loaded, start_load_element_sprite_sheets},
+        ui::{start_load_element_sprite_sheet, check_element_sprite_sheet_loaded},
     },
     grid::VisibleGridState,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
@@ -125,7 +125,7 @@ impl Plugin for NestSimulationPlugin {
                 register_pheromone,
                 register_nest,
                 register_crater,
-                start_load_element_sprite_sheets,
+                start_load_element_sprite_sheet,
             )
                 .chain(),
         );
@@ -185,7 +185,7 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             Update,
-            check_element_sprite_sheets_loaded.run_if(in_state(AppState::BeginSetup)),
+            check_element_sprite_sheet_loaded.run_if(in_state(AppState::BeginSetup)),
         );
 
         app.init_schedule(RunSimulationUpdateLoop);
