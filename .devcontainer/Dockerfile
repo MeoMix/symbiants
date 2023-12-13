@@ -25,7 +25,7 @@ RUN rustup target install wasm32-unknown-unknown
 # trunk is used for serving WASM builds in development
 # wasm-bindgen-cli is used for testing
 # cargo-watch is used for non-WASM build auto-reload
-RUN cargo install trunk wasm-bindgen-cli cargo-watch
+RUN cargo install trunk --version 0.17.5 wasm-bindgen-cli cargo-watch
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
