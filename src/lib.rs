@@ -11,6 +11,7 @@ use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
+use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
@@ -25,7 +26,12 @@ pub struct SymbiantsPlugin;
 
 impl Plugin for SymbiantsPlugin {
     fn build(&self, app: &mut App) {
+        // See https://github.com/bevyengine/bevy/pull/10623 for details.
         app.insert_resource(AssetMetaCheck::Never);
+        // See https://github.com/bevyengine/bevy/issues/1949 for details.
+        // Keep this off to prevent spritesheet bleed at various `projection.scale` levels.
+        app.insert_resource(Msaa::Off);
+
         app.init_resource::<GlobalRng>();
 
         // TODO: better spot for this?
@@ -57,7 +63,7 @@ impl Plugin for SymbiantsPlugin {
             });
         })
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
-        .add_plugins((RngPlugin::default(), SavePlugin))
+        .add_plugins((RngPlugin::default(), SavePlugin, TilemapPlugin))
         .add_plugins((
             CameraPlugin,
             CoreUIPlugin,

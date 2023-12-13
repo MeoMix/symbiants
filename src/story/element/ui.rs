@@ -8,13 +8,14 @@ use crate::{
     },
 };
 use bevy::{asset::LoadState, prelude::*};
+use bevy_ecs_tilemap::prelude::*;
 
 pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    mut tilemap_query: Query<(Entity, &mut TileStorage)>,
 ) {
     let grid = nest_query.single();
 
@@ -26,7 +27,7 @@ pub fn on_spawn_element(
             &elements_query,
             &grid,
             &mut commands,
-            &element_texture_atlas_handle,
+            &mut tilemap_query,
         );
 
         let adjacent_positions = position.get_adjacent_positions();
@@ -45,7 +46,7 @@ pub fn on_spawn_element(
                         &elements_query,
                         &grid,
                         &mut commands,
-                        &element_texture_atlas_handle,
+                        &mut tilemap_query,
                     );
                 }
             }
@@ -60,7 +61,7 @@ fn update_element_sprite(
     elements_query: &Query<&Element>,
     grid: &Grid,
     commands: &mut Commands,
-    element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
+    tilemap_query: &mut Query<(Entity, &mut TileStorage)>,
 ) {
     if element == &Element::Air {
         return;
@@ -90,16 +91,20 @@ fn update_element_sprite(
         ),
     };
 
-    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure, *element));
-    sprite.custom_size = Some(Vec2::splat(1.0));
+    let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
+    let tile_pos = grid.grid_to_tile_pos(*element_position);
 
-    commands.entity(element_entity).insert(SpriteSheetBundle {
-        sprite,
-        texture_atlas: element_texture_atlas_handle.0.clone(),
-        transform: Transform::from_translation(grid.grid_to_world_position(*element_position)),
-        // TODO: Maintain existing visibility if set?
-        ..default()
-    });
+    // TODO: Consider spawning as separate entity rather than inserting.
+    let tile_entity = commands
+        .entity(element_entity)
+        .insert(TileBundle {
+            position: tile_pos,
+            tilemap_id: TilemapId(tilemap_entity),
+            texture_index: TileTextureIndex(get_element_index(element_exposure, *element) as u32),
+            ..Default::default()
+        })
+        .id();
+    tile_storage.set(&tile_pos, tile_entity);
 }
 
 pub fn rerender_elements(
@@ -107,7 +112,7 @@ pub fn rerender_elements(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    mut tilemap_query: Query<(Entity, &mut TileStorage)>,
 ) {
     let grid = nest_query.single();
 
@@ -119,7 +124,7 @@ pub fn rerender_elements(
             &elements_query,
             &grid,
             &mut commands,
-            &element_texture_atlas_handle,
+            &mut tilemap_query,
         );
     }
 }
@@ -129,7 +134,7 @@ pub fn on_update_element_position(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    mut tilemap_query: Query<(Entity, &mut TileStorage)>,
 ) {
     let grid = nest_query.single();
 
@@ -141,7 +146,7 @@ pub fn on_update_element_position(
             &elements_query,
             &grid,
             &mut commands,
-            &element_texture_atlas_handle,
+            &mut tilemap_query,
         );
 
         let adjacent_positions = position.get_adjacent_positions();
@@ -160,7 +165,7 @@ pub fn on_update_element_position(
                         &elements_query,
                         &grid,
                         &mut commands,
-                        &element_texture_atlas_handle,
+                        &mut tilemap_query,
                     );
                 }
             }
@@ -176,9 +181,9 @@ pub struct ElementSpriteSheetHandle(pub Handle<Image>);
 pub struct ElementTextureAtlasHandle(pub Handle<TextureAtlas>);
 
 pub fn start_load_element_sprite_sheet(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let handle = asset_server.load::<Image>("textures/element/sprite_sheet.png");
-
-    commands.insert_resource(ElementSpriteSheetHandle { 0: handle });
+    commands.insert_resource(ElementSpriteSheetHandle(
+        asset_server.load::<Image>("textures/element/sprite_sheet.png"),
+    ));
 }
 
 pub fn check_element_sprite_sheet_loaded(
@@ -187,35 +192,50 @@ pub fn check_element_sprite_sheet_loaded(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-
-    nest_query: Query<&Grid, With<Nest>>,
 ) {
     let loaded = asset_server.load_state(&element_sprite_sheet_handle.0) == LoadState::Loaded;
 
     if loaded {
-        let texture_atlas = create_texture_atlas(element_sprite_sheet_handle.0.clone());
-        let atlas_handle = texture_atlases.add(texture_atlas);
+        let texture_atlas = TextureAtlas::from_grid(
+            element_sprite_sheet_handle.0.clone(),
+            Vec2::splat(128.0),
+            3,
+            16,
+            None,
+            None,
+        );
 
-        commands.insert_resource(ElementTextureAtlasHandle { 0: atlas_handle });
+        commands.insert_resource(ElementTextureAtlasHandle(
+            texture_atlases.add(texture_atlas),
+        ));
+
+        let physical_tile_size = TilemapPhysicalTileSize { x: 1.0, y: 1.0 };
+        let tile_size = TilemapTileSize { x: 128.0, y: 128.0 };
+        let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
+        let map_type = TilemapType::default();
+        let map_size = TilemapSize { x: 144, y: 144 };
+        let tile_storage = TileStorage::empty(map_size);
+
+        commands.spawn(TilemapBundle {
+            grid_size,
+            map_type,
+            size: map_size,
+            storage: tile_storage,
+            texture: TilemapTexture::Single(element_sprite_sheet_handle.0.clone()),
+            tile_size,
+            physical_tile_size,
+            // Without transform, TilePos 0/0 is the center of the screen, but TilePos does not support negative numbers.
+            // So, if we want to show tiles on the left-half of the screen, need to adjust so center of tilemap is center of scren.
+            // transform: combined_transform,
+            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
+            ..default()
+        });
 
         next_state.set(AppState::TryLoadSave);
     }
 }
 
-/// Create a texture atlas from a sprite sheet image.
-/// BUG: https://github.com/bevyengine/bevy/issues/1949
-/// Need to use too small tile size + padding to prevent bleeding into adjacent sprites on sheet.
-fn create_texture_atlas(texture_handle: Handle<Image>) -> TextureAtlas {
-    TextureAtlas::from_grid(
-        texture_handle,
-        Vec2::splat(120.0),
-        3,
-        16,
-        Some(Vec2::splat(8.0)),
-        Some(Vec2::splat(4.0)),
-    )
-}
-
+#[derive(Copy, Clone)]
 pub struct ElementExposure {
     pub north: bool,
     pub east: bool,

@@ -91,7 +91,7 @@ use super::{
     },
     element::{
         denormalize_element,
-        ui::{start_load_element_sprite_sheet, check_element_sprite_sheet_loaded},
+        ui::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
     },
     grid::VisibleGridState,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
