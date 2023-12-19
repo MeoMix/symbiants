@@ -1,20 +1,15 @@
-# NOTE: mold linker doesn't support rustlang/rust:nightly - requires Debian. Swapping to rust:nightly would require using lld linker.
-# NOTE: mold does not support wasm https://github.com/rui314/mold/issues/555
+# mold linker doesn't support rustlang/rust:nightly - requires Debian. Using rust:nightly would require lld which is worse for performance.
 FROM rust:1.74-bookworm
-# FROM rustlang/rust:nightly
 
 # xorg is older way of piping viewport to host machine, weston is Wayland (newer version).
 # either way, need to have server installed on host machine to receive output
 # I tested GWSL and it worked out of the box on Windows - https://opticos.github.io/gwsl/
 
 # clang is needed to compile Rust more quickly
-# lld and mold are both Rust linkers. mold is faster, but does not support WASM.
-# mold (xorg/weston) are needed for native builds.
+# lld and mold are both Rust linkers. mold is faster, but does not support WASM (https://github.com/rui314/mold/issues/555)
+# mold and (xorg or weston) are needed for native builds.
 RUN apt-get update && \
    apt-get install -y libasound2-dev libudev-dev clang lld mold xorg
-
-# NOTE: you'll need something like GWSL installed on host machine to work as an xorg server
-# xorg weston
 
 # Need to manually ensure nightly is configured when using bookworm
 RUN rustup toolchain install nightly
@@ -23,26 +18,20 @@ RUN rustup component add rustfmt
 RUN rustup target install wasm32-unknown-unknown
 
 # trunk is used for serving WASM builds in development
-# wasm-bindgen-cli is used for testing
+# lock trunk version because they shipped a broken build in v0.18.0, trust has been lost.
+RUN cargo install trunk --version 0.18.2
 # cargo-watch is used for non-WASM build auto-reload
-RUN cargo install trunk --version 0.17.5 wasm-bindgen-cli cargo-watch
+RUN cargo install cargo-watch
 
+# Ensure hardware acceleration works for native builds when running on Windows host machine
 ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
-
-# Uncomment the lines below to use a 3rd party repository
-# to get the latest (unstable from mesa/main) mesa library version
-# RUN apt-get update && apt install -y software-properties-common
-# RUN add-apt-repository ppa:oibaf/graphics-drivers -y
-
-RUN apt update && apt install -y \
-    vainfo \
-    mesa-va-drivers
-
+RUN apt update && apt install -y vainfo mesa-va-drivers
 ENV LIBVA_DRIVER_NAME=d3d12
 
-# TODO: If/when I take testing seriously again I can re-enable this logic, but it *DOMINATES* (100-1) Docker setup time
-# Install headless chrome driver to support testing (log messages break when using node)
+# TODO: If/when I take testing seriously again I can re-enable this logic, but installing Chrome Driver increases Docker setup time 100x
+# RUN cargo install wasm-bindgen-cli
+
 # https://gist.github.com/varyonic/dea40abcf3dd891d204ef235c6e8dd79?permalink_comment_id=4368270#gistcomment-4368270
 # RUN apt-get update && \
 #     apt-get install -y gnupg wget curl unzip --no-install-recommends && \
