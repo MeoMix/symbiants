@@ -18,7 +18,7 @@ Yeah! You heard me. You know how keeping a dog for a pet encourages you to go fo
 
 Anyway.
 
-Symbiants is written in Rust using the amazing Bevy game engine. Its build target is WASM and runs in the browser. Desktop has first-class support but it would clearly be good to support mobile. The WASM story for mobile devices still needs to improve a bit, though, unfortunately.
+Symbiants is written in Rust using the amazing Bevy game engine. Its build target is WASM and runs in the browser. Desktop has first-class support, but mobile is a little rougher. iOS Safari/Chrome is supported. Android Firefox works, but Android Chrome is broken due to a downstream bug. This should be resolved in Bevy v0.13 (Q1 '24)
 
 The project is in its infancy, but has lofty aspirations. Ultimately, there are two goals:
 
@@ -30,13 +30,11 @@ There's a whole bunch of futuristic sci-fi lore to support these ideas. The ants
 
 # Development
 
-This project expects to be developed within a VSCode devcontainer with a WASM compilation target. Of course, it should work without Docker, but it's difficult to provide strong guarantees without a clean environment.
+This project expects to be developed within a VSCode devcontainer (Docker). If you have that then you're good to go, otherwise you'll need to ensure your environment is configured with Rust Nightly. You can just mirror the bits declared in Dockerfile.
 
-Inside .devcontainer you should see devcontainer.json and Dockerfile. The Dockerfile is minimal, but will setup a nightly rust build with *clang + lld* not *mold*. This is because the mold linker does not support WASM.
-If you are going to try and run this without Docker then you'll need to ensure your system is using a supported linker.
+The primary compilation target is WASM. This will build an artifact which is ran by your host machine's browser. This is simple, but breakpoint debugging and multithreading are not yet supported in WASM.
+The secondary compilation target is native Linux. If this is done from within the Docker container then the application window needs to be piped to the host machine. By default, this application is configured to support x11 not Wayland and provides hardware acceleration for Nvidia/DirectX (Windows) host machine environments.
 
-Once your environment is configured, run `trunk serve` to spin up a local server which hosts the WASM. Then, navigate to `127.0.0.1:8080` on your host machine.
+Once your environment is ready, you may run `trunk serve` to spin up a local server and navigate to localhost to access the application. Alternatively, to generate a native build, run `cargo watch -x 'run --target x86_64-unknown-linux-gnu'`
 
-If you want to create a native build, rather than a WASM build, that is also supported but is not the default defined in .cargo/config.toml. The only native build officially supported is Linux, but feel free to try others.
-
-To generate a native build: `cargo watch -x 'run --target x86_64-unknown-linux-gnu'`
+If you have any questions - please feel comfortable reaching out on Discord.
