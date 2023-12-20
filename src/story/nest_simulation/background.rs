@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 
 use crate::{
     app_state::AppState,
@@ -11,6 +12,9 @@ use crate::{
 };
 
 use super::nest::AtNest;
+
+#[derive(Component)]
+pub struct BackgroundTilemap;
 
 #[derive(Component)]
 pub struct SkyBackground;
@@ -91,93 +95,8 @@ fn get_sky_gradient_color(
     (north_color, south_color)
 }
 
-fn create_sky_sprites(
-    width: isize,
-    height: isize,
-    grid: &Grid,
-    nest: &Nest,
-    story_time: &Res<StoryTime>,
-) -> Vec<(SpriteBundle, Position, SkyBackground, AtNest)> {
-    let mut sky_sprites = vec![];
-
-    let current_decimal_hours = story_time.as_time_info().get_decimal_hours();
-    let (sunrise_decimal_hours, sunset_decimal_hours) =
-        story_time.get_sunrise_sunset_decimal_hours();
-
-    let (north_color, south_color) = get_sky_gradient_color(
-        current_decimal_hours,
-        sunrise_decimal_hours,
-        sunset_decimal_hours,
-    );
-
-    for x in 0..width {
-        for y in 0..height {
-            let position = Position::new(x, y);
-
-            let mut world_position = grid.grid_to_world_position(position);
-            // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
-            world_position.z = 0.0;
-
-            let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
-            let color = interpolate_color(north_color, south_color, t_y);
-
-            let sky_sprite = SpriteBundle {
-                transform: Transform::from_translation(world_position),
-                sprite: Sprite {
-                    color,
-                    custom_size: Some(Vec2::splat(1.0)),
-                    ..default()
-                },
-                ..default()
-            };
-
-            sky_sprites.push((sky_sprite, position, SkyBackground, AtNest));
-        }
-    }
-
-    sky_sprites
-}
-
-fn create_tunnel_sprites(
-    width: isize,
-    height: isize,
-    y_offset: isize,
-    grid: &Grid,
-) -> Vec<(SpriteBundle, Position, TunnelBackground, AtNest)> {
-    let mut tunnel_sprites = vec![];
-
-    let top_color: Color = Color::rgba(0.373, 0.290, 0.165, 1.0);
-    let bottom_color = Color::rgba(0.24, 0.186, 0.106, 1.0);
-
-    for x in 0..width {
-        for y in 0..height {
-            let position = Position::new(x, y + y_offset);
-
-            let mut world_position = grid.grid_to_world_position(position);
-            // Background needs z-index of 0 as it should be the bottom layer and not cover sprites
-            world_position.z = 0.0;
-
-            let color = interpolate_color(top_color, bottom_color, y as f32 / height as f32);
-
-            let tunnel_sprite = SpriteBundle {
-                transform: Transform::from_translation(world_position),
-                sprite: Sprite {
-                    color,
-                    custom_size: Some(Vec2::splat(1.0)),
-                    ..default()
-                },
-                ..default()
-            };
-
-            tunnel_sprites.push((tunnel_sprite, position, TunnelBackground, AtNest));
-        }
-    }
-
-    tunnel_sprites
-}
-
 pub fn update_sky_background(
-    mut sky_sprite_query: Query<(&mut Sprite, &Position), With<SkyBackground>>,
+    mut sky_tile_query: Query<(&mut TileColor, &Position), With<SkyBackground>>,
     mut last_run_time_info: Local<TimeInfo>,
     app_state: Res<State<AppState>>,
     nest_query: Query<&Nest>,
@@ -212,11 +131,11 @@ pub fn update_sky_background(
         sunrise_decimal_hours,
         sunset_decimal_hours,
     );
-    for (mut sprite, position) in sky_sprite_query.iter_mut() {
+    for (mut tile_color, position) in sky_tile_query.iter_mut() {
         let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
         let color = interpolate_color(north_color, south_color, t_y);
 
-        sprite.color = color;
+        *tile_color = color.into();
     }
 
     *last_run_time_info = time_info;
@@ -231,19 +150,105 @@ pub fn setup_background(
     let (grid, nest) = nest_query.single();
     let air_height = nest.surface_level() + 1;
 
-    commands.spawn_batch(create_sky_sprites(
-        grid.width(),
-        air_height,
-        &grid,
-        &nest,
-        &story_time,
-    ));
-    
-    commands.spawn_batch(create_tunnel_sprites(
-        grid.width(),
-        grid.height() - air_height,
-        air_height,
-        &grid,
+    let map_size = TilemapSize {
+        x: grid.width() as u32,
+        y: grid.height() as u32,
+    };
+    let mut tile_storage = TileStorage::empty(map_size);
+    let tilemap_entity = commands.spawn_empty().id();
+
+    let current_decimal_hours = story_time.as_time_info().get_decimal_hours();
+    let (sunrise_decimal_hours, sunset_decimal_hours) =
+        story_time.get_sunrise_sunset_decimal_hours();
+
+    let (north_color, south_color) = get_sky_gradient_color(
+        current_decimal_hours,
+        sunrise_decimal_hours,
+        sunset_decimal_hours,
+    );
+
+    let width = grid.width();
+    let height = air_height;
+
+    for x in 0..width {
+        for y in 0..height {
+            let position = Position::new(x, y);
+
+            let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
+            let color = interpolate_color(north_color, south_color, t_y);
+            let tile_pos = grid.grid_to_tile_pos(position);
+
+            let tile_entity = commands
+                .spawn((
+                    TileBundle {
+                        position: tile_pos,
+                        tilemap_id: TilemapId(tilemap_entity),
+                        color: color.into(),
+                        ..default()
+                    },
+                    position,
+                    SkyBackground,
+                    AtNest,
+                ))
+                .id();
+
+            tile_storage.set(&tile_pos, tile_entity);
+        }
+    }
+
+    // Create background sprites
+    let width = grid.width();
+    let height = grid.height() - air_height;
+    let y_offset = air_height;
+
+    let top_color: Color = Color::rgba(0.373, 0.290, 0.165, 1.0);
+    let bottom_color = Color::rgba(0.24, 0.186, 0.106, 1.0);
+
+    for x in 0..width {
+        for y in 0..height {
+            let position = Position::new(x, y + y_offset);
+
+            let color = interpolate_color(top_color, bottom_color, y as f32 / height as f32);
+
+            let tile_pos = grid.grid_to_tile_pos(position);
+
+            let tile_entity = commands
+                .spawn((
+                    TileBundle {
+                        position: tile_pos,
+                        tilemap_id: TilemapId(tilemap_entity),
+                        color: color.into(),
+                        ..default()
+                    },
+                    position,
+                    TunnelBackground,
+                    AtNest,
+                ))
+                .id();
+
+            tile_storage.set(&tile_pos, tile_entity);
+        }
+    }
+
+    let physical_tile_size = TilemapPhysicalTileSize { x: 1.0, y: 1.0 };
+    // Doesn't need to be 128x128 here since not reading from spritesheet.
+    let tile_size = TilemapTileSize { x: 1.0, y: 1.0 };
+    let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
+    let map_type = TilemapType::default();
+
+    commands.entity(tilemap_entity).insert((
+        BackgroundTilemap,
+        TilemapBundle {
+            grid_size,
+            size: map_size,
+            storage: tile_storage,
+            physical_tile_size,
+            tile_size,
+            map_type: TilemapType::Square,
+            // Background tiles go at z: 0 because they should render behind elements/ants.
+            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
+            ..Default::default()
+        },
     ));
 }
 

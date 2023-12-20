@@ -10,12 +10,15 @@ use crate::{
 use bevy::{asset::LoadState, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 
+#[derive(Component)]
+pub struct ElementTilemap;
+
 pub fn on_spawn_element(
     added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage)>,
+    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
 ) {
     let grid = nest_query.single();
 
@@ -61,7 +64,7 @@ fn update_element_sprite(
     elements_query: &Query<&Element>,
     grid: &Grid,
     commands: &mut Commands,
-    tilemap_query: &mut Query<(Entity, &mut TileStorage)>,
+    tilemap_query: &mut Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
 ) {
     if element == &Element::Air {
         return;
@@ -102,7 +105,7 @@ fn update_element_sprite(
             tilemap_id: TilemapId(tilemap_entity),
             texture_index: TileTextureIndex(get_element_index(element_exposure, *element) as u32),
             ..Default::default()
-        })
+    })
         .id();
     tile_storage.set(&tile_pos, tile_entity);
 }
@@ -112,7 +115,7 @@ pub fn rerender_elements(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage)>,
+    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
 ) {
     let grid = nest_query.single();
 
@@ -134,7 +137,7 @@ pub fn on_update_element_position(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage)>,
+    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
 ) {
     let grid = nest_query.single();
 
@@ -173,7 +176,6 @@ pub fn on_update_element_position(
     }
 }
 
-// TODO: remove pub
 #[derive(Resource)]
 pub struct ElementSpriteSheetHandle(pub Handle<Image>);
 
@@ -216,20 +218,21 @@ pub fn check_element_sprite_sheet_loaded(
         let map_size = TilemapSize { x: 144, y: 144 };
         let tile_storage = TileStorage::empty(map_size);
 
-        commands.spawn(TilemapBundle {
-            grid_size,
-            map_type,
-            size: map_size,
-            storage: tile_storage,
-            texture: TilemapTexture::Single(element_sprite_sheet_handle.0.clone()),
-            tile_size,
-            physical_tile_size,
-            // Without transform, TilePos 0/0 is the center of the screen, but TilePos does not support negative numbers.
-            // So, if we want to show tiles on the left-half of the screen, need to adjust so center of tilemap is center of scren.
-            // transform: combined_transform,
-            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
-            ..default()
-        });
+        commands.spawn((
+            ElementTilemap,
+            TilemapBundle {
+                grid_size,
+                map_type,
+                size: map_size,
+                storage: tile_storage,
+                texture: TilemapTexture::Single(element_sprite_sheet_handle.0.clone()),
+                tile_size,
+                physical_tile_size,
+                // Element tiles go at z: 1 because they should appear above the background which is rendered at z: 0.
+                transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 1.0),
+                ..default()
+            },
+        ));
 
         next_state.set(AppState::TryLoadSave);
     }
