@@ -253,10 +253,10 @@ pub fn setup_background(
 }
 
 pub fn teardown_background(
-    background_query: Query<Entity, Or<(With<TunnelBackground>, With<SkyBackground>)>>,
+    background_query: Query<Entity, Or<(With<TunnelBackground>, With<SkyBackground>, With<BackgroundTilemap>)>>,
     mut commands: Commands,
 ) {
     for background_entity in background_query.iter() {
-        commands.entity(background_entity).despawn();
+        commands.entity(background_entity).despawn_recursive();
     }
 }

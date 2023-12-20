@@ -2,6 +2,8 @@ use crate::story::common::position::Position;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use self::ui::ElementTilemap;
+
 use super::common::Zone;
 
 pub mod commands;
@@ -74,7 +76,7 @@ pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
 }
 
 // TODO: filter?
-pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, With<Element>>) {
+pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, Or<(With<Element>, With<ElementTilemap>)>>) {
     for element_entity in element_query.iter() {
         commands.entity(element_entity).despawn_recursive();
     }
