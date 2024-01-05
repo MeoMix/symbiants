@@ -144,7 +144,7 @@ pub fn update_settings_menu(
                 }
             });
 
-            if ui.button("Reset Story").clicked() {
+            if ui.button("Reset Sandbox").clicked() {
                 next_app_state.set(AppState::Cleanup);
             }
         });

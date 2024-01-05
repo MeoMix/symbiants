@@ -377,7 +377,7 @@ impl Plugin for NestSimulationPlugin {
             Update,
             update_sky_background.run_if(
                 // `update_sky_background` is a view concern, and kinda heavy, so skip doing it while fast-forwarding.
-                // It has some local state within it which needs to be reset when clicking "Reset Story" so need to run in initializing, too.
+                // It has some local state within it which needs to be reset when clicking "Reset Sandbox" so need to run in initializing, too.
                 not(in_state(StoryPlaybackState::FastForwarding))
                     .and_then(in_state(AppState::TellStory).or_else(in_state(AppState::Cleanup))),
             ),
