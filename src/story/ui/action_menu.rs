@@ -93,23 +93,23 @@ pub fn update_action_menu(
                 }
             });
 
-            let is_nest_visible = nest_query.get_single().is_ok();
+            // let is_nest_visible = nest_query.get_single().is_ok();
 
-            if is_nest_visible {
-                if ui.button("View Crater").clicked() {
-                    external_simulation_event_writer.send(ExternalSimulationEvent {
-                        action: PointerAction::ShowCrater,
-                        position: None,
-                    });
-                }
-            } else {
-                if ui.button("View Nest").clicked() {
-                    external_simulation_event_writer.send(ExternalSimulationEvent {
-                        action: PointerAction::ShowNest,
-                        position: None,
-                    });
-                }
-            }
+            // if is_nest_visible {
+            //     if ui.button("View Crater").clicked() {
+            //         external_simulation_event_writer.send(ExternalSimulationEvent {
+            //             action: PointerAction::ShowCrater,
+            //             position: None,
+            //         });
+            //     }
+            // } else {
+            //     if ui.button("View Nest").clicked() {
+            //         external_simulation_event_writer.send(ExternalSimulationEvent {
+            //             action: PointerAction::ShowNest,
+            //             position: None,
+            //         });
+            //     }
+            // }
 
  
         });
