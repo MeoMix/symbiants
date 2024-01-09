@@ -14,9 +14,9 @@ pub enum PointerAction {
     #[default]
     Select,
     DespawnElement,
-    Food,
-    Dirt,
-    Sand,
+    SpawnFood,
+    SpawnDirt,
+    SpawnSand,
     KillAnt,
     SpawnWorkerAnt,
     DespawnWorkerAnt,
@@ -61,13 +61,25 @@ pub fn update_action_menu(
                 && !story_time.is_within_schedule_window();
 
             ui.selectable_value(pointer_action.as_mut(), PointerAction::Select, "Select");
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Sand, "Place Sand");
+            ui.selectable_value(
+                pointer_action.as_mut(),
+                PointerAction::SpawnSand,
+                "Place Sand",
+            );
 
             ui.add_enabled_ui(!food_disabled, |ui| {
-                ui.selectable_value(pointer_action.as_mut(), PointerAction::Food, "Place Food");
+                ui.selectable_value(
+                    pointer_action.as_mut(),
+                    PointerAction::SpawnFood,
+                    "Place Food",
+                );
             });
 
-            ui.selectable_value(pointer_action.as_mut(), PointerAction::Dirt, "Place Dirt");
+            ui.selectable_value(
+                pointer_action.as_mut(),
+                PointerAction::SpawnDirt,
+                "Place Dirt",
+            );
             ui.selectable_value(
                 pointer_action.as_mut(),
                 PointerAction::DespawnElement,
@@ -110,7 +122,5 @@ pub fn update_action_menu(
             //         });
             //     }
             // }
-
- 
         });
 }
