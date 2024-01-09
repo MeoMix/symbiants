@@ -1,6 +1,5 @@
 pub mod external_event;
 
-use bevy::input::touch::Touch;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
@@ -51,6 +50,8 @@ pub fn setup_pointer(mut commands: Commands) {
     commands.init_resource::<PointerTapState>();
 }
 
+const DRAG_THRESHOLD: f32 = 4.0;
+
 // Map user input to simulation events which will be processed manually at the start of the next simulation run.
 // This needs to occur because events aren't reliably read from within systems which don't necessarily run this/next frame.
 pub fn handle_pointer_tap(
@@ -73,21 +74,7 @@ pub fn handle_pointer_tap(
         Err(_) => return,
     };
 
-    let left_mouse_button_pressed = mouse_input.just_pressed(MouseButton::Left);
-    let touches_vec: Vec<&Touch> = touches.iter().collect();
-    let primary_touch_pressed = touches.any_just_pressed() && touches_vec.len() == 1;
-
-    let pointer_pressed_position = if left_mouse_button_pressed {
-        match window.cursor_position() {
-            Some(position) => Some(position),
-            None => return,
-        }
-    } else if primary_touch_pressed {
-        Some(touches_vec[0].position())
-    } else {
-        None
-    };
-
+    let pointer_pressed_position = get_pointer_pressed_position(window, &mouse_input, &touches);
     if pointer_pressed_position.is_some() {
         pointer_tap_state.position = pointer_pressed_position;
     }
@@ -96,20 +83,7 @@ pub fn handle_pointer_tap(
         return;
     }
 
-    let left_mouse_button_released = mouse_input.just_released(MouseButton::Left);
-    let primary_touch_released = touches.any_just_released() && touches_vec.len() == 1;
-
-    let pointer_released_position = if left_mouse_button_released {
-        match window.cursor_position() {
-            Some(position) => Some(position),
-            None => return,
-        }
-    } else if primary_touch_released {
-        Some(touches_vec[0].position())
-    } else {
-        None
-    };
-
+    let pointer_released_position = get_pointer_released_position(window, &mouse_input, &touches);
     if pointer_released_position.is_none() {
         return;
     }
@@ -118,24 +92,51 @@ pub fn handle_pointer_tap(
         .position
         .unwrap()
         .distance(pointer_released_position.unwrap());
-    let is_drag = pointer_distance >= 5.0;
-    if is_drag {
+    if pointer_distance >= DRAG_THRESHOLD {
         return;
     }
 
     let (camera, camera_transform) = camera_query.single_mut();
-
     let world_position = camera
         .viewport_to_world_2d(camera_transform, pointer_tap_state.position.unwrap())
         .unwrap();
 
-    let visible_grid = visible_grid_query.single();
-    let grid_position = visible_grid.world_to_grid_position(world_position);
+    let grid_position = visible_grid_query
+        .single()
+        .world_to_grid_position(world_position);
 
     external_simulation_event_writer.send(ExternalSimulationEvent::from((
         *pointer_action,
         grid_position,
     )));
+}
+
+fn get_pointer_pressed_position(
+    window: &Window,
+    mouse_input: &Res<Input<MouseButton>>,
+    touches: &Res<Touches>,
+) -> Option<Vec2> {
+    if mouse_input.just_pressed(MouseButton::Left) {
+        window.cursor_position()
+    } else if touches.any_just_pressed() && touches.iter().count() == 1 {
+        Some(touches.iter().next()?.position())
+    } else {
+        None
+    }
+}
+
+fn get_pointer_released_position(
+    window: &Window,
+    mouse_input: &Res<Input<MouseButton>>,
+    touches: &Res<Touches>,
+) -> Option<Vec2> {
+    if mouse_input.just_released(MouseButton::Left) {
+        window.cursor_position()
+    } else if touches.any_just_released() && touches.iter().count() == 1 {
+        Some(touches.iter().next()?.position())
+    } else {
+        None
+    }
 }
 
 #[derive(Resource, Default, PartialEq)]

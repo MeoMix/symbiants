@@ -22,7 +22,6 @@ use crate::settings::Settings;
 
 use super::ExternalSimulationEvent;
 
-// TODO: clean this up - it's become a very messy dumping ground.
 /// Process user input events at the start of the FixedUpdate simulation loop.
 /// Need to process them manually because they'd be cleared at the end of the next Update
 /// which might occur before the next time FixedUpdate runs.
@@ -97,9 +96,8 @@ pub fn process_external_event(
                     .elements()
                     .is_element(&elements_query, grid_position, Element::Air)
                 {
-                    if let Some(entity) = nest.elements().get_element_entity(grid_position) {
-                        commands.replace_element(grid_position, Element::Food, *entity, AtNest);
-                    }
+                    let entity = nest.elements().element_entity(grid_position);
+                    commands.replace_element(grid_position, Element::Food, *entity, AtNest);
                 }
             }
             ExternalSimulationEvent::SpawnSand(grid_position) => {
@@ -107,9 +105,8 @@ pub fn process_external_event(
                     .elements()
                     .is_element(&elements_query, grid_position, Element::Air)
                 {
-                    if let Some(entity) = nest.elements().get_element_entity(grid_position) {
-                        commands.replace_element(grid_position, Element::Sand, *entity, AtNest);
-                    }
+                    let entity = nest.elements().element_entity(grid_position);
+                    commands.replace_element(grid_position, Element::Sand, *entity, AtNest);
                 }
             }
             ExternalSimulationEvent::SpawnDirt(grid_position) => {
@@ -117,9 +114,8 @@ pub fn process_external_event(
                     .elements()
                     .is_element(&elements_query, grid_position, Element::Air)
                 {
-                    if let Some(entity) = nest.elements().get_element_entity(grid_position) {
-                        commands.replace_element(grid_position, Element::Dirt, *entity, AtNest);
-                    }
+                    let entity = nest.elements().element_entity(grid_position);
+                    commands.replace_element(grid_position, Element::Dirt, *entity, AtNest);
                 }
             }
             ExternalSimulationEvent::DespawnElement(grid_position) => {
