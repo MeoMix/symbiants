@@ -30,9 +30,8 @@ use super::ExternalSimulationEvent;
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
-    nest_query: Query<&Grid, With<Nest>>,
-    nest2_query: Query<Entity, With<Nest>>,
-    crater2_query: Query<Entity, With<Crater>>,
+    nest_query: Query<(Entity, &Grid), With<Nest>>,
+    crater_query: Query<(Entity, &Grid), With<Crater>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
@@ -40,21 +39,21 @@ pub fn process_external_event(
     selected_entity_query: Query<Entity, With<Selected>>,
     mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
 ) {
-    let nest = nest_query.single();
+    let (_, nest) = nest_query.single();
 
     for event in external_simulation_events.drain() {
         let pointer_action = event.action;
         if pointer_action == PointerAction::ShowCrater {
             commands
-                .entity(nest2_query.single())
+                .entity(nest_query.single().0)
                 .remove::<VisibleGrid>();
-            commands.entity(crater2_query.single()).insert(VisibleGrid);
+            commands.entity(crater_query.single().0).insert(VisibleGrid);
             next_visible_grid_state.set(VisibleGridState::Crater);
             return;
         } else if pointer_action == PointerAction::ShowNest {
-            commands.entity(nest2_query.single()).insert(VisibleGrid);
+            commands.entity(nest_query.single().0).insert(VisibleGrid);
             commands
-                .entity(crater2_query.single())
+                .entity(crater_query.single().0)
                 .remove::<VisibleGrid>();
             next_visible_grid_state.set(VisibleGridState::Nest);
             return;
@@ -103,7 +102,7 @@ pub fn process_external_event(
                     commands.entity(*element_entity).insert(Selected);
                 }
             }
-        } else if pointer_action == PointerAction::Food {
+        } else if pointer_action == PointerAction::SpawnFood {
             if nest
                 .elements()
                 .is_element(&elements_query, grid_position, Element::Air)
@@ -112,7 +111,7 @@ pub fn process_external_event(
                     commands.replace_element(grid_position, Element::Food, *entity, AtNest);
                 }
             }
-        } else if pointer_action == PointerAction::Sand {
+        } else if pointer_action == PointerAction::SpawnSand {
             if nest
                 .elements()
                 .is_element(&elements_query, grid_position, Element::Air)
@@ -121,7 +120,7 @@ pub fn process_external_event(
                     commands.replace_element(grid_position, Element::Sand, *entity, AtNest);
                 }
             }
-        } else if pointer_action == PointerAction::Dirt {
+        } else if pointer_action == PointerAction::SpawnDirt {
             if nest
                 .elements()
                 .is_element(&elements_query, grid_position, Element::Air)
