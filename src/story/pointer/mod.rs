@@ -11,11 +11,33 @@ use crate::story::{
     ui::action_menu::PointerAction,
 };
 
-#[derive(Event)]
-pub struct ExternalSimulationEvent {
-    // TODO: naming of PointerAction breaks encapsulation
-    pub action: PointerAction,
-    pub position: Option<Position>,
+#[derive(Event, PartialEq, Copy, Clone, Debug)]
+pub enum ExternalSimulationEvent {
+    Select(Position),
+    DespawnElement(Position),
+    SpawnFood(Position),
+    SpawnDirt(Position),
+    SpawnSand(Position),
+    KillAnt(Position),
+    SpawnWorkerAnt(Position),
+    DespawnWorkerAnt(Position),
+    ShowCrater,
+    ShowNest,
+}
+
+impl From<(PointerAction, Position)> for ExternalSimulationEvent {
+    fn from((pointer_action, position): (PointerAction, Position)) -> Self {
+        match pointer_action {
+            PointerAction::Select => ExternalSimulationEvent::Select(position),
+            PointerAction::DespawnElement => ExternalSimulationEvent::DespawnElement(position),
+            PointerAction::SpawnFood => ExternalSimulationEvent::SpawnFood(position),
+            PointerAction::SpawnDirt => ExternalSimulationEvent::SpawnDirt(position),
+            PointerAction::SpawnSand => ExternalSimulationEvent::SpawnSand(position),
+            PointerAction::KillAnt => ExternalSimulationEvent::KillAnt(position),
+            PointerAction::SpawnWorkerAnt => ExternalSimulationEvent::SpawnWorkerAnt(position),
+            PointerAction::DespawnWorkerAnt => ExternalSimulationEvent::DespawnWorkerAnt(position),
+        }
+    }
 }
 
 #[derive(Resource, Default)]
@@ -110,10 +132,10 @@ pub fn handle_pointer_tap(
     let visible_grid = visible_grid_query.single();
     let grid_position = visible_grid.world_to_grid_position(world_position);
 
-    external_simulation_event_writer.send(ExternalSimulationEvent {
-        action: *pointer_action,
-        position: Some(grid_position),
-    });
+    external_simulation_event_writer.send(ExternalSimulationEvent::from((
+        *pointer_action,
+        grid_position,
+    )));
 }
 
 #[derive(Resource, Default, PartialEq)]

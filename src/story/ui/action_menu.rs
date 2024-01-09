@@ -20,8 +20,6 @@ pub enum PointerAction {
     KillAnt,
     SpawnWorkerAnt,
     DespawnWorkerAnt,
-    ShowCrater,
-    ShowNest,
 }
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
@@ -110,14 +108,14 @@ pub fn update_action_menu(
             // if is_nest_visible {
             //     if ui.button("View Crater").clicked() {
             //         external_simulation_event_writer.send(ExternalSimulationEvent {
-            //             action: PointerAction::ShowCrater,
+            //             action: SimulationAction::ShowCrater,
             //             position: None,
             //         });
             //     }
             // } else {
             //     if ui.button("View Nest").clicked() {
             //         external_simulation_event_writer.send(ExternalSimulationEvent {
-            //             action: PointerAction::ShowNest,
+            //             action: SimulationAction::ShowNest,
             //             position: None,
             //         });
             //     }
