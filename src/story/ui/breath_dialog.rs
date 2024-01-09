@@ -169,13 +169,28 @@ pub fn update_breath_dialog(
                             pluralize(ant_count)
                         ));
 
-                        let seconds =
+                        let total_seconds =
                             (ant_food_needed / 10) * (duration as isize * labels.len() as isize);
-                        ui.label(&format!(
-                            "That's about {} second{} of breathing.",
-                            seconds,
-                            pluralize(seconds)
-                        ));
+
+                        let total_minutes = total_seconds / 60;
+
+                        if total_minutes > 1 {
+                            let remaining_seconds = total_seconds - (total_minutes * 60);
+
+                            ui.label(&format!(
+                                "That's {} minute{} and {} second{} of breathing.",
+                                total_minutes,
+                                pluralize(total_minutes),
+                                remaining_seconds,
+                                pluralize(remaining_seconds)
+                            ));
+                        } else {
+                            ui.label(&format!(
+                                "That's {} second{} of breathing.",
+                                total_seconds,
+                                pluralize(total_seconds)
+                            ));
+                        }
 
                         ui.separator();
 
