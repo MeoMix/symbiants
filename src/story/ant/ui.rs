@@ -17,7 +17,7 @@ use crate::{
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
@@ -69,9 +69,11 @@ fn insert_ant_sprite(
             },
         ))
         .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-            if let Some(bundle) =
-                get_inventory_item_sprite_bundle(inventory, &elements_query, &element_texture_atlas_handle)
-            {
+            if let Some(bundle) = get_inventory_item_sprite_bundle(
+                inventory,
+                &elements_query,
+                &element_texture_atlas_handle,
+            ) {
                 parent.spawn(bundle);
             }
 
@@ -221,9 +223,10 @@ pub fn on_despawn_ant(
     label_query: Query<(Entity, &AntLabel)>,
     mut commands: Commands,
 ) {
-    for ant_entity in &mut removed.read() {
-        if let Some((label_entity, _)) = label_query.iter().find(|(_, label)| label.0 == ant_entity)
-        {
+    let ant_entities = &mut removed.read().collect::<HashSet<_>>();
+
+    for (label_entity, ant_label) in label_query.iter() {
+        if ant_entities.contains(&ant_label.0) {
             commands.entity(label_entity).despawn();
         }
     }
@@ -237,9 +240,11 @@ pub fn on_update_ant_inventory(
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
 ) {
     for (entity, inventory, children) in query.iter_mut() {
-        if let Some(inventory_item_bundle) =
-            get_inventory_item_sprite_bundle(&inventory, &elements_query, &element_texture_atlas_handle)
-        {
+        if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
+            &inventory,
+            &elements_query,
+            &element_texture_atlas_handle,
+        ) {
             commands
                 .entity(entity)
                 .with_children(|ant: &mut ChildBuilder| {
@@ -369,11 +374,10 @@ pub fn on_removed_emote(
     emote_ui_query: Query<(Entity, &EmoteSprite)>,
     mut commands: Commands,
 ) {
-    for entity in &mut removed.read() {
-        if let Some((emote_ui_entity, _)) = emote_ui_query
-            .iter()
-            .find(|&(_, ui)| ui.parent_entity == entity)
-        {
+    let emote_entities = &mut removed.read().collect::<HashSet<_>>();
+
+    for (emote_ui_entity, ui) in emote_ui_query.iter() {
+        if emote_entities.contains(&ui.parent_entity) {
             // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
             commands.entity(emote_ui_entity).remove_parent().despawn();
         }
