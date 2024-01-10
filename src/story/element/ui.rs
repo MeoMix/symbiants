@@ -18,9 +18,12 @@ pub struct ElementTilemap;
 pub fn on_update_element(
     mut element_query: Query<
         (&Position, &Element, &ElementExposure, Entity),
-        (Or<(Changed<Position>, Changed<ElementExposure>)>, With<AtNest>, Without<Air>),
+        (
+            Or<(Changed<Position>, Changed<ElementExposure>)>,
+            With<AtNest>,
+            Without<Air>,
+        ),
     >,
-    elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
@@ -33,7 +36,6 @@ pub fn on_update_element(
             element,
             position,
             element_exposure,
-            &elements_query,
             &grid,
             &mut commands,
             &mut tilemap_query,
@@ -46,7 +48,6 @@ pub fn rerender_elements(
         (&Position, &Element, &ElementExposure, Entity),
         (With<AtNest>, Without<Air>),
     >,
-    elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
@@ -59,7 +60,6 @@ pub fn rerender_elements(
             element,
             position,
             element_exposure,
-            &elements_query,
             &grid,
             &mut commands,
             &mut tilemap_query,
@@ -72,7 +72,6 @@ fn update_element_sprite(
     element: &Element,
     element_position: &Position,
     element_exposure: &ElementExposure,
-    elements_query: &Query<&Element>,
     grid: &Grid,
     commands: &mut Commands,
     tilemap_query: &mut Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
@@ -80,16 +79,14 @@ fn update_element_sprite(
     let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
     let tile_pos = grid.grid_to_tile_pos(*element_position);
 
-    // TODO: Consider spawning as separate entity rather than inserting.
-    let tile_entity = commands
-        .entity(element_entity)
-        .insert(TileBundle {
-            position: tile_pos,
-            tilemap_id: TilemapId(tilemap_entity),
-            texture_index: TileTextureIndex(get_element_index(*element_exposure, *element) as u32),
-            ..Default::default()
-        })
-        .id();
+    let tile_bundle = TileBundle {
+        position: tile_pos,
+        tilemap_id: TilemapId(tilemap_entity),
+        texture_index: TileTextureIndex(get_element_index(*element_exposure, *element) as u32),
+        ..default()
+    };
+
+    let tile_entity = commands.entity(element_entity).insert(tile_bundle).id();
     tile_storage.set(&tile_pos, tile_entity);
 }
 
@@ -128,12 +125,9 @@ pub fn check_element_sprite_sheet_loaded(
             texture_atlases.add(texture_atlas),
         ));
 
-        let physical_tile_size = TilemapPhysicalTileSize { x: 1.0, y: 1.0 };
-        let tile_size = TilemapTileSize { x: 128.0, y: 128.0 };
         let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
         let map_type = TilemapType::default();
         let map_size = TilemapSize { x: 144, y: 144 };
-        let tile_storage = TileStorage::empty(map_size);
 
         commands.spawn((
             ElementTilemap,
@@ -141,10 +135,10 @@ pub fn check_element_sprite_sheet_loaded(
                 grid_size,
                 map_type,
                 size: map_size,
-                storage: tile_storage,
+                storage: TileStorage::empty(map_size),
                 texture: TilemapTexture::Single(element_sprite_sheet_handle.0.clone()),
-                tile_size,
-                physical_tile_size,
+                tile_size: TilemapTileSize { x: 128.0, y: 128.0 },
+                physical_tile_size: TilemapPhysicalTileSize { x: 1.0, y: 1.0 },
                 // Element tiles go at z: 1 because they should appear above the background which is rendered at z: 0.
                 transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 1.0),
                 ..default()
