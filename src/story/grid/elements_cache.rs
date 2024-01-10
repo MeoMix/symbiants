@@ -12,6 +12,7 @@ impl ElementsCache {
         Self { cache }
     }
 
+    // TODO: These should probably not return references?
     pub fn get_element_entity(&self, position: Position) -> Option<&Entity> {
         self.cache
             .get(position.y as usize)

@@ -1,4 +1,4 @@
-use super::Element;
+use super::{Air, Element};
 use crate::{
     app_state::AppState,
     story::{
@@ -7,14 +7,19 @@ use crate::{
         nest_simulation::nest::{AtNest, Nest},
     },
 };
-use bevy::{asset::LoadState, prelude::*};
+use bevy::{asset::LoadState, prelude::*, utils::hashbrown::HashSet};
 use bevy_ecs_tilemap::prelude::*;
 
 #[derive(Component)]
 pub struct ElementTilemap;
 
-pub fn on_spawn_element(
-    added_elements_query: Query<(Entity, &Position, &Element), Added<Element>>,
+// When an element's position or exposure changes - redraw its sprite.
+// This will run when an element is first spawned because Changed is true on create.
+pub fn on_update_element(
+    mut element_query: Query<
+        (&Position, &Element, &ElementExposure, Entity),
+        (Or<(Changed<Position>, Changed<ElementExposure>)>, With<AtNest>, Without<Air>),
+    >,
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
@@ -22,38 +27,43 @@ pub fn on_spawn_element(
 ) {
     let grid = nest_query.single();
 
-    for (entity, position, element) in &added_elements_query {
+    for (position, element, element_exposure, entity) in element_query.iter_mut() {
         update_element_sprite(
             entity,
             element,
             position,
+            element_exposure,
             &elements_query,
             &grid,
             &mut commands,
             &mut tilemap_query,
         );
+    }
+}
 
-        let adjacent_positions = position.get_adjacent_positions();
+pub fn rerender_elements(
+    mut element_query: Query<
+        (&Position, &Element, &ElementExposure, Entity),
+        (With<AtNest>, Without<Air>),
+    >,
+    elements_query: Query<&Element>,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut commands: Commands,
+    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
+) {
+    let grid = nest_query.single();
 
-        for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) =
-                grid.elements().get_element_entity(adjacent_position)
-            {
-                let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
-
-                if *adjacent_element != Element::Air {
-                    update_element_sprite(
-                        *adjacent_element_entity,
-                        adjacent_element,
-                        &adjacent_position,
-                        &elements_query,
-                        &grid,
-                        &mut commands,
-                        &mut tilemap_query,
-                    );
-                }
-            }
-        }
+    for (position, element, element_exposure, entity) in element_query.iter_mut() {
+        update_element_sprite(
+            entity,
+            element,
+            position,
+            element_exposure,
+            &elements_query,
+            &grid,
+            &mut commands,
+            &mut tilemap_query,
+        );
     }
 }
 
@@ -61,39 +71,12 @@ fn update_element_sprite(
     element_entity: Entity,
     element: &Element,
     element_position: &Position,
+    element_exposure: &ElementExposure,
     elements_query: &Query<&Element>,
     grid: &Grid,
     commands: &mut Commands,
     tilemap_query: &mut Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
 ) {
-    if element == &Element::Air {
-        return;
-    }
-
-    // TODO: maybe make this reactive rather than calculating all the time to avoid insert when no change in exposure is occurring?
-    let element_exposure = ElementExposure {
-        north: grid.elements().is_element(
-            &elements_query,
-            *element_position - Position::Y,
-            Element::Air,
-        ),
-        east: grid.elements().is_element(
-            &elements_query,
-            *element_position + Position::X,
-            Element::Air,
-        ),
-        south: grid.elements().is_element(
-            &elements_query,
-            *element_position + Position::Y,
-            Element::Air,
-        ),
-        west: grid.elements().is_element(
-            &elements_query,
-            *element_position - Position::X,
-            Element::Air,
-        ),
-    };
-
     let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
     let tile_pos = grid.grid_to_tile_pos(*element_position);
 
@@ -103,77 +86,11 @@ fn update_element_sprite(
         .insert(TileBundle {
             position: tile_pos,
             tilemap_id: TilemapId(tilemap_entity),
-            texture_index: TileTextureIndex(get_element_index(element_exposure, *element) as u32),
+            texture_index: TileTextureIndex(get_element_index(*element_exposure, *element) as u32),
             ..Default::default()
-    })
+        })
         .id();
     tile_storage.set(&tile_pos, tile_entity);
-}
-
-pub fn rerender_elements(
-    mut element_query: Query<(&Position, &Element, Entity), With<AtNest>>,
-    elements_query: Query<&Element>,
-    nest_query: Query<&Grid, With<Nest>>,
-    mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
-) {
-    let grid = nest_query.single();
-
-    for (position, element, entity) in element_query.iter_mut() {
-        update_element_sprite(
-            entity,
-            element,
-            position,
-            &elements_query,
-            &grid,
-            &mut commands,
-            &mut tilemap_query,
-        );
-    }
-}
-
-pub fn on_update_element_position(
-    mut element_query: Query<(&Position, &Element, Entity), Changed<Position>>,
-    elements_query: Query<&Element>,
-    nest_query: Query<&Grid, With<Nest>>,
-    mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
-) {
-    let grid = nest_query.single();
-
-    for (position, element, entity) in element_query.iter_mut() {
-        update_element_sprite(
-            entity,
-            element,
-            position,
-            &elements_query,
-            &grid,
-            &mut commands,
-            &mut tilemap_query,
-        );
-
-        let adjacent_positions = position.get_adjacent_positions();
-
-        for adjacent_position in adjacent_positions {
-            if let Some(adjacent_element_entity) =
-                grid.elements().get_element_entity(adjacent_position)
-            {
-                let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
-
-                if *adjacent_element != Element::Air {
-                    update_element_sprite(
-                        *adjacent_element_entity,
-                        adjacent_element,
-                        &adjacent_position,
-                        &elements_query,
-                        &grid,
-                        &mut commands,
-                        &mut tilemap_query,
-                    );
-                }
-            }
-        }
-    }
 }
 
 #[derive(Resource)]
@@ -238,7 +155,7 @@ pub fn check_element_sprite_sheet_loaded(
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Component, Copy, Clone)]
 pub struct ElementExposure {
     pub north: bool,
     pub east: bool,
@@ -372,4 +289,55 @@ pub fn get_element_index(exposure: ElementExposure, element: Element) -> usize {
     };
 
     row_index * 3 + column_index
+}
+
+/// Eagerly calculate which sides of a given Element are exposed to Air.
+/// Run against all elements changing position - this supports recalculating on Element removal by responding to Air being added.
+pub fn update_element_exposure(
+    changed_elements_query: Query<(Entity, &Position, &Element), Changed<Position>>,
+    elements_query: Query<&Element>,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut commands: Commands,
+) {
+    let grid = nest_query.single();
+    let mut entities = HashSet::new();
+
+    for (entity, position, element) in changed_elements_query.iter() {
+        if *element != Element::Air {
+            entities.insert((entity, *position));
+        }
+
+        for adjacent_position in position.get_adjacent_positions() {
+            if let Some(adjacent_element_entity) =
+                grid.elements().get_element_entity(adjacent_position)
+            {
+                let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
+
+                if *adjacent_element != Element::Air {
+                    entities.insert((*adjacent_element_entity, adjacent_position));
+                }
+            }
+        }
+    }
+
+    for (entity, position) in entities {
+        commands.entity(entity).insert(ElementExposure {
+            north: grid.elements().is_element(
+                &elements_query,
+                position - Position::Y,
+                Element::Air,
+            ),
+            east: grid
+                .elements()
+                .is_element(&elements_query, position + Position::X, Element::Air),
+            south: grid.elements().is_element(
+                &elements_query,
+                position + Position::Y,
+                Element::Air,
+            ),
+            west: grid
+                .elements()
+                .is_element(&elements_query, position - Position::X, Element::Air),
+        });
+    }
 }

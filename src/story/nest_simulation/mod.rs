@@ -48,10 +48,7 @@ use crate::{
             register_common,
             ui::{on_added_selected, on_removed_selected},
         },
-        element::{
-            register_element, teardown_element,
-            ui::{on_spawn_element, on_update_element_position, rerender_elements},
-        },
+        element::{register_element, teardown_element, ui::rerender_elements},
         pheromone::{
             pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
             ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
@@ -91,7 +88,10 @@ use super::{
     },
     element::{
         denormalize_element,
-        ui::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
+        ui::{
+            check_element_sprite_sheet_loaded, on_update_element, start_load_element_sprite_sheet,
+            update_element_exposure,
+        },
     },
     grid::VisibleGridState,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
@@ -295,6 +295,9 @@ impl Plugin for NestSimulationPlugin {
                 )
                     .chain())
                 .run_if(not(in_state(StoryPlaybackState::Paused))),
+                // If this doesn't run then when user spawns elements they won't gain exposure if simulation is paused.
+                apply_deferred,
+                update_element_exposure,
                 // real-world time should update even if the story is paused because real-world time doesn't pause
                 // rate_of_time needs to run when app is paused because fixed_time accumulations need to be cleared while app is paused
                 // to prevent running FixedUpdate schedule repeatedly (while no-oping) when coming back to a hidden tab with a paused sim.
@@ -313,12 +316,7 @@ impl Plugin for NestSimulationPlugin {
             Update,
             (
                 // Spawn
-                (
-                    on_spawn_nest,
-                    on_spawn_ant,
-                    on_spawn_element,
-                    on_spawn_pheromone,
-                ),
+                (on_spawn_nest, on_spawn_ant, on_spawn_pheromone),
                 // Despawn
                 (on_despawn_ant,),
                 // Added
@@ -342,7 +340,7 @@ impl Plugin for NestSimulationPlugin {
                     on_update_ant_orientation,
                     on_update_ant_color,
                     on_update_ant_inventory,
-                    on_update_element_position,
+                    on_update_element,
                     on_update_pheromone_visibility,
                 ),
             )
