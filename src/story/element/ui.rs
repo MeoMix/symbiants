@@ -4,7 +4,10 @@ use crate::{
     story::{
         common::position::Position,
         grid::Grid,
-        nest_simulation::{nest::{AtNest, Nest}, ModelViewEntityMap},
+        nest_simulation::{
+            nest::{AtNest, Nest},
+            ModelViewEntityMap,
+        },
     },
 };
 use bevy::{asset::LoadState, prelude::*, utils::hashbrown::HashSet};
@@ -76,11 +79,11 @@ pub fn on_despawn_element(
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    let element_model_entities = &mut removed.read().collect::<HashSet<_>>();
+    let model_entities = &mut removed.read().collect::<HashSet<_>>();
 
-    for element_model_entity in element_model_entities.iter() {
-        if let Some(element_view_entity) = model_view_entity_map.0.remove(element_model_entity) {
-            commands.entity(element_view_entity).despawn_recursive();
+    for model_entity in model_entities.iter() {
+        if let Some(view_entity) = model_view_entity_map.0.remove(model_entity) {
+            commands.entity(view_entity).despawn_recursive();
         }
     }
 }
@@ -112,7 +115,9 @@ fn update_element_sprite(
         tile_storage.set(&tile_pos, element_view_entity);
     } else {
         let element_view_entity = commands.spawn(tile_bundle).id();
-        model_view_entity_map.0.insert(element_model_entity, element_view_entity);
+        model_view_entity_map
+            .0
+            .insert(element_model_entity, element_view_entity);
         tile_storage.set(&tile_pos, element_view_entity);
     }
 }

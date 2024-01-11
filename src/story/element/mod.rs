@@ -78,10 +78,10 @@ pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
 // TODO: filter?
 pub fn teardown_element(
     mut commands: Commands,
-    element_query: Query<Entity, Or<(With<Element>, With<ElementTilemap>)>>,
+    element_model_query: Query<Entity, Or<(With<Element>, With<ElementTilemap>)>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    for element_model_entity in element_query.iter() {
+    for element_model_entity in element_model_query.iter() {
         if let Some(&element_view_entity) = model_view_entity_map.0.get(&element_model_entity) {
             commands.entity(element_view_entity).despawn_recursive();
             model_view_entity_map.0.remove(&element_model_entity);

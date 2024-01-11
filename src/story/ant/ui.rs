@@ -202,9 +202,8 @@ pub fn rerender_ants(
     for (ant_model_entity, position, color, orientation, name, role, inventory, dead) in
         ant_model_query.iter()
     {
-        if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
-            commands.entity(*ant_view_entity).despawn_recursive();
-            model_view_entity_map.0.remove(&ant_model_entity);
+        if let Some(ant_view_entity) = model_view_entity_map.0.remove(&ant_model_entity) {
+            commands.entity(ant_view_entity).despawn_recursive();
         }
 
         spawn_ant_sprite(
@@ -231,11 +230,11 @@ pub fn on_despawn_ant(
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    let ant_model_entities = &mut removed.read().collect::<HashSet<_>>();
+    let model_entities = &mut removed.read().collect::<HashSet<_>>();
 
-    for ant_model_entity in ant_model_entities.iter() {
-        if let Some(ant_view_entity) = model_view_entity_map.0.remove(ant_model_entity) {
-            commands.entity(ant_view_entity).despawn_recursive();
+    for model_entity in model_entities.iter() {
+        if let Some(view_entity) = model_view_entity_map.0.remove(model_entity) {
+            commands.entity(view_entity).despawn_recursive();
         }
     }
 }

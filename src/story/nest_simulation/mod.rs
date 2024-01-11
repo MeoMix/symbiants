@@ -52,7 +52,7 @@ use crate::{
         element::{register_element, teardown_element, ui::rerender_elements},
         pheromone::{
             pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
-            ui::{on_spawn_pheromone, on_update_pheromone_visibility, render_pheromones},
+            ui::{on_spawn_pheromone, on_update_pheromone_visibility, rerender_pheromones},
         },
         pointer::external_event::process_external_event,
         pointer::{handle_pointer_tap, is_pointer_captured, setup_pointer},
@@ -95,7 +95,7 @@ use super::{
         },
     },
     grid::VisibleGridState,
-    simulation_timestep::{run_simulation_update_schedule, SimulationTime},
+    simulation_timestep::{run_simulation_update_schedule, SimulationTime}, pheromone::ui::on_despawn_pheromone,
 };
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
@@ -324,7 +324,7 @@ impl Plugin for NestSimulationPlugin {
                 // Spawn
                 (on_spawn_nest, on_spawn_ant, on_spawn_pheromone),
                 // Despawn
-                (on_despawn_ant, on_despawn_element),
+                (on_despawn_ant, on_despawn_element, on_despawn_pheromone),
                 // Added
                 (
                     on_added_ant_dead,
@@ -360,14 +360,14 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             OnExit(StoryPlaybackState::FastForwarding),
-            (rerender_ants, rerender_elements, render_pheromones)
+            (rerender_ants, rerender_elements, rerender_pheromones)
                 .chain()
                 .run_if(in_state(VisibleGridState::Nest)),
         );
 
         app.add_systems(
             OnEnter(VisibleGridState::Nest),
-            (rerender_ants, rerender_elements, render_pheromones)
+            (rerender_ants, rerender_elements, rerender_pheromones)
                 .chain()
                 .run_if(in_state(StoryPlaybackState::Playing)),
         );

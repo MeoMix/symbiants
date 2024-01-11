@@ -9,7 +9,7 @@ use crate::story::{
 
 use self::commands::PheromoneCommandsExt;
 
-use super::nest_simulation::nest::AtNest;
+use super::nest_simulation::{nest::AtNest, ModelViewEntityMap};
 
 pub mod commands;
 pub mod ui;
@@ -113,13 +113,21 @@ pub fn setup_pheromone(
     commands.insert_resource(PheromoneVisibility(Visibility::Visible));
 }
 
-pub fn teardown_pheromone(pheromone_query: Query<Entity, With<Pheromone>>, mut commands: Commands) {
-    for pheromone_entity in pheromone_query.iter() {
-        commands.entity(pheromone_entity).despawn_recursive();
-    }
-
+pub fn teardown_pheromone(
+    pheromone_model_query: Query<Entity, With<Pheromone>>,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
     commands.remove_resource::<PheromoneMap>();
     commands.remove_resource::<PheromoneVisibility>();
+
+    for pheromone_model_entity in pheromone_model_query.iter() {
+        if let Some(pheromone_view_entity) = model_view_entity_map.0.remove(&pheromone_model_entity) {
+            commands.entity(pheromone_view_entity).despawn_recursive();
+        }
+
+        commands.entity(pheromone_model_entity).despawn();
+    }
 }
 
 pub fn pheromone_duration_tick(

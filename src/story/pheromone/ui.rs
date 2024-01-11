@@ -1,6 +1,13 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 
-use crate::story::{common::position::Position, grid::Grid, nest_simulation::nest::{Nest, AtNest}};
+use crate::story::{
+    common::position::Position,
+    grid::Grid,
+    nest_simulation::{
+        nest::{AtNest, Nest},
+        ModelViewEntityMap,
+    },
+};
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
 
@@ -21,25 +28,37 @@ pub fn get_pheromone_sprite(
     Sprite { color, ..default() }
 }
 
-pub fn render_pheromones(
-    pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), With<AtNest>>,
+pub fn rerender_pheromones(
+    pheromone_model_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), With<AtNest>>,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    for (pheromone_entity, _, _, _) in &pheromone_query {
-        commands.entity(pheromone_entity).remove::<SpriteBundle>();
+    // TODO: instead of despawn could just overwrite and update?
+    for (pheromone_model_entity, _, _, _) in &pheromone_model_query {
+        if let Some(pheromone_view_entity) = model_view_entity_map.0.remove(&pheromone_model_entity)
+        {
+            commands.entity(pheromone_view_entity).despawn_recursive();
+        }
     }
 
     let grid = nest_query.single();
 
-    for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
-        commands.entity(pheromone_entity).insert(SpriteBundle {
-            transform: Transform::from_translation(grid.grid_to_world_position(*position)),
-            sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-            visibility: pheromone_visibility.0,
-            ..default()
-        });
+    for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_model_query
+    {
+        let pheromone_view_entity = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(grid.grid_to_world_position(*position)),
+                sprite: get_pheromone_sprite(pheromone, pheromone_strength),
+                visibility: pheromone_visibility.0,
+                ..default()
+            })
+            .id();
+
+        model_view_entity_map
+            .0
+            .insert(pheromone_model_entity, pheromone_view_entity);
     }
 }
 
@@ -48,26 +67,55 @@ pub fn on_spawn_pheromone(
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = nest_query.single();
 
-    for (pheromone_entity, position, pheromone, pheromone_strength) in &pheromone_query {
-        commands.entity(pheromone_entity).insert(SpriteBundle {
-            transform: Transform::from_translation(grid.grid_to_world_position(*position)),
-            sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-            visibility: pheromone_visibility.0,
-            ..default()
-        });
+    for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_query {
+        let pheromone_view_entity = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(grid.grid_to_world_position(*position)),
+                sprite: get_pheromone_sprite(pheromone, pheromone_strength),
+                visibility: pheromone_visibility.0,
+                ..default()
+            })
+            .id();
+
+        model_view_entity_map
+            .0
+            .insert(pheromone_model_entity, pheromone_view_entity);
+    }
+}
+
+pub fn on_despawn_pheromone(
+    mut removed: RemovedComponents<Pheromone>,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    let model_entities = &mut removed.read().collect::<HashSet<_>>();
+
+    for model_entity in model_entities.iter() {
+        if let Some(view_entity) = model_view_entity_map.0.remove(model_entity) {
+            commands.entity(view_entity).despawn_recursive();
+        }
     }
 }
 
 pub fn on_update_pheromone_visibility(
-    mut pheromone_query: Query<&mut Visibility, With<Pheromone>>,
+    pheromone_model_query: Query<Entity, With<Pheromone>>,
+    mut pheromone_view_query: Query<&mut Visibility>,
     pheromone_visibility: Res<PheromoneVisibility>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
     if pheromone_visibility.is_changed() {
-        for mut visibility in pheromone_query.iter_mut() {
-            *visibility = pheromone_visibility.0;
+        for pheromone_model_entity in pheromone_model_query.iter() {
+            if let Some(pheromone_view_entity) =
+                model_view_entity_map.0.get(&pheromone_model_entity)
+            {
+                if let Ok(mut visibility) = pheromone_view_query.get_mut(*pheromone_view_entity) {
+                    *visibility = pheromone_visibility.0;
+                }
+            }
         }
     }
 }
