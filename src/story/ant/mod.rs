@@ -94,9 +94,6 @@ impl AntName {
     }
 }
 
-#[derive(Component)]
-pub struct AntLabel(pub Entity);
-
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AntColor(pub Color);
@@ -450,17 +447,10 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
 // Can't easily rely on UI to handle view cleanup because it only runs when AppState is TellStory.
 // If its changed to run during Cleanup then resources etc might be missing.
 pub fn teardown_ant(
-    ant_label_view_query: Query<Entity, With<AntLabel>>,
     ant_model_query: Query<Entity, With<Ant>>,
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    // NOTE: labels aren't directly tied to their ants and so aren't despawned when ants are despawned.
-    // This is because label should not rotate with ants and its much simpler to keep them detached to achieve this.
-    for ant_label_view_entity in ant_label_view_query.iter() {
-        commands.entity(ant_label_view_entity).despawn_recursive();
-    }
-
     for ant_model_entity in ant_model_query.iter() {
         if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
             commands.entity(ant_view_entity).despawn_recursive();

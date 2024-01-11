@@ -3,7 +3,7 @@ use bevy_egui::{egui, EguiContexts};
 
 use crate::story::{
     ant::{
-        birthing::Birthing, hunger::Hunger, sleep::Asleep, Ant, AntInventory, AntName, AntRole,
+        birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole,
         Dead,
     },
     common::position::Position,
@@ -27,7 +27,7 @@ pub fn update_selection_menu(
             Option<&Dead>,
             Option<&Asleep>,
         ),
-        (With<Ant>, With<Selected>),
+        With<Selected>,
     >,
     selected_element_query: Query<(&Element, &Position), With<Selected>>,
     pheromone_query: Query<(&Position, &Pheromone, &PheromoneStrength)>,

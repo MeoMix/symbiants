@@ -12,7 +12,7 @@ use bevy_turborand::GlobalRng;
 
 use crate::story::{
     ant::{
-        Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
+        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
         Initiative,
     },
     element::{commands::ElementCommandsExt, Element},
@@ -33,7 +33,7 @@ pub fn process_external_event(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
-    ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Ant>>,
+    ants_query: Query<(Entity, &Position, &AntRole, &AntInventory)>,
     selected_entity_query: Query<Entity, With<Selected>>,
     mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
 ) {
