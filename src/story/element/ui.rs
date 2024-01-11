@@ -4,7 +4,7 @@ use crate::{
     story::{
         common::position::Position,
         grid::Grid,
-        nest_simulation::nest::{AtNest, Nest},
+        nest_simulation::{nest::{AtNest, Nest}, ModelViewEntityMap},
     },
 };
 use bevy::{asset::LoadState, prelude::*, utils::hashbrown::HashSet};
@@ -27,18 +27,20 @@ pub fn on_update_element(
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = nest_query.single();
 
-    for (position, element, element_exposure, entity) in element_query.iter_mut() {
+    for (position, element, element_exposure, element_model_entity) in element_query.iter_mut() {
         update_element_sprite(
-            entity,
+            element_model_entity,
             element,
             position,
             element_exposure,
             &grid,
             &mut commands,
             &mut tilemap_query,
+            &mut model_view_entity_map,
         );
     }
 }
@@ -51,6 +53,7 @@ pub fn rerender_elements(
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = nest_query.single();
 
@@ -63,18 +66,34 @@ pub fn rerender_elements(
             &grid,
             &mut commands,
             &mut tilemap_query,
+            &mut model_view_entity_map,
         );
     }
 }
 
+pub fn on_despawn_element(
+    mut removed: RemovedComponents<Element>,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    let element_model_entities = &mut removed.read().collect::<HashSet<_>>();
+
+    for element_model_entity in element_model_entities.iter() {
+        if let Some(element_view_entity) = model_view_entity_map.0.remove(element_model_entity) {
+            commands.entity(element_view_entity).despawn_recursive();
+        }
+    }
+}
+
 fn update_element_sprite(
-    element_entity: Entity,
+    element_model_entity: Entity,
     element: &Element,
     element_position: &Position,
     element_exposure: &ElementExposure,
     grid: &Grid,
     commands: &mut Commands,
     tilemap_query: &mut Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
+    model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
 ) {
     let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
     let tile_pos = grid.grid_to_tile_pos(*element_position);
@@ -86,8 +105,16 @@ fn update_element_sprite(
         ..default()
     };
 
-    let tile_entity = commands.entity(element_entity).insert(tile_bundle).id();
-    tile_storage.set(&tile_pos, tile_entity);
+    // We have the model entity, but need to look for a corresponding view entity. If we have one, then just update it, otherwise create it.
+    // TODO: Could provide better enforcement against bad state here if separated this function into spawn vs update.
+    if let Some(&element_view_entity) = model_view_entity_map.0.get(&element_model_entity) {
+        commands.entity(element_view_entity).insert(tile_bundle);
+        tile_storage.set(&tile_pos, element_view_entity);
+    } else {
+        let element_view_entity = commands.spawn(tile_bundle).id();
+        model_view_entity_map.0.insert(element_model_entity, element_view_entity);
+        tile_storage.set(&tile_pos, element_view_entity);
+    }
 }
 
 #[derive(Resource)]

@@ -5,7 +5,8 @@ pub mod nest;
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
     ecs::schedule::ScheduleLabel,
-    prelude::*, utils::HashMap,
+    prelude::*,
+    utils::HashMap,
 };
 
 use crate::{
@@ -89,8 +90,8 @@ use super::{
     element::{
         denormalize_element,
         ui::{
-            check_element_sprite_sheet_loaded, on_update_element, start_load_element_sprite_sheet,
-            update_element_exposure,
+            check_element_sprite_sheet_loaded, on_despawn_element, on_update_element,
+            start_load_element_sprite_sheet, update_element_exposure,
         },
     },
     grid::VisibleGridState,
@@ -323,7 +324,7 @@ impl Plugin for NestSimulationPlugin {
                 // Spawn
                 (on_spawn_nest, on_spawn_ant, on_spawn_pheromone),
                 // Despawn
-                (on_despawn_ant,),
+                (on_despawn_ant, on_despawn_element),
                 // Added
                 (
                     on_added_ant_dead,
@@ -398,16 +399,30 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::Cleanup),
             (
-                teardown_story_time,
-                teardown_settings,
-                teardown_background,
-                teardown_ant,
-                teardown_element,
-                teardown_pheromone,
-                teardown_nest,
-                teardown_save,
-                restart,
-            ),
+                (
+                    teardown_story_time,
+                    teardown_settings,
+                    teardown_background,
+                    teardown_ant,
+                    teardown_element,
+                    teardown_pheromone,
+                    teardown_nest,
+                    teardown_save,
+                    restart,
+                )
+                    .chain(),
+                apply_deferred,
+                // Sanity check to confirm that views were all cleaned up
+                (|model_view_entity_map: Res<ModelViewEntityMap>| {
+                    if model_view_entity_map.0.len() > 0 {
+                        panic!(
+                            "ModelViewEntityMap has {} entries remaining after cleanup",
+                            model_view_entity_map.0.len()
+                        );
+                    }
+                }),
+            )
+                .chain(),
         );
     }
 }

@@ -457,7 +457,7 @@ pub fn teardown_ant(
             model_view_entity_map.0.remove(&ant_model_entity);
         }
 
-        commands.entity(ant_model_entity).despawn_recursive();
+        commands.entity(ant_model_entity).despawn();
     }
 }
 

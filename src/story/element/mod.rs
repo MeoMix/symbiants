@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use self::ui::ElementTilemap;
 
-use super::common::Zone;
+use super::{common::Zone, nest_simulation::ModelViewEntityMap};
 
 pub mod commands;
 pub mod ui;
@@ -76,9 +76,18 @@ pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
 }
 
 // TODO: filter?
-pub fn teardown_element(mut commands: Commands, element_query: Query<Entity, Or<(With<Element>, With<ElementTilemap>)>>) {
-    for element_entity in element_query.iter() {
-        commands.entity(element_entity).despawn_recursive();
+pub fn teardown_element(
+    mut commands: Commands,
+    element_query: Query<Entity, Or<(With<Element>, With<ElementTilemap>)>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    for element_model_entity in element_query.iter() {
+        if let Some(&element_view_entity) = model_view_entity_map.0.get(&element_model_entity) {
+            commands.entity(element_view_entity).despawn_recursive();
+            model_view_entity_map.0.remove(&element_model_entity);
+        }
+
+        commands.entity(element_model_entity).despawn();
     }
 }
 
