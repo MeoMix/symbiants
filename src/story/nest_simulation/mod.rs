@@ -5,7 +5,7 @@ pub mod nest;
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
     ecs::schedule::ScheduleLabel,
-    prelude::*,
+    prelude::*, utils::HashMap,
 };
 
 use crate::{
@@ -103,6 +103,9 @@ pub struct RunSimulationUpdateLoop;
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SimulationUpdate;
 
+#[derive(Resource, Default)]
+pub struct ModelViewEntityMap(pub HashMap<Entity, Entity>);
+
 pub struct NestSimulationPlugin;
 
 impl Plugin for NestSimulationPlugin {
@@ -110,6 +113,8 @@ impl Plugin for NestSimulationPlugin {
         // TODO: timing of this is weird/important, want to have schedule setup early
         app.init_resource::<SimulationTime>();
         app.add_systems(PreStartup, insert_simulation_schedule);
+        // TODO: find a better home for this - some UI common layer
+        app.init_resource::<ModelViewEntityMap>();
 
         app.add_systems(
             OnEnter(AppState::BeginSetup),

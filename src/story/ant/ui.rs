@@ -13,18 +13,21 @@ use crate::{
             Element,
         },
         grid::Grid,
-        nest_simulation::nest::{AtNest, Nest},
+        nest_simulation::{
+            nest::{AtNest, Nest},
+            ModelViewEntityMap,
+        },
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{prelude::*, utils::{HashSet, HashMap}};
 
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
 
-fn insert_ant_sprite(
+fn spawn_ant_sprite(
     commands: &mut Commands,
-    entity: Entity,
+    model_entity: Entity,
     position: &Position,
     color: &AntColor,
     orientation: &AntOrientation,
@@ -35,7 +38,8 @@ fn insert_ant_sprite(
     elements_query: &Query<&Element>,
     grid: &Grid,
     element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
-) {
+    model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
+) -> Entity {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
 
@@ -45,9 +49,8 @@ fn insert_ant_sprite(
         ("images/ant.png", color.0)
     };
 
-    commands
-        .entity(entity)
-        .insert((
+    let ant_view_entity = commands
+        .spawn((
             translation_offset,
             SpriteBundle {
                 texture: asset_server.load(sprite_image),
@@ -88,14 +91,21 @@ fn insert_ant_sprite(
                     ..default()
                 });
             }
-        });
+        })
+        .id();
+
+    model_view_entity_map
+        .0
+        .insert(model_entity, ant_view_entity);
+
+    ant_view_entity
 }
 
 fn spawn_ant_label_text2d(
     commands: &mut Commands,
     position: &Position,
     name: &AntName,
-    entity: Entity,
+    ant_view_entity: Entity,
     grid: &Grid,
 ) {
     // TODO: z-index is 1.0 here because label gets hidden behind dirt/sand otherwise.
@@ -122,7 +132,7 @@ fn spawn_ant_label_text2d(
             ),
             ..default()
         },
-        AntLabel(entity),
+        AntLabel(ant_view_entity),
         AtNest,
     ));
 }
@@ -146,13 +156,15 @@ pub fn on_spawn_ant(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = nest_query.single();
 
-    for (entity, position, color, orientation, name, role, inventory, dead) in &ants_query {
-        insert_ant_sprite(
+    for (ant_model_entity, position, color, orientation, name, role, inventory, dead) in &ants_query
+    {
+        let ant_view_entity = spawn_ant_sprite(
             &mut commands,
-            entity,
+            ant_model_entity,
             position,
             color,
             orientation,
@@ -163,14 +175,15 @@ pub fn on_spawn_ant(
             &elements_query,
             &grid,
             &element_texture_atlas_handle,
+            &mut model_view_entity_map,
         );
 
-        spawn_ant_label_text2d(&mut commands, position, name, entity, &grid);
+        spawn_ant_label_text2d(&mut commands, position, name, ant_view_entity, &grid);
     }
 }
 
 pub fn rerender_ants(
-    ants_query: Query<
+    ant_model_query: Query<
         (
             Entity,
             &Position,
@@ -189,6 +202,7 @@ pub fn rerender_ants(
     elements_query: Query<&Element>,
     nest_query: Query<&Grid, With<Nest>>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = nest_query.single();
 
@@ -197,11 +211,23 @@ pub fn rerender_ants(
         commands.entity(label_entity).despawn();
     }
 
-    for (ant_entity, position, color, orientation, name, role, inventory, dead) in ants_query.iter()
+    // TODO: better approach?
+    let entries = model_view_entity_map
+        .0
+        .iter()
+        .map(|(&model_entity, &view_entity)| (model_entity, view_entity))
+        .collect::<Vec<_>>();
+    for (model_entity, view_entity) in entries {
+        commands.entity(view_entity).despawn_recursive();
+        model_view_entity_map.0.remove(&model_entity);
+    }
+
+    for (ant_model_entity, position, color, orientation, name, role, inventory, dead) in
+        ant_model_query.iter()
     {
-        insert_ant_sprite(
+        let ant_view_entity = spawn_ant_sprite(
             &mut commands,
-            ant_entity,
+            ant_model_entity,
             position,
             color,
             orientation,
@@ -212,54 +238,76 @@ pub fn rerender_ants(
             &elements_query,
             &grid,
             &element_texture_atlas_handle,
+            &mut model_view_entity_map,
         );
 
-        spawn_ant_label_text2d(&mut commands, position, name, ant_entity, &grid);
+        spawn_ant_label_text2d(&mut commands, position, name, ant_view_entity, &grid);
     }
 }
 
+// TODO: invert ownership on label so that this can be O(1) instead of O(n).
 pub fn on_despawn_ant(
     mut removed: RemovedComponents<Ant>,
     label_query: Query<(Entity, &AntLabel)>,
     mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    let ant_entities = &mut removed.read().collect::<HashSet<_>>();
+    let ant_model_entities = &mut removed.read().collect::<HashSet<_>>();
 
-    for (label_entity, ant_label) in label_query.iter() {
-        if ant_entities.contains(&ant_label.0) {
-            commands.entity(label_entity).despawn();
+    {
+        let ant_view_entities = ant_model_entities
+            .iter()
+            .filter_map(|model_entity| model_view_entity_map.0.get(model_entity))
+            .collect::<HashSet<_>>();
+
+        for (label_entity, ant_label) in label_query.iter() {
+            if ant_view_entities.contains(&ant_label.0) {
+                commands.entity(label_entity).despawn();
+            }
+        }
+    }
+
+    for ant_model_entity in ant_model_entities.iter() {
+        if let Some(ant_view_entity) = model_view_entity_map.0.remove(ant_model_entity) {
+            commands.entity(ant_view_entity).despawn();
         }
     }
 }
 
 pub fn on_update_ant_inventory(
     mut commands: Commands,
-    mut query: Query<(Entity, &AntInventory, Option<&Children>), Changed<AntInventory>>,
+    ant_model_query: Query<(Entity, &AntInventory), Changed<AntInventory>>,
+    ant_view_query: Query<Option<&Children>>,
     inventory_item_sprite_query: Query<&InventoryItemSprite>,
     elements_query: Query<&Element>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
-    for (entity, inventory, children) in query.iter_mut() {
-        if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
-            &inventory,
-            &elements_query,
-            &element_texture_atlas_handle,
-        ) {
-            commands
-                .entity(entity)
-                .with_children(|ant: &mut ChildBuilder| {
-                    // TODO: store entity somewhere and despawn using it rather than searching
-                    ant.spawn(inventory_item_bundle);
-                });
-        } else {
-            if let Some(children) = children {
-                for &child in children
-                    .iter()
-                    .filter(|&&child| inventory_item_sprite_query.get(child).is_ok())
-                {
-                    // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-                    commands.entity(child).remove_parent();
-                    commands.entity(child).despawn();
+    for (ant_model_entity, inventory) in ant_model_query.iter() {
+        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
+                &inventory,
+                &elements_query,
+                &element_texture_atlas_handle,
+            ) {
+                commands
+                    .entity(ant_view_entity)
+                    .with_children(|ant: &mut ChildBuilder| {
+                        // TODO: store entity somewhere and despawn using it rather than searching
+                        ant.spawn(inventory_item_bundle);
+                    });
+            } else {
+                if let Ok(children) = ant_view_query.get(ant_view_entity) {
+                    if let Some(children) = children {
+                        for &child in children
+                            .iter()
+                            .filter(|&&child| inventory_item_sprite_query.get(child).is_ok())
+                        {
+                            // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+                            commands.entity(child).remove_parent();
+                            commands.entity(child).despawn();
+                        }
+                    }
                 }
             }
         }
@@ -311,28 +359,36 @@ fn get_inventory_item_sprite_bundle(
 }
 
 pub fn on_update_ant_position(
-    mut ant_query: Query<
-        (&Position, &mut Transform, &TranslationOffset),
-        (With<Ant>, Without<AntLabel>, Changed<Position>),
-    >,
-    mut ant_label_query: Query<
+    ant_model_query: Query<(Entity, &Position), (With<Ant>, Changed<Position>)>,
+    mut ant_view_query: Query<(&mut Transform, &TranslationOffset), Without<AntLabel>>,
+    mut ant_label_view_query: Query<
         (&mut Transform, &TranslationOffset, &AntLabel),
-        (Without<Ant>, With<AntLabel>),
+        With<AntLabel>,
     >,
     nest_query: Query<&Grid, With<Nest>>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
     let grid = nest_query.single();
+    // TODO: refactor and get rid of this mapping
+    let mut view_entity_position_map = HashMap::new();
 
-    for (position, mut transform, translation_offset) in ant_query.iter_mut() {
-        transform.translation = grid
-            .grid_to_world_position(*position)
-            .add(translation_offset.0);
+    for (ant_model_entity, position) in ant_model_query.iter() {
+        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            if let Ok((mut transform, translation_offset)) = ant_view_query.get_mut(ant_view_entity)
+            {
+                transform.translation = grid
+                    .grid_to_world_position(*position)
+                    .add(translation_offset.0);
+            }
+
+            view_entity_position_map.insert(ant_view_entity, *position);
+        }
     }
 
     // TODO: This seems bad for performance because it iterates all labels each time rather than just focusing on which ant positions changed.
     // Labels are positioned relative to their linked entity (stored at Label.0) and don't have a position of their own
-    for (mut transform, translation_offset, label) in ant_label_query.iter_mut() {
-        if let Ok((position, _, _)) = ant_query.get(label.0) {
+    for (mut transform, translation_offset, label) in ant_label_view_query.iter_mut() {
+        if let Some(position) = view_entity_position_map.get(&label.0) {
             transform.translation = grid
                 .grid_to_world_position(*position)
                 .add(translation_offset.0);
@@ -341,61 +397,85 @@ pub fn on_update_ant_position(
 }
 
 pub fn on_update_ant_color(
-    mut query: Query<(&AntColor, &mut Sprite), (Changed<AntColor>, Without<Dead>)>,
+    ant_model_query: Query<(Entity, &AntColor), (Changed<AntColor>, Without<Dead>)>,
+    mut ant_view_query: Query<&mut Sprite>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
-    for (color, mut sprite) in query.iter_mut() {
-        sprite.color = color.0;
+    for (ant_model_entity, color) in ant_model_query.iter() {
+        if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            if let Ok(mut sprite) = ant_view_query.get_mut(*ant_view_entity) {
+                sprite.color = color.0;
+            }
+        }
     }
 }
 
 pub fn on_update_ant_orientation(
-    mut query: Query<(&mut Transform, &AntOrientation), Changed<AntOrientation>>,
+    ant_model_query: Query<(Entity, &AntOrientation), Changed<AntOrientation>>,
+    mut ant_view_query: Query<&mut Transform>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
-    for (mut transform, orientation) in query.iter_mut() {
-        transform.scale = orientation.as_world_scale();
-        transform.rotation = orientation.as_world_rotation();
+    for (ant_model_entity, orientation) in ant_model_query.iter() {
+        if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            if let Ok(mut transform) = ant_view_query.get_mut(*ant_view_entity) {
+                transform.scale = orientation.as_world_scale();
+                transform.rotation = orientation.as_world_rotation();
+            }
+        }
     }
 }
 
 pub fn on_added_ant_dead(
-    mut query: Query<(&mut Handle<Image>, &mut Sprite), Added<Dead>>,
+    ant_model_query: Query<Entity, Added<Dead>>,
+    mut ant_view_query: Query<(&mut Handle<Image>, &mut Sprite)>,
     asset_server: Res<AssetServer>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
-    for (mut image_handle, mut sprite) in query.iter_mut() {
-        *image_handle = asset_server.load("images/ant_dead.png");
+    for ant_model_entity in ant_model_query.iter() {
+        if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            if let Ok((mut image_handle, mut sprite)) = ant_view_query.get_mut(*ant_view_entity) {
+                *image_handle = asset_server.load("images/ant_dead.png");
 
-        // Apply gray tint to dead ants.
-        sprite.color = Color::GRAY;
+                // Apply gray tint to dead ants.
+                sprite.color = Color::GRAY;
+            }
+        }
     }
 }
 
+// TODO: Invert ownership would make this O(1) instead of O(n).
 pub fn on_removed_emote(
     mut removed: RemovedComponents<Emote>,
-    emote_ui_query: Query<(Entity, &EmoteSprite)>,
+    emote_view_query: Query<(Entity, &EmoteSprite)>,
     mut commands: Commands,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
-    let emote_entities = &mut removed.read().collect::<HashSet<_>>();
+    let emoting_model_entities = &mut removed.read().collect::<HashSet<_>>();
+    let emoting_view_entities = emoting_model_entities
+        .iter()
+        .filter_map(|model_entity| model_view_entity_map.0.get(model_entity))
+        .collect::<HashSet<_>>();
 
-    for (emote_ui_entity, ui) in emote_ui_query.iter() {
-        if emote_entities.contains(&ui.parent_entity) {
+    for (emote_view_entity, emote_sprite) in emote_view_query.iter() {
+        if emoting_view_entities.contains(&emote_sprite.parent_entity) {
             // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-            commands.entity(emote_ui_entity).remove_parent().despawn();
+            commands.entity(emote_view_entity).remove_parent().despawn();
         }
     }
 }
 
 pub fn on_tick_emote(
-    mut ant_query: Query<(Entity, &mut Emote), With<AtNest>>,
+    mut ant_model_query: Query<(Entity, &mut Emote), With<AtNest>>,
     mut commands: Commands,
     settings: Res<Settings>,
 ) {
-    for (ant_entity, mut emote) in ant_query.iter_mut() {
+    for (ant_model_entity, mut emote) in ant_model_query.iter_mut() {
         let rate_of_emote_expire =
             emote.max() / (settings.emote_duration * DEFAULT_TICKS_PER_SECOND) as f32;
         emote.tick(rate_of_emote_expire);
 
         if emote.is_expired() {
-            commands.entity(ant_entity).remove::<Emote>();
+            commands.entity(ant_model_entity).remove::<Emote>();
         }
     }
 }
@@ -406,31 +486,34 @@ pub struct EmoteSprite {
 }
 
 pub fn on_added_ant_emote(
-    mut ant_query: Query<(Entity, &Emote), Added<Emote>>,
+    ant_model_query: Query<(Entity, &Emote), Added<Emote>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
-    for (ant_entity, emote) in ant_query.iter_mut() {
-        commands.entity(ant_entity).with_children(|parent| {
-            let texture = match emote.emote_type {
-                EmoteType::Asleep => asset_server.load("images/zzz.png"),
-                EmoteType::FoodLove => asset_server.load("images/foodlove.png"),
-            };
+    for (ant_model_entity, emote) in ant_model_query.iter() {
+        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            commands.entity(ant_view_entity).with_children(|parent| {
+                let texture = match emote.emote_type {
+                    EmoteType::Asleep => asset_server.load("images/zzz.png"),
+                    EmoteType::FoodLove => asset_server.load("images/foodlove.png"),
+                };
 
-            parent.spawn((
-                EmoteSprite {
-                    parent_entity: ant_entity,
-                },
-                SpriteBundle {
-                    transform: Transform::from_xyz(0.75, 1.0, 1.0),
-                    sprite: Sprite {
-                        custom_size: Some(Vec2::splat(1.0)),
+                parent.spawn((
+                    EmoteSprite {
+                        parent_entity: ant_view_entity,
+                    },
+                    SpriteBundle {
+                        transform: Transform::from_xyz(0.75, 1.0, 1.0),
+                        sprite: Sprite {
+                            custom_size: Some(Vec2::splat(1.0)),
+                            ..default()
+                        },
+                        texture,
                         ..default()
                     },
-                    texture,
-                    ..default()
-                },
-            ));
-        });
+                ));
+            });
+        }
     }
 }

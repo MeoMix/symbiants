@@ -9,7 +9,7 @@ use self::{
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{common::Zone, element::Element, nest_simulation::nest::AtNest};
+use super::{common::Zone, element::Element, nest_simulation::{nest::AtNest, ModelViewEntityMap}};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},
@@ -446,19 +446,28 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Chambering>();
 }
 
+// TODO: It's weird that this handles both view and model cleanup.
+// Can't easily rely on UI to handle view cleanup because it only runs when AppState is TellStory.
+// If its changed to run during Cleanup then resources etc might be missing.
 pub fn teardown_ant(
-    label_query: Query<Entity, With<AntLabel>>,
-    ant_query: Query<Entity, With<Ant>>,
+    ant_label_view_query: Query<Entity, With<AntLabel>>,
+    ant_model_query: Query<Entity, With<Ant>>,
     mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     // NOTE: labels aren't directly tied to their ants and so aren't despawned when ants are despawned.
     // This is because label should not rotate with ants and its much simpler to keep them detached to achieve this.
-    for entity in label_query.iter() {
-        commands.entity(entity).despawn_recursive();
+    for ant_label_view_entity in ant_label_view_query.iter() {
+        commands.entity(ant_label_view_entity).despawn_recursive();
     }
 
-    for ant_entity in ant_query.iter() {
-        commands.entity(ant_entity).despawn_recursive();
+    for ant_model_entity in ant_model_query.iter() {
+        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            commands.entity(ant_view_entity).despawn_recursive();
+            model_view_entity_map.0.remove(&ant_model_entity);
+        }
+
+        commands.entity(ant_model_entity).despawn_recursive();
     }
 }
 
