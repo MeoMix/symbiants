@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::query::WorldQuery, prelude::*};
 use bevy_save::{
     Backend, DefaultDebugFormat, Error, Format, Pipeline, Snapshot, SnapshotBuilder,
     SnapshotSerializer, WorldSaveableExt,
@@ -14,25 +14,11 @@ use web_sys::BeforeUnloadEvent;
 use crate::{
     settings::Settings,
     story::{
-        ant::{
-            birthing::Birthing,
-            chambering::Chambering,
-            digestion::Digestion,
-            hunger::Hunger,
-            nesting::{Nested, Nesting},
-            sleep::Asleep,
-            tunneling::Tunneling,
-            Angle, Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
-            Initiative, InventoryItem,
-        },
-        common::position::Position,
-        crater_simulation::crater::{AtCrater, Crater},
-        element::{Air, Dirt, Element, Food, Sand},
-        nest_simulation::{
-            gravity::{Stable, Unstable},
-            nest::{AtNest, Nest},
-        },
-        pheromone::{Pheromone, PheromoneDuration, PheromoneStrength},
+        ant::Ant,
+        crater_simulation::crater::Crater,
+        element::Element,
+        nest_simulation::nest::Nest,
+        pheromone::Pheromone,
         story_time::{StoryRealWorldTime, StoryTime},
     },
 };
@@ -42,6 +28,17 @@ const LOAD_ERROR: &str = "Failed to load world state from local storage";
 const DECOMPRESS_ERROR: &str = "Failed to decompress data";
 
 static SAVE_SNAPSHOT: Mutex<Option<Vec<u8>>> = Mutex::new(None);
+
+#[derive(WorldQuery)]
+struct PersistentModelQueryFilter {
+    _or: Or<(
+        With<Ant>,
+        With<Element>,
+        With<Crater>,
+        With<Nest>,
+        With<Pheromone>,
+    )>,
+}
 
 /// Provide an opportunity to write world state to disk.
 /// This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
@@ -78,13 +75,7 @@ fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
 
     // Persistent entities must have an Id marker because Id is fit for uniquely identifying across sessions.
     // NOTE: Technically this could also include InventoryItem, but Element matches it (just by chance for now though?)
-    let mut model_query = world.query_filtered::<Entity, Or<(
-        With<Ant>,
-        With<Element>,
-        With<Crater>,
-        With<Nest>,
-        With<Pheromone>,
-    )>>();
+    let mut model_query = world.query_filtered::<Entity, PersistentModelQueryFilter>();
 
     model_query.update_archetypes(world);
     let readonly_model_query = model_query.as_readonly();
@@ -166,13 +157,7 @@ pub fn teardown_save() {
 }
 
 pub fn load(world: &mut World) -> bool {
-    let mut model_query = world.query_filtered::<Entity, Or<(
-        With<Ant>,
-        With<Element>,
-        With<Crater>,
-        With<Nest>,
-        With<Pheromone>,
-    )>>();
+    let mut model_query = world.query_filtered::<Entity, PersistentModelQueryFilter>();
     model_query.update_archetypes(world);
 
     let readonly_model_query = model_query.as_readonly();
@@ -184,31 +169,11 @@ pub fn load(world: &mut World) -> bool {
 
 struct SaveLoadPipeline<'q> {
     key: String,
-    readonly_model_query: &'q QueryState<
-        Entity,
-        Or<(
-            With<Ant>,
-            With<Element>,
-            With<Crater>,
-            With<Nest>,
-            With<Pheromone>,
-        )>,
-    >,
+    readonly_model_query: &'q QueryState<Entity, PersistentModelQueryFilter>,
 }
 
 impl<'q> SaveLoadPipeline<'q> {
-    pub fn new(
-        readonly_model_query: &'q QueryState<
-            Entity,
-            Or<(
-                With<Ant>,
-                With<Element>,
-                With<Crater>,
-                With<Nest>,
-                With<Pheromone>,
-            )>,
-        >,
-    ) -> Self {
+    pub fn new(readonly_model_query: &'q QueryState<Entity, PersistentModelQueryFilter>) -> Self {
         Self {
             key: LOCAL_STORAGE_KEY.to_string(),
             readonly_model_query,
@@ -276,60 +241,9 @@ impl<'a> Backend<&'a str> for CompressedWebStorageBackend {
 
 fn build_snapshot(
     world: &World,
-    readonly_model_query: &QueryState<
-        Entity,
-        Or<(
-            With<Ant>,
-            With<Element>,
-            With<Crater>,
-            With<Nest>,
-            With<Pheromone>,
-        )>,
-    >,
+    readonly_model_query: &QueryState<Entity, PersistentModelQueryFilter>,
 ) -> Snapshot {
     Snapshot::builder(world)
-        // TODO: Instead of doing all this - consider if denying just view-related Components would be more robust and/or keeping view and model entities separate.
-        .deny_all()
-        .allow::<Pheromone>()
-        .allow::<PheromoneStrength>()
-        .allow::<PheromoneDuration>()
-        .allow::<Nest>()
-        .allow::<AtNest>()
-        .allow::<Crater>()
-        .allow::<AtCrater>()
-        .allow::<Unstable>()
-        .allow::<Stable>()
-        .allow::<Element>()
-        .allow::<Air>()
-        .allow::<Food>()
-        .allow::<Dirt>()
-        .allow::<Sand>()
-        .allow::<Entity>()
-        .allow::<Option<Entity>>()
-        .allow::<Position>()
-        .allow::<Nesting>()
-        .allow::<Nested>()
-        .allow::<Ant>()
-        .allow::<AntName>()
-        .allow::<AntColor>()
-        .allow::<Dead>()
-        .allow::<Asleep>()
-        .allow::<Initiative>()
-        .allow::<AntOrientation>()
-        .allow::<Facing>()
-        .allow::<Angle>()
-        .allow::<AntRole>()
-        .allow::<Hunger>()
-        .allow::<Digestion>()
-        .allow::<AntInventory>()
-        .allow::<InventoryItem>()
-        .allow::<Birthing>()
-        .allow::<Tunneling>()
-        .allow::<Chambering>()
-        .allow::<Birthing>()
-        .allow::<Settings>()
-        .allow::<StoryTime>()
-        .allow::<StoryRealWorldTime>()
         .extract_entities(readonly_model_query.iter_manual(world))
         .extract_resource::<Settings>()
         .extract_resource::<StoryTime>()
