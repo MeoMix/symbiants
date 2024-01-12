@@ -1,6 +1,7 @@
 use bevy::prelude::*;
+use bevy_ecs_tilemap::tiles::TileVisible;
 
-use crate::story::{grid::VisibleGrid, nest_simulation::ModelViewEntityMap};
+use crate::story::grid::VisibleGrid;
 
 use super::{AtNest, Nest};
 
@@ -14,57 +15,62 @@ pub fn on_spawn_nest(nest_query: Query<Entity, Added<Nest>>, mut commands: Comma
 
 pub fn on_added_at_nest(
     nest_query: Query<&Nest, With<VisibleGrid>>,
-    at_nest_model_query: Query<Entity, Added<AtNest>>,
-    mut commands: Commands,
-    model_view_entity_map: Res<ModelViewEntityMap>,
+    mut at_nest_view_query: Query<
+        (Option<&mut TileVisible>, Option<&mut Visibility>),
+        Added<AtNest>,
+    >,
 ) {
-    let visibility = if nest_query.get_single().is_ok() {
+    let is_nest_visible = nest_query.get_single().is_ok();
+    let nest_visibility = if is_nest_visible {
         Visibility::Visible
     } else {
         Visibility::Hidden
     };
 
-    for at_nest_model_entity in at_nest_model_query.iter() {
-        if let Some(at_nest_view_entity) = model_view_entity_map.0.get(&at_nest_model_entity) {
-            commands.entity(*at_nest_view_entity).insert(visibility);
+    for (tile_visible, visibility) in at_nest_view_query.iter_mut() {
+        if let Some(mut tile_visibile) = tile_visible {
+            tile_visibile.0 = is_nest_visible;
+        } else if let Some(mut visibility) = visibility {
+            *visibility = nest_visibility;
         }
     }
 }
 
 pub fn on_added_nest_visible_grid(
     nest_query: Query<&Nest, Added<VisibleGrid>>,
-    at_nest_model_query: Query<Entity, With<AtNest>>,
-    mut commands: Commands,
-    model_view_entity_map: Res<ModelViewEntityMap>,
+    mut at_nest_view_query: Query<
+        (Option<&mut TileVisible>, Option<&mut Visibility>),
+        With<AtNest>,
+    >,
 ) {
     if nest_query.get_single().is_ok() {
-        for at_nest_model_entity in at_nest_model_query.iter() {
-            if let Some(at_nest_view_entity) = model_view_entity_map.0.get(&at_nest_model_entity) {
-                commands
-                    .entity(*at_nest_view_entity)
-                    .insert(Visibility::Visible);
+        for (tile_visible, visibility) in at_nest_view_query.iter_mut() {
+            if let Some(mut tile_visibile) = tile_visible {
+                tile_visibile.0 = true;
+            } else if let Some(mut visibility) = visibility {
+                *visibility = Visibility::Visible;
             }
         }
     }
 }
 
+// TODO: naming of this vs added doesn't have parity
 pub fn on_nest_removed_visible_grid(
     mut removed: RemovedComponents<VisibleGrid>,
     nest_query: Query<&Nest>,
-    at_nest_model_query: Query<Entity, With<AtNest>>,
-    mut commands: Commands,
-    model_view_entity_map: Res<ModelViewEntityMap>,
+    mut at_nest_view_query: Query<
+        (Option<&mut TileVisible>, Option<&mut Visibility>),
+        With<AtNest>,
+    >,
 ) {
     for entity in &mut removed.read() {
         // If Nest was the one who had VisibleGrid removed
         if let Ok(_) = nest_query.get(entity) {
-            for at_nest_model_entity in at_nest_model_query.iter() {
-                if let Some(at_nest_view_entity) =
-                    model_view_entity_map.0.get(&at_nest_model_entity)
-                {
-                    commands
-                        .entity(*at_nest_view_entity)
-                        .insert(Visibility::Hidden);
+            for (tile_visible, visibility) in at_nest_view_query.iter_mut() {
+                if let Some(mut tile_visible) = tile_visible {
+                    tile_visible.0 = false;
+                } else if let Some(mut visibility) = visibility {
+                    *visibility = Visibility::Hidden;
                 }
             }
         }

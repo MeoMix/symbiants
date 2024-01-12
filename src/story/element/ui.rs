@@ -101,12 +101,12 @@ fn update_element_sprite(
     let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
     let tile_pos = grid.grid_to_tile_pos(*element_position);
 
-    let tile_bundle = TileBundle {
+    let tile_bundle = (AtNest, TileBundle {
         position: tile_pos,
         tilemap_id: TilemapId(tilemap_entity),
         texture_index: TileTextureIndex(get_element_index(*element_exposure, *element) as u32),
         ..default()
-    };
+    });
 
     // We have the model entity, but need to look for a corresponding view entity. If we have one, then just update it, otherwise create it.
     // TODO: Could provide better enforcement against bad state here if separated this function into spawn vs update.

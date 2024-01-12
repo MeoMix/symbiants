@@ -107,17 +107,11 @@ pub fn update_action_menu(
 
             // if is_nest_visible {
             //     if ui.button("View Crater").clicked() {
-            //         external_simulation_event_writer.send(ExternalSimulationEvent {
-            //             action: SimulationAction::ShowCrater,
-            //             position: None,
-            //         });
+            //         external_simulation_event_writer.send(ExternalSimulationEvent::ShowCrater);
             //     }
             // } else {
             //     if ui.button("View Nest").clicked() {
-            //         external_simulation_event_writer.send(ExternalSimulationEvent {
-            //             action: SimulationAction::ShowNest,
-            //             position: None,
-            //         });
+            //         external_simulation_event_writer.send(ExternalSimulationEvent::ShowNest);
             //     }
             // }
         });

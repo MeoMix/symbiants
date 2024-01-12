@@ -48,12 +48,15 @@ pub fn rerender_pheromones(
     for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_model_query
     {
         let pheromone_view_entity = commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(grid.grid_to_world_position(*position)),
-                sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-                visibility: pheromone_visibility.0,
-                ..default()
-            })
+            .spawn((
+                SpriteBundle {
+                    transform: Transform::from_translation(grid.grid_to_world_position(*position)),
+                    sprite: get_pheromone_sprite(pheromone, pheromone_strength),
+                    visibility: pheromone_visibility.0,
+                    ..default()
+                },
+                AtNest,
+            ))
             .id();
 
         model_view_entity_map
@@ -73,12 +76,15 @@ pub fn on_spawn_pheromone(
 
     for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         let pheromone_view_entity = commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(grid.grid_to_world_position(*position)),
-                sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-                visibility: pheromone_visibility.0,
-                ..default()
-            })
+            .spawn((
+                SpriteBundle {
+                    transform: Transform::from_translation(grid.grid_to_world_position(*position)),
+                    sprite: get_pheromone_sprite(pheromone, pheromone_strength),
+                    visibility: pheromone_visibility.0,
+                    ..default()
+                },
+                AtNest,
+            ))
             .id();
 
         model_view_entity_map

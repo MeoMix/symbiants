@@ -65,6 +65,7 @@ fn spawn_ant_sprite(
                 },
                 ..default()
             },
+            AtNest,
         ))
         .with_children(|parent| {
             parent
