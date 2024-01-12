@@ -150,7 +150,6 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
-                (ensure_nest_spatial_bundle, apply_deferred).chain(),
                 (pre_setup_story_time, apply_deferred).chain(),
                 (setup_nest_grid, apply_deferred).chain(),
                 (setup_pointer, apply_deferred).chain(),
@@ -431,15 +430,6 @@ fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) 
             false
         }
     }
-}
-
-// HACK: i'm reusing the same entity for view + model, but creating model first and reactively handling view props
-// this results in warnings when I attach background as a child of nest because nest hasn't gained spatial bundle yet
-// I would just spawn nest with it, but it's not persisted, so I need to insert it after loading Nest from storage
-pub fn ensure_nest_spatial_bundle(nest_query: Query<Entity, With<Nest>>, mut commands: Commands) {
-    commands
-        .entity(nest_query.single())
-        .insert(SpatialBundle::default());
 }
 
 pub fn insert_simulation_schedule(mut main_schedule_order: ResMut<MainScheduleOrder>) {
