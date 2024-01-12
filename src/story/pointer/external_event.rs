@@ -55,7 +55,6 @@ pub fn process_external_event(
             }
             ExternalSimulationEvent::Select(grid_position) => {
                 // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
-                // TODO: Support deselecting element underneath ant rather than reselecting ant. This also requires fixed ordering.
                 let ant_entity_at_position = ants_query
                     .iter()
                     .find(|(_, &position, _, _)| position == grid_position)
@@ -74,7 +73,13 @@ pub fn process_external_event(
                             selected_entity.0 = None;
                         }
                     } else {
-                        selected_entity.0 = Some(ant_entity);
+                        // If there is an ant at the given position, and it's not selected, but the element underneath it is selected
+                        // then assume user wants to deselect element and not select the ant. They can select again after if they want the ant.
+                        if element_entity_at_position == currently_selected_entity.as_ref() {
+                            selected_entity.0 = None;
+                        } else {
+                            selected_entity.0 = Some(ant_entity);
+                        }
                     }
                 } else if let Some(element_entity) = element_entity_at_position {
                     if element_entity_at_position == currently_selected_entity.as_ref() {
