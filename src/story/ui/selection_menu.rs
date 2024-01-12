@@ -3,10 +3,9 @@ use bevy_egui::{egui, EguiContexts};
 
 use crate::story::{
     ant::{
-        birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole,
-        Dead,
+        birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole, Dead,
     },
-    common::position::Position,
+    common::{position::Position, ui::SelectedEntity},
     element::Element,
     pheromone::{Pheromone, PheromoneStrength},
 };
@@ -17,27 +16,30 @@ pub struct Selected;
 pub fn update_selection_menu(
     mut contexts: EguiContexts,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    selected_ant_query: Query<
-        (
-            &Hunger,
-            &AntName,
-            &AntRole,
-            &AntInventory,
-            Option<&Birthing>,
-            Option<&Dead>,
-            Option<&Asleep>,
-        ),
-        With<Selected>,
-    >,
-    selected_element_query: Query<(&Element, &Position), With<Selected>>,
+    selected_ant_query: Query<(
+        &Hunger,
+        &AntName,
+        &AntRole,
+        &AntInventory,
+        Option<&Birthing>,
+        Option<&Dead>,
+        Option<&Asleep>,
+    )>,
+    selected_element_query: Query<(&Element, &Position)>,
     pheromone_query: Query<(&Position, &Pheromone, &PheromoneStrength)>,
     elements_query: Query<&Element>,
+    selected_entity: Res<SelectedEntity>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
 
-    let selected_element = selected_element_query.get_single();
-    let selected_ant = selected_ant_query.get_single();
+    let selected_entity = match selected_entity.0 {
+        Some(entity) => entity,
+        None => return,
+    };
+
+    let selected_element = selected_element_query.get(selected_entity);
+    let selected_ant = selected_ant_query.get(selected_entity);
 
     if selected_element.is_err() && selected_ant.is_err() {
         return;

@@ -45,10 +45,7 @@ use crate::{
             },
             walk::{ants_stabilize_footing_movement, ants_walk},
         },
-        common::{
-            register_common,
-            ui::{on_added_selected, on_removed_selected},
-        },
+        common::{register_common, ui::on_update_selected},
         element::{register_element, teardown_element, ui::rerender_elements},
         pheromone::{
             pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
@@ -83,6 +80,7 @@ use self::{
 
 use super::{
     ant::nesting::ants_nesting_start,
+    common::ui::{on_update_selected_position, setup_common, teardown_common, SelectedEntity},
     crater_simulation::crater::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
@@ -95,7 +93,8 @@ use super::{
         },
     },
     grid::VisibleGridState,
-    simulation_timestep::{run_simulation_update_schedule, SimulationTime}, pheromone::ui::on_despawn_pheromone,
+    pheromone::ui::on_despawn_pheromone,
+    simulation_timestep::{run_simulation_update_schedule, SimulationTime},
 };
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
@@ -114,8 +113,6 @@ impl Plugin for NestSimulationPlugin {
         // TODO: timing of this is weird/important, want to have schedule setup early
         app.init_resource::<SimulationTime>();
         app.add_systems(PreStartup, insert_simulation_schedule);
-        // TODO: find a better home for this - some UI common layer
-        app.init_resource::<ModelViewEntityMap>();
 
         app.add_systems(
             OnEnter(AppState::BeginSetup),
@@ -162,6 +159,7 @@ impl Plugin for NestSimulationPlugin {
                 (setup_pointer, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
                 (setup_background, apply_deferred).chain(),
+                (setup_common, apply_deferred).chain(),
                 setup_save,
                 begin_story,
             )
@@ -329,19 +327,16 @@ impl Plugin for NestSimulationPlugin {
                 (
                     on_added_ant_dead,
                     on_added_ant_emote,
-                    on_added_selected,
                     on_added_at_nest,
                     on_added_at_crater,
                     on_added_nest_visible_grid,
                 ),
                 // Removed
-                (
-                    on_removed_selected,
-                    on_removed_emote,
-                    on_nest_removed_visible_grid,
-                ),
+                (on_removed_emote, on_nest_removed_visible_grid),
                 // Updated
                 (
+                    on_update_selected,
+                    on_update_selected_position,
                     on_update_ant_position,
                     on_update_ant_orientation,
                     on_update_ant_color,
@@ -408,6 +403,7 @@ impl Plugin for NestSimulationPlugin {
                     teardown_pheromone,
                     teardown_nest,
                     teardown_save,
+                    teardown_common,
                     restart,
                 )
                     .chain(),

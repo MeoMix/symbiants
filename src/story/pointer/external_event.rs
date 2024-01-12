@@ -1,10 +1,9 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
-    common::position::Position,
+    common::{position::Position, ui::SelectedEntity},
     crater_simulation::crater::Crater,
     grid::{Grid, VisibleGrid, VisibleGridState},
     nest_simulation::nest::{AtNest, Nest},
-    ui::selection_menu::Selected,
 };
 
 use bevy::prelude::*;
@@ -12,8 +11,7 @@ use bevy_turborand::GlobalRng;
 
 use crate::story::{
     ant::{
-        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
-        Initiative,
+        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing, Initiative,
     },
     element::{commands::ElementCommandsExt, Element},
 };
@@ -34,8 +32,8 @@ pub fn process_external_event(
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory)>,
-    selected_entity_query: Query<Entity, With<Selected>>,
     mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
+    mut selected_entity: ResMut<SelectedEntity>,
 ) {
     let (_, nest) = nest_query.single();
 
@@ -57,6 +55,7 @@ pub fn process_external_event(
             }
             ExternalSimulationEvent::Select(grid_position) => {
                 // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
+                // TODO: Support deselecting element underneath ant rather than reselecting ant. This also requires fixed ordering.
                 let ant_entity_at_position = ants_query
                     .iter()
                     .find(|(_, &position, _, _)| position == grid_position)
@@ -64,31 +63,27 @@ pub fn process_external_event(
 
                 let element_entity_at_position = nest.elements().get_element_entity(grid_position);
 
-                let currently_selected_entity = selected_entity_query.get_single();
-
-                if let Ok(currently_selected_entity) = currently_selected_entity {
-                    commands
-                        .entity(currently_selected_entity)
-                        .remove::<Selected>();
-                }
+                let currently_selected_entity = selected_entity.0;
 
                 if let Some(ant_entity) = ant_entity_at_position {
                     // If tapping on an already selected ant then consider selecting element underneath ant instead.
-                    if ant_entity_at_position == currently_selected_entity.ok() {
+                    if ant_entity_at_position == currently_selected_entity {
                         if let Some(element_entity) = element_entity_at_position {
-                            commands.entity(*element_entity).insert(Selected);
+                            selected_entity.0 = Some(*element_entity);
                         } else {
-                            commands.entity(ant_entity).remove::<Selected>();
+                            selected_entity.0 = None;
                         }
                     } else {
-                        commands.entity(ant_entity).insert(Selected);
+                        selected_entity.0 = Some(ant_entity);
                     }
                 } else if let Some(element_entity) = element_entity_at_position {
-                    if element_entity_at_position == currently_selected_entity.ok().as_ref() {
-                        commands.entity(*element_entity).remove::<Selected>();
+                    if element_entity_at_position == currently_selected_entity.as_ref() {
+                        selected_entity.0 = None;
                     } else {
-                        commands.entity(*element_entity).insert(Selected);
+                        selected_entity.0 = Some(*element_entity);
                     }
+                } else {
+                    selected_entity.0 = None;
                 }
             }
             ExternalSimulationEvent::SpawnFood(grid_position) => {
