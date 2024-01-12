@@ -6,7 +6,6 @@ use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
     ecs::schedule::ScheduleLabel,
     prelude::*,
-    utils::HashMap,
 };
 
 use crate::{
@@ -74,13 +73,15 @@ use self::{
             on_added_at_nest, on_added_nest_visible_grid, on_nest_removed_visible_grid,
             on_spawn_nest,
         },
-        Nest,
     },
 };
 
 use super::{
     ant::nesting::ants_nesting_start,
-    common::{ui::{on_update_selected_position, ModelViewEntityMap}, setup_common, teardown_common},
+    common::{
+        setup_common, teardown_common,
+        ui::{on_update_selected_position, ModelViewEntityMap},
+    },
     crater_simulation::crater::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
