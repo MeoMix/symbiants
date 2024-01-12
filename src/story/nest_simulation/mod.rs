@@ -80,7 +80,7 @@ use self::{
 
 use super::{
     ant::nesting::ants_nesting_start,
-    common::ui::{on_update_selected_position, setup_common, teardown_common, SelectedEntity},
+    common::{ui::{on_update_selected_position, ModelViewEntityMap}, setup_common, teardown_common},
     crater_simulation::crater::{
         register_crater,
         ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
@@ -102,9 +102,6 @@ pub struct RunSimulationUpdateLoop;
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SimulationUpdate;
-
-#[derive(Resource, Default)]
-pub struct ModelViewEntityMap(pub HashMap<Entity, Entity>);
 
 pub struct NestSimulationPlugin;
 
@@ -408,6 +405,7 @@ impl Plugin for NestSimulationPlugin {
                 )
                     .chain(),
                 apply_deferred,
+                // TODO: maybe put this in OnExit
                 // Sanity check to confirm that views were all cleaned up
                 (|model_view_entity_map: Res<ModelViewEntityMap>| {
                     if model_view_entity_map.0.len() > 0 {

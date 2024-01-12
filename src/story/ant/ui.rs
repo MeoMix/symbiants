@@ -7,16 +7,13 @@ use super::{
 use crate::{
     settings::Settings,
     story::{
-        common::position::Position,
+        common::{position::Position, ui::ModelViewEntityMap},
         element::{
             ui::{get_element_index, ElementExposure, ElementTextureAtlasHandle},
             Element,
         },
         grid::Grid,
-        nest_simulation::{
-            nest::{AtNest, Nest},
-            ModelViewEntityMap,
-        },
+        nest_simulation::nest::{AtNest, Nest},
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };

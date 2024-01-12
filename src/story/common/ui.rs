@@ -1,9 +1,6 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 
-use crate::story::{
-    grid::Grid,
-    nest_simulation::{nest::Nest, ModelViewEntityMap},
-};
+use crate::story::{grid::Grid, nest_simulation::nest::Nest};
 
 use super::position::Position;
 
@@ -12,6 +9,9 @@ pub struct SelectedEntity(pub Option<Entity>);
 
 #[derive(Component)]
 pub struct SelectionSprite;
+
+#[derive(Resource, Default)]
+pub struct ModelViewEntityMap(pub HashMap<Entity, Entity>);
 
 /// When Selection is added to a component, decorate that component with a white outline sprite.
 pub fn on_update_selected(
@@ -87,21 +87,4 @@ pub fn on_update_selected_position(
     world_position.z = 3.0;
 
     transform.translation = world_position;
-}
-
-pub fn setup_common(mut commands: Commands) {
-    // TODO: find a better home for this - some UI common layer
-    commands.init_resource::<ModelViewEntityMap>();
-    commands.init_resource::<SelectedEntity>();
-}
-
-pub fn teardown_common(
-    selection_sprite_query: Query<Entity, With<SelectionSprite>>,
-    mut commands: Commands,
-) {
-    if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
-        commands.entity(selection_sprite_entity).despawn();
-    }
-
-    commands.remove_resource::<SelectedEntity>();
 }

@@ -1,12 +1,9 @@
 use bevy::{prelude::*, utils::HashSet};
 
 use crate::story::{
-    common::position::Position,
+    common::{position::Position, ui::ModelViewEntityMap},
     grid::Grid,
-    nest_simulation::{
-        nest::{AtNest, Nest},
-        ModelViewEntityMap,
-    },
+    nest_simulation::nest::{AtNest, Nest},
 };
 
 use super::{Pheromone, PheromoneStrength, PheromoneVisibility};

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::story::{grid::VisibleGrid, nest_simulation::ModelViewEntityMap};
+use crate::story::{grid::VisibleGrid, common::ui::ModelViewEntityMap};
 
 use super::{AtCrater, Crater};
 

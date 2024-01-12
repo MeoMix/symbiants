@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use self::ui::ElementTilemap;
 
-use super::{common::Zone, nest_simulation::ModelViewEntityMap};
+use super::common::{Zone, ui::ModelViewEntityMap};
 
 pub mod commands;
 pub mod ui;

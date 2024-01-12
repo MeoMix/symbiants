@@ -9,7 +9,7 @@ use crate::story::{
 
 use self::commands::PheromoneCommandsExt;
 
-use super::nest_simulation::{nest::AtNest, ModelViewEntityMap};
+use super::{common::ui::ModelViewEntityMap, nest_simulation::nest::AtNest};
 
 pub mod commands;
 pub mod ui;
@@ -122,7 +122,8 @@ pub fn teardown_pheromone(
     commands.remove_resource::<PheromoneVisibility>();
 
     for pheromone_model_entity in pheromone_model_query.iter() {
-        if let Some(pheromone_view_entity) = model_view_entity_map.0.remove(&pheromone_model_entity) {
+        if let Some(pheromone_view_entity) = model_view_entity_map.0.remove(&pheromone_model_entity)
+        {
             commands.entity(pheromone_view_entity).despawn_recursive();
         }
 

@@ -9,7 +9,7 @@ use self::{
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{common::Zone, element::Element, nest_simulation::{nest::AtNest, ModelViewEntityMap}};
+use super::{common::{Zone, ui::ModelViewEntityMap}, element::Element, nest_simulation::nest::AtNest};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},
