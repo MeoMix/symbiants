@@ -118,9 +118,6 @@ pub fn teardown_pheromone(
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    commands.remove_resource::<PheromoneMap>();
-    commands.remove_resource::<PheromoneVisibility>();
-
     for pheromone_model_entity in pheromone_model_query.iter() {
         if let Some(pheromone_view_entity) = model_view_entity_map.0.remove(&pheromone_model_entity)
         {
@@ -129,6 +126,9 @@ pub fn teardown_pheromone(
 
         commands.entity(pheromone_model_entity).despawn();
     }
+
+    commands.remove_resource::<PheromoneMap>();
+    commands.remove_resource::<PheromoneVisibility>();
 }
 
 pub fn pheromone_duration_tick(

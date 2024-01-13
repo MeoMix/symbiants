@@ -4,11 +4,10 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
 use crate::story::{
-    camera::MainCamera,
-    common::position::Position,
-    grid::{Grid, VisibleGrid},
-    ui::action_menu::PointerAction,
+    camera::MainCamera, common::position::Position, grid::Grid, ui::action_menu::PointerAction,
 };
+
+use super::common::ui::VisibleGrid;
 
 #[derive(Event, PartialEq, Copy, Clone, Debug)]
 pub enum ExternalSimulationEvent {
@@ -59,7 +58,8 @@ pub fn handle_pointer_tap(
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
-    visible_grid_query: Query<&Grid, With<VisibleGrid>>,
+    grid_query: Query<&Grid>,
+    visible_grid: Res<VisibleGrid>,
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
     mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
@@ -101,8 +101,9 @@ pub fn handle_pointer_tap(
         .viewport_to_world_2d(camera_transform, pointer_tap_state.position.unwrap())
         .unwrap();
 
-    let grid_position = visible_grid_query
-        .single()
+    let grid_position = grid_query
+        .get(visible_grid.0.unwrap())
+        .unwrap()
         .world_to_grid_position(world_position);
 
     external_simulation_event_writer.send(ExternalSimulationEvent::from((

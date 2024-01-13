@@ -1,13 +1,12 @@
-use crate::{
-    app_state::AppState,
-    story::grid::{Grid, VisibleGrid},
-};
+use crate::{app_state::AppState, story::grid::Grid};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
 
 use self::pancam::{PanCam, PanCamPlugin};
+
+use super::common::ui::VisibleGrid;
 
 mod pancam;
 
@@ -29,9 +28,15 @@ fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
-    visible_grid_query: Query<&Grid, With<VisibleGrid>>,
+    visible_grid: Res<VisibleGrid>,
+    grid_query: Query<&Grid>,
 ) {
-    let visible_grid = match visible_grid_query.get_single() {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let visible_grid = match grid_query.get(visible_grid_entity) {
         Ok(visible_grid) => visible_grid,
         Err(_) => return,
     };
@@ -54,9 +59,19 @@ fn window_resize(
 fn scale_projection(
     mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    visible_grid_query: Query<&Grid, Added<VisibleGrid>>,
+    visible_grid: Res<VisibleGrid>,
+    grid_query: Query<&Grid>,
 ) {
-    let visible_grid = match visible_grid_query.get_single() {
+    if !visible_grid.is_changed() {
+        return;
+    }
+
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let visible_grid = match grid_query.get(visible_grid_entity) {
         Ok(visible_grid) => visible_grid,
         Err(_) => return,
     };
@@ -74,10 +89,20 @@ fn scale_projection(
 
 fn insert_pancam(
     main_camera_query: Query<Entity, With<MainCamera>>,
-    visible_grid_query: Query<&Grid, Added<VisibleGrid>>,
+    visible_grid: Res<VisibleGrid>,
+    grid_query: Query<&Grid>,
     mut commands: Commands,
 ) {
-    let visible_grid = match visible_grid_query.get_single() {
+    if !visible_grid.is_changed() {
+        return;
+    }
+
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let visible_grid = match grid_query.get(visible_grid_entity) {
         Ok(visible_grid) => visible_grid,
         Err(_) => return,
     };
@@ -111,7 +136,13 @@ impl Plugin for CameraPlugin {
         app.add_systems(OnEnter(AppState::BeginSetup), setup);
         app.add_systems(OnEnter(AppState::Cleanup), teardown);
 
-        app.add_systems(Update, window_resize);
-        app.add_systems(Update, (insert_pancam, scale_projection));
+        app.add_systems(
+            Update,
+            window_resize.run_if(resource_exists::<VisibleGrid>()),
+        );
+        app.add_systems(
+            Update,
+            (insert_pancam, scale_projection).run_if(resource_exists::<VisibleGrid>()),
+        );
     }
 }

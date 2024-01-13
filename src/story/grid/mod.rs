@@ -15,10 +15,6 @@ pub enum VisibleGridState {
     Crater,
 }
 
-// TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
-#[derive(Component)]
-pub struct VisibleGrid;
-
 /// Note the intentional omission of reflection/serialization.
 /// This is because Grid is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Component, Debug)]

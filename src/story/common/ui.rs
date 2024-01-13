@@ -4,6 +4,10 @@ use crate::story::{grid::Grid, nest_simulation::nest::Nest};
 
 use super::position::Position;
 
+// TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
+#[derive(Resource, Default)]
+pub struct VisibleGrid(pub Option<Entity>);
+
 #[derive(Resource, Default)]
 pub struct SelectedEntity(pub Option<Entity>);
 

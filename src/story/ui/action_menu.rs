@@ -4,7 +4,8 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
 use crate::settings::Settings;
-use crate::story::grid::VisibleGrid;
+use crate::story::common::ui::VisibleGrid;
+use crate::story::crater_simulation::crater::Crater;
 use crate::story::nest_simulation::nest::Nest;
 use crate::story::pointer::ExternalSimulationEvent;
 use crate::story::story_time::StoryTime;
@@ -43,7 +44,9 @@ pub fn update_action_menu(
     settings: Res<Settings>,
     story_time: Res<StoryTime>,
     mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
-    nest_query: Query<&Nest, With<VisibleGrid>>,
+    visible_grid: Res<VisibleGrid>,
+    nest_query: Query<&Nest>,
+    crater_query: Query<&Crater>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -103,16 +106,23 @@ pub fn update_action_menu(
                 }
             });
 
-            // let is_nest_visible = nest_query.get_single().is_ok();
+            if let Some(visible_grid_entity) = visible_grid.0 {
+                let is_nest_visible = nest_query.get(visible_grid_entity).is_ok();
+                let is_crater_visible = crater_query.get(visible_grid_entity).is_ok();
 
-            // if is_nest_visible {
-            //     if ui.button("View Crater").clicked() {
-            //         external_simulation_event_writer.send(ExternalSimulationEvent::ShowCrater);
-            //     }
-            // } else {
-            //     if ui.button("View Nest").clicked() {
-            //         external_simulation_event_writer.send(ExternalSimulationEvent::ShowNest);
-            //     }
-            // }
+                if is_nest_visible {
+                    if ui.button("View Crater").clicked() {
+                        external_simulation_event_writer.send(ExternalSimulationEvent::ShowCrater);
+                    }
+                } else if is_crater_visible {
+                    if ui.button("View Nest").clicked() {
+                        external_simulation_event_writer.send(ExternalSimulationEvent::ShowNest);
+                    }
+                }
+            } else {
+                if ui.button("View Nest").clicked() {
+                    external_simulation_event_writer.send(ExternalSimulationEvent::ShowNest);
+                }
+            }
         });
 }

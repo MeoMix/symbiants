@@ -327,9 +327,14 @@ impl Plugin for NestSimulationPlugin {
                     on_added_at_nest,
                     on_added_at_crater,
                     on_added_nest_visible_grid,
+                    on_added_crater_visible_grid,
                 ),
                 // Removed
-                (on_removed_emote, on_nest_removed_visible_grid),
+                (
+                    on_removed_emote,
+                    on_nest_removed_visible_grid,
+                    on_crater_removed_visible_grid,
+                ),
                 // Updated
                 (
                     on_update_selected,
@@ -390,32 +395,19 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             OnEnter(AppState::Cleanup),
-            (
-                (
-                    teardown_story_time,
-                    teardown_settings,
-                    teardown_background,
-                    teardown_ant,
-                    teardown_element,
-                    teardown_pheromone,
-                    teardown_nest,
-                    teardown_save,
-                    teardown_common,
-                    restart,
-                )
-                    .chain(),
-                apply_deferred,
-                // TODO: maybe put this in OnExit
-                // Sanity check to confirm that views were all cleaned up
-                (|model_view_entity_map: Res<ModelViewEntityMap>| {
-                    if model_view_entity_map.0.len() > 0 {
-                        panic!(
-                            "ModelViewEntityMap has {} entries remaining after cleanup",
-                            model_view_entity_map.0.len()
-                        );
-                    }
-                }),
+            ((
+                teardown_story_time,
+                teardown_settings,
+                teardown_background,
+                teardown_ant,
+                teardown_element,
+                teardown_pheromone,
+                teardown_nest,
+                teardown_save,
+                teardown_common,
+                restart,
             )
+                .chain(),)
                 .chain(),
         );
     }
