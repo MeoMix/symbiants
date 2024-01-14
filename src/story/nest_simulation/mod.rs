@@ -69,23 +69,14 @@ use self::{
     nest::{
         register_nest, setup_nest, setup_nest_ants, setup_nest_elements, setup_nest_grid,
         teardown_nest,
-        ui::{
-            on_added_at_nest, on_added_nest_visible_grid, on_nest_removed_visible_grid,
-            on_spawn_nest,
-        },
+        ui::{on_nest_removed_visible_grid, on_spawn_nest},
     },
 };
 
 use super::{
     ant::nesting::ants_nesting_start,
-    common::{
-        setup_common, teardown_common,
-        ui::{on_update_selected_position, ModelViewEntityMap},
-    },
-    crater_simulation::crater::{
-        register_crater,
-        ui::{on_added_at_crater, on_added_crater_visible_grid, on_crater_removed_visible_grid},
-    },
+    common::{setup_common, teardown_common, ui::on_update_selected_position},
+    crater_simulation::crater::{register_crater, ui::on_crater_removed_visible_grid},
     element::{
         denormalize_element,
         ui::{
@@ -316,19 +307,17 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             Update,
             (
+                // TODO: This apply_deferred sucks but I'm relying on view state to reactively render
+                // and so I need this to be accurate now not next frame.
+                on_spawn_nest,
+                apply_deferred,
                 // Spawn
-                (on_spawn_nest, on_spawn_ant, on_spawn_pheromone),
+                (on_spawn_ant, on_spawn_pheromone),
                 // Despawn
+                // TODO: make these generic
                 (on_despawn_ant, on_despawn_element, on_despawn_pheromone),
                 // Added
-                (
-                    on_added_ant_dead,
-                    on_added_ant_emote,
-                    on_added_at_nest,
-                    on_added_at_crater,
-                    on_added_nest_visible_grid,
-                    on_added_crater_visible_grid,
-                ),
+                (on_added_ant_dead, on_added_ant_emote),
                 // Removed
                 (
                     on_removed_emote,
@@ -348,10 +337,8 @@ impl Plugin for NestSimulationPlugin {
                 ),
             )
                 .run_if(
-                    in_state(AppState::TellStory).and_then(
-                        not(in_state(StoryPlaybackState::FastForwarding))
-                            .and_then(in_state(VisibleGridState::Nest)),
-                    ),
+                    in_state(AppState::TellStory)
+                        .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
                 ),
         );
 

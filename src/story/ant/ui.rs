@@ -7,7 +7,10 @@ use super::{
 use crate::{
     settings::Settings,
     story::{
-        common::{position::Position, ui::ModelViewEntityMap},
+        common::{
+            position::Position,
+            ui::{ModelViewEntityMap, VisibleGrid},
+        },
         element::{
             ui::{get_element_index, ElementExposure, ElementTextureAtlasHandle},
             Element,
@@ -150,8 +153,17 @@ pub fn on_spawn_ant(
     nest_query: Query<&Grid, With<Nest>>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
 ) {
-    let grid = nest_query.single();
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
 
     for (ant_model_entity, position, color, orientation, name, role, inventory, dead) in &ants_query
     {
@@ -246,7 +258,18 @@ pub fn on_update_ant_inventory(
     elements_query: Query<&Element>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    nest_query: Query<&Grid, With<Nest>>,
+    visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
     for (ant_model_entity, inventory) in ant_model_query.iter() {
         if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
             if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
@@ -344,8 +367,17 @@ pub fn on_update_ant_position(
     mut ant_view_query: Query<(&mut Transform, &TranslationOffset)>,
     nest_query: Query<&Grid, With<Nest>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
 ) {
-    let grid = nest_query.single();
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
 
     for (ant_model_entity, position) in ant_model_query.iter() {
         if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
@@ -364,7 +396,18 @@ pub fn on_update_ant_color(
     ant_view_query: Query<&Children>,
     mut ant_sprite_view_query: Query<&mut Sprite, With<AntSprite>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
+    nest_query: Query<&Grid, With<Nest>>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
     for (ant_model_entity, color) in ant_model_query.iter() {
         if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
             if let Ok(children) = ant_view_query.get(*ant_view_entity) {
@@ -386,7 +429,18 @@ pub fn on_update_ant_orientation(
     ant_view_query: Query<&Children>,
     mut ant_sprite_view_query: Query<&mut Transform, With<AntSprite>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
+    nest_query: Query<&Grid, With<Nest>>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
     for (ant_model_entity, orientation) in ant_model_query.iter() {
         if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
             if let Ok(children) = ant_view_query.get(*ant_view_entity) {
@@ -410,7 +464,18 @@ pub fn on_added_ant_dead(
     mut ant_sprite_view_query: Query<(&mut Handle<Image>, &mut Sprite), With<AntSprite>>,
     asset_server: Res<AssetServer>,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    nest_query: Query<&Grid, With<Nest>>,
+    visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
     for ant_model_entity in ant_model_query.iter() {
         if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
             if let Ok(children) = ant_view_query.get(*ant_view_entity) {
@@ -438,7 +503,18 @@ pub fn on_removed_emote(
     emote_view_query: Query<(Entity, &EmoteSprite)>,
     mut commands: Commands,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    nest_query: Query<&Grid, With<Nest>>,
+    visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
     let emoting_model_entities = &mut removed.read().collect::<HashSet<_>>();
     let emoting_view_entities = emoting_model_entities
         .iter()
@@ -482,7 +558,18 @@ pub fn on_added_ant_emote(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    nest_query: Query<&Grid, With<Nest>>,
+    visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
     for (ant_model_entity, emote) in ant_model_query.iter() {
         if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
             if let Ok(children) = ant_view_query.get(ant_view_entity) {

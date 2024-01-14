@@ -2,7 +2,7 @@ use super::{Air, Element};
 use crate::{
     app_state::AppState,
     story::{
-        common::{position::Position, ui::ModelViewEntityMap},
+        common::{position::Position, ui::{ModelViewEntityMap, VisibleGrid}},
         grid::Grid,
         nest_simulation::nest::{AtNest, Nest},
     },
@@ -28,8 +28,17 @@ pub fn on_update_element(
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
 ) {
-    let grid = nest_query.single();
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
 
     for (position, element, element_exposure, element_model_entity) in element_query.iter_mut() {
         update_element_sprite(

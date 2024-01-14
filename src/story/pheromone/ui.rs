@@ -1,7 +1,10 @@
 use bevy::{prelude::*, utils::HashSet};
 
 use crate::story::{
-    common::{position::Position, ui::ModelViewEntityMap},
+    common::{
+        position::Position,
+        ui::{ModelViewEntityMap, VisibleGrid},
+    },
     grid::Grid,
     nest_simulation::nest::{AtNest, Nest},
 };
@@ -63,13 +66,25 @@ pub fn rerender_pheromones(
 }
 
 pub fn on_spawn_pheromone(
-    pheromone_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), Added<Pheromone>>,
+    pheromone_query: Query<
+        (Entity, &Position, &Pheromone, &PheromoneStrength),
+        (Added<Pheromone>, With<AtNest>),
+    >,
     pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
 ) {
-    let grid = nest_query.single();
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
 
     for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_query {
         let pheromone_view_entity = commands
@@ -109,7 +124,18 @@ pub fn on_update_pheromone_visibility(
     mut pheromone_view_query: Query<&mut Visibility>,
     pheromone_visibility: Res<PheromoneVisibility>,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    nest_query: Query<&Grid, With<Nest>>,
+    visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
     if pheromone_visibility.is_changed() {
         for pheromone_model_entity in pheromone_model_query.iter() {
             if let Some(pheromone_view_entity) =

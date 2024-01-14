@@ -25,7 +25,18 @@ pub fn on_update_selected(
     entity_position_query: Query<Ref<Position>>,
     selection_sprite_query: Query<Entity, With<SelectionSprite>>,
     nest_query: Query<&Grid, With<Nest>>,
+    visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
+
     if !selected_entity.is_changed() {
         return;
     }
@@ -39,7 +50,6 @@ pub fn on_update_selected(
         None => return,
     };
 
-    let grid = nest_query.single();
     let position = entity_position_query.get(newly_selected_entity).unwrap();
 
     let mut world_position = grid.grid_to_world_position(*position);
@@ -68,7 +78,18 @@ pub fn on_update_selected_position(
     entity_position_query: Query<&Position, Changed<Position>>,
     mut selection_sprite_query: Query<&mut Transform, With<SelectionSprite>>,
     nest_query: Query<&Grid, With<Nest>>,
+    visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
+
     let selected_entity = match selected_entity.0 {
         Some(entity) => entity,
         None => return,
@@ -85,7 +106,6 @@ pub fn on_update_selected_position(
         Err(_) => return,
     };
 
-    let grid = nest_query.single();
     let mut world_position = grid.grid_to_world_position(*selected_entity_position);
     // render selection UI above ants
     world_position.z = 3.0;

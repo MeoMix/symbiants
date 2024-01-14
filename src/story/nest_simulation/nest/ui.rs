@@ -1,14 +1,13 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::view::visibility};
 use bevy_ecs_tilemap::tiles::TileVisible;
 
-use crate::story::common::ui::VisibleGrid;
+use crate::story::common::ui::{ModelViewEntityMap, VisibleGrid};
 
 use super::{AtNest, Nest};
 
 // Assume for now that when the simulation loads the user wants to see their nest, but in the future might need to make this more flexible.
 pub fn on_spawn_nest(
     nest_query: Query<Entity, Added<Nest>>,
-    mut commands: Commands,
     mut visible_grid: ResMut<VisibleGrid>,
 ) {
     let nest_entity = match nest_query.get_single() {
@@ -19,74 +18,21 @@ pub fn on_spawn_nest(
     visible_grid.0 = Some(nest_entity);
 }
 
-pub fn on_added_at_nest(
-    nest_query: Query<&Nest>,
-    visible_grid: Res<VisibleGrid>,
-    mut at_nest_view_query: Query<
-        (Option<&mut TileVisible>, Option<&mut Visibility>),
-        Added<AtNest>,
-    >,
-) {
-    let mut is_nest_visible = false;
-    let mut nest_visibility = Visibility::Hidden;
-
-    if let Some(visible_grid_entity) = visible_grid.0 {
-        if nest_query.get(visible_grid_entity).is_ok() {
-            nest_visibility = Visibility::Visible;
-            is_nest_visible = true;
-        }
-    }
-
-    for (tile_visible, visibility) in at_nest_view_query.iter_mut() {
-        // TODO: It's lame that this needs to be aware of two different concepts of visiblity - self-managed vs bevy_ecs_tilemap
-        if let Some(mut tile_visibile) = tile_visible {
-            tile_visibile.0 = is_nest_visible;
-        } else if let Some(mut visibility) = visibility {
-            *visibility = nest_visibility;
-        }
-    }
-}
-
-pub fn on_added_nest_visible_grid(
-    nest_query: Query<&Nest>,
-    visible_grid: Res<VisibleGrid>,
-    mut at_nest_view_query: Query<
-        (Option<&mut TileVisible>, Option<&mut Visibility>),
-        With<AtNest>,
-    >,
-) {
-    if !visible_grid.is_changed() {
-        return;
-    }
-
-    let visible_grid_entity = match visible_grid.0 {
-        Some(visible_grid_entity) => visible_grid_entity,
-        None => return,
-    };
-
-    if !nest_query.get(visible_grid_entity).is_ok() {
-        return;
-    }
-
-    for (tile_visible, visibility) in at_nest_view_query.iter_mut() {
-        if let Some(mut tile_visibile) = tile_visible {
-            tile_visibile.0 = true;
-        } else if let Some(mut visibility) = visibility {
-            *visibility = Visibility::Visible;
-        }
-    }
-}
-
+// TODO: sheesh this entire method sucks.
 // TODO: naming of this vs added doesn't have parity
 pub fn on_nest_removed_visible_grid(
     visible_grid: Res<VisibleGrid>,
     nest_query: Query<&Nest>,
-    mut at_nest_view_query: Query<
-        (Option<&mut TileVisible>, Option<&mut Visibility>),
-        With<AtNest>,
+    at_nest_view_query: Query<
+        Entity,
+        // TODO: Better way to select just views? Should I introduce a View component?
+        (With<AtNest>, Or<(With<TileVisible>, With<Visibility>)>),
     >,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    if !visible_grid.is_changed() {
+    // is_changed() is true when is_added() is true, trying to detect changed as in "changed from one value to another"
+    if !visible_grid.is_changed() || visible_grid.is_added() {
         return;
     }
 
@@ -99,11 +45,12 @@ pub fn on_nest_removed_visible_grid(
         }
     }
 
-    for (tile_visible, visibility) in at_nest_view_query.iter_mut() {
-        if let Some(mut tile_visible) = tile_visible {
-            tile_visible.0 = false;
-        } else if let Some(mut visibility) = visibility {
-            *visibility = Visibility::Hidden;
-        }
+    for entity in at_nest_view_query.iter() {
+        commands.entity(entity).despawn_recursive();
+        // TODO: maybe I need to update my tilemap storage etc when despawning here?
+        // tile_storage.set(&tile_pos, element_view_entity);
     }
+
+    // TODO: instead of clearing -- maybe try to carefully remove? should be safe to clear though since switching major views?
+    model_view_entity_map.0.clear();
 }

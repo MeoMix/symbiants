@@ -5,34 +5,6 @@ use crate::story::common::ui::{ModelViewEntityMap, VisibleGrid};
 
 use super::{AtCrater, Crater};
 
-pub fn on_added_at_crater(
-    crater_query: Query<&Crater>,
-    visible_grid: Res<VisibleGrid>,
-    mut at_crater_view_query: Query<
-        (Option<&mut TileVisible>, Option<&mut Visibility>),
-        Added<AtCrater>,
-    >,
-) {
-    let mut is_crater_visible = false;
-    let mut crater_visibility = Visibility::Hidden;
-
-    if let Some(visible_grid_entity) = visible_grid.0 {
-        if crater_query.get(visible_grid_entity).is_ok() {
-            crater_visibility = Visibility::Visible;
-            is_crater_visible = true;
-        }
-    }
-
-    for (tile_visible, visibility) in at_crater_view_query.iter_mut() {
-        // TODO: It's lame that this needs to be aware of two different concepts of visiblity - self-managed vs bevy_ecs_tilemap
-        if let Some(mut tile_visibile) = tile_visible {
-            tile_visibile.0 = is_crater_visible;
-        } else if let Some(mut visibility) = visibility {
-            *visibility = crater_visibility;
-        }
-    }
-}
-
 pub fn on_added_crater_visible_grid(
     crater_query: Query<&Crater>,
     visible_grid: Res<VisibleGrid>,
@@ -63,16 +35,21 @@ pub fn on_added_crater_visible_grid(
     }
 }
 
+// TODO: sheesh this entire method sucks.
 // TODO: naming of this vs added doesn't have parity
 pub fn on_crater_removed_visible_grid(
     visible_grid: Res<VisibleGrid>,
     crater_query: Query<&Crater>,
-    mut at_crater_view_query: Query<
-        (Option<&mut TileVisible>, Option<&mut Visibility>),
-        With<AtCrater>,
+    at_crater_view_query: Query<
+        Entity,
+        // TODO: Better way to select just views? Should I introduce a View component?
+        (With<AtCrater>, Or<(With<TileVisible>, With<Visibility>)>),
     >,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    if !visible_grid.is_changed() {
+    // is_changed() is true when is_added() is true, trying to detect changed as in "changed from one value to another"
+    if !visible_grid.is_changed() || visible_grid.is_added() {
         return;
     }
 
@@ -85,11 +62,12 @@ pub fn on_crater_removed_visible_grid(
         }
     }
 
-    for (tile_visible, visibility) in at_crater_view_query.iter_mut() {
-        if let Some(mut tile_visible) = tile_visible {
-            tile_visible.0 = false;
-        } else if let Some(mut visibility) = visibility {
-            *visibility = Visibility::Hidden;
-        }
+    for entity in at_crater_view_query.iter() {
+        commands.entity(entity).despawn_recursive();
+        // TODO: maybe I need to update my tilemap storage etc when despawning here?
+        // tile_storage.set(&tile_pos, element_view_entity);
     }
+
+    // TODO: instead of clearing -- maybe try to carefully remove? should be safe to clear though since switching major views?
+    model_view_entity_map.0.clear();
 }
