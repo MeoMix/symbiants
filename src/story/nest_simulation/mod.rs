@@ -336,6 +336,7 @@ impl Plugin for NestSimulationPlugin {
                     on_update_pheromone_visibility,
                 ),
             )
+                .chain()
                 .run_if(
                     in_state(AppState::TellStory)
                         .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
