@@ -1,7 +1,6 @@
 pub mod elements_cache;
 
 use bevy::prelude::*;
-use bevy_ecs_tilemap::tiles::TilePos;
 
 use crate::story::common::position::Position;
 

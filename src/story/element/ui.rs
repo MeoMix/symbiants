@@ -8,7 +8,6 @@ use crate::{
     },
 };
 use bevy::{asset::LoadState, prelude::*, utils::hashbrown::HashSet};
-use bevy_ecs_tilemap::prelude::*;
 
 #[derive(Component)]
 pub struct ElementTilemap;

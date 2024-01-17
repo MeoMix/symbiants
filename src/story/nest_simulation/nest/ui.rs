@@ -1,5 +1,4 @@
 use bevy::{prelude::*, render::view::visibility};
-use bevy_ecs_tilemap::tiles::TileVisible;
 
 use crate::story::common::ui::{ModelViewEntityMap, VisibleGrid};
 

@@ -507,16 +507,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_ecs_tilemap"
-version = "0.12.0"
-source = "git+https://github.com/MeoMix/bevy_ecs_tilemap?branch=main#d66cf2a79106421e973b27a3b7aba7435f4c378e"
-dependencies = [
- "bevy",
- "log",
- "regex",
-]
-
-[[package]]
 name = "bevy_egui"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2884,7 +2874,6 @@ name = "symbiants_pkg"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_ecs_tilemap",
  "bevy_egui",
  "bevy_save",
  "bevy_turborand",
