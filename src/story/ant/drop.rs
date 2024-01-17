@@ -41,15 +41,15 @@ pub fn ants_drop(
             continue;
         }
 
-        // TODO: drop ahead not where at?
-        if rng.f32() < settings.probabilities.random_drop {
-            let target_element_entity = grid.elements().element_entity(*position);
-            commands.drop(ant_entity, *position, *target_element_entity, AtNest);
+        let ahead_position = orientation.get_ahead_position(position);
+        if !grid.is_within_bounds(&ahead_position) {
             continue;
         }
 
-        let ahead_position = orientation.get_ahead_position(position);
-        if !grid.is_within_bounds(&ahead_position) {
+        // Use ahead position for random inventory drop.
+        if rng.f32() < settings.probabilities.random_drop {
+            let target_element_entity = grid.elements().element_entity(*position);
+            commands.drop(ant_entity, ahead_position, *target_element_entity, AtNest);
             continue;
         }
 
