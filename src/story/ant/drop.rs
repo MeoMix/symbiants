@@ -48,7 +48,7 @@ pub fn ants_drop(
 
         // Use ahead position for random inventory drop.
         if rng.f32() < settings.probabilities.random_drop {
-            let target_element_entity = grid.elements().element_entity(*position);
+            let target_element_entity = grid.elements().element_entity(ahead_position);
             commands.drop(ant_entity, ahead_position, *target_element_entity, AtNest);
             continue;
         }
