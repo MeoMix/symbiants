@@ -9,8 +9,8 @@ use crate::{
     settings::Settings,
     story::{
         ant::{
-            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
-            AntName, AntOrientation, AntRole, Facing, Initiative,
+            digestion::Digestion, hunger::Hunger, Angle, AntAteFoodEvent, AntBundle, AntColor,
+            AntInventory, AntName, AntOrientation, AntRole, Facing, Initiative,
         },
         common::{position::Position, Zone},
         element::{Element, ElementBundle},
@@ -92,6 +92,9 @@ pub fn setup_nest_ants(
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
+    // TODO: This isn't necessarily related to nest ants -- just ants in general.
+    commands.init_resource::<Events<AntAteFoodEvent>>();
+
     let nest = nest_query.single();
     let mut rng = rng.reborrow();
 
