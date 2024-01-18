@@ -9,7 +9,7 @@ use crate::story::{
 
 use self::commands::PheromoneCommandsExt;
 
-use super::{nest_rendering::common::ModelViewEntityMap, nest_simulation::nest::AtNest};
+use super::nest_simulation::nest::AtNest;
 
 pub mod commands;
 
@@ -115,14 +115,8 @@ pub fn setup_pheromone(
 pub fn teardown_pheromone(
     pheromone_model_query: Query<Entity, With<Pheromone>>,
     mut commands: Commands,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     for pheromone_model_entity in pheromone_model_query.iter() {
-        if let Some(pheromone_view_entity) = model_view_entity_map.0.remove(&pheromone_model_entity)
-        {
-            commands.entity(pheromone_view_entity).despawn_recursive();
-        }
-
         commands.entity(pheromone_model_entity).despawn();
     }
 
