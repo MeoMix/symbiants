@@ -19,7 +19,8 @@ use main_menu::update_main_menu;
 use save::CompressedWebStorageBackend;
 use story::{
     camera::CameraPlugin, crater_simulation::CraterSimulationPlugin, grid::VisibleGridState,
-    nest_simulation::NestSimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin,
+    nest_rendering::NestRenderingPlugin, nest_simulation::NestSimulationPlugin,
+    story_time::StoryPlaybackState, ui::StoryUIPlugin,
 };
 
 pub struct SymbiantsPlugin;
@@ -69,6 +70,7 @@ impl Plugin for SymbiantsPlugin {
             CoreUIPlugin,
             StoryUIPlugin,
             NestSimulationPlugin,
+            NestRenderingPlugin,
             CraterSimulationPlugin,
         ));
 

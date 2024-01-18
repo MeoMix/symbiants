@@ -1,22 +1,20 @@
 use std::ops::Add;
 
-use super::{
-    emote::{Emote, EmoteType},
-    sleep::Asleep,
-    Ant, AntAteFoodEvent, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead,
-};
 use crate::{
     settings::Settings,
     story::{
-        common::{
-            position::Position,
-            ui::{ModelViewEntityMap, VisibleGrid},
+        ant::{
+            emote::{Emote, EmoteType},
+            sleep::Asleep,
+            Ant, AntAteFoodEvent, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead,
         },
-        element::{
-            ui::{get_element_index, ElementExposure, ElementTextureAtlasHandle},
-            Element,
-        },
+        common::position::Position,
+        element::{Element, ElementExposure},
         grid::Grid,
+        nest_rendering::{
+            common::{ModelViewEntityMap, VisibleGrid},
+            element::{get_element_index, ElementTextureAtlasHandle},
+        },
         nest_simulation::nest::{AtNest, Nest},
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
@@ -645,6 +643,19 @@ pub fn on_ant_wake_up(
             // TODO: This code isn't great because it's presumptuous. There's not a guarantee that sleeping ant was showing an emote
             // and, if it is showing an emote, maybe that emote isn't the Asleep emote. Still, this assumption holds for now.
             commands.entity(*view_entity).remove::<Emote>();
+        }
+    }
+}
+
+pub fn teardown_ant(
+    ant_model_query: Query<Entity, With<Ant>>,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    for ant_model_entity in ant_model_query.iter() {
+        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+            commands.entity(ant_view_entity).despawn_recursive();
+            model_view_entity_map.0.remove(&ant_model_entity);
         }
     }
 }

@@ -1,5 +1,3 @@
-pub mod ui;
-
 use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};

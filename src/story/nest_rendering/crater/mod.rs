@@ -1,32 +1,49 @@
-use bevy::{prelude::*, render::view::visibility};
+use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TileVisible;
 
-use crate::story::common::ui::{ModelViewEntityMap, VisibleGrid};
+use crate::story::crater_simulation::crater::{AtCrater, Crater};
 
-use super::{AtNest, Nest};
+use super::common::{ModelViewEntityMap, VisibleGrid};
 
-// Assume for now that when the simulation loads the user wants to see their nest, but in the future might need to make this more flexible.
-pub fn on_spawn_nest(
-    nest_query: Query<Entity, Added<Nest>>,
-    mut visible_grid: ResMut<VisibleGrid>,
+pub fn on_added_crater_visible_grid(
+    crater_query: Query<&Crater>,
+    visible_grid: Res<VisibleGrid>,
+    mut at_crater_view_query: Query<
+        (Option<&mut TileVisible>, Option<&mut Visibility>),
+        With<AtCrater>,
+    >,
 ) {
-    let nest_entity = match nest_query.get_single() {
-        Ok(nest_entity) => nest_entity,
-        Err(_) => return,
+    if !visible_grid.is_changed() {
+        return;
+    }
+
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
     };
 
-    visible_grid.0 = Some(nest_entity);
+    if !crater_query.get(visible_grid_entity).is_ok() {
+        return;
+    }
+
+    for (tile_visible, visibility) in at_crater_view_query.iter_mut() {
+        if let Some(mut tile_visibile) = tile_visible {
+            tile_visibile.0 = true;
+        } else if let Some(mut visibility) = visibility {
+            *visibility = Visibility::Visible;
+        }
+    }
 }
 
 // TODO: sheesh this entire method sucks.
 // TODO: naming of this vs added doesn't have parity
-pub fn on_nest_removed_visible_grid(
+pub fn on_crater_removed_visible_grid(
     visible_grid: Res<VisibleGrid>,
-    nest_query: Query<&Nest>,
-    at_nest_view_query: Query<
+    crater_query: Query<&Crater>,
+    at_crater_view_query: Query<
         Entity,
         // TODO: Better way to select just views? Should I introduce a View component?
-        (With<AtNest>, Or<(With<TileVisible>, With<Visibility>)>),
+        (With<AtCrater>, Or<(With<TileVisible>, With<Visibility>)>),
     >,
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
@@ -40,12 +57,12 @@ pub fn on_nest_removed_visible_grid(
     // The issue is that if there were 3+ potential visible grids then this would run more often than desired
     // because it would try to remove visibility from nest elements when changing visibility between two non-nest grids.
     if let Some(visible_grid_entity) = visible_grid.0 {
-        if nest_query.get(visible_grid_entity).is_ok() {
+        if crater_query.get(visible_grid_entity).is_ok() {
             return;
         }
     }
 
-    for entity in at_nest_view_query.iter() {
+    for entity in at_crater_view_query.iter() {
         commands.entity(entity).despawn_recursive();
         // TODO: maybe I need to update my tilemap storage etc when despawning here?
         // tile_storage.set(&tile_pos, element_view_entity);

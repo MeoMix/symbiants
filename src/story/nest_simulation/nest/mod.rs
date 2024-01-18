@@ -3,14 +3,12 @@ use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
-pub mod ui;
-
 use crate::{
     settings::Settings,
     story::{
         ant::{
-            digestion::Digestion, hunger::Hunger, Angle, AntAteFoodEvent, AntBundle, AntColor,
-            AntInventory, AntName, AntOrientation, AntRole, Facing, Initiative,
+            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
+            AntName, AntOrientation, AntRole, Facing, Initiative,
         },
         common::{position::Position, Zone},
         element::{Element, ElementBundle},
