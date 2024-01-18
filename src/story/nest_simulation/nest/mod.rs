@@ -92,9 +92,6 @@ pub fn setup_nest_ants(
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
-    // TODO: This isn't necessarily related to nest ants -- just ants in general.
-    commands.init_resource::<Events<AntAteFoodEvent>>();
-
     let nest = nest_query.single();
     let mut rng = rng.reborrow();
 

@@ -74,7 +74,7 @@ use self::{
 };
 
 use super::{
-    ant::{nesting::ants_nesting_start, ui::{on_ant_ate_food, ants_sleep_emote, on_ant_wake_up}},
+    ant::{nesting::ants_nesting_start, ui::{on_ant_ate_food, ants_sleep_emote, on_ant_wake_up}, AntAteFoodEvent},
     common::{setup_common, teardown_common, ui::on_update_selected_position},
     crater_simulation::crater::{register_crater, ui::on_crater_removed_visible_grid},
     element::{
@@ -102,6 +102,9 @@ impl Plugin for NestSimulationPlugin {
         // TODO: timing of this is weird/important, want to have schedule setup early
         app.init_resource::<SimulationTime>();
         app.add_systems(PreStartup, insert_simulation_schedule);
+
+        // TODO: This isn't a good home for this. Need to create a view-specific layer and initialize it there.
+        app.init_resource::<Events<AntAteFoodEvent>>();
 
         app.add_systems(
             OnEnter(AppState::BeginSetup),
