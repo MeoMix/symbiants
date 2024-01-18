@@ -446,7 +446,6 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
 }
 
 pub fn teardown_ant(ant_model_query: Query<Entity, With<Ant>>, mut commands: Commands) {
-    info!("teardown_ant models");
     for ant_model_entity in ant_model_query.iter() {
         commands.entity(ant_model_entity).despawn();
     }
