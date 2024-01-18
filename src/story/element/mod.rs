@@ -1,13 +1,9 @@
+use super::{common::Zone, grid::Grid, nest_simulation::nest::Nest};
 use crate::story::common::position::Position;
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 use serde::{Deserialize, Serialize};
 
-use self::ui::ElementTilemap;
-
-use super::common::{Zone, ui::ModelViewEntityMap};
-
 pub mod commands;
-pub mod ui;
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
@@ -75,18 +71,8 @@ pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Sand>();
 }
 
-// TODO: filter?
-pub fn teardown_element(
-    mut commands: Commands,
-    element_model_query: Query<Entity, Or<(With<Element>, With<ElementTilemap>)>>,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
+pub fn teardown_element(mut commands: Commands, element_model_query: Query<Entity, With<Element>>) {
     for element_model_entity in element_model_query.iter() {
-        if let Some(&element_view_entity) = model_view_entity_map.0.get(&element_model_entity) {
-            commands.entity(element_view_entity).despawn_recursive();
-            model_view_entity_map.0.remove(&element_model_entity);
-        }
-
         commands.entity(element_model_entity).despawn();
     }
 }
@@ -116,5 +102,65 @@ pub fn denormalize_element(
                 commands.entity(entity).insert(Food);
             }
         }
+    }
+}
+
+// TODO: ***technically*** this is only a view concern but keeping it here for now.
+#[derive(Component, Copy, Clone)]
+pub struct ElementExposure {
+    pub north: bool,
+    pub east: bool,
+    pub south: bool,
+    pub west: bool,
+}
+
+/// Eagerly calculate which sides of a given Element are exposed to Air.
+/// Run against all elements changing position - this supports recalculating on Element removal by responding to Air being added.
+pub fn update_element_exposure(
+    changed_elements_query: Query<(Entity, &Position, &Element), Changed<Position>>,
+    elements_query: Query<&Element>,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut commands: Commands,
+) {
+    let grid = nest_query.single();
+    let mut entities = HashSet::new();
+
+    for (entity, position, element) in changed_elements_query.iter() {
+        if *element != Element::Air {
+            entities.insert((entity, *position));
+        }
+
+        for adjacent_position in position.get_adjacent_positions() {
+            if let Some(adjacent_element_entity) =
+                grid.elements().get_element_entity(adjacent_position)
+            {
+                let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
+
+                if *adjacent_element != Element::Air {
+                    entities.insert((*adjacent_element_entity, adjacent_position));
+                }
+            }
+        }
+    }
+
+    for (entity, position) in entities {
+        commands.entity(entity).insert(ElementExposure {
+            north: grid.elements().is_element(
+                &elements_query,
+                position - Position::Y,
+                Element::Air,
+            ),
+            east: grid
+                .elements()
+                .is_element(&elements_query, position + Position::X, Element::Air),
+            south: grid.elements().is_element(
+                &elements_query,
+                position + Position::Y,
+                Element::Air,
+            ),
+            west: grid
+                .elements()
+                .is_element(&elements_query, position - Position::X, Element::Air),
+        });
     }
 }

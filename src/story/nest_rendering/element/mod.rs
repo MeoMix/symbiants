@@ -1,9 +1,10 @@
-use super::{Air, Element};
 use crate::{
     app_state::AppState,
     story::{
-        common::{position::Position, ui::{ModelViewEntityMap, VisibleGrid}},
+        common::position::Position,
+        element::{Air, Element, ElementExposure},
         grid::Grid,
+        nest_rendering::common::{ModelViewEntityMap, VisibleGrid},
         nest_simulation::nest::{AtNest, Nest},
     },
 };
@@ -30,6 +31,29 @@ pub fn on_update_element(
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
 ) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
+
+    for (position, element, element_exposure, element_model_entity) in element_query.iter_mut() {
+        update_element_sprite(
+            element_model_entity,
+            element,
+            position,
+            element_exposure,
+            &grid,
+            &mut commands,
+            &mut tilemap_query,
+            &mut model_view_entity_map,
+        );
+    }
+
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
         None => return,
@@ -190,14 +214,6 @@ pub fn check_element_sprite_sheet_loaded(
     }
 }
 
-#[derive(Component, Copy, Clone)]
-pub struct ElementExposure {
-    pub north: bool,
-    pub east: bool,
-    pub south: bool,
-    pub west: bool,
-}
-
 // TODO: super hardcoded to the order they appear in sprite_sheet.png
 // Spritesheet is organized as:
 // 0 - none exposed
@@ -326,53 +342,21 @@ pub fn get_element_index(exposure: ElementExposure, element: Element) -> usize {
     row_index * 3 + column_index
 }
 
-/// Eagerly calculate which sides of a given Element are exposed to Air.
-/// Run against all elements changing position - this supports recalculating on Element removal by responding to Air being added.
-pub fn update_element_exposure(
-    changed_elements_query: Query<(Entity, &Position, &Element), Changed<Position>>,
-    elements_query: Query<&Element>,
-    nest_query: Query<&Grid, With<Nest>>,
+pub fn teardown_element(
     mut commands: Commands,
+    element_model_query: Query<Entity, With<Element>>,
+    element_tilemap_query: Query<Entity, With<ElementTilemap>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    let grid = nest_query.single();
-    let mut entities = HashSet::new();
-
-    for (entity, position, element) in changed_elements_query.iter() {
-        if *element != Element::Air {
-            entities.insert((entity, *position));
-        }
-
-        for adjacent_position in position.get_adjacent_positions() {
-            if let Some(adjacent_element_entity) =
-                grid.elements().get_element_entity(adjacent_position)
-            {
-                let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
-
-                if *adjacent_element != Element::Air {
-                    entities.insert((*adjacent_element_entity, adjacent_position));
-                }
-            }
+    for element_model_entity in element_model_query.iter() {
+        if let Some(&element_view_entity) = model_view_entity_map.0.get(&element_model_entity) {
+            commands.entity(element_view_entity).despawn_recursive();
+            model_view_entity_map.0.remove(&element_model_entity);
         }
     }
 
-    for (entity, position) in entities {
-        commands.entity(entity).insert(ElementExposure {
-            north: grid.elements().is_element(
-                &elements_query,
-                position - Position::Y,
-                Element::Air,
-            ),
-            east: grid
-                .elements()
-                .is_element(&elements_query, position + Position::X, Element::Air),
-            south: grid.elements().is_element(
-                &elements_query,
-                position + Position::Y,
-                Element::Air,
-            ),
-            west: grid
-                .elements()
-                .is_element(&elements_query, position - Position::X, Element::Air),
-        });
-    }
+    let element_tilemap_entity = element_tilemap_query.single();
+    commands.entity(element_tilemap_entity).despawn_recursive();
+
+    // TODO: remove ElementTextureAtlasHandle and ElementSpriteSheetHandle if committing to the full cleanup process
 }

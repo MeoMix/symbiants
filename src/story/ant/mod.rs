@@ -9,11 +9,7 @@ use self::{
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{
-    common::{ui::ModelViewEntityMap, Zone},
-    element::Element,
-    nest_simulation::nest::AtNest,
-};
+use super::{common::Zone, element::Element, nest_simulation::nest::AtNest};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},
@@ -36,7 +32,6 @@ pub mod nest_expansion;
 pub mod nesting;
 pub mod sleep;
 pub mod tunneling;
-pub mod ui;
 pub mod walk;
 
 #[derive(Bundle)]
@@ -115,7 +110,7 @@ impl MapEntities for AntInventory {
 }
 
 #[derive(Event, PartialEq, Copy, Clone, Debug)]
-pub struct AntAteFoodEvent(Entity);
+pub struct AntAteFoodEvent(pub Entity);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -450,20 +445,9 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Chambering>();
 }
 
-// TODO: It's weird that this handles both view and model cleanup.
-// Can't easily rely on UI to handle view cleanup because it only runs when AppState is TellStory.
-// If its changed to run during Cleanup then resources etc might be missing.
-pub fn teardown_ant(
-    ant_model_query: Query<Entity, With<Ant>>,
-    mut commands: Commands,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
+pub fn teardown_ant(ant_model_query: Query<Entity, With<Ant>>, mut commands: Commands) {
+    info!("teardown_ant models");
     for ant_model_entity in ant_model_query.iter() {
-        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
-            commands.entity(ant_view_entity).despawn_recursive();
-            model_view_entity_map.0.remove(&ant_model_entity);
-        }
-
         commands.entity(ant_model_entity).despawn();
     }
 }
