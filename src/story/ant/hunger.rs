@@ -1,8 +1,6 @@
 use super::{
-    commands::AntCommandsExt,
-    digestion::Digestion,
-    emote::{Emote, EmoteType},
-    AntInventory, AntOrientation, AntRole, Dead, Initiative,
+    commands::AntCommandsExt, digestion::Digestion, AntAteFoodEvent, AntInventory, AntOrientation,
+    AntRole, Dead, Initiative,
 };
 use crate::story::{
     common::position::Position,
@@ -92,6 +90,7 @@ pub fn ants_hunger_act(
     elements_query: Query<&Element>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
+    mut ant_ate_food_event_writer: EventWriter<AntAteFoodEvent>,
 ) {
     let grid = nest_query.single();
 
@@ -127,9 +126,7 @@ pub fn ants_hunger_act(
                     digestion.increment(-0.20);
                     initiative.consume();
 
-                    commands
-                        .entity(ant_entity)
-                        .insert(Emote::new(EmoteType::FoodLove));
+                    ant_ate_food_event_writer.send(AntAteFoodEvent(ant_entity));
                 }
             }
         }
@@ -158,7 +155,7 @@ pub fn ants_regurgitate(
         ),
         With<AtNest>,
     >,
-    mut commands: Commands,
+    mut ant_ate_food_event_writer: EventWriter<AntAteFoodEvent>,
 ) {
     let peckish_ants = ants_hunger_query
         .iter()
@@ -242,8 +239,6 @@ pub fn ants_regurgitate(
         ant_initiative.consume();
         other_ant_initiative.consume();
 
-        commands
-            .entity(ant_entity)
-            .insert(Emote::new(EmoteType::FoodLove));
+        ant_ate_food_event_writer.send(AntAteFoodEvent(ant_entity));
     }
 }

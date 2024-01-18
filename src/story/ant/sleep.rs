@@ -1,23 +1,24 @@
 use bevy::prelude::*;
-use bevy_turborand::{DelegatedRng, GlobalRng};
+use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    settings::Settings,
-    story::{
-        ant::emote::EmoteType, common::position::Position, nest_simulation::nest::{Nest, AtNest},
-        story_time::StoryTime,
-    },
+use crate::story::{
+    common::position::Position,
+    nest_simulation::nest::{AtNest, Nest},
+    story_time::StoryTime,
 };
 
-use super::{emote::Emote, AntInventory, AntOrientation, Initiative};
+use super::{AntInventory, AntOrientation, Initiative};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Asleep;
 
 pub fn ants_sleep(
-    ants_query: Query<(Entity, &Position, &AntOrientation, &AntInventory), (With<Initiative>, With<AtNest>)>,
+    ants_query: Query<
+        (Entity, &Position, &AntOrientation, &AntInventory),
+        (With<Initiative>, With<AtNest>),
+    >,
     mut commands: Commands,
     nest_query: Query<&Nest>,
     story_time: Res<StoryTime>,
@@ -41,22 +42,6 @@ pub fn ants_sleep(
     }
 }
 
-// TODO: This actually seems like a view-only concern
-pub fn ants_sleep_emote(
-    ants_query: Query<Entity, (With<Asleep>, Without<Emote>, With<AtNest>)>,
-    mut commands: Commands,
-    mut rng: ResMut<GlobalRng>,
-    settings: Res<Settings>,
-) {
-    for ant_entity in ants_query.iter() {
-        if rng.f32() < settings.probabilities.sleep_emote {
-            commands
-                .entity(ant_entity)
-                .insert(Emote::new(EmoteType::Asleep));
-        }
-    }
-}
-
 pub fn ants_wake(
     ants_query: Query<Entity, (With<Asleep>, With<AtNest>)>,
     mut commands: Commands,
@@ -71,8 +56,6 @@ pub fn ants_wake(
         commands
             .entity(ant_entity)
             .remove::<Asleep>()
-            .insert(Initiative::new(&mut rng.reborrow()))
-            // Probably not great architecture but clear the Asleep emote when waking
-            .remove::<Emote>();
+            .insert(Initiative::new(&mut rng.reborrow()));
     }
 }

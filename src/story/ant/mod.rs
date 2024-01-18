@@ -9,7 +9,11 @@ use self::{
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{common::{Zone, ui::ModelViewEntityMap}, element::Element, nest_simulation::nest::AtNest};
+use super::{
+    common::{ui::ModelViewEntityMap, Zone},
+    element::Element,
+    nest_simulation::nest::AtNest,
+};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},
@@ -109,6 +113,9 @@ impl MapEntities for AntInventory {
         }
     }
 }
+
+#[derive(Event, PartialEq, Copy, Clone, Debug)]
+pub struct AntAteFoodEvent(Entity);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

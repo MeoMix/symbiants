@@ -30,7 +30,7 @@ use crate::{
             nest_expansion::ants_nest_expansion,
             nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
             register_ant,
-            sleep::{ants_sleep, ants_sleep_emote, ants_wake},
+            sleep::{ants_sleep, ants_wake},
             teardown_ant,
             tunneling::{
                 ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone,
@@ -74,7 +74,7 @@ use self::{
 };
 
 use super::{
-    ant::nesting::ants_nesting_start,
+    ant::{nesting::ants_nesting_start, ui::{on_ant_ate_food, ants_sleep_emote, on_ant_wake_up}, AntAteFoodEvent},
     common::{setup_common, teardown_common, ui::on_update_selected_position},
     crater_simulation::crater::{register_crater, ui::on_crater_removed_visible_grid},
     element::{
@@ -102,6 +102,9 @@ impl Plugin for NestSimulationPlugin {
         // TODO: timing of this is weird/important, want to have schedule setup early
         app.init_resource::<SimulationTime>();
         app.add_systems(PreStartup, insert_simulation_schedule);
+
+        // TODO: This isn't a good home for this. Need to create a view-specific layer and initialize it there.
+        app.init_resource::<Events<AntAteFoodEvent>>();
 
         app.add_systems(
             OnEnter(AppState::BeginSetup),
@@ -219,15 +222,6 @@ impl Plugin for NestSimulationPlugin {
                         (ants_birthing, apply_deferred).chain(),
                         (ants_sleep, ants_wake, apply_deferred).chain(),
                         (
-                            ants_sleep_emote.run_if(
-                                resource_exists::<StoryTime>()
-                                    .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
-                            ),
-                            on_tick_emote,
-                            apply_deferred,
-                        )
-                            .chain(),
-                        (
                             // Apply Nesting Logic
                             ants_nesting_start,
                             ants_nesting_movement,
@@ -332,6 +326,15 @@ impl Plugin for NestSimulationPlugin {
                     on_update_ant_orientation,
                     on_update_ant_color,
                     on_update_ant_inventory,
+                    on_ant_ate_food,
+                    // TODO: naming inconsistencies, but probably want to go more this direction rather than away.
+                    ants_sleep_emote.run_if(
+                        // TODO: this feels hacky? trying to rate limit how often checks for sleeping emoting occurs.
+                        resource_exists::<StoryTime>()
+                            .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
+                    ),
+                    on_ant_wake_up,
+                    on_tick_emote,
                     on_update_element,
                     on_update_pheromone_visibility,
                 ),
