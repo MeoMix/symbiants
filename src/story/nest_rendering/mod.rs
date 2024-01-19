@@ -12,30 +12,32 @@ use crate::app_state::AppState;
 
 use self::{
     ant::{
-        ants_sleep_emote, on_added_ant_dead, on_added_ant_emote, on_ant_ate_food, on_ant_wake_up,
-        on_despawn_ant, on_removed_emote, on_spawn_ant, on_tick_emote, on_update_ant_color,
-        on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position, rerender_ants,
-        despawn_ants,
+        ants_sleep_emote, despawn_ants, on_added_ant_dead, on_added_ant_emote, on_ant_ate_food,
+        on_ant_wake_up, on_despawn_ant, on_removed_emote, on_spawn_ant, on_tick_emote,
+        on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
+        on_update_ant_position, rerender_ants,
     },
     common::{
-        on_update_selected, on_update_selected_position, initialize_common_resources, despawn_common_entities,
-        ModelViewEntityMap, remove_common_resources,
+        despawn_common_entities, initialize_common_resources, on_update_selected,
+        on_update_selected_position, remove_common_resources, ModelViewEntityMap,
     },
     crater::on_crater_removed_visible_grid,
     element::{
-        check_element_sprite_sheet_loaded, on_despawn_element, on_update_element,
-        rerender_elements, start_load_element_sprite_sheet, despawn_elements,
+        check_element_sprite_sheet_loaded, despawn_elements, on_despawn_element, on_update_element,
+        rerender_elements, start_load_element_sprite_sheet,
     },
     nest::{on_nest_removed_visible_grid, on_spawn_nest},
     pheromone::{
-        on_despawn_pheromone, on_spawn_pheromone, on_update_pheromone_visibility,
-        rerender_pheromones, despawn_pheromones,
+        despawn_pheromones, on_despawn_pheromone, on_spawn_pheromone,
+        on_update_pheromone_visibility, rerender_pheromones,
     },
 };
 
 use super::{
     grid::VisibleGridState,
-    story_time::{remove_story_time_resources, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND},
+    story_time::{
+        remove_story_time_resources, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
+    },
 };
 
 pub struct NestRenderingPlugin;
@@ -54,11 +56,7 @@ impl Plugin for NestRenderingPlugin {
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
-            (
-                // TODO: Do I need to ensure this runs after other stuff?
-                (initialize_common_resources, apply_deferred).chain(),
-            )
-                .chain(),
+            initialize_common_resources,
         );
 
         // Declare all rendering systems within Update. No need to chain systems because all rendering systems
