@@ -97,7 +97,7 @@ pub fn register_pheromone(app_type_registry: ResMut<AppTypeRegistry>) {
 ///
 /// This isn't super necessary. Performance impact of O(N) lookup on Pheromone is likely to be negligible.
 /// Still, it seemed like a good idea architecturally to have O(1) lookup when Position is known.
-pub fn setup_pheromone(
+pub fn initialize_pheromone_resources(
     pheromone_query: Query<(&mut Position, Entity), With<Pheromone>>,
     mut commands: Commands,
 ) {
@@ -112,16 +112,18 @@ pub fn setup_pheromone(
     commands.insert_resource(PheromoneVisibility(Visibility::Visible));
 }
 
-pub fn teardown_pheromone(
+pub fn remove_pheromone_resources(mut commands: Commands) {
+    commands.remove_resource::<PheromoneMap>();
+    commands.remove_resource::<PheromoneVisibility>();
+}
+
+pub fn despawn_pheromones(
     pheromone_model_query: Query<Entity, With<Pheromone>>,
     mut commands: Commands,
 ) {
     for pheromone_model_entity in pheromone_model_query.iter() {
         commands.entity(pheromone_model_entity).despawn();
     }
-
-    commands.remove_resource::<PheromoneMap>();
-    commands.remove_resource::<PheromoneVisibility>();
 }
 
 pub fn pheromone_duration_tick(

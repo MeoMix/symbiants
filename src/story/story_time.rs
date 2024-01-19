@@ -193,7 +193,7 @@ pub fn register_story_time(app_type_registry: ResMut<AppTypeRegistry>) {
 }
 
 // TODO: awkward timing for this - need to have resources available before calling load (why?)
-pub fn pre_setup_story_time(mut commands: Commands) {
+pub fn initialize_story_time_resources(mut commands: Commands) {
     commands.init_resource::<StoryRealWorldTime>();
     commands.init_resource::<StoryTime>();
     commands.init_resource::<FastForwardingStateInfo>();
@@ -244,7 +244,7 @@ pub fn setup_story_time(
     next_story_playback_state.set(StoryPlaybackState::Playing);
 }
 
-pub fn teardown_story_time(mut commands: Commands) {
+pub fn remove_story_time_resources(mut commands: Commands) {
     commands.remove_resource::<StoryRealWorldTime>();
     commands.remove_resource::<StoryTime>();
     commands.remove_resource::<FastForwardingStateInfo>();

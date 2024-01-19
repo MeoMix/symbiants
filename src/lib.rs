@@ -16,7 +16,6 @@ use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
-use save::CompressedWebStorageBackend;
 use story::{
     camera::CameraPlugin, crater_simulation::CraterSimulationPlugin, grid::VisibleGridState,
     nest_rendering::NestRenderingPlugin, nest_simulation::NestSimulationPlugin,
@@ -34,10 +33,7 @@ impl Plugin for SymbiantsPlugin {
         app.insert_resource(Msaa::Off);
 
         app.init_resource::<GlobalRng>();
-
-        // TODO: better spot for this?
-        app.init_resource::<CompressedWebStorageBackend>();
-
+        
         app.add_state::<AppState>();
         // TODO: call this in setup_story_time?
         app.add_state::<StoryPlaybackState>();

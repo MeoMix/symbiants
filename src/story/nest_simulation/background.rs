@@ -142,7 +142,7 @@ pub fn update_sky_background(
 }
 
 // Spawn non-interactive background (sky blue / tunnel brown)
-pub fn setup_background(
+pub fn spawn_background(
     mut commands: Commands,
     nest_query: Query<(&Grid, &Nest)>,
     story_time: Res<StoryTime>,
@@ -252,7 +252,7 @@ pub fn setup_background(
     ));
 }
 
-pub fn teardown_background(
+pub fn despawn_background(
     background_query: Query<Entity, Or<(With<TunnelBackground>, With<SkyBackground>, With<BackgroundTilemap>)>>,
     mut commands: Commands,
 ) {

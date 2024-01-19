@@ -121,7 +121,7 @@ thread_local! {
     static ON_BEFORE_UNLOAD: RefCell<Option<Closure<dyn FnMut(BeforeUnloadEvent) -> bool>>> = RefCell::new(None);
 }
 
-pub fn setup_save() {
+pub fn bind_save_onbeforeunload() {
     let window = web_sys::window().expect("window not available");
 
     ON_BEFORE_UNLOAD.with(|opt_closure| {
@@ -139,9 +139,7 @@ pub fn setup_save() {
     });
 }
 
-pub fn teardown_save() {
-    LocalStorage::delete(LOCAL_STORAGE_KEY);
-
+pub fn unbind_save_onbeforeunload() {
     let window = web_sys::window().expect("window not available");
 
     ON_BEFORE_UNLOAD.with(|opt_closure| {
@@ -154,6 +152,18 @@ pub fn teardown_save() {
                 .unwrap();
         }
     });
+}
+
+pub fn delete_save_file() {
+    LocalStorage::delete(LOCAL_STORAGE_KEY);
+}
+
+pub fn initialize_save_resources(mut commands: Commands) {
+    commands.init_resource::<CompressedWebStorageBackend>();
+}
+
+pub fn remove_save_resources(mut commands: Commands) {
+    commands.remove_resource::<CompressedWebStorageBackend>();
 }
 
 pub fn load(world: &mut World) -> bool {

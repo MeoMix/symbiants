@@ -35,7 +35,7 @@ use self::{
 
 use super::{
     grid::VisibleGridState,
-    story_time::{teardown_story_time, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND},
+    story_time::{remove_story_time_resources, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 
 pub struct NestRenderingPlugin;
@@ -136,7 +136,7 @@ impl Plugin for NestRenderingPlugin {
                 teardown_pheromone,
                 teardown_common,
             )
-                .before(teardown_story_time)
+                .before(remove_story_time_resources)
                 .chain(),
         );
 

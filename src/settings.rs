@@ -93,10 +93,10 @@ pub fn register_settings(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Probabilities>();
 }
 
-pub fn setup_settings(mut commands: Commands) {
+pub fn initialize_settings_resources(mut commands: Commands) {
     commands.init_resource::<Settings>();
 }
 
-pub fn teardown_settings(mut commands: Commands) {
+pub fn remove_settings_resources(mut commands: Commands) {
     commands.remove_resource::<Settings>();
 }

@@ -43,10 +43,15 @@ pub struct PointerTapState {
     pub position: Option<Vec2>,
 }
 
-pub fn setup_pointer(mut commands: Commands) {
+pub fn initialize_pointer_resources(mut commands: Commands) {
     // Calling init_resource prevents Bevy's automatic event cleanup. Need to do it manually.
     commands.init_resource::<Events<ExternalSimulationEvent>>();
     commands.init_resource::<PointerTapState>();
+}
+
+pub fn remove_pointer_resources(mut commands: Commands) {
+    commands.remove_resource::<Events<ExternalSimulationEvent>>();
+    commands.remove_resource::<PointerTapState>();
 }
 
 const DRAG_THRESHOLD: f32 = 4.0;
