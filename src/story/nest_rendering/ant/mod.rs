@@ -647,7 +647,7 @@ pub fn on_ant_wake_up(
     }
 }
 
-pub fn teardown_ant(
+pub fn despawn_ants(
     ant_model_query: Query<Entity, With<Ant>>,
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,

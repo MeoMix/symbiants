@@ -147,7 +147,7 @@ pub fn on_update_pheromone_visibility(
     }
 }
 
-pub fn teardown_pheromone(
+pub fn despawn_pheromones(
     pheromone_model_query: Query<Entity, With<Pheromone>>,
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,

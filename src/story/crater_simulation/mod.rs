@@ -5,7 +5,7 @@ use bevy::prelude::*;
 
 use crate::{
     app_state::{finalize_startup, AppState},
-    settings::setup_settings,
+    settings::initialize_settings_resources,
 };
 
 use self::{

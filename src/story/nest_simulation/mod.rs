@@ -12,8 +12,11 @@ use crate::{
     app_state::{
         begin_story, check_story_over, continue_startup, finalize_startup, restart, AppState,
     },
-    save::{load, save, setup_save, teardown_save},
-    settings::{register_settings, setup_settings, teardown_settings},
+    save::{
+        bind_save_onbeforeunload, delete_save_file, initialize_save_resources, load,
+        remove_save_resources, save, unbind_save_onbeforeunload,
+    },
+    settings::{initialize_settings_resources, register_settings, remove_settings_resources},
     story::{
         ant::{
             ants_initiative,
@@ -23,6 +26,7 @@ use crate::{
                 ants_fade_chamber_pheromone, ants_remove_chamber_pheromone,
             },
             death::on_ants_add_dead,
+            despawn_ants,
             dig::ants_dig,
             digestion::ants_digestion,
             drop::ants_drop,
@@ -31,7 +35,6 @@ use crate::{
             nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
             register_ant,
             sleep::{ants_sleep, ants_wake},
-            teardown_ant,
             tunneling::{
                 ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone,
                 ants_remove_tunnel_pheromone, ants_tunnel_pheromone_act,
@@ -40,29 +43,30 @@ use crate::{
             walk::{ants_stabilize_footing_movement, ants_walk},
         },
         common::register_common,
-        element::{register_element, teardown_element, update_element_exposure},
+        element::{despawn_elements, register_element, update_element_exposure},
         pheromone::{
-            pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
+            despawn_pheromones, initialize_pheromone_resources, pheromone_duration_tick,
+            register_pheromone,
         },
         pointer::external_event::process_external_event,
-        pointer::{handle_pointer_tap, is_pointer_captured, setup_pointer},
+        pointer::{handle_pointer_tap, initialize_pointer_resources, is_pointer_captured},
         story_time::{
-            pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
-            teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
-            update_time_scale, StoryPlaybackState,
+            initialize_story_time_resources, register_story_time, remove_story_time_resources,
+            set_rate_of_time, setup_story_time, update_story_elapsed_ticks,
+            update_story_real_world_time, update_time_scale, StoryPlaybackState,
         },
     },
 };
 
 use self::{
-    background::{setup_background, teardown_background, update_sky_background},
+    background::{despawn_background, spawn_background, update_sky_background},
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
         gravity_set_stability, register_gravity,
     },
     nest::{
-        register_nest, setup_nest, setup_nest_ants, setup_nest_elements, setup_nest_grid,
-        teardown_nest,
+        despawn_nest, insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants,
+        spawn_nest_elements,
     },
 };
 
@@ -70,6 +74,8 @@ use super::{
     ant::{nesting::ants_nesting_start, AntAteFoodEvent},
     crater_simulation::crater::register_crater,
     element::denormalize_element,
+    pheromone::remove_pheromone_resources,
+    pointer::remove_pointer_resources,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
 };
 
@@ -88,6 +94,7 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(PreStartup, insert_simulation_schedule);
 
         // TODO: This isn't a good home for this. Need to create a view-specific layer and initialize it there.
+        // TODO: Fix this: https://github.com/MeoMix/symbiants/issues/38
         app.init_resource::<Events<AntAteFoodEvent>>();
 
         app.add_systems(
@@ -108,16 +115,23 @@ impl Plugin for NestSimulationPlugin {
                 .chain(),
         );
 
-        app.add_systems(OnEnter(AppState::TryLoadSave), load.pipe(continue_startup));
+        app.add_systems(
+            OnEnter(AppState::TryLoadSave),
+            (
+                (initialize_save_resources, apply_deferred).chain(),
+                load.pipe(continue_startup),
+            )
+                .chain(),
+        );
 
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
             (
-                (setup_settings, apply_deferred).chain(),
+                (initialize_settings_resources, apply_deferred).chain(),
                 (
-                    (setup_nest, apply_deferred).chain(),
-                    (setup_nest_elements, apply_deferred).chain(),
-                    (setup_nest_ants, apply_deferred).chain(),
+                    (spawn_nest, apply_deferred).chain(),
+                    (spawn_nest_elements, apply_deferred).chain(),
+                    (spawn_nest_ants, apply_deferred).chain(),
                 )
                     .chain(),
                 finalize_startup,
@@ -128,12 +142,12 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
-                (pre_setup_story_time, apply_deferred).chain(),
-                (setup_nest_grid, apply_deferred).chain(),
-                (setup_pointer, apply_deferred).chain(),
-                (setup_pheromone, apply_deferred).chain(),
-                (setup_background, apply_deferred).chain(),
-                setup_save,
+                (initialize_story_time_resources, apply_deferred).chain(),
+                (insert_nest_grid, apply_deferred).chain(),
+                (initialize_pointer_resources, apply_deferred).chain(),
+                (initialize_pheromone_resources, apply_deferred).chain(),
+                (spawn_background, apply_deferred).chain(),
+                bind_save_onbeforeunload,
                 begin_story,
             )
                 .chain(),
@@ -297,14 +311,18 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::Cleanup),
             (
-                teardown_story_time,
-                teardown_settings,
-                teardown_background,
-                teardown_ant,
-                teardown_element,
-                teardown_pheromone,
-                teardown_nest,
-                teardown_save,
+                unbind_save_onbeforeunload,
+                delete_save_file,
+                despawn_background,
+                despawn_ants,
+                despawn_elements,
+                despawn_pheromones,
+                despawn_nest,
+                remove_story_time_resources,
+                remove_settings_resources,
+                remove_pheromone_resources,
+                remove_save_resources,
+                remove_pointer_resources,
                 restart,
             )
                 .chain(),

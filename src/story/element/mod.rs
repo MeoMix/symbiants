@@ -71,7 +71,7 @@ pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Sand>();
 }
 
-pub fn teardown_element(mut commands: Commands, element_model_query: Query<Entity, With<Element>>) {
+pub fn despawn_elements(mut commands: Commands, element_model_query: Query<Entity, With<Element>>) {
     for element_model_entity in element_model_query.iter() {
         commands.entity(element_model_entity).despawn();
     }

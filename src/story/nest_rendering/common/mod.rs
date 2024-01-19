@@ -111,23 +111,25 @@ pub fn on_update_selected_position(
     transform.translation = world_position;
 }
 
-pub fn setup_common(mut commands: Commands) {
+pub fn initialize_common_resources(mut commands: Commands) {
     commands.init_resource::<ModelViewEntityMap>();
     commands.init_resource::<SelectedEntity>();
     commands.init_resource::<VisibleGrid>();
 }
 
-pub fn teardown_common(
+pub fn remove_common_resources(mut commands: Commands) {
+    commands.remove_resource::<SelectedEntity>();
+    commands.remove_resource::<VisibleGrid>();
+
+    // TODO: removing this causes issues because camera Update runs expecting the resource to exist.
+    //commands.remove_resource::<ModelViewEntityMap>();
+}
+
+pub fn despawn_common_entities(
     selection_sprite_query: Query<Entity, With<SelectionSprite>>,
     mut commands: Commands,
 ) {
     if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
         commands.entity(selection_sprite_entity).despawn();
     }
-
-    commands.remove_resource::<SelectedEntity>();
-    commands.remove_resource::<VisibleGrid>();
-
-    // TODO: removing this causes issues because camera Update runs expecting the resource to exist.
-    //commands.remove_resource::<ModelViewEntityMap>();
 }

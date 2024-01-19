@@ -342,7 +342,7 @@ pub fn get_element_index(exposure: ElementExposure, element: Element) -> usize {
     row_index * 3 + column_index
 }
 
-pub fn teardown_element(
+pub fn despawn_elements(
     mut commands: Commands,
     element_model_query: Query<Entity, With<Element>>,
     element_tilemap_query: Query<Entity, With<ElementTilemap>>,

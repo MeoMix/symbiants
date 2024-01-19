@@ -3,10 +3,16 @@ use bevy::prelude::*;
 
 pub fn save() {}
 
-pub fn setup_save() {}
+pub fn bind_save_onbeforeunload() {}
 
-pub fn teardown_save() {}
+pub fn unbind_save_onbeforeunload() {}
+
+pub fn delete_save_file() {}
 
 pub fn load(_world: &mut World) -> bool {
     false
 }
+
+pub fn initialize_save_resources() {}
+
+pub fn remove_save_resources() {}
