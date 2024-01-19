@@ -15,21 +15,21 @@ use self::{
         ants_sleep_emote, on_added_ant_dead, on_added_ant_emote, on_ant_ate_food, on_ant_wake_up,
         on_despawn_ant, on_removed_emote, on_spawn_ant, on_tick_emote, on_update_ant_color,
         on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position, rerender_ants,
-        teardown_ant,
+        despawn_ants,
     },
     common::{
-        on_update_selected, on_update_selected_position, setup_common, teardown_common,
-        ModelViewEntityMap,
+        on_update_selected, on_update_selected_position, initialize_common_resources, despawn_common_entities,
+        ModelViewEntityMap, remove_common_resources,
     },
     crater::on_crater_removed_visible_grid,
     element::{
         check_element_sprite_sheet_loaded, on_despawn_element, on_update_element,
-        rerender_elements, start_load_element_sprite_sheet, teardown_element,
+        rerender_elements, start_load_element_sprite_sheet, despawn_elements,
     },
     nest::{on_nest_removed_visible_grid, on_spawn_nest},
     pheromone::{
         on_despawn_pheromone, on_spawn_pheromone, on_update_pheromone_visibility,
-        rerender_pheromones, teardown_pheromone,
+        rerender_pheromones, despawn_pheromones,
     },
 };
 
@@ -56,7 +56,7 @@ impl Plugin for NestRenderingPlugin {
             OnEnter(AppState::FinishSetup),
             (
                 // TODO: Do I need to ensure this runs after other stuff?
-                (setup_common, apply_deferred).chain(),
+                (initialize_common_resources, apply_deferred).chain(),
             )
                 .chain(),
         );
@@ -131,10 +131,11 @@ impl Plugin for NestRenderingPlugin {
         app.add_systems(
             OnEnter(AppState::Cleanup),
             (
-                teardown_ant,
-                teardown_element,
-                teardown_pheromone,
-                teardown_common,
+                despawn_ants,
+                despawn_elements,
+                despawn_pheromones,
+                despawn_common_entities,
+                remove_common_resources,
             )
                 .before(remove_story_time_resources)
                 .chain(),

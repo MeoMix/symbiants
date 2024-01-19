@@ -192,7 +192,6 @@ pub fn register_story_time(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<StoryTime>();
 }
 
-// TODO: awkward timing for this - need to have resources available before calling load (why?)
 pub fn initialize_story_time_resources(mut commands: Commands) {
     commands.init_resource::<StoryRealWorldTime>();
     commands.init_resource::<StoryTime>();
@@ -202,6 +201,16 @@ pub fn initialize_story_time_resources(mut commands: Commands) {
     commands.insert_resource(SimulationTime::new_from_secs(
         1.0 / DEFAULT_TICKS_PER_SECOND as f32,
     ));
+}
+
+pub fn remove_story_time_resources(mut commands: Commands) {
+    commands.remove_resource::<StoryRealWorldTime>();
+    commands.remove_resource::<StoryTime>();
+    commands.remove_resource::<FastForwardingStateInfo>();
+    commands.remove_resource::<TicksPerSecond>();
+
+    // `SimulationTime` is managed by Bevy and can't be removed with panic occurring.
+    commands.insert_resource(SimulationTime::default());
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,
@@ -242,16 +251,6 @@ pub fn setup_story_time(
     }
 
     next_story_playback_state.set(StoryPlaybackState::Playing);
-}
-
-pub fn remove_story_time_resources(mut commands: Commands) {
-    commands.remove_resource::<StoryRealWorldTime>();
-    commands.remove_resource::<StoryTime>();
-    commands.remove_resource::<FastForwardingStateInfo>();
-    commands.remove_resource::<TicksPerSecond>();
-
-    // `SimulationTime` is managed by Bevy and can't be removed with panic occurring.
-    commands.insert_resource(SimulationTime::default());
 }
 
 /// Control whether the app runs at the default or fast tick rate.
