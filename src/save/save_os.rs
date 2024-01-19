@@ -14,3 +14,5 @@ pub fn load(_world: &mut World) -> bool {
 }
 
 pub fn initialize_save_resources() {}
+
+pub fn remove_save_resources() {}
