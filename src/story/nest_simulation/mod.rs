@@ -94,8 +94,7 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(PreStartup, insert_simulation_schedule);
 
         // TODO: This isn't a good home for this. Need to create a view-specific layer and initialize it there.
-        // TODO: Fix this: https://github.com/MeoMix/symbiants/issues/38
-        app.init_resource::<Events<AntAteFoodEvent>>();
+        app.add_event::<AntAteFoodEvent>();
 
         app.add_systems(
             OnEnter(AppState::BeginSetup),
