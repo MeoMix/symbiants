@@ -3,8 +3,6 @@ use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
-pub mod ui;
-
 use crate::{
     settings::Settings,
     story::{

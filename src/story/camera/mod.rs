@@ -6,7 +6,7 @@ use bevy::{
 
 use self::pancam::{PanCam, PanCamPlugin};
 
-use super::common::ui::VisibleGrid;
+use super::nest_rendering::common::VisibleGrid;
 
 mod pancam;
 

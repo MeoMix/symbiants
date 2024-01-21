@@ -9,10 +9,9 @@ use crate::story::{
 
 use self::commands::PheromoneCommandsExt;
 
-use super::{common::ui::ModelViewEntityMap, nest_simulation::nest::AtNest};
+use super::{nest_rendering::common::ModelViewEntityMap, nest_simulation::nest::AtNest};
 
 pub mod commands;
-pub mod ui;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

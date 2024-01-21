@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
-use crate::story::common::ui::{ModelViewEntityMap, VisibleGrid};
+use crate::story::crater_simulation::crater::{AtCrater, Crater};
 
-use super::{AtCrater, Crater};
+use super::common::{ModelViewEntityMap, VisibleGrid};
 
 pub fn on_added_crater_visible_grid(
     crater_query: Query<&Crater>,

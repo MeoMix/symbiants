@@ -1,8 +1,6 @@
 use bevy::{prelude::*, utils::HashMap};
 
-use crate::story::{grid::Grid, nest_simulation::nest::Nest};
-
-use super::position::Position;
+use crate::story::{grid::Grid, nest_simulation::nest::Nest, common::position::Position};
 
 // TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
 #[derive(Resource, Default)]
@@ -111,4 +109,25 @@ pub fn on_update_selected_position(
     world_position.z = 3.0;
 
     transform.translation = world_position;
+}
+
+pub fn setup_common(mut commands: Commands) {
+    commands.init_resource::<ModelViewEntityMap>();
+    commands.init_resource::<SelectedEntity>();
+    commands.init_resource::<VisibleGrid>();
+}
+
+pub fn teardown_common(
+    selection_sprite_query: Query<Entity, With<SelectionSprite>>,
+    mut commands: Commands,
+) {
+    if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
+        commands.entity(selection_sprite_entity).despawn();
+    }
+
+    commands.remove_resource::<SelectedEntity>();
+    commands.remove_resource::<VisibleGrid>();
+
+    // TODO: removing this causes issues because camera Update runs expecting the resource to exist.
+    //commands.remove_resource::<ModelViewEntityMap>();
 }

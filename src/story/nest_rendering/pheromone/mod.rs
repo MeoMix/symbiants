@@ -1,15 +1,13 @@
 use bevy::{prelude::*, utils::HashSet};
 
 use crate::story::{
-    common::{
-        position::Position,
-        ui::{ModelViewEntityMap, VisibleGrid},
-    },
+    common::position::Position,
     grid::Grid,
     nest_simulation::nest::{AtNest, Nest},
+    pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
 };
 
-use super::{Pheromone, PheromoneStrength, PheromoneVisibility};
+use super::common::{ModelViewEntityMap, VisibleGrid};
 
 pub fn get_pheromone_sprite(
     pheromone: &Pheromone,
@@ -145,6 +143,19 @@ pub fn on_update_pheromone_visibility(
                     *visibility = pheromone_visibility.0;
                 }
             }
+        }
+    }
+}
+
+pub fn teardown_pheromone(
+    pheromone_model_query: Query<Entity, With<Pheromone>>,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    for pheromone_model_entity in pheromone_model_query.iter() {
+        if let Some(pheromone_view_entity) = model_view_entity_map.0.remove(&pheromone_model_entity)
+        {
+            commands.entity(pheromone_view_entity).despawn_recursive();
         }
     }
 }

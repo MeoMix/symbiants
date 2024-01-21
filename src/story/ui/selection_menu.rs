@@ -5,8 +5,9 @@ use crate::story::{
     ant::{
         birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole, Dead,
     },
-    common::{position::Position, ui::SelectedEntity},
+    common::position::Position,
     element::Element,
+    nest_rendering::common::SelectedEntity,
     pheromone::{Pheromone, PheromoneStrength},
 };
 

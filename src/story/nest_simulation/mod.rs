@@ -30,32 +30,26 @@ use crate::{
             nest_expansion::ants_nest_expansion,
             nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
             register_ant,
-            sleep::{ants_sleep, ants_sleep_emote, ants_wake},
+            sleep::{ants_sleep, ants_wake},
             teardown_ant,
             tunneling::{
                 ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone,
                 ants_remove_tunnel_pheromone, ants_tunnel_pheromone_act,
                 ants_tunnel_pheromone_move,
             },
-            ui::{
-                on_added_ant_dead, on_added_ant_emote, on_despawn_ant, on_removed_emote,
-                on_spawn_ant, on_tick_emote, on_update_ant_color, on_update_ant_inventory,
-                on_update_ant_orientation, on_update_ant_position, rerender_ants,
-            },
             walk::{ants_stabilize_footing_movement, ants_walk},
         },
-        common::{register_common, ui::on_update_selected},
-        element::{register_element, teardown_element, ui::rerender_elements},
+        common::register_common,
+        element::{register_element, teardown_element, update_element_exposure},
         pheromone::{
             pheromone_duration_tick, register_pheromone, setup_pheromone, teardown_pheromone,
-            ui::{on_spawn_pheromone, on_update_pheromone_visibility, rerender_pheromones},
         },
         pointer::external_event::process_external_event,
         pointer::{handle_pointer_tap, is_pointer_captured, setup_pointer},
         story_time::{
             pre_setup_story_time, register_story_time, set_rate_of_time, setup_story_time,
             teardown_story_time, update_story_elapsed_ticks, update_story_real_world_time,
-            update_time_scale, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
+            update_time_scale, StoryPlaybackState,
         },
     },
 };
@@ -69,23 +63,13 @@ use self::{
     nest::{
         register_nest, setup_nest, setup_nest_ants, setup_nest_elements, setup_nest_grid,
         teardown_nest,
-        ui::{on_nest_removed_visible_grid, on_spawn_nest},
     },
 };
 
 use super::{
-    ant::nesting::ants_nesting_start,
-    common::{setup_common, teardown_common, ui::on_update_selected_position},
-    crater_simulation::crater::{register_crater, ui::on_crater_removed_visible_grid},
-    element::{
-        denormalize_element,
-        ui::{
-            check_element_sprite_sheet_loaded, on_despawn_element, on_update_element,
-            start_load_element_sprite_sheet, update_element_exposure,
-        },
-    },
-    grid::VisibleGridState,
-    pheromone::ui::on_despawn_pheromone,
+    ant::{nesting::ants_nesting_start, AntAteFoodEvent},
+    crater_simulation::crater::register_crater,
+    element::denormalize_element,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
 };
 
@@ -103,6 +87,9 @@ impl Plugin for NestSimulationPlugin {
         app.init_resource::<SimulationTime>();
         app.add_systems(PreStartup, insert_simulation_schedule);
 
+        // TODO: This isn't a good home for this. Need to create a view-specific layer and initialize it there.
+        app.init_resource::<Events<AntAteFoodEvent>>();
+
         app.add_systems(
             OnEnter(AppState::BeginSetup),
             (
@@ -117,7 +104,6 @@ impl Plugin for NestSimulationPlugin {
                 register_pheromone,
                 register_nest,
                 register_crater,
-                start_load_element_sprite_sheet,
             )
                 .chain(),
         );
@@ -147,7 +133,6 @@ impl Plugin for NestSimulationPlugin {
                 (setup_pointer, apply_deferred).chain(),
                 (setup_pheromone, apply_deferred).chain(),
                 (setup_background, apply_deferred).chain(),
-                (setup_common, apply_deferred).chain(),
                 setup_save,
                 begin_story,
             )
@@ -174,12 +159,6 @@ impl Plugin for NestSimulationPlugin {
                     .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
             ),
         );
-
-        app.add_systems(
-            Update,
-            check_element_sprite_sheet_loaded.run_if(in_state(AppState::BeginSetup)),
-        );
-
         app.init_schedule(RunSimulationUpdateLoop);
         app.add_systems(RunSimulationUpdateLoop, run_simulation_update_schedule);
 
@@ -218,15 +197,6 @@ impl Plugin for NestSimulationPlugin {
                             .chain(),
                         (ants_birthing, apply_deferred).chain(),
                         (ants_sleep, ants_wake, apply_deferred).chain(),
-                        (
-                            ants_sleep_emote.run_if(
-                                resource_exists::<StoryTime>()
-                                    .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
-                            ),
-                            on_tick_emote,
-                            apply_deferred,
-                        )
-                            .chain(),
                         (
                             // Apply Nesting Logic
                             ants_nesting_start,
@@ -299,69 +269,12 @@ impl Plugin for NestSimulationPlugin {
                 .chain(),
         );
 
-        // Declare all rendering systems within Update. No need to chain systems because all rendering systems
-        // depend on simulation state which is updated within FixedUpdate.
-        // IMPORTANT:
-        // RemovedComponents<T> may contain stale/duplicate information when queried within Update
-        // This occurs because the FixedUpdate schedule may run multiple times before yielding to Update
-        app.add_systems(
-            Update,
-            (
-                // TODO: This apply_deferred sucks but I'm relying on view state to reactively render
-                // and so I need this to be accurate now not next frame.
-                on_spawn_nest,
-                apply_deferred,
-                // Spawn
-                (on_spawn_ant, on_spawn_pheromone),
-                // Despawn
-                // TODO: make these generic
-                (on_despawn_ant, on_despawn_element, on_despawn_pheromone),
-                // Added
-                (on_added_ant_dead, on_added_ant_emote),
-                // Removed
-                (
-                    on_removed_emote,
-                    on_nest_removed_visible_grid,
-                    on_crater_removed_visible_grid,
-                ),
-                // Updated
-                (
-                    on_update_selected,
-                    on_update_selected_position,
-                    on_update_ant_position,
-                    on_update_ant_orientation,
-                    on_update_ant_color,
-                    on_update_ant_inventory,
-                    on_update_element,
-                    on_update_pheromone_visibility,
-                ),
-            )
-                .chain()
-                .run_if(
-                    in_state(AppState::TellStory)
-                        .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
-                ),
-        );
-
-        app.add_systems(
-            OnExit(StoryPlaybackState::FastForwarding),
-            (rerender_ants, rerender_elements, rerender_pheromones)
-                .chain()
-                .run_if(in_state(VisibleGridState::Nest)),
-        );
-
-        app.add_systems(
-            OnEnter(VisibleGridState::Nest),
-            (rerender_ants, rerender_elements, rerender_pheromones)
-                .chain()
-                .run_if(in_state(StoryPlaybackState::Playing)),
-        );
-
         app.add_systems(
             Update,
             update_story_real_world_time.run_if(in_state(AppState::TellStory)),
         );
 
+        // TODO: View concern
         app.add_systems(
             Update,
             update_sky_background.run_if(
@@ -383,7 +296,7 @@ impl Plugin for NestSimulationPlugin {
 
         app.add_systems(
             OnEnter(AppState::Cleanup),
-            ((
+            (
                 teardown_story_time,
                 teardown_settings,
                 teardown_background,
@@ -392,24 +305,10 @@ impl Plugin for NestSimulationPlugin {
                 teardown_pheromone,
                 teardown_nest,
                 teardown_save,
-                teardown_common,
                 restart,
             )
-                .chain(),)
                 .chain(),
         );
-    }
-}
-
-// TODO: Maybe do this according to time rather than number of ticks elapsing to keep things consistent
-fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) -> bool {
-    move |mut last_run_tick_count: Local<isize>, story_time: Res<StoryTime>| {
-        if *last_run_tick_count + ticks <= story_time.elapsed_ticks() {
-            *last_run_tick_count = story_time.elapsed_ticks();
-            true
-        } else {
-            false
-        }
     }
 }
 

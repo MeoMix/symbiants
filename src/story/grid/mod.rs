@@ -6,6 +6,7 @@ use crate::story::common::position::Position;
 
 use self::elements_cache::ElementsCache;
 
+// TODO: I think this is a view concern...?
 // TODO: prob don't want both component (VisibleGrid) and VisibleGridState? idk
 #[derive(States, Default, Hash, Clone, Copy, Eq, PartialEq, Debug)]
 pub enum VisibleGridState {
