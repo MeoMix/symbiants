@@ -1,10 +1,12 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
     common::position::Position,
-    crater_simulation::crater::Crater,
     grid::{Grid, VisibleGridState},
     rendering::common::{SelectedEntity, VisibleGrid},
-    nest_simulation::nest::{AtNest, Nest},
+    simulation::{
+        crater_simulation::crater::Crater,
+        nest_simulation::nest::{AtNest, Nest},
+    },
 };
 
 use bevy::prelude::*;

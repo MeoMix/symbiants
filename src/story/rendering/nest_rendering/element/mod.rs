@@ -5,7 +5,7 @@ use crate::{
         element::{Air, Element, ElementExposure},
         grid::Grid,
         rendering::common::{ModelViewEntityMap, VisibleGrid},
-        nest_simulation::nest::{AtNest, Nest},
+        simulation::nest_simulation::nest::{AtNest, Nest},
     },
 };
 use bevy::{asset::LoadState, prelude::*, utils::hashbrown::HashSet};

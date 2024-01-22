@@ -3,9 +3,9 @@ use bevy::{prelude::*, utils::HashSet};
 use crate::story::{
     common::position::Position,
     grid::Grid,
-    nest_simulation::nest::{AtNest, Nest},
     pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
     rendering::common::{ModelViewEntityMap, VisibleGrid},
+    simulation::nest_simulation::nest::{AtNest, Nest},
 };
 
 pub fn get_pheromone_sprite(

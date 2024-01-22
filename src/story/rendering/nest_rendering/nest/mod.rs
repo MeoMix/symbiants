@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TileVisible;
 
 use crate::story::{
-    nest_simulation::nest::{AtNest, Nest},
+    simulation::nest_simulation::nest::{AtNest, Nest},
     rendering::common::{ModelViewEntityMap, VisibleGrid},
 };
 

@@ -6,7 +6,7 @@ use crate::{
     story::{
         common::position::Position,
         grid::Grid,
-        nest_simulation::nest::Nest,
+        simulation::nest_simulation::nest::Nest,
         story_time::{StoryTime, TimeInfo},
     },
 };

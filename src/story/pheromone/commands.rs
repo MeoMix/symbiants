@@ -1,4 +1,4 @@
-use crate::story::{common::position::Position, nest_simulation::nest::AtNest};
+use crate::story::{common::position::Position, simulation::nest_simulation::nest::AtNest};
 use bevy::{ecs::system::Command, prelude::*};
 
 use super::{Pheromone, PheromoneDuration, PheromoneMap, PheromoneStrength};

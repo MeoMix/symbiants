@@ -15,10 +15,9 @@ use crate::{
     settings::Settings,
     story::{
         ant::Ant,
-        crater_simulation::crater::Crater,
         element::Element,
-        nest_simulation::nest::Nest,
         pheromone::Pheromone,
+        simulation::{crater_simulation::crater::Crater, nest_simulation::nest::Nest},
         story_time::{StoryRealWorldTime, StoryTime},
     },
 };

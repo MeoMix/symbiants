@@ -17,9 +17,8 @@ use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
 use story::{
-    camera::CameraPlugin, crater_simulation::CraterSimulationPlugin, grid::VisibleGridState,
-    rendering::RenderingPlugin, nest_simulation::NestSimulationPlugin,
-    story_time::StoryPlaybackState, ui::StoryUIPlugin,
+    camera::CameraPlugin, grid::VisibleGridState, rendering::RenderingPlugin,
+    simulation::SimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin,
 };
 
 pub struct SymbiantsPlugin;
@@ -33,7 +32,7 @@ impl Plugin for SymbiantsPlugin {
         app.insert_resource(Msaa::Off);
 
         app.init_resource::<GlobalRng>();
-        
+
         app.add_state::<AppState>();
         // TODO: call this in setup_story_time?
         app.add_state::<StoryPlaybackState>();
@@ -65,9 +64,8 @@ impl Plugin for SymbiantsPlugin {
             CameraPlugin,
             CoreUIPlugin,
             StoryUIPlugin,
-            NestSimulationPlugin,
+            SimulationPlugin,
             RenderingPlugin,
-            CraterSimulationPlugin,
         ));
 
         app.add_systems(

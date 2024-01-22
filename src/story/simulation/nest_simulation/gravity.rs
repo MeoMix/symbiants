@@ -7,7 +7,7 @@ use crate::{
         common::position::Position,
         element::{commands::ElementCommandsExt, Air, Element},
         grid::Grid,
-        nest_simulation::nest::Nest,
+        simulation::nest_simulation::nest::Nest,
     },
 };
 

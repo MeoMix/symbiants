@@ -9,7 +9,7 @@ use crate::story::{
 
 use self::commands::PheromoneCommandsExt;
 
-use super::nest_simulation::nest::AtNest;
+use super::simulation::nest_simulation::nest::AtNest;
 
 pub mod commands;
 

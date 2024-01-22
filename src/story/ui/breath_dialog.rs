@@ -10,7 +10,7 @@ use crate::story::{
     common::position::Position,
     element::{commands::ElementCommandsExt, Air, Element, Food},
     grid::Grid,
-    nest_simulation::nest::{AtNest, Nest},
+    simulation::nest_simulation::nest::{AtNest, Nest},
 };
 
 use super::action_menu::IsShowingBreathDialog;

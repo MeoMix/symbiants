@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TileVisible;
 
 use crate::story::{
-    crater_simulation::crater::{AtCrater, Crater},
+    simulation::crater_simulation::crater::{AtCrater, Crater},
     rendering::common::{ModelViewEntityMap, VisibleGrid},
 };
 

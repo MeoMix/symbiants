@@ -1,13 +1,12 @@
 pub mod ant;
 pub mod camera;
 pub mod common;
-pub mod crater_simulation;
 pub mod element;
 pub mod grid;
-pub mod nest_simulation;
-pub mod rendering;
 pub mod pheromone;
 pub mod pointer;
+pub mod rendering;
+pub mod simulation;
 pub mod simulation_timestep;
 pub mod story_time;
 pub mod ui;

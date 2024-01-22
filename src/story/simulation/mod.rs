@@ -1,6 +1,5 @@
-mod background;
-pub mod gravity;
-pub mod nest;
+pub mod crater_simulation;
+pub mod nest_simulation;
 
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
@@ -58,7 +57,7 @@ use crate::{
     },
 };
 
-use self::{
+use self::nest_simulation::{
     background::{despawn_background, spawn_background, update_sky_background},
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
@@ -72,7 +71,7 @@ use self::{
 
 use super::{
     ant::{nesting::ants_nesting_start, AntAteFoodEvent},
-    crater_simulation::crater::register_crater,
+    simulation::crater_simulation::crater::register_crater,
     element::denormalize_element,
     pheromone::remove_pheromone_resources,
     pointer::remove_pointer_resources,
@@ -85,9 +84,9 @@ pub struct RunSimulationUpdateLoop;
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SimulationUpdate;
 
-pub struct NestSimulationPlugin;
+pub struct SimulationPlugin;
 
-impl Plugin for NestSimulationPlugin {
+impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
         // TODO: timing of this is weird/important, want to have schedule setup early
         app.init_resource::<SimulationTime>();

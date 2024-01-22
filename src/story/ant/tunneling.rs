@@ -12,7 +12,7 @@ use crate::{
         common::position::Position,
         element::Element,
         grid::Grid,
-        nest_simulation::nest::{AtNest, Nest},
+        simulation::nest_simulation::nest::{AtNest, Nest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
 };
