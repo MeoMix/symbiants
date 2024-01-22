@@ -18,7 +18,7 @@ use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
 use story::{
     camera::CameraPlugin, crater_simulation::CraterSimulationPlugin, grid::VisibleGridState,
-    nest_rendering::NestRenderingPlugin, nest_simulation::NestSimulationPlugin,
+    rendering::RenderingPlugin, nest_simulation::NestSimulationPlugin,
     story_time::StoryPlaybackState, ui::StoryUIPlugin,
 };
 
@@ -66,7 +66,7 @@ impl Plugin for SymbiantsPlugin {
             CoreUIPlugin,
             StoryUIPlugin,
             NestSimulationPlugin,
-            NestRenderingPlugin,
+            RenderingPlugin,
             CraterSimulationPlugin,
         ));
 

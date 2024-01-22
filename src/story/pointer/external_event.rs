@@ -3,7 +3,7 @@ use crate::story::{
     common::position::Position,
     crater_simulation::crater::Crater,
     grid::{Grid, VisibleGridState},
-    nest_rendering::common::{SelectedEntity, VisibleGrid},
+    rendering::common::{SelectedEntity, VisibleGrid},
     nest_simulation::nest::{AtNest, Nest},
 };
 

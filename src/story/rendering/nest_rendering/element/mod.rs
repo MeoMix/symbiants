@@ -4,7 +4,7 @@ use crate::{
         common::position::Position,
         element::{Air, Element, ElementExposure},
         grid::Grid,
-        nest_rendering::common::{ModelViewEntityMap, VisibleGrid},
+        rendering::common::{ModelViewEntityMap, VisibleGrid},
         nest_simulation::nest::{AtNest, Nest},
     },
 };

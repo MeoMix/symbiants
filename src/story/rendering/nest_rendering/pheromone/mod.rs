@@ -5,9 +5,8 @@ use crate::story::{
     grid::Grid,
     nest_simulation::nest::{AtNest, Nest},
     pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
+    rendering::common::{ModelViewEntityMap, VisibleGrid},
 };
-
-use super::common::{ModelViewEntityMap, VisibleGrid};
 
 pub fn get_pheromone_sprite(
     pheromone: &Pheromone,

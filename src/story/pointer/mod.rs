@@ -7,7 +7,7 @@ use crate::story::{
     camera::MainCamera, common::position::Position, grid::Grid, ui::action_menu::PointerAction,
 };
 
-use super::nest_rendering::common::VisibleGrid;
+use super::rendering::common::VisibleGrid;
 
 #[derive(Event, PartialEq, Copy, Clone, Debug)]
 pub enum ExternalSimulationEvent {

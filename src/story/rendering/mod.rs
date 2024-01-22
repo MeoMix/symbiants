@@ -1,35 +1,34 @@
-mod ant;
-// TODO: This shouldn't be common - need to move UI (non-Bevy) rendering closer to this location.
+// TODO: This shouldn't need to be public I think?
 pub mod common;
-mod crater;
-mod element;
-mod nest;
-mod pheromone;
+mod crater_rendering;
+mod nest_rendering;
 
 use bevy::prelude::*;
 
 use crate::app_state::AppState;
 
 use self::{
-    ant::{
-        ants_sleep_emote, despawn_ants, on_added_ant_dead, on_added_ant_emote, on_ant_ate_food,
-        on_ant_wake_up, on_despawn_ant, on_removed_emote, on_spawn_ant, on_tick_emote,
-        on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
-        on_update_ant_position, rerender_ants,
-    },
     common::{
         despawn_common_entities, initialize_common_resources, on_update_selected,
         on_update_selected_position, remove_common_resources, ModelViewEntityMap,
     },
-    crater::on_crater_removed_visible_grid,
-    element::{
-        check_element_sprite_sheet_loaded, despawn_elements, on_despawn_element, on_update_element,
-        rerender_elements, start_load_element_sprite_sheet,
-    },
-    nest::{on_nest_removed_visible_grid, on_spawn_nest},
-    pheromone::{
-        despawn_pheromones, on_despawn_pheromone, on_spawn_pheromone,
-        on_update_pheromone_visibility, rerender_pheromones,
+    crater_rendering::crater::on_crater_removed_visible_grid,
+    nest_rendering::{
+        ant::{
+            ants_sleep_emote, despawn_ants, on_added_ant_dead, on_added_ant_emote, on_ant_ate_food,
+            on_ant_wake_up, on_despawn_ant, on_removed_emote, on_spawn_ant, on_tick_emote,
+            on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
+            on_update_ant_position, rerender_ants,
+        },
+        element::{
+            check_element_sprite_sheet_loaded, despawn_elements, on_despawn_element,
+            on_update_element, rerender_elements, start_load_element_sprite_sheet,
+        },
+        nest::{on_nest_removed_visible_grid, on_spawn_nest},
+        pheromone::{
+            despawn_pheromones, on_despawn_pheromone, on_spawn_pheromone,
+            on_update_pheromone_visibility, rerender_pheromones,
+        },
     },
 };
 
@@ -40,9 +39,9 @@ use super::{
     },
 };
 
-pub struct NestRenderingPlugin;
+pub struct RenderingPlugin;
 
-impl Plugin for NestRenderingPlugin {
+impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(AppState::BeginSetup),
@@ -54,10 +53,7 @@ impl Plugin for NestRenderingPlugin {
             check_element_sprite_sheet_loaded.run_if(in_state(AppState::BeginSetup)),
         );
 
-        app.add_systems(
-            OnEnter(AppState::FinishSetup),
-            initialize_common_resources,
-        );
+        app.add_systems(OnEnter(AppState::FinishSetup), initialize_common_resources);
 
         // Declare all rendering systems within Update. No need to chain systems because all rendering systems
         // depend on simulation state which is updated within FixedUpdate.

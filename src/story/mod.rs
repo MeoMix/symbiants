@@ -5,7 +5,7 @@ pub mod crater_simulation;
 pub mod element;
 pub mod grid;
 pub mod nest_simulation;
-pub mod nest_rendering;
+pub mod rendering;
 pub mod pheromone;
 pub mod pointer;
 pub mod simulation_timestep;

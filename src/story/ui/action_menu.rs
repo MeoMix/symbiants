@@ -5,7 +5,7 @@ use bevy_egui::{egui, EguiContexts};
 
 use crate::settings::Settings;
 use crate::story::crater_simulation::crater::Crater;
-use crate::story::nest_rendering::common::VisibleGrid;
+use crate::story::rendering::common::VisibleGrid;
 use crate::story::nest_simulation::nest::Nest;
 use crate::story::pointer::ExternalSimulationEvent;
 use crate::story::story_time::StoryTime;

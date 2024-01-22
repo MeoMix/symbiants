@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TileVisible;
 
-use crate::story::nest_simulation::nest::{AtNest, Nest};
-
-use super::common::{ModelViewEntityMap, VisibleGrid};
+use crate::story::{
+    nest_simulation::nest::{AtNest, Nest},
+    rendering::common::{ModelViewEntityMap, VisibleGrid},
+};
 
 // Assume for now that when the simulation loads the user wants to see their nest, but in the future might need to make this more flexible.
 pub fn on_spawn_nest(

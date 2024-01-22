@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::TileVisible;
 
-use crate::story::crater_simulation::crater::{AtCrater, Crater};
-
-use super::common::{ModelViewEntityMap, VisibleGrid};
+use crate::story::{
+    crater_simulation::crater::{AtCrater, Crater},
+    rendering::common::{ModelViewEntityMap, VisibleGrid},
+};
 
 pub fn on_added_crater_visible_grid(
     crater_query: Query<&Crater>,

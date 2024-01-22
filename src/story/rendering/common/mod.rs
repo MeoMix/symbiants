@@ -1,6 +1,6 @@
 use bevy::{prelude::*, utils::HashMap};
 
-use crate::story::{grid::Grid, nest_simulation::nest::Nest, common::position::Position};
+use crate::story::{common::position::Position, grid::Grid};
 
 // TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
 #[derive(Resource, Default)]
@@ -22,7 +22,7 @@ pub fn on_update_selected(
     selected_entity: Res<SelectedEntity>,
     entity_position_query: Query<Ref<Position>>,
     selection_sprite_query: Query<Entity, With<SelectionSprite>>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid>,
     visible_grid: Res<VisibleGrid>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
@@ -30,7 +30,7 @@ pub fn on_update_selected(
         None => return,
     };
 
-    let grid = match nest_query.get(visible_grid_entity) {
+    let grid = match grid_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
     };
@@ -75,7 +75,7 @@ pub fn on_update_selected_position(
     selected_entity: Res<SelectedEntity>,
     entity_position_query: Query<&Position, Changed<Position>>,
     mut selection_sprite_query: Query<&mut Transform, With<SelectionSprite>>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid>,
     visible_grid: Res<VisibleGrid>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
@@ -83,7 +83,7 @@ pub fn on_update_selected_position(
         None => return,
     };
 
-    let grid = match nest_query.get(visible_grid_entity) {
+    let grid = match grid_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
     };

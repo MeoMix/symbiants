@@ -11,11 +11,11 @@ use crate::{
         common::position::Position,
         element::{Element, ElementExposure},
         grid::Grid,
-        nest_rendering::{
-            common::{ModelViewEntityMap, VisibleGrid},
-            element::{get_element_index, ElementTextureAtlasHandle},
-        },
         nest_simulation::nest::{AtNest, Nest},
+        rendering::{
+            common::{ModelViewEntityMap, VisibleGrid},
+            nest_rendering::element::{get_element_index, ElementTextureAtlasHandle},
+        },
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
