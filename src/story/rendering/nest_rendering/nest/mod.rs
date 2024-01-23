@@ -53,5 +53,5 @@ pub fn on_nest_removed_visible_grid(
     }
 
     // TODO: instead of clearing -- maybe try to carefully remove? should be safe to clear though since switching major views?
-    model_view_entity_map.0.clear();
+    model_view_entity_map.clear();
 }

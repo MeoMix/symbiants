@@ -89,7 +89,7 @@ pub fn on_despawn_element(
     let model_entities = &mut removed.read().collect::<HashSet<_>>();
 
     for model_entity in model_entities.iter() {
-        if let Some(view_entity) = model_view_entity_map.0.remove(model_entity) {
+        if let Some(view_entity) = model_view_entity_map.remove(model_entity) {
             commands.entity(view_entity).despawn_recursive();
         }
     }
@@ -120,13 +120,12 @@ fn update_element_sprite(
 
     // We have the model entity, but need to look for a corresponding view entity. If we have one, then just update it, otherwise create it.
     // TODO: Could provide better enforcement against bad state here if separated this function into spawn vs update.
-    if let Some(&element_view_entity) = model_view_entity_map.0.get(&element_model_entity) {
+    if let Some(&element_view_entity) = model_view_entity_map.get(&element_model_entity) {
         commands.entity(element_view_entity).insert(tile_bundle);
         tile_storage.set(&tile_pos, element_view_entity);
     } else {
         let element_view_entity = commands.spawn(tile_bundle).id();
         model_view_entity_map
-            .0
             .insert(element_model_entity, element_view_entity);
         tile_storage.set(&tile_pos, element_view_entity);
     }
@@ -325,9 +324,9 @@ pub fn despawn_elements(
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     for element_model_entity in element_model_query.iter() {
-        if let Some(&element_view_entity) = model_view_entity_map.0.get(&element_model_entity) {
+        if let Some(&element_view_entity) = model_view_entity_map.get(&element_model_entity) {
             commands.entity(element_view_entity).despawn_recursive();
-            model_view_entity_map.0.remove(&element_model_entity);
+            model_view_entity_map.remove(&element_model_entity);
         }
     }
 }

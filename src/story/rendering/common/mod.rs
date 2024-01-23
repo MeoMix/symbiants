@@ -14,7 +14,34 @@ pub struct SelectionSprite;
 
 // TODO: Instead of `pub HashMap`, provide accessor methods and prevent overwriting existing data.
 #[derive(Resource, Default)]
-pub struct ModelViewEntityMap(pub HashMap<Entity, Entity>);
+pub struct ModelViewEntityMap(HashMap<Entity, Entity>);
+
+impl ModelViewEntityMap {
+    pub fn insert(&mut self, model_entity: Entity, view_entity: Entity) {
+        if self.0.contains_key(&model_entity) {
+            panic!("ModelViewEntityMap already contains key: {:?}", model_entity);
+        }
+
+        self.0.insert(model_entity, view_entity);
+    }
+
+    pub fn get(&self, model_entity: &Entity) -> Option<&Entity> {
+        self.0.get(model_entity)
+    }
+
+    pub fn remove(&mut self, model_entity: &Entity) -> Option<Entity> {
+        self.0.remove(model_entity)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+}
+
 
 /// When Selection is added to a component, decorate that component with a white outline sprite.
 pub fn on_update_selected(

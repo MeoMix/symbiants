@@ -129,7 +129,6 @@ fn spawn_ant_sprite(
         .id();
 
     model_view_entity_map
-        .0
         .insert(model_entity, ant_view_entity);
 }
 
@@ -212,7 +211,7 @@ pub fn rerender_ants(
     for (ant_model_entity, position, color, orientation, name, role, inventory, dead) in
         ant_model_query.iter()
     {
-        if let Some(ant_view_entity) = model_view_entity_map.0.remove(&ant_model_entity) {
+        if let Some(ant_view_entity) = model_view_entity_map.remove(&ant_model_entity) {
             commands.entity(ant_view_entity).despawn_recursive();
         }
 
@@ -243,7 +242,7 @@ pub fn on_despawn_ant(
     let model_entities = &mut removed.read().collect::<HashSet<_>>();
 
     for model_entity in model_entities.iter() {
-        if let Some(view_entity) = model_view_entity_map.0.remove(model_entity) {
+        if let Some(view_entity) = model_view_entity_map.remove(model_entity) {
             commands.entity(view_entity).despawn_recursive();
         }
     }
@@ -271,7 +270,7 @@ pub fn on_update_ant_inventory(
     }
 
     for (ant_model_entity, inventory) in ant_model_query.iter() {
-        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+        if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
                 &inventory,
                 &elements_query,
@@ -380,7 +379,7 @@ pub fn on_update_ant_position(
     };
 
     for (ant_model_entity, position) in ant_model_query.iter() {
-        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+        if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Ok((mut transform, translation_offset)) = ant_view_query.get_mut(ant_view_entity)
             {
                 transform.translation = grid
@@ -409,7 +408,7 @@ pub fn on_update_ant_color(
     }
 
     for (ant_model_entity, color) in ant_model_query.iter() {
-        if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+        if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Ok(children) = ant_view_query.get(*ant_view_entity) {
                 if let Some(ant_sprite_entity) = children
                     .iter()
@@ -442,7 +441,7 @@ pub fn on_update_ant_orientation(
     }
 
     for (ant_model_entity, orientation) in ant_model_query.iter() {
-        if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+        if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Ok(children) = ant_view_query.get(*ant_view_entity) {
                 if let Some(ant_sprite_entity) = children
                     .iter()
@@ -477,7 +476,7 @@ pub fn on_added_ant_dead(
     }
 
     for ant_model_entity in ant_model_query.iter() {
-        if let Some(ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+        if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Ok(children) = ant_view_query.get(*ant_view_entity) {
                 if let Some(ant_sprite_entity) = children
                     .iter()
@@ -600,7 +599,7 @@ pub fn on_ant_ate_food(
     model_view_entity_map: Res<ModelViewEntityMap>,
 ) {
     for AntAteFoodEvent(ant_model_entity) in ant_action_events.read() {
-        let ant_view_entity = match model_view_entity_map.0.get(ant_model_entity) {
+        let ant_view_entity = match model_view_entity_map.get(ant_model_entity) {
             Some(ant_view_entity) => *ant_view_entity,
             None => continue,
         };
@@ -620,7 +619,7 @@ pub fn ants_sleep_emote(
 ) {
     for ant_model_entity in ants_query.iter() {
         if rng.f32() < settings.probabilities.sleep_emote {
-            let ant_view_entity = match model_view_entity_map.0.get(&ant_model_entity) {
+            let ant_view_entity = match model_view_entity_map.get(&ant_model_entity) {
                 Some(ant_view_entity) => *ant_view_entity,
                 None => continue,
             };
@@ -639,7 +638,7 @@ pub fn on_ant_wake_up(
     mut commands: Commands,
 ) {
     for ant_model_entity in removed.read() {
-        if let Some(view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+        if let Some(view_entity) = model_view_entity_map.get(&ant_model_entity) {
             // TODO: This code isn't great because it's presumptuous. There's not a guarantee that sleeping ant was showing an emote
             // and, if it is showing an emote, maybe that emote isn't the Asleep emote. Still, this assumption holds for now.
             commands.entity(*view_entity).remove::<Emote>();
@@ -653,9 +652,9 @@ pub fn despawn_ants(
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     for ant_model_entity in ant_model_query.iter() {
-        if let Some(&ant_view_entity) = model_view_entity_map.0.get(&ant_model_entity) {
+        if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             commands.entity(ant_view_entity).despawn_recursive();
-            model_view_entity_map.0.remove(&ant_model_entity);
+            model_view_entity_map.remove(&ant_model_entity);
         }
     }
 }

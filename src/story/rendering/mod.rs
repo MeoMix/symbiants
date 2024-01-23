@@ -68,10 +68,10 @@ fn build_common_systems(app: &mut App) {
     app.add_systems(
         OnExit(AppState::Cleanup),
         |model_view_entity_map: Res<ModelViewEntityMap>| {
-            if model_view_entity_map.0.len() > 0 {
+            if model_view_entity_map.len() > 0 {
                 panic!(
                     "ModelViewEntityMap has {} entries remaining after cleanup",
-                    model_view_entity_map.0.len()
+                    model_view_entity_map.len()
                 );
             }
         },
