@@ -34,8 +34,7 @@ pub fn rerender_pheromones(
 ) {
     // TODO: instead of despawn could just overwrite and update?
     for (pheromone_model_entity, _, _, _) in &pheromone_model_query {
-        if let Some(pheromone_view_entity) = model_view_entity_map.remove(&pheromone_model_entity)
-        {
+        if let Some(pheromone_view_entity) = model_view_entity_map.remove(&pheromone_model_entity) {
             commands.entity(pheromone_view_entity).despawn_recursive();
         }
     }
@@ -56,8 +55,7 @@ pub fn rerender_pheromones(
             ))
             .id();
 
-        model_view_entity_map
-            .insert(pheromone_model_entity, pheromone_view_entity);
+        model_view_entity_map.insert(pheromone_model_entity, pheromone_view_entity);
     }
 }
 
@@ -95,8 +93,7 @@ pub fn on_spawn_pheromone(
             ))
             .id();
 
-        model_view_entity_map
-            .insert(pheromone_model_entity, pheromone_view_entity);
+        model_view_entity_map.insert(pheromone_model_entity, pheromone_view_entity);
     }
 }
 
@@ -133,26 +130,12 @@ pub fn on_update_pheromone_visibility(
 
     if pheromone_visibility.is_changed() {
         for pheromone_model_entity in pheromone_model_query.iter() {
-            if let Some(pheromone_view_entity) =
-                model_view_entity_map.get(&pheromone_model_entity)
+            if let Some(pheromone_view_entity) = model_view_entity_map.get(&pheromone_model_entity)
             {
                 if let Ok(mut visibility) = pheromone_view_query.get_mut(*pheromone_view_entity) {
                     *visibility = pheromone_visibility.0;
                 }
             }
-        }
-    }
-}
-
-pub fn despawn_pheromones(
-    pheromone_model_query: Query<Entity, With<Pheromone>>,
-    mut commands: Commands,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    for pheromone_model_entity in pheromone_model_query.iter() {
-        if let Some(pheromone_view_entity) = model_view_entity_map.remove(&pheromone_model_entity)
-        {
-            commands.entity(pheromone_view_entity).despawn_recursive();
         }
     }
 }

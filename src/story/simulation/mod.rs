@@ -25,7 +25,6 @@ use crate::{
                 ants_fade_chamber_pheromone, ants_remove_chamber_pheromone,
             },
             death::on_ants_add_dead,
-            despawn_ants,
             dig::ants_dig,
             digestion::ants_digestion,
             drop::ants_drop,
@@ -42,11 +41,8 @@ use crate::{
             walk::{ants_stabilize_footing_movement, ants_walk},
         },
         common::register_common,
-        element::{despawn_elements, register_element, update_element_exposure},
-        pheromone::{
-            despawn_pheromones, initialize_pheromone_resources, pheromone_duration_tick,
-            register_pheromone,
-        },
+        element::{register_element, update_element_exposure},
+        pheromone::{initialize_pheromone_resources, pheromone_duration_tick, register_pheromone},
         pointer::external_event::process_external_event,
         pointer::{handle_pointer_tap, initialize_pointer_resources, is_pointer_captured},
         story_time::{
@@ -64,15 +60,15 @@ use self::nest_simulation::{
         gravity_set_stability, register_gravity,
     },
     nest::{
-        despawn_nest, insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants,
-        spawn_nest_elements,
+        insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants, spawn_nest_elements, Nest,
     },
 };
 
 use super::{
-    ant::{nesting::ants_nesting_start, AntAteFoodEvent},
-    element::denormalize_element,
-    pheromone::remove_pheromone_resources,
+    ant::{nesting::ants_nesting_start, Ant, AntAteFoodEvent},
+    common::despawn_model,
+    element::{denormalize_element, Element},
+    pheromone::{remove_pheromone_resources, Pheromone},
     pointer::remove_pointer_resources,
     simulation::crater_simulation::crater::register_crater,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
@@ -284,10 +280,10 @@ fn build_nest_systems(app: &mut App) {
         OnEnter(AppState::Cleanup),
         (
             despawn_background,
-            despawn_ants,
-            despawn_elements,
-            despawn_pheromones,
-            despawn_nest,
+            despawn_model::<Ant>,
+            despawn_model::<Element>,
+            despawn_model::<Pheromone>,
+            despawn_model::<Nest>,
             remove_pheromone_resources,
         )
             .in_set(CleanupSet::SimulationCleanup),

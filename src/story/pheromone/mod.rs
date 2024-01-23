@@ -117,15 +117,6 @@ pub fn remove_pheromone_resources(mut commands: Commands) {
     commands.remove_resource::<PheromoneVisibility>();
 }
 
-pub fn despawn_pheromones(
-    pheromone_model_query: Query<Entity, With<Pheromone>>,
-    mut commands: Commands,
-) {
-    for pheromone_model_entity in pheromone_model_query.iter() {
-        commands.entity(pheromone_model_entity).despawn();
-    }
-}
-
 pub fn pheromone_duration_tick(
     mut pheromone_query: Query<(&mut PheromoneDuration, &Position, Entity), With<AtNest>>,
     mut commands: Commands,

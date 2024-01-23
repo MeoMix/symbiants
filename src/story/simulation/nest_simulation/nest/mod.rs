@@ -161,9 +161,3 @@ pub fn insert_nest_grid(
         ElementsCache::new(elements_cache),
     ));
 }
-
-pub fn despawn_nest(mut commands: Commands, nest_entity_query: Query<Entity, With<Nest>>) {
-    let nest_entity = nest_entity_query.single();
-
-    commands.entity(nest_entity).despawn();
-}

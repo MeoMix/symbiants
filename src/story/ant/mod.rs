@@ -445,10 +445,4 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Chambering>();
 }
 
-pub fn despawn_ants(ant_model_query: Query<Entity, With<Ant>>, mut commands: Commands) {
-    for ant_model_entity in ant_model_query.iter() {
-        commands.entity(ant_model_entity).despawn();
-    }
-}
-
 // TODO: tests

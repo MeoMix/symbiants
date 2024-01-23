@@ -125,8 +125,7 @@ fn update_element_sprite(
         tile_storage.set(&tile_pos, element_view_entity);
     } else {
         let element_view_entity = commands.spawn(tile_bundle).id();
-        model_view_entity_map
-            .insert(element_model_entity, element_view_entity);
+        model_view_entity_map.insert(element_model_entity, element_view_entity);
         tile_storage.set(&tile_pos, element_view_entity);
     }
 }
@@ -316,19 +315,6 @@ pub fn get_element_index(exposure: ElementExposure, element: Element) -> usize {
     };
 
     row_index * 3 + column_index
-}
-
-pub fn despawn_elements(
-    mut commands: Commands,
-    element_model_query: Query<Entity, With<Element>>,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    for element_model_entity in element_model_query.iter() {
-        if let Some(&element_view_entity) = model_view_entity_map.get(&element_model_entity) {
-            commands.entity(element_view_entity).despawn_recursive();
-            model_view_entity_map.remove(&element_model_entity);
-        }
-    }
 }
 
 pub fn cleanup_elements(

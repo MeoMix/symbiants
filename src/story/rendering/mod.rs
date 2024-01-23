@@ -9,31 +9,34 @@ use crate::app_state::AppState;
 
 use self::{
     common::{
-        despawn_common_entities, initialize_common_resources, on_update_selected,
+        despawn_common_entities, despawn_view, initialize_common_resources, on_update_selected,
         on_update_selected_position, remove_common_resources, ModelViewEntityMap,
     },
     nest_rendering::{
         ant::{
-            ants_sleep_emote, cleanup_ants, despawn_ants, on_added_ant_dead, on_added_ant_emote,
+            ants_sleep_emote, cleanup_ants, on_added_ant_dead, on_added_ant_emote,
             on_ant_ate_food, on_ant_wake_up, on_despawn_ant, on_removed_emote, on_spawn_ant,
             on_tick_emote, on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
             on_update_ant_position, rerender_ants,
         },
         element::{
-            check_element_sprite_sheet_loaded, cleanup_elements, despawn_elements,
+            check_element_sprite_sheet_loaded, cleanup_elements,
             on_despawn_element, on_update_element, rerender_elements,
             start_load_element_sprite_sheet,
         },
         nest::on_spawn_nest,
         pheromone::{
-            cleanup_pheromones, despawn_pheromones, on_despawn_pheromone, on_spawn_pheromone,
+            cleanup_pheromones, on_despawn_pheromone, on_spawn_pheromone,
             on_update_pheromone_visibility, rerender_pheromones,
         },
     },
 };
 
 use super::{
+    ant::Ant,
+    element::Element,
     grid::VisibleGridState,
+    pheromone::Pheromone,
     simulation::CleanupSet,
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
@@ -140,17 +143,22 @@ fn build_nest_systems(app: &mut App) {
 
     app.add_systems(
         OnExit(VisibleGridState::Nest),
-        (despawn_ants, despawn_elements, despawn_pheromones).run_if(in_state(AppState::TellStory)),
+        (
+            despawn_view::<Ant>,
+            despawn_view::<Element>,
+            despawn_view::<Pheromone>,
+        )
+            .run_if(in_state(AppState::TellStory)),
     );
 
     app.add_systems(
         OnEnter(AppState::Cleanup),
         (
-            despawn_ants,
+            despawn_view::<Ant>,
             cleanup_ants,
-            despawn_elements,
+            despawn_view::<Element>,
             cleanup_elements,
-            despawn_pheromones,
+            despawn_view::<Pheromone>,
             cleanup_pheromones,
         )
             .in_set(CleanupSet::BeforeSimulationCleanup),

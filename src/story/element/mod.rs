@@ -71,12 +71,6 @@ pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Sand>();
 }
 
-pub fn despawn_elements(mut commands: Commands, element_model_query: Query<Entity, With<Element>>) {
-    for element_model_entity in element_model_query.iter() {
-        commands.entity(element_model_entity).despawn();
-    }
-}
-
 /// Element entities are represented by their Element enum, but the value of this enum isn't Queryable.
 /// As such, denormalize the Element enum into its values, represented as specific Components, and apply those.
 /// This allows systems to Query for Elements of a specific type efficiently.

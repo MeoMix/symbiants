@@ -158,3 +158,17 @@ pub fn despawn_common_entities(
         commands.entity(selection_sprite_entity).despawn();
     }
 }
+
+// TODO: It would be nice to make this template expectation tighter and only apply to entities stored in ModelViewEntityMap.
+pub fn despawn_view<Model: Component>(
+    model_query: Query<Entity, With<Model>>,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    for model_entity in model_query.iter() {
+        if let Some(&view_entity) = model_view_entity_map.get(&model_entity) {
+            commands.entity(view_entity).despawn_recursive();
+            model_view_entity_map.remove(&model_entity);
+        }
+    }
+}

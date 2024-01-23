@@ -646,19 +646,6 @@ pub fn on_ant_wake_up(
     }
 }
 
-pub fn despawn_ants(
-    ant_model_query: Query<Entity, With<Ant>>,
-    mut commands: Commands,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    for ant_model_entity in ant_model_query.iter() {
-        if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
-            commands.entity(ant_view_entity).despawn_recursive();
-            model_view_entity_map.remove(&ant_model_entity);
-        }
-    }
-}
-
 pub fn cleanup_ants() {
     // TODO: Cleanup anything else related to ants here.
 }
