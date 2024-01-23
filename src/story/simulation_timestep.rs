@@ -14,14 +14,6 @@ pub struct SimulationTime {
 }
 
 impl SimulationTime {
-    /// Creates a new [`SimulationTime`] struct
-    pub fn new(period: Duration) -> Self {
-        SimulationTime {
-            accumulated: Duration::ZERO,
-            period,
-        }
-    }
-
     /// Creates a new [`SimulationTime`] struct with a period specified in `f32` seconds
     pub fn new_from_secs(period: f32) -> Self {
         SimulationTime {

@@ -34,9 +34,7 @@ use self::{
 
 use super::{
     grid::VisibleGridState,
-    story_time::{
-        remove_story_time_resources, StoryPlaybackState, StoryTime, DEFAULT_TICKS_PER_SECOND,
-    },
+    story_time::{remove_story_time_resources, StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 
 pub struct RenderingPlugin;
@@ -58,10 +56,7 @@ fn build_common_systems(app: &mut App) {
 
     app.add_systems(
         Update,
-        (on_update_selected, on_update_selected_position)
-            // TODO: Unclear if this .chain() is necessary
-            .chain()
-            .run_if(in_state(AppState::TellStory)),
+        (on_update_selected, on_update_selected_position).run_if(in_state(AppState::TellStory)),
     );
 
     app.add_systems(
