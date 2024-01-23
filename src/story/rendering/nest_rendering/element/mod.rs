@@ -53,29 +53,6 @@ pub fn on_update_element(
             &mut model_view_entity_map,
         );
     }
-
-    let visible_grid_entity = match visible_grid.0 {
-        Some(visible_grid_entity) => visible_grid_entity,
-        None => return,
-    };
-
-    let grid = match nest_query.get(visible_grid_entity) {
-        Ok(grid) => grid,
-        Err(_) => return,
-    };
-
-    for (position, element, element_exposure, element_model_entity) in element_query.iter_mut() {
-        update_element_sprite(
-            element_model_entity,
-            element,
-            position,
-            element_exposure,
-            &grid,
-            &mut commands,
-            &mut tilemap_query,
-            &mut model_view_entity_map,
-        );
-    }
 }
 
 pub fn rerender_elements(
