@@ -34,7 +34,8 @@ use self::{
 
 use super::{
     grid::VisibleGridState,
-    story_time::{remove_story_time_resources, StoryTime, DEFAULT_TICKS_PER_SECOND},
+    simulation::CleanupSet,
+    story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 
 pub struct RenderingPlugin;
@@ -74,8 +75,7 @@ fn build_common_systems(app: &mut App) {
     app.add_systems(
         OnEnter(AppState::Cleanup),
         (despawn_common_entities, remove_common_resources)
-            // TODO: This expectation isn't very clear. The intent is to cleanup rendering before simulation.
-            .before(remove_story_time_resources),
+            .in_set(CleanupSet::BeforeSimulationCleanup),
     );
 }
 
@@ -153,8 +153,7 @@ fn build_nest_systems(app: &mut App) {
             despawn_pheromones,
             cleanup_pheromones,
         )
-            // TODO: This expectation isn't very clear. The intent is to cleanup rendering before simulation.
-            .before(remove_story_time_resources),
+            .in_set(CleanupSet::BeforeSimulationCleanup),
     );
 }
 

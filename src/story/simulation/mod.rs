@@ -84,6 +84,13 @@ pub struct RunSimulationUpdateLoop;
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SimulationUpdate;
 
+#[derive(SystemSet, Debug, PartialEq, Eq, Clone, Hash)]
+pub enum CleanupSet {
+    BeforeSimulationCleanup,
+    SimulationCleanup,
+    AfterSimulationCleanup,
+}
+
 pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
@@ -94,6 +101,16 @@ impl Plugin for SimulationPlugin {
         app.add_systems(PreStartup, insert_simulation_schedule);
         app.init_schedule(RunSimulationUpdateLoop);
         app.add_systems(RunSimulationUpdateLoop, run_simulation_update_schedule);
+
+        app.configure_sets(
+            OnEnter(AppState::Cleanup),
+            (
+                CleanupSet::BeforeSimulationCleanup,
+                CleanupSet::SimulationCleanup,
+                CleanupSet::AfterSimulationCleanup,
+            )
+                .chain(),
+        );
 
         build_nest_systems(app);
         build_crater_systems(app);
@@ -272,7 +289,8 @@ fn build_nest_systems(app: &mut App) {
             despawn_pheromones,
             despawn_nest,
             remove_pheromone_resources,
-        ),
+        )
+            .in_set(CleanupSet::SimulationCleanup),
     );
 }
 
@@ -303,7 +321,7 @@ fn build_crater_systems(app: &mut App) {
 
     // app.add_systems(
     //     OnEnter(AppState::Cleanup),
-    //     (teardown_background, teardown_crater),
+    //     (teardown_background, teardown_crater).in_set(CleanupSet::SimulationCleanup),
     // );
 }
 
@@ -384,6 +402,7 @@ fn build_common_systems(app: &mut App) {
             remove_save_resources,
             remove_pointer_resources,
             restart,
-        ),
+        )
+            .in_set(CleanupSet::SimulationCleanup),
     );
 }
