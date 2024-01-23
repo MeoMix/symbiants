@@ -18,7 +18,7 @@ use core_ui::CoreUIPlugin;
 use main_menu::update_main_menu;
 use story::{
     camera::CameraPlugin, grid::VisibleGridState, rendering::RenderingPlugin,
-    simulation::SimulationPlugin, story_time::StoryPlaybackState, ui::StoryUIPlugin,
+    simulation::{SimulationPlugin, SimulationUpdate}, story_time::StoryPlaybackState, ui::StoryUIPlugin,
 };
 
 pub struct SymbiantsPlugin;
@@ -52,7 +52,7 @@ impl Plugin for SymbiantsPlugin {
                 .set(ImagePlugin::default_nearest()),
         )
         // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
-        .edit_schedule(FixedUpdate, |schedule| {
+        .edit_schedule(SimulationUpdate, |schedule| {
             schedule.set_build_settings(ScheduleBuildSettings {
                 ambiguity_detection: LogLevel::Error,
                 ..default()
