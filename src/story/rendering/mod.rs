@@ -140,13 +140,12 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         OnEnter(VisibleGridState::Nest),
         (rerender_ants, rerender_elements, rerender_pheromones)
-            .run_if(in_state(StoryPlaybackState::Playing)),
+            .run_if(in_state(AppState::TellStory)),
     );
 
     app.add_systems(
         OnExit(VisibleGridState::Nest),
-        (despawn_ants, despawn_elements, despawn_pheromones)
-            .run_if(in_state(StoryPlaybackState::Playing)),
+        (despawn_ants, despawn_elements, despawn_pheromones).run_if(in_state(AppState::TellStory)),
     );
 
     app.add_systems(
