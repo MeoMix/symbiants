@@ -12,7 +12,6 @@ use self::{
         despawn_common_entities, initialize_common_resources, on_update_selected,
         on_update_selected_position, remove_common_resources, ModelViewEntityMap,
     },
-    crater_rendering::crater::on_crater_removed_visible_grid,
     nest_rendering::{
         ant::{
             ants_sleep_emote, cleanup_ants, despawn_ants, on_added_ant_dead, on_added_ant_emote,
@@ -25,7 +24,7 @@ use self::{
             on_despawn_element, on_update_element, rerender_elements,
             start_load_element_sprite_sheet,
         },
-        nest::{on_nest_removed_visible_grid, on_spawn_nest},
+        nest::on_spawn_nest,
         pheromone::{
             cleanup_pheromones, despawn_pheromones, on_despawn_pheromone, on_spawn_pheromone,
             on_update_pheromone_visibility, rerender_pheromones,
@@ -85,14 +84,7 @@ fn build_common_systems(app: &mut App) {
     );
 }
 
-fn build_crater_systems(app: &mut App) {
-    app.add_systems(
-        Update,
-        (on_crater_removed_visible_grid,)
-            .chain()
-            .run_if(in_state(AppState::TellStory)),
-    );
-}
+fn build_crater_systems(_app: &mut App) {}
 
 fn build_nest_systems(app: &mut App) {
     app.add_systems(
@@ -120,7 +112,7 @@ fn build_nest_systems(app: &mut App) {
             // Added
             (on_added_ant_dead, on_added_ant_emote),
             // Removed
-            (on_removed_emote, on_nest_removed_visible_grid),
+            (on_removed_emote),
             // Updated
             (
                 on_update_ant_position,
@@ -145,10 +137,15 @@ fn build_nest_systems(app: &mut App) {
             .run_if(in_state(AppState::TellStory)),
     );
 
-    // TODO: Feels like despawn on exit visiblegridstate nest should be here?
     app.add_systems(
         OnEnter(VisibleGridState::Nest),
         (rerender_ants, rerender_elements, rerender_pheromones)
+            .run_if(in_state(StoryPlaybackState::Playing)),
+    );
+
+    app.add_systems(
+        OnExit(VisibleGridState::Nest),
+        (despawn_ants, despawn_elements, despawn_pheromones)
             .run_if(in_state(StoryPlaybackState::Playing)),
     );
 
