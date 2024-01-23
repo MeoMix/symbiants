@@ -158,3 +158,7 @@ pub fn despawn_pheromones(
         }
     }
 }
+
+pub fn cleanup_pheromones() {
+    // TODO: Cleanup anything else related to Pheromones here.
+}

@@ -15,18 +15,19 @@ use self::{
     crater_rendering::crater::on_crater_removed_visible_grid,
     nest_rendering::{
         ant::{
-            ants_sleep_emote, despawn_ants, on_added_ant_dead, on_added_ant_emote, on_ant_ate_food,
-            on_ant_wake_up, on_despawn_ant, on_removed_emote, on_spawn_ant, on_tick_emote,
-            on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
+            ants_sleep_emote, cleanup_ants, despawn_ants, on_added_ant_dead, on_added_ant_emote,
+            on_ant_ate_food, on_ant_wake_up, on_despawn_ant, on_removed_emote, on_spawn_ant,
+            on_tick_emote, on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
             on_update_ant_position, rerender_ants,
         },
         element::{
-            check_element_sprite_sheet_loaded, despawn_elements, on_despawn_element,
-            on_update_element, rerender_elements, start_load_element_sprite_sheet,
+            check_element_sprite_sheet_loaded, cleanup_elements, despawn_elements,
+            on_despawn_element, on_update_element, rerender_elements,
+            start_load_element_sprite_sheet,
         },
         nest::{on_nest_removed_visible_grid, on_spawn_nest},
         pheromone::{
-            despawn_pheromones, on_despawn_pheromone, on_spawn_pheromone,
+            cleanup_pheromones, despawn_pheromones, on_despawn_pheromone, on_spawn_pheromone,
             on_update_pheromone_visibility, rerender_pheromones,
         },
     },
@@ -61,10 +62,7 @@ fn build_common_systems(app: &mut App) {
         (on_update_selected, on_update_selected_position)
             // TODO: Unclear if this .chain() is necessary
             .chain()
-            .run_if(
-                in_state(AppState::TellStory)
-                    .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
-            ),
+            .run_if(in_state(AppState::TellStory)),
     );
 
     app.add_systems(
@@ -90,10 +88,9 @@ fn build_common_systems(app: &mut App) {
 fn build_crater_systems(app: &mut App) {
     app.add_systems(
         Update,
-        (on_crater_removed_visible_grid,).chain().run_if(
-            in_state(AppState::TellStory)
-                .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
-        ),
+        (on_crater_removed_visible_grid,)
+            .chain()
+            .run_if(in_state(AppState::TellStory)),
     );
 }
 
@@ -145,18 +142,10 @@ fn build_nest_systems(app: &mut App) {
         )
             // TODO: This .chain() isn't desirable, but is necessary due to use of `apply_deferred` above.
             .chain()
-            .run_if(
-                in_state(AppState::TellStory)
-                    .and_then(not(in_state(StoryPlaybackState::FastForwarding))),
-            ),
+            .run_if(in_state(AppState::TellStory)),
     );
 
-    app.add_systems(
-        OnExit(StoryPlaybackState::FastForwarding),
-        (rerender_ants, rerender_elements, rerender_pheromones)
-            .run_if(in_state(VisibleGridState::Nest)),
-    );
-
+    // TODO: Feels like despawn on exit visiblegridstate nest should be here?
     app.add_systems(
         OnEnter(VisibleGridState::Nest),
         (rerender_ants, rerender_elements, rerender_pheromones)
@@ -165,7 +154,14 @@ fn build_nest_systems(app: &mut App) {
 
     app.add_systems(
         OnEnter(AppState::Cleanup),
-        (despawn_ants, despawn_elements, despawn_pheromones)
+        (
+            despawn_ants,
+            cleanup_ants,
+            despawn_elements,
+            cleanup_elements,
+            despawn_pheromones,
+            cleanup_pheromones,
+        )
             // TODO: This expectation isn't very clear. The intent is to cleanup rendering before simulation.
             .before(remove_story_time_resources),
     );

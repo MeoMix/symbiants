@@ -11,11 +11,11 @@ use crate::{
         common::position::Position,
         element::{Element, ElementExposure},
         grid::Grid,
-        simulation::nest_simulation::nest::{AtNest, Nest},
         rendering::{
             common::{ModelViewEntityMap, VisibleGrid},
             nest_rendering::element::{get_element_index, ElementTextureAtlasHandle},
         },
+        simulation::nest_simulation::nest::{AtNest, Nest},
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };
@@ -658,4 +658,8 @@ pub fn despawn_ants(
             model_view_entity_map.0.remove(&ant_model_entity);
         }
     }
+}
+
+pub fn cleanup_ants() {
+    // TODO: Cleanup anything else related to ants here.
 }

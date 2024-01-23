@@ -322,7 +322,6 @@ pub fn get_element_index(exposure: ElementExposure, element: Element) -> usize {
 pub fn despawn_elements(
     mut commands: Commands,
     element_model_query: Query<Entity, With<Element>>,
-    element_tilemap_query: Query<Entity, With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     for element_model_entity in element_model_query.iter() {
@@ -331,7 +330,12 @@ pub fn despawn_elements(
             model_view_entity_map.0.remove(&element_model_entity);
         }
     }
+}
 
+pub fn cleanup_elements(
+    mut commands: Commands,
+    element_tilemap_query: Query<Entity, With<ElementTilemap>>,
+) {
     let element_tilemap_entity = element_tilemap_query.single();
     commands.entity(element_tilemap_entity).despawn_recursive();
 

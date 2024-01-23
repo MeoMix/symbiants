@@ -311,10 +311,13 @@ pub fn update_story_elapsed_ticks(mut story_time: ResMut<StoryTime>) {
 pub fn update_time_scale(
     mut simulation_time: ResMut<SimulationTime>,
     ticks_per_second: Res<TicksPerSecond>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
     next_story_playback_state: Res<NextState<StoryPlaybackState>>,
 ) {
     // Don't unintentionally overwrite simulation_time.period when shifting into FastForwarding.
-    if next_story_playback_state.0 == Some(StoryPlaybackState::FastForwarding) {
+    if *story_playback_state == StoryPlaybackState::FastForwarding
+        || next_story_playback_state.0 == Some(StoryPlaybackState::FastForwarding)
+    {
         return;
     }
 

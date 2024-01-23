@@ -12,6 +12,7 @@ pub struct SelectedEntity(pub Option<Entity>);
 #[derive(Component)]
 pub struct SelectionSprite;
 
+// TODO: Instead of `pub HashMap`, provide accessor methods and prevent overwriting existing data.
 #[derive(Resource, Default)]
 pub struct ModelViewEntityMap(pub HashMap<Entity, Entity>);
 
