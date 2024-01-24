@@ -3,8 +3,9 @@ pub mod external_event;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
-use crate::story::{
-    camera::MainCamera, common::position::Position, grid::Grid, ui::action_menu::PointerAction,
+use crate::{
+    main_camera::MainCamera,
+    story::{common::position::Position, grid::Grid, ui::action_menu::PointerAction},
 };
 
 use super::rendering::common::VisibleGrid;

@@ -1,5 +1,6 @@
 mod app_state;
 mod core_ui;
+mod main_camera;
 mod main_menu;
 mod save;
 mod settings;
@@ -15,10 +16,15 @@ use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
+use main_camera::MainCameraPlugin;
 use main_menu::update_main_menu;
+
 use story::{
-    camera::CameraPlugin, grid::VisibleGridState, rendering::RenderingPlugin,
-    simulation::{SimulationPlugin, SimulationUpdate}, story_time::StoryPlaybackState, ui::StoryUIPlugin,
+    grid::VisibleGridState,
+    rendering::RenderingPlugin,
+    simulation::{SimulationPlugin, SimulationUpdate},
+    story_time::StoryPlaybackState,
+    ui::StoryUIPlugin,
 };
 
 pub struct SymbiantsPlugin;
@@ -61,7 +67,7 @@ impl Plugin for SymbiantsPlugin {
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         .add_plugins((RngPlugin::default(), SavePlugin, TilemapPlugin))
         .add_plugins((
-            CameraPlugin,
+            MainCameraPlugin,
             CoreUIPlugin,
             StoryUIPlugin,
             SimulationPlugin,

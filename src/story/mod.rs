@@ -1,5 +1,4 @@
 pub mod ant;
-pub mod camera;
 pub mod common;
 pub mod element;
 pub mod grid;
