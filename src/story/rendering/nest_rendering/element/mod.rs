@@ -30,6 +30,8 @@ pub fn on_spawn_element(
         None => return,
     };
 
+    // Early exit when Nest isn't visible because there's no view to update.
+    // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
     let grid = match nest_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
@@ -67,7 +69,9 @@ pub fn on_update_element_position(
         Some(visible_grid_entity) => visible_grid_entity,
         None => return,
     };
-
+    
+    // Early exit when Nest isn't visible because there's no view to update.
+    // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
     let grid = match nest_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
