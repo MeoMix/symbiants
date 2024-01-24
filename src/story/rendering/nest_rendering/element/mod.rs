@@ -12,6 +12,8 @@ use bevy_ecs_tilemap::prelude::*;
 
 use self::sprite_sheet::{get_element_index, ElementTilemap};
 
+/// When an Element model is added to the simulation, render an associated Element sprite.
+/// This *only* handles the initial rendering of the Element sprite. Updates are handled by other systems.
 pub fn on_spawn_element(
     mut element_query: Query<
         (&Position, &Element, &ElementExposure, Entity),
@@ -49,8 +51,12 @@ pub fn on_spawn_element(
     }
 }
 
+/// When an Element model has its Position updated, reflect the change in Position by updating the Translation
+/// on its associated view. Update TileStorage to reflect the change in position, too.
+/// This does not include the initial spawn of the Element model, which is handled by `on_spawn_element`.
+/// This relies on Ref<Position> instead of Changed<Position> to be able to filter against `is_added()`
 pub fn on_update_element_position(
-    element_query: Query<(Ref<Position>, Entity), (Changed<Position>, With<AtNest>, Without<Air>)>,
+    element_query: Query<(Ref<Position>, Entity), (With<AtNest>, Without<Air>)>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     mut tilemap_query: Query<&mut TileStorage, With<ElementTilemap>>,
@@ -71,7 +77,7 @@ pub fn on_update_element_position(
 
     for (element_position, element_model_entity) in element_query.iter() {
         // `on_spawn_element` handles `Added<Position>`
-        if element_position.is_added() {
+        if element_position.is_added() || !element_position.is_changed() {
             continue;
         }
 
@@ -88,11 +94,12 @@ pub fn on_update_element_position(
     }
 }
 
+/// When an Element model has its ElementExposure updated, reflect the change in Position by updating the TileTextureIndex
+/// on its associated view.
+/// This does not include the initial spawn of the Element model, which is handled by `on_spawn_element`.
+/// This relies on Ref<ElementExposure> instead of Changed<ElementExposure> to be able to filter against `is_added()`
 pub fn on_update_element_exposure(
-    element_query: Query<
-        (Ref<ElementExposure>, &Element, Entity),
-        (Changed<ElementExposure>, With<AtNest>, Without<Air>),
-    >,
+    element_query: Query<(Ref<ElementExposure>, &Element, Entity), (With<AtNest>, Without<Air>)>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -111,7 +118,7 @@ pub fn on_update_element_exposure(
 
     for (element_exposure, element, element_model_entity) in element_query.iter() {
         // `on_spawn_element` handles `Added<ElementExposure>`
-        if element_exposure.is_added() {
+        if element_exposure.is_added() || !element_exposure.is_changed() {
             continue;
         }
 
@@ -183,9 +190,7 @@ pub fn cleanup_elements(
 
 /// Non-System Helper Functions:
 
-/// Conditionally spawn or insert an Element based on whether it already exists in the world.
-/// TODO: Is there significant performance overhead when inserting a full TileBundle in scenarios where
-/// just position has been updated?
+/// Spawn an Element Sprite at the given Position. Update ModelViewEntityMap and TileStorage to reflect the new view.
 fn spawn_element_sprite(
     element_model_entity: Entity,
     element: &Element,
