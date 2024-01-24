@@ -12,16 +12,10 @@ use bevy_ecs_tilemap::prelude::*;
 
 use self::sprite_sheet::{get_element_index, ElementTilemap};
 
-/// When an element's position or exposure changes - redraw its sprite.
-/// This will run when an element is first spawned because Changed is true on create.
-pub fn on_update_element(
+pub fn on_spawn_element(
     mut element_query: Query<
         (&Position, &Element, &ElementExposure, Entity),
-        (
-            Or<(Changed<Position>, Changed<ElementExposure>)>,
-            With<AtNest>,
-            Without<Air>,
-        ),
+        (Added<Element>, With<AtNest>, Without<Air>),
     >,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
@@ -39,17 +33,96 @@ pub fn on_update_element(
         Err(_) => return,
     };
 
-    for (position, element, element_exposure, element_model_entity) in element_query.iter_mut() {
-        update_element_sprite(
+    for (element_position, element, element_exposure, element_model_entity) in
+        element_query.iter_mut()
+    {
+        spawn_element_sprite(
             element_model_entity,
             element,
-            position,
+            element_position,
             element_exposure,
             &grid,
             &mut commands,
             &mut tilemap_query,
             &mut model_view_entity_map,
         );
+    }
+}
+
+pub fn on_update_element_position(
+    element_query: Query<(Ref<Position>, Entity), (Changed<Position>, With<AtNest>, Without<Air>)>,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut commands: Commands,
+    mut tilemap_query: Query<&mut TileStorage, With<ElementTilemap>>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    let grid = match nest_query.get(visible_grid_entity) {
+        Ok(grid) => grid,
+        Err(_) => return,
+    };
+
+    let mut tile_storage = tilemap_query.single_mut();
+
+    for (element_position, element_model_entity) in element_query.iter() {
+        // `on_spawn_element` handles `Added<Position>`
+        if element_position.is_added() {
+            continue;
+        }
+
+        let element_view_entity = match model_view_entity_map.get(&element_model_entity) {
+            Some(&element_view_entity) => element_view_entity,
+            None => panic!("Expected to find view entity for model entity."),
+        };
+
+        let tile_pos = grid.grid_to_tile_pos(*element_position);
+        commands.entity(element_view_entity).insert(tile_pos);
+        // NOTE: This leaves the previous `tile_pos` stale, but that's fine because it's just Air which isn't rendered.
+        // TODO: Consider benefits of tracking PreviousPosition in Element and using that to clear stale tile_pos.
+        tile_storage.set(&tile_pos, element_view_entity);
+    }
+}
+
+pub fn on_update_element_exposure(
+    element_query: Query<
+        (Ref<ElementExposure>, &Element, Entity),
+        (Changed<ElementExposure>, With<AtNest>, Without<Air>),
+    >,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut commands: Commands,
+    model_view_entity_map: Res<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    // Early exit when Nest isn't visible because there's no view to update.
+    // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
+    if nest_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
+    for (element_exposure, element, element_model_entity) in element_query.iter() {
+        // `on_spawn_element` handles `Added<ElementExposure>`
+        if element_exposure.is_added() {
+            continue;
+        }
+
+        let element_view_entity = match model_view_entity_map.get(&element_model_entity) {
+            Some(&element_view_entity) => element_view_entity,
+            None => panic!("Expected to find view entity for model entity."),
+        };
+
+        let texture_index = TileTextureIndex(get_element_index(*element_exposure, *element) as u32);
+
+        commands.entity(element_view_entity).insert(texture_index);
     }
 }
 
@@ -68,11 +141,11 @@ pub fn rerender_elements(
 ) {
     let grid = nest_query.single();
 
-    for (position, element, element_exposure, entity) in element_query.iter_mut() {
-        update_element_sprite(
+    for (element_position, element, element_exposure, entity) in element_query.iter_mut() {
+        spawn_element_sprite(
             entity,
             element,
-            position,
+            element_position,
             element_exposure,
             &grid,
             &mut commands,
@@ -90,6 +163,8 @@ pub fn on_despawn_element(
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
+    // TODO: It would be more clear to no-op if relevant grid isn't visible and throw on failure to find view when expected.
+
     for model_entity in removed.read() {
         if let Some(view_entity) = model_view_entity_map.remove(&model_entity) {
             commands.entity(view_entity).despawn_recursive();
@@ -111,7 +186,7 @@ pub fn cleanup_elements(
 /// Conditionally spawn or insert an Element based on whether it already exists in the world.
 /// TODO: Is there significant performance overhead when inserting a full TileBundle in scenarios where
 /// just position has been updated?
-fn update_element_sprite(
+fn spawn_element_sprite(
     element_model_entity: Entity,
     element: &Element,
     element_position: &Position,
@@ -134,14 +209,7 @@ fn update_element_sprite(
         },
     );
 
-    // We have the model entity, but need to look for a corresponding view entity. If we have one, then just update it, otherwise create it.
-    // TODO: Could provide better enforcement against bad state here if separated this function into spawn vs update.
-    if let Some(&element_view_entity) = model_view_entity_map.get(&element_model_entity) {
-        commands.entity(element_view_entity).insert(tile_bundle);
-        tile_storage.set(&tile_pos, element_view_entity);
-    } else {
-        let element_view_entity = commands.spawn(tile_bundle).id();
-        model_view_entity_map.insert(element_model_entity, element_view_entity);
-        tile_storage.set(&tile_pos, element_view_entity);
-    }
+    let element_view_entity = commands.spawn(tile_bundle).id();
+    model_view_entity_map.insert(element_model_entity, element_view_entity);
+    tile_storage.set(&tile_pos, element_view_entity);
 }

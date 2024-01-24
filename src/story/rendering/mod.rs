@@ -25,7 +25,8 @@ use self::{
             rerender_ants,
         },
         element::{
-            cleanup_elements, on_despawn_element, on_update_element, rerender_elements,
+            cleanup_elements, on_despawn_element, on_spawn_element, on_update_element_exposure,
+            on_update_element_position, rerender_elements,
             sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         },
         nest::on_spawn_nest,
@@ -110,7 +111,7 @@ fn build_nest_systems(app: &mut App) {
             on_spawn_nest,
             apply_deferred,
             // Spawn
-            (on_spawn_ant, on_spawn_pheromone),
+            (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
             // Despawn
             // TODO: make these generic
             (on_despawn_ant, on_despawn_element, on_despawn_pheromone),
@@ -133,7 +134,8 @@ fn build_nest_systems(app: &mut App) {
                 ),
                 on_ant_wake_up,
                 on_tick_emote,
-                on_update_element,
+                on_update_element_position,
+                on_update_element_exposure,
                 on_update_pheromone_visibility,
             ),
         )
