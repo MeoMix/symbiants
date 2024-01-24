@@ -15,14 +15,18 @@ use self::{
     },
     nest_rendering::{
         ant::{
-            ants_sleep_emote, cleanup_ants, on_added_ant_dead, on_added_ant_emote, on_ant_ate_food,
-            on_ant_wake_up, on_despawn_ant, on_removed_emote, on_spawn_ant, on_tick_emote,
-            on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation,
-            on_update_ant_position, rerender_ants,
+            cleanup_ants,
+            emote::{
+                ants_sleep_emote, on_added_ant_emote, on_ant_ate_food, on_ant_wake_up,
+                on_removed_emote, on_tick_emote,
+            },
+            on_added_ant_dead, on_despawn_ant, on_spawn_ant, on_update_ant_color,
+            on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position,
+            rerender_ants,
         },
         element::{
-            check_element_sprite_sheet_loaded, cleanup_elements, on_despawn_element,
-            on_update_element, rerender_elements, start_load_element_sprite_sheet,
+            cleanup_elements, on_despawn_element, on_update_element, rerender_elements,
+            sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         },
         nest::on_spawn_nest,
         pheromone::{
@@ -50,7 +54,7 @@ pub struct RenderingPlugin;
 ///     This occurs because the simulation may tick multiple times before rendering systems run.
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((PanZoomCameraPlugin));
+        app.add_plugins(PanZoomCameraPlugin);
 
         build_common_systems(app);
         build_nest_systems(app);
