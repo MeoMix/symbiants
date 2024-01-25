@@ -119,12 +119,6 @@ pub fn rerender_ants(
     for (ant_model_entity, position, color, orientation, name, role, inventory, dead) in
         ant_model_query.iter()
     {
-        // As `spawn_ant_sprite` assumes ant has not been rendered, it's necessary to ensure the old sprite has been removed.
-        // At time of writing, this isn't expected to occur ever. It's just a safeguard.
-        if let Some(ant_view_entity) = model_view_entity_map.remove(&ant_model_entity) {
-            commands.entity(ant_view_entity).despawn_recursive();
-        }
-
         spawn_ant_sprite(
             &mut commands,
             ant_model_entity,

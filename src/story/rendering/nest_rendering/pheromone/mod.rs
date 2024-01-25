@@ -8,54 +8,6 @@ use crate::story::{
     simulation::nest_simulation::nest::{AtNest, Nest},
 };
 
-fn get_pheromone_sprite(pheromone: &Pheromone, pheromone_strength: &PheromoneStrength) -> Sprite {
-    let pheromone_strength_opacity =
-        pheromone_strength.value() as f32 / pheromone_strength.max() as f32;
-    let initial_pheromone_opacity = 0.50;
-    let pheromone_opacity = initial_pheromone_opacity * pheromone_strength_opacity;
-
-    let color = match pheromone {
-        Pheromone::Chamber => Color::rgba(1.0, 0.08, 0.58, pheromone_opacity),
-        Pheromone::Tunnel => Color::rgba(0.25, 0.88, 0.82, pheromone_opacity),
-    };
-
-    Sprite { color, ..default() }
-}
-
-pub fn rerender_pheromones(
-    pheromone_model_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), With<AtNest>>,
-    pheromone_visibility: Res<PheromoneVisibility>,
-    mut commands: Commands,
-    nest_query: Query<&Grid, With<Nest>>,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    // TODO: instead of despawn could just overwrite and update?
-    for (pheromone_model_entity, _, _, _) in &pheromone_model_query {
-        if let Some(pheromone_view_entity) = model_view_entity_map.remove(&pheromone_model_entity) {
-            commands.entity(pheromone_view_entity).despawn_recursive();
-        }
-    }
-
-    let grid = nest_query.single();
-
-    for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_model_query
-    {
-        let pheromone_view_entity = commands
-            .spawn((
-                SpriteBundle {
-                    transform: Transform::from_translation(grid.grid_to_world_position(*position)),
-                    sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-                    visibility: pheromone_visibility.0,
-                    ..default()
-                },
-                AtNest,
-            ))
-            .id();
-
-        model_view_entity_map.insert(pheromone_model_entity, pheromone_view_entity);
-    }
-}
-
 pub fn on_spawn_pheromone(
     pheromone_query: Query<
         (Entity, &Position, &Pheromone, &PheromoneStrength),
@@ -78,19 +30,40 @@ pub fn on_spawn_pheromone(
     };
 
     for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_query {
-        let pheromone_view_entity = commands
-            .spawn((
-                SpriteBundle {
-                    transform: Transform::from_translation(grid.grid_to_world_position(*position)),
-                    sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-                    visibility: pheromone_visibility.0,
-                    ..default()
-                },
-                AtNest,
-            ))
-            .id();
+        spawn_pheromone(
+            pheromone_model_entity,
+            pheromone,
+            position,
+            pheromone_strength,
+            &pheromone_visibility,
+            grid,
+            &mut commands,
+            &mut model_view_entity_map,
+        );
+    }
+}
 
-        model_view_entity_map.insert(pheromone_model_entity, pheromone_view_entity);
+pub fn rerender_pheromones(
+    pheromone_model_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), With<AtNest>>,
+    pheromone_visibility: Res<PheromoneVisibility>,
+    mut commands: Commands,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    let grid = nest_query.single();
+
+    for (pheromone_model_entity, position, pheromone, pheromone_strength) in &pheromone_model_query
+    {
+        spawn_pheromone(
+            pheromone_model_entity,
+            pheromone,
+            position,
+            pheromone_strength,
+            &pheromone_visibility,
+            grid,
+            &mut commands,
+            &mut model_view_entity_map,
+        );
     }
 }
 
@@ -125,4 +98,47 @@ pub fn on_update_pheromone_visibility(
 
 pub fn cleanup_pheromones() {
     // TODO: Cleanup anything else related to Pheromones here.
+}
+
+/// Non-System Helper Functions:
+
+fn spawn_pheromone(
+    pheromone_model_entity: Entity,
+    pheromone: &Pheromone,
+    pheromone_position: &Position,
+    pheromone_strength: &PheromoneStrength,
+    pheromone_visibility: &PheromoneVisibility,
+    grid: &Grid,
+    commands: &mut Commands,
+    model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
+) {
+    let pheromone_view_entity = commands
+        .spawn((
+            SpriteBundle {
+                transform: Transform::from_translation(
+                    grid.grid_to_world_position(*pheromone_position),
+                ),
+                sprite: get_pheromone_sprite(pheromone, pheromone_strength),
+                visibility: pheromone_visibility.0,
+                ..default()
+            },
+            AtNest,
+        ))
+        .id();
+
+    model_view_entity_map.insert(pheromone_model_entity, pheromone_view_entity);
+}
+
+fn get_pheromone_sprite(pheromone: &Pheromone, pheromone_strength: &PheromoneStrength) -> Sprite {
+    let pheromone_strength_opacity =
+        pheromone_strength.value() as f32 / pheromone_strength.max() as f32;
+    let initial_pheromone_opacity = 0.50;
+    let pheromone_opacity = initial_pheromone_opacity * pheromone_strength_opacity;
+
+    let color = match pheromone {
+        Pheromone::Chamber => Color::rgba(1.0, 0.08, 0.58, pheromone_opacity),
+        Pheromone::Tunnel => Color::rgba(0.25, 0.88, 0.82, pheromone_opacity),
+    };
+
+    Sprite { color, ..default() }
 }
