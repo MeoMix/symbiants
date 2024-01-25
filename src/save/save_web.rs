@@ -95,13 +95,19 @@ fn create_save_snapshot(world: &mut World) -> Option<Vec<u8>> {
 fn write_save_snapshot() -> bool {
     let save_snapshot = SAVE_SNAPSHOT.lock().unwrap();
 
+    let buffer = match save_snapshot.as_ref() {
+        Some(buffer) => buffer,
+        // SAVE_SNAPSHOT can be empty during the first few seconds of app load because snapshots are taken periodically.
+        None => return false,
+    };
+
     // Compress snapshot using Brotli. In testing, this reduces a 4mb save file to 0.5mb with compression quality: 1.
     let mut params = BrotliEncoderInitParams();
     params.quality = 1; // Max compression (0-11 range)
 
     let mut compressed_data = brotli::CompressorWriter::with_params(Vec::new(), 4096, &params);
     compressed_data
-        .write_all(&save_snapshot.as_ref().unwrap())
+        .write_all(buffer)
         .expect("Failed to write to compressor");
 
     let save_result = LocalStorage::set(LOCAL_STORAGE_KEY, compressed_data.into_inner());
