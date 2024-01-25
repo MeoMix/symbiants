@@ -10,8 +10,9 @@ use crate::app_state::AppState;
 
 use self::{
     common::{
-        despawn_common_entities, despawn_view, initialize_common_resources, on_update_selected,
-        on_update_selected_position, remove_common_resources, ModelViewEntityMap,
+        despawn_common_entities, despawn_view, initialize_common_resources, on_despawn,
+        on_update_selected, on_update_selected_position, remove_common_resources,
+        ModelViewEntityMap,
     },
     nest_rendering::{
         ant::{
@@ -20,19 +21,18 @@ use self::{
                 ants_sleep_emote, on_added_ant_emote, on_ant_ate_food, on_ant_wake_up,
                 on_removed_emote, on_tick_emote,
             },
-            on_added_ant_dead, on_despawn_ant, on_spawn_ant, on_update_ant_color,
-            on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position,
-            rerender_ants,
+            on_added_ant_dead, on_spawn_ant, on_update_ant_color, on_update_ant_inventory,
+            on_update_ant_orientation, on_update_ant_position, rerender_ants,
         },
         element::{
-            cleanup_elements, on_despawn_element, on_spawn_element, on_update_element_exposure,
+            cleanup_elements, on_spawn_element, on_update_element_exposure,
             on_update_element_position, rerender_elements,
             sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         },
         nest::{mark_nest_hidden, mark_nest_visible},
         pheromone::{
-            cleanup_pheromones, on_despawn_pheromone, on_spawn_pheromone,
-            on_update_pheromone_visibility, rerender_pheromones,
+            cleanup_pheromones, on_spawn_pheromone, on_update_pheromone_visibility,
+            rerender_pheromones,
         },
     },
     pan_zoom_camera::PanZoomCameraPlugin,
@@ -43,7 +43,7 @@ use super::{
     element::Element,
     grid::VisibleGridState,
     pheromone::Pheromone,
-    simulation::CleanupSet,
+    simulation::{nest_simulation::nest::AtNest, CleanupSet},
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 
@@ -109,8 +109,11 @@ fn build_nest_systems(app: &mut App) {
             // Spawn
             (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
             // Despawn
-            // TODO: make these generic
-            (on_despawn_ant, on_despawn_element, on_despawn_pheromone),
+            (
+                on_despawn::<Ant, AtNest>,
+                on_despawn::<Element, AtNest>,
+                on_despawn::<Pheromone, AtNest>,
+            ),
             // Added
             (on_added_ant_dead, on_added_ant_emote),
             // Removed

@@ -1,6 +1,9 @@
 use bevy::{prelude::*, utils::HashMap};
 
-use crate::story::{common::position::Position, grid::Grid};
+use crate::story::{
+    common::{position::Position, Zone},
+    grid::Grid,
+};
 
 // TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
 #[derive(Resource, Default)]
@@ -169,6 +172,32 @@ pub fn despawn_view<Model: Component>(
         if let Some(&view_entity) = model_view_entity_map.get(&model_entity) {
             commands.entity(view_entity).despawn_recursive();
             model_view_entity_map.remove(&model_entity);
+        }
+    }
+}
+
+/// When a model is despawned its corresponding view should be despawned, too.
+/// If model is despawned when the Zone it's in isn't shown then there is no view to despawn.
+/// Noop instead of skipping running `on_despawn` to ensure `RemovedComponents` doesn't become backlogged.
+pub fn on_despawn<Model: Component, Z: Zone>(
+    mut removed: RemovedComponents<Model>,
+    mut commands: Commands,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+    grid_query: Query<&Grid, With<Z>>,
+    visible_grid: Res<VisibleGrid>,
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if grid_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
+    for model_entity in removed.read() {
+        if let Some(view_entity) = model_view_entity_map.remove(&model_entity) {
+            commands.entity(view_entity).despawn_recursive();
         }
     }
 }

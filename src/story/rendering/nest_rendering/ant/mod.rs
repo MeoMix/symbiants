@@ -144,21 +144,6 @@ pub fn rerender_ants(
     }
 }
 
-/// When an Ant model is despawned, its corresponding view should be despawned as well.
-/// Note that a model may be despawned when an unrelated scene is visible. In this scenario,
-/// there is no view to despawn, so the ModelViewEntityMap lookup will fail. This is fine.
-pub fn on_despawn_ant(
-    mut removed: RemovedComponents<Ant>,
-    mut commands: Commands,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    for model_entity in removed.read() {
-        if let Some(view_entity) = model_view_entity_map.remove(&model_entity) {
-            commands.entity(view_entity).despawn_recursive();
-        }
-    }
-}
-
 /// When an Ant model picks up or sets down an inventory item (i.e. an Element), its view
 /// needs to be updated to reflect the change.
 ///

@@ -3,7 +3,7 @@ pub mod sprite_sheet;
 use crate::story::{
     common::position::Position,
     element::{Air, Element, ElementExposure},
-    grid::{Grid, VisibleGridState},
+    grid::Grid,
     rendering::common::{ModelViewEntityMap, VisibleGrid},
     simulation::nest_simulation::nest::{AtNest, Nest},
 };
@@ -163,23 +163,6 @@ pub fn rerender_elements(
             &mut tilemap_query,
             &mut model_view_entity_map,
         );
-    }
-}
-
-/// When an Element model is despawned, its corresponding view should be despawned as well.
-/// Note that a model may be despawned when an unrelated scene is visible. In this scenario,
-/// there is no view to despawn, so the ModelViewEntityMap lookup will fail. This is fine.
-pub fn on_despawn_element(
-    mut removed: RemovedComponents<Element>,
-    mut commands: Commands,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    // TODO: It would be more clear to no-op if relevant grid isn't visible and throw on failure to find view when expected.
-
-    for model_entity in removed.read() {
-        if let Some(view_entity) = model_view_entity_map.remove(&model_entity) {
-            commands.entity(view_entity).despawn_recursive();
-        }
     }
 }
 

@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashSet};
+use bevy::prelude::*;
 
 use crate::story::{
     common::position::Position,
@@ -8,10 +8,7 @@ use crate::story::{
     simulation::nest_simulation::nest::{AtNest, Nest},
 };
 
-pub fn get_pheromone_sprite(
-    pheromone: &Pheromone,
-    pheromone_strength: &PheromoneStrength,
-) -> Sprite {
+fn get_pheromone_sprite(pheromone: &Pheromone, pheromone_strength: &PheromoneStrength) -> Sprite {
     let pheromone_strength_opacity =
         pheromone_strength.value() as f32 / pheromone_strength.max() as f32;
     let initial_pheromone_opacity = 0.50;
@@ -94,20 +91,6 @@ pub fn on_spawn_pheromone(
             .id();
 
         model_view_entity_map.insert(pheromone_model_entity, pheromone_view_entity);
-    }
-}
-
-pub fn on_despawn_pheromone(
-    mut removed: RemovedComponents<Pheromone>,
-    mut commands: Commands,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    let model_entities = &mut removed.read().collect::<HashSet<_>>();
-
-    for model_entity in model_entities.iter() {
-        if let Some(view_entity) = model_view_entity_map.remove(model_entity) {
-            commands.entity(view_entity).despawn_recursive();
-        }
     }
 }
 
