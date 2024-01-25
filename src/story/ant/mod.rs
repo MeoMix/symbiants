@@ -9,7 +9,7 @@ use self::{
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{common::Zone, element::Element, nest_simulation::nest::AtNest};
+use super::{common::Zone, element::Element, simulation::nest_simulation::nest::AtNest};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},
@@ -443,12 +443,6 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Birthing>();
     app_type_registry.write().register::<Tunneling>();
     app_type_registry.write().register::<Chambering>();
-}
-
-pub fn teardown_ant(ant_model_query: Query<Entity, With<Ant>>, mut commands: Commands) {
-    for ant_model_entity in ant_model_query.iter() {
-        commands.entity(ant_model_entity).despawn();
-    }
 }
 
 // TODO: tests

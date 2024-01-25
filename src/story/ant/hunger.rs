@@ -6,7 +6,7 @@ use crate::story::{
     common::position::Position,
     element::Element,
     grid::Grid,
-    nest_simulation::nest::{AtNest, Nest},
+    simulation::nest_simulation::nest::{AtNest, Nest},
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;

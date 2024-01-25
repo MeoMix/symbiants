@@ -51,7 +51,7 @@ pub fn register_nest(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<AtNest>();
 }
 
-pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
+pub fn spawn_nest(settings: Res<Settings>, mut commands: Commands) {
     let surface_level = (settings.nest_height as f32
         - (settings.nest_height as f32 * settings.initial_dirt_percent))
         as isize;
@@ -59,12 +59,14 @@ pub fn setup_nest(settings: Res<Settings>, mut commands: Commands) {
     commands.spawn((Nest::new(surface_level), AtNest));
 }
 
+// TODO: despawn_nest_elements?
+
 /// Creates a new grid of Elements. The grid is densley populated.
 /// Note the intentional omission of calling `commands.spawn_element`. This is because
 /// `spawn_element` writes to the grid cache, which is not yet initialized. The grid cache will
 /// be updated after this function is called. This keeps cache initialization parity between
 /// creating a new world and loading an existing world.
-pub fn setup_nest_elements(
+pub fn spawn_nest_elements(
     nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut commands: Commands,
@@ -84,7 +86,7 @@ pub fn setup_nest_elements(
     }
 }
 
-pub fn setup_nest_ants(
+pub fn spawn_nest_ants(
     nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -138,7 +140,7 @@ pub fn setup_nest_ants(
 ///
 /// This is used to speed up most logic because there's a consistent need throughout the application to know what elements are
 /// at or near a given position.
-pub fn setup_nest_grid(
+pub fn insert_nest_grid(
     nest_query: Query<Entity, With<Nest>>,
     element_query: Query<(&mut Position, Entity), (With<Element>, With<AtNest>)>,
     settings: Res<Settings>,
@@ -158,10 +160,4 @@ pub fn setup_nest_grid(
         settings.nest_height,
         ElementsCache::new(elements_cache),
     ));
-}
-
-pub fn teardown_nest(mut commands: Commands, nest_entity_query: Query<Entity, With<Nest>>) {
-    let nest_entity = nest_entity_query.single();
-
-    commands.entity(nest_entity).despawn();
 }

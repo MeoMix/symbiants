@@ -1,4 +1,4 @@
-use super::{common::Zone, grid::Grid, nest_simulation::nest::Nest};
+use super::{common::Zone, grid::Grid, simulation::nest_simulation::nest::Nest};
 use crate::story::common::position::Position;
 use bevy::{prelude::*, utils::HashSet};
 use serde::{Deserialize, Serialize};
@@ -69,12 +69,6 @@ pub fn register_element(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Food>();
     app_type_registry.write().register::<Dirt>();
     app_type_registry.write().register::<Sand>();
-}
-
-pub fn teardown_element(mut commands: Commands, element_model_query: Query<Entity, With<Element>>) {
-    for element_model_entity in element_model_query.iter() {
-        commands.entity(element_model_entity).despawn();
-    }
 }
 
 /// Element entities are represented by their Element enum, but the value of this enum isn't Queryable.

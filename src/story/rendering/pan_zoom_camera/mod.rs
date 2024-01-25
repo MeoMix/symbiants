@@ -1,4 +1,4 @@
-use crate::{app_state::AppState, story::grid::Grid};
+use crate::{main_camera::MainCamera, story::grid::Grid};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -6,12 +6,9 @@ use bevy::{
 
 use self::pancam::{PanCam, PanCamPlugin};
 
-use super::nest_rendering::common::VisibleGrid;
+use super::common::VisibleGrid;
 
 mod pancam;
-
-#[derive(Component)]
-pub struct MainCamera;
 
 /// Calculate the scale which will minimally cover the window with a grid.
 fn get_best_fit_scale(
@@ -76,7 +73,6 @@ fn scale_projection(
         Err(_) => return,
     };
 
-    // let visible_grid = visible_grid_query.single();
     let primary_window = primary_window_query.single();
 
     main_camera_query.single_mut().scale = get_best_fit_scale(
@@ -117,24 +113,16 @@ fn insert_pancam(
     });
 }
 
-pub fn setup(mut commands: Commands) {
-    commands.spawn((Camera2dBundle::default(), MainCamera));
-}
+pub struct PanZoomCameraPlugin;
 
-pub fn teardown(mut commands: Commands, query: Query<Entity, With<MainCamera>>) {
-    for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-}
-
-pub struct CameraPlugin;
-
-impl Plugin for CameraPlugin {
+/// Rendering the simulation requires a camera capable of panning and zooming. This isn't a requirement for showing the main menu.
+/// So, this plugin is separate from MainCamera and only decorates MainCamera when the simulation is rendered.
+impl Plugin for PanZoomCameraPlugin {
     fn build(&self, app: &mut App) {
+        // TODO: It would be preferable to teardown PanCam when the simulation stops and exits to MainMenu
+        // This is hard to do because Bevy doesn't currently support removing systems or plugins.
+        // There isn't (AFAIK) any negative side-effects to omitting the teardown. Just feels improper to leave app in a partially dirty state.
         app.add_plugins(PanCamPlugin::default());
-
-        app.add_systems(OnEnter(AppState::BeginSetup), setup);
-        app.add_systems(OnEnter(AppState::Cleanup), teardown);
 
         app.add_systems(
             Update,

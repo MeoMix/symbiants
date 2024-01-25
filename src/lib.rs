@@ -1,5 +1,6 @@
 mod app_state;
 mod core_ui;
+mod main_camera;
 mod main_menu;
 mod save;
 mod settings;
@@ -14,12 +15,15 @@ use bevy::{
 use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
+use main_camera::MainCameraPlugin;
 use main_menu::update_main_menu;
-use save::CompressedWebStorageBackend;
+
 use story::{
-    camera::CameraPlugin, crater_simulation::CraterSimulationPlugin, grid::VisibleGridState,
-    nest_rendering::NestRenderingPlugin, nest_simulation::NestSimulationPlugin,
-    story_time::StoryPlaybackState, ui::StoryUIPlugin,
+    grid::VisibleGridState,
+    rendering::RenderingPlugin,
+    simulation::{SimulationPlugin, SimulationUpdate},
+    story_time::StoryPlaybackState,
+    ui::StoryUIPlugin,
 };
 
 pub struct SymbiantsPlugin;
@@ -33,9 +37,6 @@ impl Plugin for SymbiantsPlugin {
         app.insert_resource(Msaa::Off);
 
         app.init_resource::<GlobalRng>();
-
-        // TODO: better spot for this?
-        app.init_resource::<CompressedWebStorageBackend>();
 
         app.add_state::<AppState>();
         // TODO: call this in setup_story_time?
@@ -56,7 +57,7 @@ impl Plugin for SymbiantsPlugin {
                 .set(ImagePlugin::default_nearest()),
         )
         // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
-        .edit_schedule(FixedUpdate, |schedule| {
+        .edit_schedule(SimulationUpdate, |schedule| {
             schedule.set_build_settings(ScheduleBuildSettings {
                 ambiguity_detection: LogLevel::Error,
                 ..default()
@@ -65,12 +66,11 @@ impl Plugin for SymbiantsPlugin {
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         .add_plugins((RngPlugin::default(), SavePlugin, TilemapPlugin))
         .add_plugins((
-            CameraPlugin,
+            MainCameraPlugin,
             CoreUIPlugin,
             StoryUIPlugin,
-            NestSimulationPlugin,
-            NestRenderingPlugin,
-            CraterSimulationPlugin,
+            SimulationPlugin,
+            RenderingPlugin,
         ));
 
         app.add_systems(

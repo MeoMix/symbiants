@@ -3,12 +3,15 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use crate::settings::Settings;
-use crate::story::crater_simulation::crater::Crater;
-use crate::story::nest_rendering::common::VisibleGrid;
-use crate::story::nest_simulation::nest::Nest;
-use crate::story::pointer::ExternalSimulationEvent;
-use crate::story::story_time::StoryTime;
+use crate::{
+    settings::Settings,
+    story::{
+        pointer::ExternalSimulationEvent,
+        rendering::common::VisibleGrid,
+        simulation::{crater_simulation::crater::Crater, nest_simulation::nest::Nest},
+        story_time::StoryTime,
+    },
+};
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
 pub enum PointerAction {

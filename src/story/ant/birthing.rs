@@ -1,5 +1,5 @@
 use crate::story::{
-    common::position::Position, nest_simulation::nest::AtNest, story_time::DEFAULT_TICKS_PER_SECOND,
+    common::position::Position, simulation::nest_simulation::nest::AtNest, story_time::DEFAULT_TICKS_PER_SECOND,
 };
 
 use super::{

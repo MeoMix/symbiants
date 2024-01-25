@@ -3,11 +3,12 @@ pub mod external_event;
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
-use crate::story::{
-    camera::MainCamera, common::position::Position, grid::Grid, ui::action_menu::PointerAction,
+use crate::{
+    main_camera::MainCamera,
+    story::{common::position::Position, grid::Grid, ui::action_menu::PointerAction},
 };
 
-use super::nest_rendering::common::VisibleGrid;
+use super::rendering::common::VisibleGrid;
 
 #[derive(Event, PartialEq, Copy, Clone, Debug)]
 pub enum ExternalSimulationEvent {
@@ -43,10 +44,15 @@ pub struct PointerTapState {
     pub position: Option<Vec2>,
 }
 
-pub fn setup_pointer(mut commands: Commands) {
+pub fn initialize_pointer_resources(mut commands: Commands) {
     // Calling init_resource prevents Bevy's automatic event cleanup. Need to do it manually.
     commands.init_resource::<Events<ExternalSimulationEvent>>();
     commands.init_resource::<PointerTapState>();
+}
+
+pub fn remove_pointer_resources(mut commands: Commands) {
+    commands.remove_resource::<Events<ExternalSimulationEvent>>();
+    commands.remove_resource::<PointerTapState>();
 }
 
 const DRAG_THRESHOLD: f32 = 4.0;

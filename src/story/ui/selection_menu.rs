@@ -7,7 +7,7 @@ use crate::story::{
     },
     common::position::Position,
     element::Element,
-    nest_rendering::common::SelectedEntity,
+    rendering::common::SelectedEntity,
     pheromone::{Pheromone, PheromoneStrength},
 };
 

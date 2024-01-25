@@ -2,7 +2,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use super::nest_simulation::SimulationUpdate;
+use super::simulation::SimulationUpdate;
 
 /// The amount of time that must pass before the fixed timestep schedule is run again.
 #[derive(Resource, Debug)]
@@ -14,14 +14,6 @@ pub struct SimulationTime {
 }
 
 impl SimulationTime {
-    /// Creates a new [`SimulationTime`] struct
-    pub fn new(period: Duration) -> Self {
-        SimulationTime {
-            accumulated: Duration::ZERO,
-            period,
-        }
-    }
-
     /// Creates a new [`SimulationTime`] struct with a period specified in `f32` seconds
     pub fn new_from_secs(period: f32) -> Self {
         SimulationTime {
