@@ -29,7 +29,7 @@ use self::{
             on_update_element_position, rerender_elements,
             sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         },
-        nest::on_spawn_nest,
+        nest::{mark_nest_hidden, mark_nest_visible},
         pheromone::{
             cleanup_pheromones, on_despawn_pheromone, on_spawn_pheromone,
             on_update_pheromone_visibility, rerender_pheromones,
@@ -106,10 +106,6 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         Update,
         (
-            // TODO: This apply_deferred sucks but I'm relying on view state to reactively render
-            // and so I need this to be accurate now not next frame.
-            on_spawn_nest,
-            apply_deferred,
             // Spawn
             (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
             // Despawn
@@ -139,14 +135,20 @@ fn build_nest_systems(app: &mut App) {
                 on_update_pheromone_visibility,
             ),
         )
-            // TODO: This .chain() isn't desirable, but is necessary due to use of `apply_deferred` above.
-            .chain()
             .run_if(in_state(AppState::TellStory)),
     );
 
+    // When beginning the story, start by showing the Nest.
+    app.add_systems(OnEnter(AppState::TellStory), mark_nest_visible);
+
     app.add_systems(
         OnEnter(VisibleGridState::Nest),
-        (rerender_ants, rerender_elements, rerender_pheromones)
+        (
+            rerender_ants,
+            rerender_elements,
+            rerender_pheromones,
+            mark_nest_visible,
+        )
             .run_if(in_state(AppState::TellStory)),
     );
 
@@ -156,6 +158,7 @@ fn build_nest_systems(app: &mut App) {
             despawn_view::<Ant>,
             despawn_view::<Element>,
             despawn_view::<Pheromone>,
+            mark_nest_hidden,
         )
             .run_if(in_state(AppState::TellStory)),
     );

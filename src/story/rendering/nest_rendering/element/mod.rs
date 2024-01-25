@@ -3,7 +3,7 @@ pub mod sprite_sheet;
 use crate::story::{
     common::position::Position,
     element::{Air, Element, ElementExposure},
-    grid::Grid,
+    grid::{Grid, VisibleGridState},
     rendering::common::{ModelViewEntityMap, VisibleGrid},
     simulation::nest_simulation::nest::{AtNest, Nest},
 };
@@ -69,7 +69,7 @@ pub fn on_update_element_position(
         Some(visible_grid_entity) => visible_grid_entity,
         None => return,
     };
-    
+
     // Early exit when Nest isn't visible because there's no view to update.
     // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
     let grid = match nest_query.get(visible_grid_entity) {

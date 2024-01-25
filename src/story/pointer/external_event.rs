@@ -2,7 +2,7 @@ use crate::story::{
     ant::commands::AntCommandsExt,
     common::position::Position,
     grid::{Grid, VisibleGridState},
-    rendering::common::{SelectedEntity, VisibleGrid},
+    rendering::common::SelectedEntity,
     simulation::{
         crater_simulation::crater::Crater,
         nest_simulation::nest::{AtNest, Nest},
@@ -37,18 +37,15 @@ pub fn process_external_event(
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory)>,
     mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
     mut selected_entity: ResMut<SelectedEntity>,
-    mut visible_grid: ResMut<VisibleGrid>,
 ) {
     let (_, nest) = nest_query.single();
 
     for event in external_simulation_events.drain() {
         match event {
             ExternalSimulationEvent::ShowCrater => {
-                visible_grid.0 = None; // Some(crater_query.single().0);
                 next_visible_grid_state.set(VisibleGridState::Crater);
             }
             ExternalSimulationEvent::ShowNest => {
-                visible_grid.0 = Some(nest_query.single().0);
                 next_visible_grid_state.set(VisibleGridState::Nest);
             }
             ExternalSimulationEvent::Select(grid_position) => {
