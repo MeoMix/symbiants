@@ -2,7 +2,7 @@
 pub mod common;
 mod crater_rendering;
 mod nest_rendering;
-pub mod pan_zoom_camera;
+mod pan_zoom_camera;
 
 use bevy::prelude::*;
 
