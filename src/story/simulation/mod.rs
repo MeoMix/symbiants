@@ -54,7 +54,6 @@ use crate::{
 };
 
 use self::nest_simulation::{
-    background::{despawn_background, spawn_background, update_sky_background},
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
         gravity_set_stability, register_gravity,
@@ -152,12 +151,11 @@ fn build_nest_systems(app: &mut App) {
         (
             (insert_nest_grid, apply_deferred).chain(),
             (initialize_pheromone_resources, apply_deferred).chain(),
-            (spawn_background, apply_deferred).chain(),
             // IMPORTANT:
             // `ElementExposure` isn't persisted because it's derivable. It is required for rendering.
             // Don't rely on `SimulationUpdate` to set `ElementExposure` because it should be possible to render
             // the world's initial state without advancing the simulation.
-            (update_element_exposure, apply_deferred).chain()
+            (update_element_exposure, apply_deferred).chain(),
         )
             .chain()
             .before(begin_story),
@@ -271,20 +269,9 @@ fn build_nest_systems(app: &mut App) {
             .chain(),
     );
 
-    // TODO: View concern
-    app.add_systems(
-        Update,
-        update_sky_background.run_if(
-            // `update_sky_background` is a view concern, and kinda heavy, so skip doing it while fast-forwarding.
-            // It has some local state within it which needs to be reset when clicking "Reset Sandbox" so need to run in initializing, too.
-            in_state(AppState::TellStory).or_else(in_state(AppState::Cleanup)),
-        ),
-    );
-
     app.add_systems(
         OnEnter(AppState::Cleanup),
         (
-            despawn_background,
             despawn_model::<Ant>,
             despawn_model::<Element>,
             despawn_model::<Pheromone>,

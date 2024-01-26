@@ -24,6 +24,7 @@ use self::{
             on_added_ant_dead, on_spawn_ant, on_update_ant_color, on_update_ant_inventory,
             on_update_ant_orientation, on_update_ant_position, rerender_ants,
         },
+        background::{despawn_background, spawn_background, update_sky_background},
         element::{
             cleanup_elements, on_spawn_element, on_update_element_exposure,
             on_update_element_position, rerender_elements,
@@ -43,8 +44,8 @@ use super::{
     element::Element,
     grid::VisibleGridState,
     pheromone::Pheromone,
-    simulation::{nest_simulation::nest::AtNest, CleanupSet},
-    story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
+    simulation::{nest_simulation::nest::{insert_nest_grid, AtNest}, CleanupSet},
+    story_time::{initialize_story_time_resources, StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 
 pub struct RenderingPlugin;
@@ -101,6 +102,24 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         Update,
         check_element_sprite_sheet_loaded.run_if(in_state(AppState::BeginSetup)),
+    );
+
+    app.add_systems(
+        OnEnter(AppState::FinishSetup),
+        // TODO: This feels hacky. Either want to use a SystemSet to wait for simulation code to finish,
+        // or I don't want to render this here at all and want to handle it just in Update.
+        spawn_background
+            .after(initialize_story_time_resources)
+            .after(insert_nest_grid),
+    );
+
+    app.add_systems(
+        Update,
+        update_sky_background.run_if(
+            // TODO: `update_sky_background` uses Local<_> which needs to be reset during cleanup.
+            // This is pretty hacky. Once Bevy supports removing systems it'll be easier to remove.
+            in_state(AppState::TellStory).or_else(in_state(AppState::Cleanup)),
+        ),
     );
 
     app.add_systems(
@@ -170,6 +189,7 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         OnEnter(AppState::Cleanup),
         (
+            despawn_background,
             despawn_view_by_model::<Ant>,
             cleanup_ants,
             despawn_view_by_model::<Element>,

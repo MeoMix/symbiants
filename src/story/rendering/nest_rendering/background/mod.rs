@@ -6,12 +6,10 @@ use crate::{
     story::{
         common::position::Position,
         grid::Grid,
-        simulation::nest_simulation::nest::Nest,
+        simulation::nest_simulation::nest::{AtNest, Nest},
         story_time::{StoryTime, TimeInfo},
     },
 };
-
-use super::nest::AtNest;
 
 #[derive(Component)]
 pub struct BackgroundTilemap;
@@ -253,7 +251,14 @@ pub fn spawn_background(
 }
 
 pub fn despawn_background(
-    background_query: Query<Entity, Or<(With<TunnelBackground>, With<SkyBackground>, With<BackgroundTilemap>)>>,
+    background_query: Query<
+        Entity,
+        Or<(
+            With<TunnelBackground>,
+            With<SkyBackground>,
+            With<BackgroundTilemap>,
+        )>,
+    >,
     mut commands: Commands,
 ) {
     for background_entity in background_query.iter() {
