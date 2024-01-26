@@ -10,9 +10,9 @@ use crate::app_state::AppState;
 
 use self::{
     common::{
-        despawn_common_entities, despawn_view, initialize_common_resources, on_despawn,
-        on_update_selected, on_update_selected_position, remove_common_resources,
-        ModelViewEntityMap,
+        clear_selection, despawn_common_entities, despawn_view_by_model,
+        initialize_common_resources, on_despawn, on_update_selected, on_update_selected_position,
+        remove_common_resources, ModelViewEntityMap,
     },
     nest_rendering::{
         ant::{
@@ -158,9 +158,10 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         OnExit(VisibleGridState::Nest),
         (
-            despawn_view::<Ant>,
-            despawn_view::<Element>,
-            despawn_view::<Pheromone>,
+            despawn_view_by_model::<Ant>,
+            despawn_view_by_model::<Element>,
+            despawn_view_by_model::<Pheromone>,
+            clear_selection,
             mark_nest_hidden,
         )
             .run_if(in_state(AppState::TellStory)),
@@ -169,11 +170,11 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         OnEnter(AppState::Cleanup),
         (
-            despawn_view::<Ant>,
+            despawn_view_by_model::<Ant>,
             cleanup_ants,
-            despawn_view::<Element>,
+            despawn_view_by_model::<Element>,
             cleanup_elements,
-            despawn_view::<Pheromone>,
+            despawn_view_by_model::<Pheromone>,
             cleanup_pheromones,
         )
             .in_set(CleanupSet::BeforeSimulationCleanup),

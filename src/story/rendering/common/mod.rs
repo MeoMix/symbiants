@@ -43,6 +43,10 @@ impl ModelViewEntityMap {
     }
 }
 
+pub fn clear_selection(mut selected_entity: ResMut<SelectedEntity>) {
+    selected_entity.0 = None;
+}
+
 /// When Selection is added to a component, decorate that component with a white outline sprite.
 pub fn on_update_selected(
     mut commands: Commands,
@@ -53,6 +57,14 @@ pub fn on_update_selected(
     grid_query: Query<&Grid>,
     visible_grid: Res<VisibleGrid>,
 ) {
+    if !selected_entity.is_changed() {
+        return;
+    }
+
+    if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
+        commands.entity(selection_sprite_entity).despawn();
+    }
+
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
         None => return,
@@ -62,14 +74,6 @@ pub fn on_update_selected(
         Ok(grid) => grid,
         Err(_) => return,
     };
-
-    if !selected_entity.is_changed() {
-        return;
-    }
-
-    if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
-        commands.entity(selection_sprite_entity).despawn();
-    }
 
     let newly_selected_entity = match selected_entity.0 {
         Some(entity) => entity,
@@ -163,7 +167,7 @@ pub fn despawn_common_entities(
 }
 
 // TODO: It would be nice to make this template expectation tighter and only apply to entities stored in ModelViewEntityMap.
-pub fn despawn_view<Model: Component>(
+pub fn despawn_view_by_model<Model: Component>(
     model_query: Query<Entity, With<Model>>,
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
