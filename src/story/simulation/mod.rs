@@ -143,7 +143,7 @@ fn build_nest_systems(app: &mut App) {
             (spawn_nest_ants, apply_deferred).chain(),
         )
             .chain()
-            .after(initialize_save_resources) // TODO: Is this guaranteed to allow for apply_deferred to run?
+            .after(initialize_save_resources)
             .before(finalize_startup),),
     );
 
@@ -153,6 +153,11 @@ fn build_nest_systems(app: &mut App) {
             (insert_nest_grid, apply_deferred).chain(),
             (initialize_pheromone_resources, apply_deferred).chain(),
             (spawn_background, apply_deferred).chain(),
+            // IMPORTANT:
+            // `ElementExposure` isn't persisted because it's derivable. It is required for rendering.
+            // Don't rely on `SimulationUpdate` to set `ElementExposure` because it should be possible to render
+            // the world's initial state without advancing the simulation.
+            (update_element_exposure, apply_deferred).chain()
         )
             .chain()
             .before(begin_story),
