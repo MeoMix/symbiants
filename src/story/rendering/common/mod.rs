@@ -166,6 +166,15 @@ pub fn despawn_common_entities(
     }
 }
 
+pub fn despawn_view<View: Component>(
+    view_query: Query<Entity, With<View>>,
+    mut commands: Commands,
+) {
+    for view_entity in view_query.iter() {
+        commands.entity(view_entity).despawn_recursive();
+    }
+}
+
 // TODO: It would be nice to make this template expectation tighter and only apply to entities stored in ModelViewEntityMap.
 pub fn despawn_view_by_model<Model: Component>(
     model_query: Query<Entity, With<Model>>,

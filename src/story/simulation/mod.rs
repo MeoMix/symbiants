@@ -79,6 +79,15 @@ pub struct RunSimulationUpdateLoop;
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SimulationUpdate;
 
+// TODO: I'm not absolutely convinced these are good practice. It feels like this is competing with AppState transition.
+// An alternative would be to have an AppState for "SimulationFinishSetup" and "RenderingFinishSetup"
+#[derive(SystemSet, Debug, PartialEq, Eq, Clone, Hash)]
+pub enum FinishSetupSet {
+    BeforeSimulationFinishSetup,
+    SimulationFinishSetup,
+    AfterSimulationFinishSetup,
+}
+
 #[derive(SystemSet, Debug, PartialEq, Eq, Clone, Hash)]
 pub enum CleanupSet {
     BeforeSimulationCleanup,
@@ -96,6 +105,16 @@ impl Plugin for SimulationPlugin {
         app.add_systems(PreStartup, insert_simulation_schedule);
         app.init_schedule(RunSimulationUpdateLoop);
         app.add_systems(RunSimulationUpdateLoop, run_simulation_update_schedule);
+
+        app.configure_sets(
+            OnEnter(AppState::FinishSetup),
+            (
+                FinishSetupSet::BeforeSimulationFinishSetup,
+                FinishSetupSet::SimulationFinishSetup,
+                FinishSetupSet::AfterSimulationFinishSetup,
+            )
+                .chain(),
+        );
 
         app.configure_sets(
             OnEnter(AppState::Cleanup),
@@ -158,7 +177,8 @@ fn build_nest_systems(app: &mut App) {
             (update_element_exposure, apply_deferred).chain(),
         )
             .chain()
-            .before(begin_story),
+            .before(begin_story)
+            .in_set(FinishSetupSet::SimulationFinishSetup),
     );
 
     app.add_systems(
@@ -342,10 +362,12 @@ fn build_common_systems(app: &mut App) {
         (
             (initialize_story_time_resources, apply_deferred).chain(),
             (initialize_pointer_resources, apply_deferred).chain(),
+            // TODO: Feels weird to say saving is part of the simulation logic.
             bind_save_onbeforeunload,
             begin_story,
         )
-            .chain(),
+            .chain()
+            .in_set(FinishSetupSet::SimulationFinishSetup),
     );
 
     // IMPORTANT: setup_story_time sets FixedTime.accumulated which is reset when transitioning between schedules.

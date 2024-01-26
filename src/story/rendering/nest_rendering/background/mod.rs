@@ -4,15 +4,15 @@ use bevy_ecs_tilemap::prelude::*;
 use crate::{
     app_state::AppState,
     story::{
-        common::position::Position,
-        grid::Grid,
-        simulation::nest_simulation::nest::{AtNest, Nest},
-        story_time::{StoryTime, TimeInfo},
+        common::position::Position, grid::Grid, rendering::common::VisibleGrid, simulation::nest_simulation::nest::{AtNest, Nest}, story_time::{StoryTime, TimeInfo}
     },
 };
 
 #[derive(Component)]
 pub struct BackgroundTilemap;
+
+#[derive(Component)]
+pub struct Background;
 
 #[derive(Component)]
 pub struct SkyBackground;
@@ -95,15 +95,27 @@ fn get_sky_gradient_color(
 
 pub fn update_sky_background(
     mut sky_tile_query: Query<(&mut TileColor, &Position), With<SkyBackground>>,
+    // TODO: Relying on Local<> while trying to support "Reset Sandbox" without the ability to remove systems entirely is challenging.
+    // Probably rewrite this to be a resource instead of a Local.
     mut last_run_time_info: Local<TimeInfo>,
     app_state: Res<State<AppState>>,
     nest_query: Query<&Nest>,
     // Optional due to running during cleanup
+    visible_grid: Option<Res<VisibleGrid>>,
     story_time: Option<Res<StoryTime>>,
 ) {
     // Reset local when in initializing to prevent data retention issue when clicking "Reset" in Sandbox Mode
     if *app_state == AppState::Cleanup {
         *last_run_time_info = TimeInfo::default();
+        return;
+    }
+
+    let visible_grid_entity = match visible_grid.unwrap().0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if nest_query.get(visible_grid_entity).is_err() {
         return;
     }
 
@@ -139,21 +151,44 @@ pub fn update_sky_background(
     *last_run_time_info = time_info;
 }
 
-// Spawn non-interactive background (sky blue / tunnel brown)
-pub fn spawn_background(
-    mut commands: Commands,
-    nest_query: Query<(&Grid, &Nest)>,
-    story_time: Res<StoryTime>,
-) {
-    let (grid, nest) = nest_query.single();
-    let air_height = nest.surface_level() + 1;
+pub fn spawn_background_tilemap(mut commands: Commands, nest_query: Query<&Grid, With<Nest>>) {
+    let grid = nest_query.single();
 
     let map_size = TilemapSize {
         x: grid.width() as u32,
         y: grid.height() as u32,
     };
-    let mut tile_storage = TileStorage::empty(map_size);
-    let tilemap_entity = commands.spawn_empty().id();
+    let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
+    let map_type = TilemapType::default();
+
+    commands.spawn((
+        BackgroundTilemap,
+        TilemapBundle {
+            grid_size,
+            size: map_size,
+            storage: TileStorage::empty(map_size),
+            physical_tile_size: TilemapPhysicalTileSize { x: 1.0, y: 1.0 },
+            // Doesn't need to be 128x128 here since not reading from spritesheet.
+            tile_size: TilemapTileSize { x: 1.0, y: 1.0 },
+            map_type: TilemapType::Square,
+            // Background tiles go at z: 0 because they should render behind elements/ants.
+            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
+            ..Default::default()
+        },
+    ));
+}
+
+// Spawn non-interactive background (sky blue / tunnel brown)
+pub fn spawn_background(
+    mut commands: Commands,
+    nest_query: Query<(&Grid, &Nest)>,
+    mut tilemap_query: Query<(Entity, &mut TileStorage), With<BackgroundTilemap>>,
+    story_time: Res<StoryTime>,
+) {
+    let (grid, nest) = nest_query.single();
+    let air_height = nest.surface_level() + 1;
+
+    let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
 
     let current_decimal_hours = story_time.as_time_info().get_decimal_hours();
     let (sunrise_decimal_hours, sunset_decimal_hours) =
@@ -186,6 +221,7 @@ pub fn spawn_background(
                     },
                     position,
                     SkyBackground,
+                    Background,
                     AtNest,
                 ))
                 .id();
@@ -220,6 +256,7 @@ pub fn spawn_background(
                     },
                     position,
                     TunnelBackground,
+                    Background,
                     AtNest,
                 ))
                 .id();
@@ -227,41 +264,8 @@ pub fn spawn_background(
             tile_storage.set(&tile_pos, tile_entity);
         }
     }
-
-    let physical_tile_size = TilemapPhysicalTileSize { x: 1.0, y: 1.0 };
-    // Doesn't need to be 128x128 here since not reading from spritesheet.
-    let tile_size = TilemapTileSize { x: 1.0, y: 1.0 };
-    let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
-    let map_type = TilemapType::default();
-
-    commands.entity(tilemap_entity).insert((
-        BackgroundTilemap,
-        TilemapBundle {
-            grid_size,
-            size: map_size,
-            storage: tile_storage,
-            physical_tile_size,
-            tile_size,
-            map_type: TilemapType::Square,
-            // Background tiles go at z: 0 because they should render behind elements/ants.
-            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
-            ..Default::default()
-        },
-    ));
 }
 
-pub fn despawn_background(
-    background_query: Query<
-        Entity,
-        Or<(
-            With<TunnelBackground>,
-            With<SkyBackground>,
-            With<BackgroundTilemap>,
-        )>,
-    >,
-    mut commands: Commands,
-) {
-    for background_entity in background_query.iter() {
-        commands.entity(background_entity).despawn_recursive();
-    }
+pub fn cleanup_background() {
+    // TODO: Cleanup anything else related to background here.
 }

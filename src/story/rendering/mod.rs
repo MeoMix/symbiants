@@ -10,7 +10,7 @@ use crate::app_state::AppState;
 
 use self::{
     common::{
-        clear_selection, despawn_common_entities, despawn_view_by_model,
+        clear_selection, despawn_common_entities, despawn_view, despawn_view_by_model,
         initialize_common_resources, on_despawn, on_update_selected, on_update_selected_position,
         remove_common_resources, ModelViewEntityMap,
     },
@@ -24,11 +24,16 @@ use self::{
             on_added_ant_dead, on_spawn_ant, on_update_ant_color, on_update_ant_inventory,
             on_update_ant_orientation, on_update_ant_position, rerender_ants,
         },
-        background::{despawn_background, spawn_background, update_sky_background},
+        background::{
+            cleanup_background, spawn_background, spawn_background_tilemap, update_sky_background,
+            Background, BackgroundTilemap,
+        },
         element::{
             cleanup_elements, on_spawn_element, on_update_element_exposure,
             on_update_element_position, rerender_elements,
-            sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
+            sprite_sheet::{
+                check_element_sprite_sheet_loaded, start_load_element_sprite_sheet, ElementTilemap,
+            },
         },
         nest::{mark_nest_hidden, mark_nest_visible},
         pheromone::{
@@ -44,7 +49,10 @@ use super::{
     element::Element,
     grid::VisibleGridState,
     pheromone::Pheromone,
-    simulation::{nest_simulation::nest::{insert_nest_grid, AtNest}, CleanupSet},
+    simulation::{
+        nest_simulation::nest::{insert_nest_grid, AtNest},
+        CleanupSet, FinishSetupSet,
+    },
     story_time::{initialize_story_time_resources, StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 
@@ -65,7 +73,10 @@ impl Plugin for RenderingPlugin {
 }
 
 fn build_common_systems(app: &mut App) {
-    app.add_systems(OnEnter(AppState::FinishSetup), initialize_common_resources);
+    app.add_systems(
+        OnEnter(AppState::FinishSetup),
+        (initialize_common_resources,).in_set(FinishSetupSet::BeforeSimulationFinishSetup),
+    );
 
     app.add_systems(
         Update,
@@ -106,11 +117,9 @@ fn build_nest_systems(app: &mut App) {
 
     app.add_systems(
         OnEnter(AppState::FinishSetup),
-        // TODO: This feels hacky. Either want to use a SystemSet to wait for simulation code to finish,
-        // or I don't want to render this here at all and want to handle it just in Update.
-        spawn_background
-            .after(initialize_story_time_resources)
-            .after(insert_nest_grid),
+        (spawn_background_tilemap, apply_deferred, spawn_background)
+            .chain()
+            .in_set(FinishSetupSet::AfterSimulationFinishSetup),
     );
 
     app.add_systems(
@@ -166,6 +175,7 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         OnEnter(VisibleGridState::Nest),
         (
+            (spawn_background_tilemap, apply_deferred, spawn_background).chain(),
             rerender_ants,
             rerender_elements,
             rerender_pheromones,
@@ -177,8 +187,11 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         OnExit(VisibleGridState::Nest),
         (
+            despawn_view::<Background>,
+            despawn_view::<BackgroundTilemap>,
             despawn_view_by_model::<Ant>,
             despawn_view_by_model::<Element>,
+            // TODO: Despawn ElementTilemap?
             despawn_view_by_model::<Pheromone>,
             clear_selection,
             mark_nest_hidden,
@@ -189,10 +202,13 @@ fn build_nest_systems(app: &mut App) {
     app.add_systems(
         OnEnter(AppState::Cleanup),
         (
-            despawn_background,
+            despawn_view::<Background>,
+            despawn_view::<BackgroundTilemap>,
+            cleanup_background,
             despawn_view_by_model::<Ant>,
             cleanup_ants,
             despawn_view_by_model::<Element>,
+            despawn_view::<ElementTilemap>,
             cleanup_elements,
             despawn_view_by_model::<Pheromone>,
             cleanup_pheromones,
