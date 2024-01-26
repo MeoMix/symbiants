@@ -49,11 +49,8 @@ use super::{
     element::Element,
     grid::VisibleGridState,
     pheromone::Pheromone,
-    simulation::{
-        nest_simulation::nest::{insert_nest_grid, AtNest},
-        CleanupSet, FinishSetupSet,
-    },
-    story_time::{initialize_story_time_resources, StoryTime, DEFAULT_TICKS_PER_SECOND},
+    simulation::{nest_simulation::nest::AtNest, CleanupSet, FinishSetupSet},
+    story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 
 pub struct RenderingPlugin;
