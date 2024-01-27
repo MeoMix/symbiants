@@ -7,8 +7,6 @@ mod pan_zoom_camera;
 use bevy::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
 
-use crate::app_state::AppState;
-
 use self::{
     common::{
         clear_selection, despawn_common_entities, despawn_view, despawn_view_by_model,
@@ -47,6 +45,7 @@ use self::{
 
 use super::{
     simulation::{
+        app_state::AppState,
         nest_simulation::{ant::Ant, element::Element, nest::AtNest, pheromone::Pheromone},
         CleanupSet, FinishSetupSet,
     },

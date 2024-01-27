@@ -1,3 +1,4 @@
+pub mod app_state;
 pub mod common;
 pub mod crater_simulation;
 pub mod external_event;
@@ -11,9 +12,6 @@ use bevy::{
 };
 
 use crate::{
-    app_state::{
-        begin_story, check_story_over, continue_startup, finalize_startup, restart, AppState,
-    },
     save::{
         bind_save_onbeforeunload, delete_save_file, initialize_save_resources, load,
         remove_save_resources, save, unbind_save_onbeforeunload,
@@ -21,6 +19,10 @@ use crate::{
     story::{
         pointer::{handle_pointer_tap, initialize_pointer_resources, is_pointer_captured},
         simulation::{
+            app_state::{
+                begin_story, check_story_over, continue_startup, finalize_startup, restart,
+                AppState,
+            },
             common::{despawn_model, register_common},
             nest_simulation::{
                 ant::{
@@ -123,6 +125,7 @@ impl Plugin for SimulationPlugin {
         app.add_systems(PreStartup, insert_simulation_schedule);
         app.init_schedule(RunSimulationUpdateLoop);
         app.add_systems(RunSimulationUpdateLoop, run_simulation_update_schedule);
+        app.add_state::<AppState>();
 
         app.configure_sets(
             OnEnter(AppState::FinishSetup),

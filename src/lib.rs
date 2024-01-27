@@ -1,11 +1,9 @@
-mod app_state;
 mod core_ui;
 mod main_camera;
 mod main_menu;
 mod save;
 mod story;
 
-use app_state::AppState;
 use bevy::{
     asset::AssetMetaCheck,
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
@@ -19,7 +17,7 @@ use main_menu::update_main_menu;
 
 use story::{
     rendering::RenderingPlugin,
-    simulation::{SimulationPlugin, SimulationUpdate},
+    simulation::{app_state::AppState, SimulationPlugin, SimulationUpdate},
     story_time::StoryPlaybackState,
     ui::StoryUIPlugin,
 };
@@ -36,7 +34,6 @@ impl Plugin for SymbiantsPlugin {
 
         app.init_resource::<GlobalRng>();
 
-        app.add_state::<AppState>();
         // TODO: call this in setup_story_time?
         app.add_state::<StoryPlaybackState>();
 
@@ -72,7 +69,7 @@ impl Plugin for SymbiantsPlugin {
 
         app.add_systems(
             Update,
-            update_main_menu.run_if(in_state(AppState::ShowMainMenu)),
+            update_main_menu.run_if(in_state(AppState::SelectStoryMode)),
         );
     }
 }

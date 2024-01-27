@@ -2,21 +2,18 @@ pub mod action_menu;
 mod breath_dialog;
 pub mod selection_menu;
 mod settings_menu;
-
 mod info_panel;
 mod loading_dialog;
 mod story_over_dialog;
 
-use crate::story::story_time::StoryPlaybackState;
-use crate::app_state::AppState;
+use crate::story::{simulation::app_state::AppState, story_time::StoryPlaybackState};
 
-use self::action_menu::*;
-use self::breath_dialog::update_breath_dialog;
-use self::info_panel::*;
-use self::loading_dialog::*;
-use self::selection_menu::update_selection_menu;
-use self::settings_menu::update_settings_menu;
-use self::story_over_dialog::*;
+use self::{
+    action_menu::*, breath_dialog::update_breath_dialog, info_panel::*, loading_dialog::*,
+    selection_menu::update_selection_menu, settings_menu::update_settings_menu,
+    story_over_dialog::*,
+};
+
 use bevy::prelude::*;
 
 pub struct StoryUIPlugin;

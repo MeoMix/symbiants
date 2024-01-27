@@ -1,9 +1,10 @@
-use crate::app_state::AppState;
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, Align2},
     EguiContexts,
 };
+
+use crate::story::simulation::app_state::AppState;
 
 // TODO: About menu
 pub fn update_main_menu(

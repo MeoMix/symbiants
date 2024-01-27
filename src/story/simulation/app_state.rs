@@ -7,7 +7,7 @@ pub enum AppState {
     #[default]
     BeginSetup,
     TryLoadSave,
-    ShowMainMenu,
+    SelectStoryMode,
     CreateNewStory,
     FinishSetup,
     TellStory,
@@ -26,7 +26,7 @@ pub fn continue_startup(
     if is_loading_existing_story {
         next_app_state.set(AppState::FinishSetup);
     } else {
-        next_app_state.set(AppState::ShowMainMenu);
+        next_app_state.set(AppState::SelectStoryMode);
     }
 }
 
