@@ -1,12 +1,10 @@
-use crate::{
-    settings::Settings,
-    story::simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            element::Element,
-            nest::{AtNest, Nest},
-        },
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        element::Element,
+        nest::{AtNest, Nest},
     },
+    settings::Settings,
 };
 
 use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};

@@ -5,17 +5,15 @@
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::{
-    settings::Settings,
-    story::simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            ant::commands::AntCommandsExt,
-            element::Element,
-            nest::{AtNest, Nest},
-            pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
-        },
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        ant::commands::AntCommandsExt,
+        element::Element,
+        nest::{AtNest, Nest},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
     },
+    settings::Settings,
 };
 
 use super::{AntInventory, AntOrientation, AntRole, Initiative};

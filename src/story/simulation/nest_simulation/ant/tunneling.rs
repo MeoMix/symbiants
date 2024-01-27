@@ -2,22 +2,18 @@ use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    settings::Settings,
-    story::simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            ant::{
-                commands::AntCommandsExt, walk::get_turned_orientation, AntInventory,
-                AntOrientation, Initiative,
-            },
-            element::Element,
-            nest::{AtNest, Nest},
-            pheromone::{
-                commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength,
-            },
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        ant::{
+            commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
+            Initiative,
         },
+        element::Element,
+        nest::{AtNest, Nest},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
+    settings::Settings,
 };
 
 use super::birthing::Birthing;

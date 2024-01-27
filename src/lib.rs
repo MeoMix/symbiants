@@ -3,7 +3,6 @@ mod core_ui;
 mod main_camera;
 mod main_menu;
 mod save;
-mod settings;
 mod story;
 
 use app_state::AppState;

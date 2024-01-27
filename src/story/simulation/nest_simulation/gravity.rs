@@ -1,15 +1,13 @@
 use std::marker::PhantomData;
 
-use crate::{
-    settings::Settings,
-    story::simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            ant::{AntOrientation, Dead, Initiative},
-            element::{commands::ElementCommandsExt, Air, Element},
-            nest::Nest,
-        },
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        ant::{AntOrientation, Dead, Initiative},
+        element::{commands::ElementCommandsExt, Air, Element},
+        nest::Nest,
     },
+    settings::Settings,
 };
 
 use bevy::{prelude::*, utils::HashSet};

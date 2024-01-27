@@ -2,6 +2,7 @@ pub mod common;
 pub mod crater_simulation;
 pub mod external_event;
 pub mod nest_simulation;
+pub mod settings;
 
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
@@ -17,7 +18,6 @@ use crate::{
         bind_save_onbeforeunload, delete_save_file, initialize_save_resources, load,
         remove_save_resources, save, unbind_save_onbeforeunload,
     },
-    settings::{initialize_settings_resources, register_settings, remove_settings_resources},
     story::{
         pointer::{handle_pointer_tap, initialize_pointer_resources, is_pointer_captured},
         simulation::{
@@ -55,6 +55,9 @@ use crate::{
                     initialize_pheromone_resources, pheromone_duration_tick, register_pheromone,
                     remove_pheromone_resources, Pheromone,
                 },
+            },
+            settings::{
+                initialize_settings_resources, register_settings, remove_settings_resources,
             },
         },
         story_time::{

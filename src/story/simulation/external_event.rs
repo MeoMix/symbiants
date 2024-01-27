@@ -12,9 +12,8 @@ use crate::story::simulation::{
         element::{commands::ElementCommandsExt, Element},
         nest::{AtNest, Nest},
     },
+    settings::Settings,
 };
-
-use crate::settings::Settings;
 
 #[derive(Event, PartialEq, Copy, Clone, Debug)]
 pub enum ExternalSimulationEvent {

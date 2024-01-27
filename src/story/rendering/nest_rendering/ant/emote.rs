@@ -1,20 +1,18 @@
-use crate::{
-    settings::Settings,
-    story::{
-        rendering::common::{ModelViewEntityMap, VisibleGrid},
-        simulation::{
-            common::grid::Grid,
-            nest_simulation::{
-                ant::{
-                    emote::{Emote, EmoteType},
-                    sleep::Asleep,
-                    AntAteFoodEvent,
-                },
-                nest::{AtNest, Nest},
+use crate::story::{
+    rendering::common::{ModelViewEntityMap, VisibleGrid},
+    simulation::{
+        common::grid::Grid,
+        nest_simulation::{
+            ant::{
+                emote::{Emote, EmoteType},
+                sleep::Asleep,
+                AntAteFoodEvent,
             },
+            nest::{AtNest, Nest},
         },
-        story_time::DEFAULT_TICKS_PER_SECOND,
+        settings::Settings,
     },
+    story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::{prelude::*, utils::HashSet};
 

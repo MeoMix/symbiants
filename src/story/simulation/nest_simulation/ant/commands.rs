@@ -8,9 +8,8 @@ use crate::story::simulation::{
         ant::AntInventory,
         element::{Element, ElementBundle},
     },
+    settings::Settings,
 };
-
-use crate::settings::Settings;
 
 use super::{
     digestion::Digestion, hunger::Hunger, Ant, AntBundle, AntColor, AntName, AntOrientation,

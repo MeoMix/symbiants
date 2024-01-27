@@ -3,13 +3,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use crate::{
-    settings::Settings,
-    story::{
-        rendering::{common::VisibleGrid, VisibleGridState},
-        simulation::{crater_simulation::crater::Crater, nest_simulation::nest::Nest},
-        story_time::StoryTime,
+use crate::story::{
+    rendering::{common::VisibleGrid, VisibleGridState},
+    simulation::{
+        crater_simulation::crater::Crater, nest_simulation::nest::Nest, settings::Settings,
     },
+    story_time::StoryTime,
 };
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]

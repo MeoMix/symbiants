@@ -3,22 +3,20 @@ use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    settings::Settings,
-    story::simulation::{
-        common::{
-            grid::{elements_cache::ElementsCache, Grid},
-            position::Position,
-            Zone,
-        },
-        nest_simulation::{
-            ant::{
-                digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
-                AntName, AntOrientation, AntRole, Facing, Initiative,
-            },
-            element::{Element, ElementBundle},
-        },
+use crate::story::simulation::{
+    common::{
+        grid::{elements_cache::ElementsCache, Grid},
+        position::Position,
+        Zone,
     },
+    nest_simulation::{
+        ant::{
+            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
+            AntName, AntOrientation, AntRole, Facing, Initiative,
+        },
+        element::{Element, ElementBundle},
+    },
+    settings::Settings,
 };
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]

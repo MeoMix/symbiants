@@ -11,15 +11,13 @@ use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
-use crate::{
-    settings::Settings,
-    story::{
-        simulation::{
-            crater_simulation::crater::Crater,
-            nest_simulation::{ant::Ant, element::Element, nest::Nest, pheromone::Pheromone},
-        },
-        story_time::{StoryRealWorldTime, StoryTime},
+use crate::story::{
+    simulation::{
+        crater_simulation::crater::Crater,
+        nest_simulation::{ant::Ant, element::Element, nest::Nest, pheromone::Pheromone},
+        settings::Settings,
     },
+    story_time::{StoryRealWorldTime, StoryTime},
 };
 
 const LOCAL_STORAGE_KEY: &str = "world-save-state";

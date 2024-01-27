@@ -9,9 +9,8 @@ use crate::story::simulation::{
         nest::{AtNest, Nest},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
+    settings::Settings,
 };
-
-use crate::settings::Settings;
 
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
