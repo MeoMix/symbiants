@@ -5,12 +5,13 @@ use bevy_egui::{
 };
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::story::{
-    ant::{hunger::Hunger, Dead},
-    common::position::Position,
-    element::{commands::ElementCommandsExt, Air, Element, Food},
-    grid::Grid,
-    simulation::nest_simulation::nest::{AtNest, Nest},
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        ant::{hunger::Hunger, Dead},
+        element::{commands::ElementCommandsExt, Air, Element, Food},
+        nest::{AtNest, Nest},
+    },
 };
 
 use super::action_menu::IsShowingBreathDialog;

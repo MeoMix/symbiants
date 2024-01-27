@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::story::{common::position::Position, element::Element};
+use crate::story::simulation::{common::position::Position, nest_simulation::element::Element};
 
 #[derive(Debug)]
 pub struct ElementsCache {

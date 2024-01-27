@@ -14,10 +14,10 @@ use web_sys::BeforeUnloadEvent;
 use crate::{
     settings::Settings,
     story::{
-        ant::Ant,
-        element::Element,
-        pheromone::Pheromone,
-        simulation::{crater_simulation::crater::Crater, nest_simulation::nest::Nest},
+        simulation::{
+            crater_simulation::crater::Crater,
+            nest_simulation::{ant::Ant, element::Element, nest::Nest, pheromone::Pheromone},
+        },
         story_time::{StoryRealWorldTime, StoryTime},
     },
 };

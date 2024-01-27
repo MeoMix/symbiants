@@ -4,8 +4,10 @@ use bevy_egui::{egui, EguiContexts};
 use crate::{settings::Settings, app_state::AppState};
 
 use crate::story::{
-    ant::AntColor,
-    pheromone::PheromoneVisibility,
+    simulation::nest_simulation::{  
+        ant::AntColor,
+        pheromone::PheromoneVisibility,
+    },
     story_time::{
         StoryPlaybackState, StoryTime, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,
         MAX_USER_TICKS_PER_SECOND,

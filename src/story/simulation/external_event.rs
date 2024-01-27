@@ -1,18 +1,17 @@
-use crate::story::{
-    ant::commands::AntCommandsExt,
-    common::position::Position,
-    grid::Grid,
-    simulation::nest_simulation::nest::{AtNest, Nest},
-};
-
 use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 
-use crate::story::{
-    ant::{
-        Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing, Initiative,
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        ant::commands::AntCommandsExt,
+        ant::{
+            Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
+            Initiative,
+        },
+        element::{commands::ElementCommandsExt, Element},
+        nest::{AtNest, Nest},
     },
-    element::{commands::ElementCommandsExt, Element},
 };
 
 use crate::settings::Settings;

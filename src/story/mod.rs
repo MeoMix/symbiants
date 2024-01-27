@@ -1,8 +1,3 @@
-pub mod ant;
-pub mod common;
-pub mod element;
-pub mod grid;
-pub mod pheromone;
 pub mod pointer;
 pub mod rendering;
 pub mod simulation;

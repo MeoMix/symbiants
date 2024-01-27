@@ -1,10 +1,11 @@
 use crate::{
     settings::Settings,
     story::{
-        common::position::Position,
-        element::Element,
-        grid::Grid,
-        simulation::nest_simulation::nest::{AtNest, Nest},
+        simulation::common::{grid::Grid, position::Position},
+        simulation::nest_simulation::{
+            element::Element,
+            nest::{AtNest, Nest},
+        },
     },
 };
 

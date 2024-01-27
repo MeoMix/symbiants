@@ -5,14 +5,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     settings::Settings,
-    story::{
-        ant::{
-            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
-            AntName, AntOrientation, AntRole, Facing, Initiative,
+    story::simulation::{
+        common::{
+            grid::{elements_cache::ElementsCache, Grid},
+            position::Position,
+            Zone,
         },
-        common::{position::Position, Zone},
-        element::{Element, ElementBundle},
-        grid::{elements_cache::ElementsCache, Grid},
+        nest_simulation::{
+            ant::{
+                digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
+                AntName, AntOrientation, AntRole, Facing, Initiative,
+            },
+            element::{Element, ElementBundle},
+        },
     },
 };
 

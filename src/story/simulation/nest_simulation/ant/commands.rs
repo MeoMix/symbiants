@@ -2,11 +2,12 @@ use core::panic;
 
 use bevy::{ecs::system::Command, prelude::*};
 
-use crate::story::{
-    ant::AntInventory,
-    common::{position::Position, Zone},
-    element::{Element, ElementBundle},
-    grid::Grid,
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position, Zone},
+    nest_simulation::{
+        ant::AntInventory,
+        element::{Element, ElementBundle},
+    },
 };
 
 use crate::settings::Settings;

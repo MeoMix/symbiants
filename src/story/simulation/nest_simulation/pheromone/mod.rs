@@ -3,13 +3,11 @@ use bevy::{prelude::*, utils::HashMap};
 use serde::{Deserialize, Serialize};
 
 use crate::story::{
-    common::position::Position,
+    simulation::{common::position::Position, nest_simulation::nest::AtNest},
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
 };
 
 use self::commands::PheromoneCommandsExt;
-
-use super::simulation::nest_simulation::nest::AtNest;
 
 pub mod commands;
 

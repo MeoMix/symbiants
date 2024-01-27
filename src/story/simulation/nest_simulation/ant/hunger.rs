@@ -3,10 +3,13 @@ use super::{
     AntRole, Dead, Initiative,
 };
 use crate::story::{
-    common::position::Position,
-    element::Element,
-    grid::Grid,
-    simulation::nest_simulation::nest::{AtNest, Nest},
+    simulation::{
+        common::{grid::Grid, position::Position},
+        nest_simulation::{
+            element::Element,
+            nest::{AtNest, Nest},
+        },
+    },
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;

@@ -1,12 +1,13 @@
 use crate::{
     settings::Settings,
-    story::{
-        ant::birthing::Birthing,
-        common::position::Position,
-        element::Element,
-        grid::Grid,
-        simulation::nest_simulation::nest::{AtNest, Nest},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+    story::simulation::{
+        common::{grid::Grid, position::Position},
+        nest_simulation::{
+            ant::birthing::Birthing,
+            element::Element,
+            nest::{AtNest, Nest},
+            pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+        },
     },
 };
 use serde::{Deserialize, Serialize};

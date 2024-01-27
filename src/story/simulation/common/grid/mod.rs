@@ -2,7 +2,7 @@ pub mod elements_cache;
 
 use bevy::prelude::*;
 
-use crate::story::common::position::Position;
+use crate::story::simulation::common::position::Position;
 
 use self::elements_cache::ElementsCache;
 
@@ -62,7 +62,7 @@ impl Grid {
     pub fn world_to_grid_position(&self, world_position: Vec2) -> Position {
         let x = world_position.x + (self.width() as f32 / 2.0) - 0.5;
         let y = -world_position.y + (self.height() as f32 / 2.0) - 0.5;
-    
+
         Position {
             x: x.abs().round() as isize,
             y: y.abs().round() as isize,

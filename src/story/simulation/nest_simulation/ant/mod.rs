@@ -2,14 +2,16 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 
-use crate::story::common::position::Position;
+use crate::story::simulation::{
+    common::{position::Position, Zone},
+    nest_simulation::{element::Element, nest::AtNest},
+};
 
 use self::{
     birthing::Birthing, chambering::Chambering, digestion::Digestion, hunger::Hunger,
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
 
-use super::{common::Zone, element::Element, simulation::nest_simulation::nest::AtNest};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},

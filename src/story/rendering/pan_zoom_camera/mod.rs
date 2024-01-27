@@ -1,4 +1,4 @@
-use crate::{main_camera::MainCamera, story::grid::Grid};
+use crate::{main_camera::MainCamera, story::simulation::common::grid::Grid};
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},

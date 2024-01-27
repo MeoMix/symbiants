@@ -1,8 +1,9 @@
+pub mod position;
+pub mod grid;
+
 use bevy::prelude::*;
 
 use self::position::Position;
-
-pub mod position;
 
 // This maps to AtNest or AtCrater
 /// Use an empty trait to mark Nest and Crater zones to ensure strong type safety in generic systems.

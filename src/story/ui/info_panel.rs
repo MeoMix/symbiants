@@ -2,8 +2,10 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::story::{
-    ant::{birthing::Birthing, hunger::Hunger, AntRole, Dead},
-    element::Food,
+    simulation::nest_simulation::{
+        ant::{birthing::Birthing, hunger::Hunger, AntRole, Dead},
+        element::Food,
+    },
     story_time::StoryTime,
 };
 
@@ -22,9 +24,10 @@ pub fn update_info_window(
     let queen_ant_birthing = queen_ant
         .map(|(_, _, birthing_option)| birthing_option.map_or(0.0, |birthing| birthing.value()))
         .unwrap_or(0.0);
-    let colony_average_hunger = ant_query.iter().fold(0.0, |acc, (_, hunger, _)| {
-        acc + hunger.value()
-    }) / ant_query.iter().count() as f32; 
+    let colony_average_hunger = ant_query
+        .iter()
+        .fold(0.0, |acc, (_, hunger, _)| acc + hunger.value())
+        / ant_query.iter().count() as f32;
 
     egui::Window::new("Info")
         .default_pos(egui::Pos2::new(0.0, 0.0))
@@ -44,11 +47,17 @@ pub fn update_info_window(
             ui.label(&format!(
                 "Day: {:.0}, {:02.0}:{:02.0} {}",
                 // Add one to the days label because days don't start at 0 in real life
-                time_info.days() + 1, hour_12, time_info.minutes(), period
+                time_info.days() + 1,
+                hour_12,
+                time_info.minutes(),
+                period
             ));
 
             ui.label(&format!("Alive Ants: {}", ant_query.iter().count()));
-            ui.label(&format!("Colony Average Hunger: {:.0}%", colony_average_hunger));
+            ui.label(&format!(
+                "Colony Average Hunger: {:.0}%",
+                colony_average_hunger
+            ));
             ui.label(&format!("Queen Hunger: {:.0}%", queen_ant_hunger));
             ui.label(&format!("Queen Birthing: {:.0}%", queen_ant_birthing));
             ui.label(&format!("Food: {}", food_query.iter().count()));

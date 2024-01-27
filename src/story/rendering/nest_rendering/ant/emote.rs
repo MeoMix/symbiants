@@ -1,14 +1,18 @@
 use crate::{
     settings::Settings,
     story::{
-        ant::{
-            emote::{Emote, EmoteType},
-            sleep::Asleep,
-            AntAteFoodEvent,
-        },
-        grid::Grid,
         rendering::common::{ModelViewEntityMap, VisibleGrid},
-        simulation::nest_simulation::nest::{AtNest, Nest},
+        simulation::{
+            common::grid::Grid,
+            nest_simulation::{
+                ant::{
+                    emote::{Emote, EmoteType},
+                    sleep::Asleep,
+                    AntAteFoodEvent,
+                },
+                nest::{AtNest, Nest},
+            },
+        },
         story_time::DEFAULT_TICKS_PER_SECOND,
     },
 };

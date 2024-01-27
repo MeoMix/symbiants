@@ -4,16 +4,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     settings::Settings,
-    story::{
-        ant::{
-            commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation,
-            Initiative,
+    story::simulation::{
+        common::{grid::Grid, position::Position},
+        nest_simulation::{
+            ant::{
+                commands::AntCommandsExt, walk::get_turned_orientation, AntInventory,
+                AntOrientation, Initiative,
+            },
+            element::Element,
+            nest::{AtNest, Nest},
+            pheromone::{
+                commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength,
+            },
         },
-        common::position::Position,
-        element::Element,
-        grid::Grid,
-        simulation::nest_simulation::nest::{AtNest, Nest},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
     },
 };
 

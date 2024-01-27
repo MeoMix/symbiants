@@ -1,11 +1,14 @@
 use bevy::prelude::*;
 
 use crate::story::{
-    common::position::Position,
-    grid::Grid,
-    pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
     rendering::common::{ModelViewEntityMap, VisibleGrid},
-    simulation::nest_simulation::nest::{AtNest, Nest},
+    simulation::{
+        common::{grid::Grid, position::Position},
+        nest_simulation::{
+            nest::{AtNest, Nest},
+            pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
+        },
+    },
 };
 
 pub fn on_spawn_pheromone(

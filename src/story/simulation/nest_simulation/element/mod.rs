@@ -1,5 +1,7 @@
-use super::{common::Zone, grid::Grid, simulation::nest_simulation::nest::Nest};
-use crate::story::common::position::Position;
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position, Zone},
+    nest_simulation::nest::Nest,
+};
 use bevy::{prelude::*, utils::HashSet};
 use serde::{Deserialize, Serialize};
 

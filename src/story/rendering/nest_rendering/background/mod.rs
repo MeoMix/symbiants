@@ -4,7 +4,12 @@ use bevy_ecs_tilemap::prelude::*;
 use crate::{
     app_state::AppState,
     story::{
-        common::position::Position, grid::Grid, rendering::common::{grid_to_tile_pos, VisibleGrid}, simulation::nest_simulation::nest::{AtNest, Nest}, story_time::{StoryTime, TimeInfo}
+        rendering::common::{grid_to_tile_pos, VisibleGrid},
+        simulation::{
+            common::{grid::Grid, position::Position},
+            nest_simulation::nest::{AtNest, Nest},
+        },
+        story_time::{StoryTime, TimeInfo},
     },
 };
 

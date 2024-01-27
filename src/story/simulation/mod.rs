@@ -1,3 +1,4 @@
+pub mod common;
 pub mod crater_simulation;
 pub mod external_event;
 pub mod nest_simulation;
@@ -18,33 +19,44 @@ use crate::{
     },
     settings::{initialize_settings_resources, register_settings, remove_settings_resources},
     story::{
-        ant::{
-            ants_initiative,
-            birthing::{ants_birthing, register_birthing},
-            chambering::{
-                ants_add_chamber_pheromone, ants_chamber_pheromone_act,
-                ants_fade_chamber_pheromone, ants_remove_chamber_pheromone,
-            },
-            death::on_ants_add_dead,
-            dig::ants_dig,
-            digestion::ants_digestion,
-            drop::ants_drop,
-            hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate},
-            nest_expansion::ants_nest_expansion,
-            nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
-            register_ant,
-            sleep::{ants_sleep, ants_wake},
-            tunneling::{
-                ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone,
-                ants_remove_tunnel_pheromone, ants_tunnel_pheromone_act,
-                ants_tunnel_pheromone_move,
-            },
-            walk::{ants_stabilize_footing_movement, ants_walk},
-        },
-        common::register_common,
-        element::{register_element, update_element_exposure},
-        pheromone::{initialize_pheromone_resources, pheromone_duration_tick, register_pheromone},
         pointer::{handle_pointer_tap, initialize_pointer_resources, is_pointer_captured},
+        simulation::{
+            common::{despawn_model, register_common},
+            nest_simulation::{
+                ant::{
+                    ants_initiative,
+                    birthing::{ants_birthing, register_birthing},
+                    chambering::{
+                        ants_add_chamber_pheromone, ants_chamber_pheromone_act,
+                        ants_fade_chamber_pheromone, ants_remove_chamber_pheromone,
+                    },
+                    death::on_ants_add_dead,
+                    dig::ants_dig,
+                    digestion::ants_digestion,
+                    drop::ants_drop,
+                    hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate},
+                    nest_expansion::ants_nest_expansion,
+                    nesting::ants_nesting_start,
+                    nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
+                    register_ant,
+                    sleep::{ants_sleep, ants_wake},
+                    tunneling::{
+                        ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone,
+                        ants_remove_tunnel_pheromone, ants_tunnel_pheromone_act,
+                        ants_tunnel_pheromone_move,
+                    },
+                    walk::{ants_stabilize_footing_movement, ants_walk},
+                    Ant, AntAteFoodEvent,
+                },
+                element::{
+                    denormalize_element, register_element, update_element_exposure, Element,
+                },
+                pheromone::{
+                    initialize_pheromone_resources, pheromone_duration_tick, register_pheromone,
+                    remove_pheromone_resources, Pheromone,
+                },
+            },
+        },
         story_time::{
             initialize_story_time_resources, register_story_time, remove_story_time_resources,
             set_rate_of_time, setup_story_time, update_story_elapsed_ticks,
@@ -54,7 +66,11 @@ use crate::{
 };
 
 use self::{
-    external_event::{initialize_external_event_resources, process_external_event, remove_external_event_resources},
+    crater_simulation::crater::{spawn_crater, Crater},
+    external_event::{
+        initialize_external_event_resources, process_external_event,
+        remove_external_event_resources,
+    },
     nest_simulation::{
         gravity::{
             gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
@@ -67,10 +83,6 @@ use self::{
 };
 
 use super::{
-    ant::{nesting::ants_nesting_start, Ant, AntAteFoodEvent},
-    common::despawn_model,
-    element::{denormalize_element, Element},
-    pheromone::{remove_pheromone_resources, Pheromone},
     pointer::remove_pointer_resources,
     simulation::crater_simulation::crater::register_crater,
     simulation_timestep::{run_simulation_update_schedule, SimulationTime},
@@ -308,32 +320,18 @@ fn build_nest_systems(app: &mut App) {
 fn build_crater_systems(app: &mut App) {
     app.add_systems(OnEnter(AppState::BeginSetup), register_crater);
 
-    // app.add_systems(
-    //     OnEnter(AppState::CreateNewStory),
-    //     ((
-    //         (setup_crater, apply_deferred).chain(),
-    //         (setup_crater_elements, apply_deferred).chain(),
-    //         (setup_crater_ants, apply_deferred).chain(),
-    //     )
-    //         .chain()
-    //         .before(finalize_startup)
-    //         .after(setup_settings))
-    //     .chain(),
-    // );
+    app.add_systems(
+        OnEnter(AppState::CreateNewStory),
+        (((spawn_crater, apply_deferred).chain(),)
+            .chain()
+            .after(initialize_save_resources)
+            .before(finalize_startup),),
+    );
 
-    // app.add_systems(
-    //     OnEnter(AppState::FinishSetup),
-    //     (
-    //         (setup_crater_grid, apply_deferred).chain(),
-    //         (setup_background, apply_deferred).chain(),
-    //     )
-    //         .chain(),
-    // );
-
-    // app.add_systems(
-    //     OnEnter(AppState::Cleanup),
-    //     (teardown_background, teardown_crater).in_set(CleanupSet::SimulationCleanup),
-    // );
+    app.add_systems(
+        OnEnter(AppState::Cleanup),
+        (despawn_model::<Crater>,).in_set(CleanupSet::SimulationCleanup),
+    );
 }
 
 fn build_common_systems(app: &mut App) {

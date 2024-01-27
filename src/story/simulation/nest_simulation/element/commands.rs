@@ -1,10 +1,7 @@
 use std::marker::PhantomData;
 
 use super::{Element, ElementBundle};
-use crate::story::{
-    common::{position::Position, Zone},
-    grid::Grid,
-};
+use crate::story::simulation::common::{grid::Grid, position::Position, Zone};
 use bevy::{ecs::system::Command, prelude::*};
 
 pub trait ElementCommandsExt {

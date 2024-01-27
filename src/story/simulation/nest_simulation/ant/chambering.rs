@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::story::{
-    ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
-    common::position::Position,
-    element::Element,
-    grid::Grid,
-    simulation::nest_simulation::nest::{AtNest, Nest},
-    pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
+        element::Element,
+        nest::{AtNest, Nest},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+    },
 };
 
 use crate::settings::Settings;

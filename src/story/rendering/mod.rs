@@ -46,10 +46,10 @@ use self::{
 };
 
 use super::{
-    ant::Ant,
-    element::Element,
-    pheromone::Pheromone,
-    simulation::{nest_simulation::nest::AtNest, CleanupSet, FinishSetupSet},
+    simulation::{
+        nest_simulation::{ant::Ant, element::Element, nest::AtNest, pheromone::Pheromone},
+        CleanupSet, FinishSetupSet,
+    },
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
 

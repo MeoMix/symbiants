@@ -7,13 +7,14 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     settings::Settings,
-    story::{
-        ant::commands::AntCommandsExt,
-        common::position::Position,
-        element::Element,
-        grid::Grid,
-        simulation::nest_simulation::nest::{AtNest, Nest},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+    story::simulation::{
+        common::{grid::Grid, position::Position},
+        nest_simulation::{
+            ant::commands::AntCommandsExt,
+            element::Element,
+            nest::{AtNest, Nest},
+            pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+        },
     },
 };
 

@@ -1,7 +1,10 @@
 use bevy::{asset::LoadState, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::{app_state::AppState, story::element::{Element, ElementExposure}};
+use crate::{
+    app_state::AppState,
+    story::simulation::nest_simulation::element::{Element, ElementExposure},
+};
 
 #[derive(Component)]
 pub struct ElementTilemap;

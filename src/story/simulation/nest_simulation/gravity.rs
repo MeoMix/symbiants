@@ -2,12 +2,13 @@ use std::marker::PhantomData;
 
 use crate::{
     settings::Settings,
-    story::{
-        ant::{AntOrientation, Dead, Initiative},
-        common::position::Position,
-        element::{commands::ElementCommandsExt, Air, Element},
-        grid::Grid,
-        simulation::nest_simulation::nest::Nest,
+    story::simulation::{
+        common::{grid::Grid, position::Position},
+        nest_simulation::{
+            ant::{AntOrientation, Dead, Initiative},
+            element::{commands::ElementCommandsExt, Air, Element},
+            nest::Nest,
+        },
     },
 };
 

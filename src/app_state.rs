@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::story::ant::{AntRole, Dead};
+use crate::story::simulation::nest_simulation::ant::{AntRole, Dead};
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 pub enum AppState {

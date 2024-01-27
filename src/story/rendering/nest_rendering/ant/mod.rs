@@ -3,15 +3,18 @@ pub mod emote;
 use std::ops::Add;
 
 use crate::story::{
-    ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
-    common::position::Position,
-    element::{Element, ElementExposure},
-    grid::Grid,
     rendering::{
         common::{ModelViewEntityMap, VisibleGrid},
         nest_rendering::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
     },
-    simulation::nest_simulation::nest::{AtNest, Nest},
+    simulation::{
+        common::{grid::Grid, position::Position},
+        nest_simulation::{
+            ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
+            element::{Element, ElementExposure},
+            nest::{AtNest, Nest},
+        },
+    },
 };
 use bevy::prelude::*;
 

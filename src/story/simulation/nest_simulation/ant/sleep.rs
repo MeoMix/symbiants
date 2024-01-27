@@ -3,8 +3,10 @@ use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
 use crate::story::{
-    common::position::Position,
-    simulation::nest_simulation::nest::{AtNest, Nest},
+    simulation::{
+        common::position::Position,
+        nest_simulation::nest::{AtNest, Nest},
+    },
     story_time::StoryTime,
 };
 

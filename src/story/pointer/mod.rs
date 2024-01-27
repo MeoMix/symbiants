@@ -1,15 +1,15 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
-use crate::{
-    main_camera::MainCamera,
-    story::{common::position::Position, grid::Grid, ui::action_menu::PointerAction},
-};
+use crate::{main_camera::MainCamera, story::ui::action_menu::PointerAction};
 
 use super::{
-    ant::Ant,
     rendering::common::{SelectedEntity, VisibleGrid},
-    simulation::{external_event::ExternalSimulationEvent, nest_simulation::nest::Nest},
+    simulation::{
+        common::{grid::Grid, position::Position},
+        external_event::ExternalSimulationEvent,
+        nest_simulation::{ant::Ant, nest::Nest},
+    },
 };
 
 pub fn pointer_action_to_simulation_event(
