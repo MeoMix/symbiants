@@ -1,4 +1,5 @@
 pub mod crater_simulation;
+pub mod external_event;
 pub mod nest_simulation;
 
 use bevy::{
@@ -43,7 +44,6 @@ use crate::{
         common::register_common,
         element::{register_element, update_element_exposure},
         pheromone::{initialize_pheromone_resources, pheromone_duration_tick, register_pheromone},
-        pointer::external_event::process_external_event,
         pointer::{handle_pointer_tap, initialize_pointer_resources, is_pointer_captured},
         story_time::{
             initialize_story_time_resources, register_story_time, remove_story_time_resources,
@@ -53,13 +53,16 @@ use crate::{
     },
 };
 
-use self::nest_simulation::{
-    gravity::{
-        gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
-        gravity_set_stability, register_gravity,
-    },
-    nest::{
-        insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants, spawn_nest_elements, Nest,
+use self::{
+    external_event::{initialize_external_event_resources, process_external_event, remove_external_event_resources},
+    nest_simulation::{
+        gravity::{
+            gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
+            gravity_set_stability, register_gravity,
+        },
+        nest::{
+            insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants, spawn_nest_elements, Nest,
+        },
     },
 };
 
@@ -362,6 +365,7 @@ fn build_common_systems(app: &mut App) {
         (
             (initialize_story_time_resources, apply_deferred).chain(),
             (initialize_pointer_resources, apply_deferred).chain(),
+            (initialize_external_event_resources, apply_deferred).chain(),
             // TODO: Feels weird to say saving is part of the simulation logic.
             bind_save_onbeforeunload,
             begin_story,
@@ -411,6 +415,7 @@ fn build_common_systems(app: &mut App) {
             remove_settings_resources,
             remove_save_resources,
             remove_pointer_resources,
+            remove_external_event_resources,
             restart,
         )
             .in_set(CleanupSet::SimulationCleanup),

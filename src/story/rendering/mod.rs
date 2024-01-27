@@ -5,6 +5,7 @@ mod nest_rendering;
 mod pan_zoom_camera;
 
 use bevy::prelude::*;
+use bevy_ecs_tilemap::TilemapPlugin;
 
 use crate::app_state::AppState;
 
@@ -47,11 +48,20 @@ use self::{
 use super::{
     ant::Ant,
     element::Element,
-    grid::VisibleGridState,
     pheromone::Pheromone,
     simulation::{nest_simulation::nest::AtNest, CleanupSet, FinishSetupSet},
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
+
+// TODO: Find a better home for this?
+// TODO: It's weird that I have the concept of `VisibleGrid` in addition to `VisibleGridState`
+// Generally representing the same state in two different ways is a great way to introduce bugs.
+#[derive(States, Default, Hash, Clone, Copy, Eq, PartialEq, Debug)]
+pub enum VisibleGridState {
+    #[default]
+    Nest,
+    Crater,
+}
 
 pub struct RenderingPlugin;
 
@@ -61,7 +71,8 @@ pub struct RenderingPlugin;
 ///     This occurs because the simulation may tick multiple times before rendering systems run.
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(PanZoomCameraPlugin);
+        app.add_plugins((PanZoomCameraPlugin, TilemapPlugin));
+        app.add_state::<VisibleGridState>();
 
         build_common_systems(app);
         build_nest_systems(app);

@@ -1,12 +1,8 @@
 use crate::story::{
     ant::commands::AntCommandsExt,
     common::position::Position,
-    grid::{Grid, VisibleGridState},
-    rendering::common::SelectedEntity,
-    simulation::{
-        crater_simulation::crater::Crater,
-        nest_simulation::nest::{AtNest, Nest},
-    },
+    grid::Grid,
+    simulation::nest_simulation::nest::{AtNest, Nest},
 };
 
 use bevy::prelude::*;
@@ -21,7 +17,25 @@ use crate::story::{
 
 use crate::settings::Settings;
 
-use super::ExternalSimulationEvent;
+#[derive(Event, PartialEq, Copy, Clone, Debug)]
+pub enum ExternalSimulationEvent {
+    DespawnElement(Position),
+    SpawnFood(Position),
+    SpawnDirt(Position),
+    SpawnSand(Position),
+    KillAnt(Position),
+    SpawnWorkerAnt(Position),
+    DespawnWorkerAnt(Position),
+}
+
+pub fn initialize_external_event_resources(mut commands: Commands) {
+    // Calling init_resource prevents Bevy's automatic event cleanup. Need to do it manually.
+    commands.init_resource::<Events<ExternalSimulationEvent>>();
+}
+
+pub fn remove_external_event_resources(mut commands: Commands) {
+    commands.remove_resource::<Events<ExternalSimulationEvent>>();
+}
 
 /// Process user input events at the start of the FixedUpdate simulation loop.
 /// Need to process them manually because they'd be cleared at the end of the next Update
@@ -30,62 +44,15 @@ pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
     nest_query: Query<(Entity, &Grid), With<Nest>>,
-    crater_query: Query<(Entity, &Grid), With<Crater>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory)>,
-    mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
-    mut selected_entity: ResMut<SelectedEntity>,
 ) {
     let (_, nest) = nest_query.single();
 
     for event in external_simulation_events.drain() {
         match event {
-            ExternalSimulationEvent::ShowCrater => {
-                next_visible_grid_state.set(VisibleGridState::Crater);
-            }
-            ExternalSimulationEvent::ShowNest => {
-                next_visible_grid_state.set(VisibleGridState::Nest);
-            }
-            ExternalSimulationEvent::Select(grid_position) => {
-                // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
-                let ant_entity_at_position = ants_query
-                    .iter()
-                    .find(|(_, &position, _, _)| position == grid_position)
-                    .map(|(entity, _, _, _)| entity);
-
-                let element_entity_at_position = nest.elements().get_element_entity(grid_position);
-
-                let currently_selected_entity = selected_entity.0;
-
-                if let Some(ant_entity) = ant_entity_at_position {
-                    // If tapping on an already selected ant then consider selecting element underneath ant instead.
-                    if ant_entity_at_position == currently_selected_entity {
-                        if let Some(element_entity) = element_entity_at_position {
-                            selected_entity.0 = Some(*element_entity);
-                        } else {
-                            selected_entity.0 = None;
-                        }
-                    } else {
-                        // If there is an ant at the given position, and it's not selected, but the element underneath it is selected
-                        // then assume user wants to deselect element and not select the ant. They can select again after if they want the ant.
-                        if element_entity_at_position == currently_selected_entity.as_ref() {
-                            selected_entity.0 = None;
-                        } else {
-                            selected_entity.0 = Some(ant_entity);
-                        }
-                    }
-                } else if let Some(element_entity) = element_entity_at_position {
-                    if element_entity_at_position == currently_selected_entity.as_ref() {
-                        selected_entity.0 = None;
-                    } else {
-                        selected_entity.0 = Some(*element_entity);
-                    }
-                } else {
-                    selected_entity.0 = None;
-                }
-            }
             ExternalSimulationEvent::SpawnFood(grid_position) => {
                 if nest
                     .elements()

@@ -1,5 +1,3 @@
-pub mod external_event;
-
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
@@ -8,34 +6,27 @@ use crate::{
     story::{common::position::Position, grid::Grid, ui::action_menu::PointerAction},
 };
 
-use super::rendering::common::VisibleGrid;
+use super::{
+    ant::Ant,
+    rendering::common::{SelectedEntity, VisibleGrid},
+    simulation::{external_event::ExternalSimulationEvent, nest_simulation::nest::Nest},
+};
 
-#[derive(Event, PartialEq, Copy, Clone, Debug)]
-pub enum ExternalSimulationEvent {
-    Select(Position),
-    DespawnElement(Position),
-    SpawnFood(Position),
-    SpawnDirt(Position),
-    SpawnSand(Position),
-    KillAnt(Position),
-    SpawnWorkerAnt(Position),
-    DespawnWorkerAnt(Position),
-    ShowCrater,
-    ShowNest,
-}
-
-impl From<(PointerAction, Position)> for ExternalSimulationEvent {
-    fn from((pointer_action, position): (PointerAction, Position)) -> Self {
-        match pointer_action {
-            PointerAction::Select => ExternalSimulationEvent::Select(position),
-            PointerAction::DespawnElement => ExternalSimulationEvent::DespawnElement(position),
-            PointerAction::SpawnFood => ExternalSimulationEvent::SpawnFood(position),
-            PointerAction::SpawnDirt => ExternalSimulationEvent::SpawnDirt(position),
-            PointerAction::SpawnSand => ExternalSimulationEvent::SpawnSand(position),
-            PointerAction::KillAnt => ExternalSimulationEvent::KillAnt(position),
-            PointerAction::SpawnWorkerAnt => ExternalSimulationEvent::SpawnWorkerAnt(position),
-            PointerAction::DespawnWorkerAnt => ExternalSimulationEvent::DespawnWorkerAnt(position),
+pub fn pointer_action_to_simulation_event(
+    pointer_action: PointerAction,
+    position: Position,
+) -> ExternalSimulationEvent {
+    match pointer_action {
+        PointerAction::Select => {
+            panic!("Cannot convert PointerAction::Select to ExternalSimulationEvent")
         }
+        PointerAction::DespawnElement => ExternalSimulationEvent::DespawnElement(position),
+        PointerAction::SpawnFood => ExternalSimulationEvent::SpawnFood(position),
+        PointerAction::SpawnDirt => ExternalSimulationEvent::SpawnDirt(position),
+        PointerAction::SpawnSand => ExternalSimulationEvent::SpawnSand(position),
+        PointerAction::KillAnt => ExternalSimulationEvent::KillAnt(position),
+        PointerAction::SpawnWorkerAnt => ExternalSimulationEvent::SpawnWorkerAnt(position),
+        PointerAction::DespawnWorkerAnt => ExternalSimulationEvent::DespawnWorkerAnt(position),
     }
 }
 
@@ -45,13 +36,10 @@ pub struct PointerTapState {
 }
 
 pub fn initialize_pointer_resources(mut commands: Commands) {
-    // Calling init_resource prevents Bevy's automatic event cleanup. Need to do it manually.
-    commands.init_resource::<Events<ExternalSimulationEvent>>();
     commands.init_resource::<PointerTapState>();
 }
 
 pub fn remove_pointer_resources(mut commands: Commands) {
-    commands.remove_resource::<Events<ExternalSimulationEvent>>();
     commands.remove_resource::<PointerTapState>();
 }
 
@@ -70,6 +58,9 @@ pub fn handle_pointer_tap(
     pointer_action: Res<PointerAction>,
     mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
     mut pointer_tap_state: ResMut<PointerTapState>,
+    ants_query: Query<(Entity, &Position), With<Ant>>,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut selected_entity: ResMut<SelectedEntity>,
 ) {
     if is_pointer_captured.0 {
         return;
@@ -112,10 +103,53 @@ pub fn handle_pointer_tap(
         .unwrap()
         .world_to_grid_position(world_position);
 
-    external_simulation_event_writer.send(ExternalSimulationEvent::from((
-        *pointer_action,
-        grid_position,
-    )));
+    if *pointer_action != PointerAction::Select {
+        external_simulation_event_writer.send(pointer_action_to_simulation_event(
+            *pointer_action,
+            grid_position,
+        ));
+
+        return;
+    }
+
+    let nest = nest_query.single();
+
+    // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
+    let ant_entity_at_position = ants_query
+        .iter()
+        .find(|(_, &position)| position == grid_position)
+        .map(|(entity, _)| entity);
+
+    let element_entity_at_position = nest.elements().get_element_entity(grid_position);
+
+    let currently_selected_entity = selected_entity.0;
+
+    if let Some(ant_entity) = ant_entity_at_position {
+        // If tapping on an already selected ant then consider selecting element underneath ant instead.
+        if ant_entity_at_position == currently_selected_entity {
+            if let Some(element_entity) = element_entity_at_position {
+                selected_entity.0 = Some(*element_entity);
+            } else {
+                selected_entity.0 = None;
+            }
+        } else {
+            // If there is an ant at the given position, and it's not selected, but the element underneath it is selected
+            // then assume user wants to deselect element and not select the ant. They can select again after if they want the ant.
+            if element_entity_at_position == currently_selected_entity.as_ref() {
+                selected_entity.0 = None;
+            } else {
+                selected_entity.0 = Some(ant_entity);
+            }
+        }
+    } else if let Some(element_entity) = element_entity_at_position {
+        if element_entity_at_position == currently_selected_entity.as_ref() {
+            selected_entity.0 = None;
+        } else {
+            selected_entity.0 = Some(*element_entity);
+        }
+    } else {
+        selected_entity.0 = None;
+    }
 }
 
 fn get_pointer_pressed_position(

@@ -6,8 +6,7 @@ use bevy_egui::{egui, EguiContexts};
 use crate::{
     settings::Settings,
     story::{
-        pointer::ExternalSimulationEvent,
-        rendering::common::VisibleGrid,
+        rendering::{common::VisibleGrid, VisibleGridState},
         simulation::{crater_simulation::crater::Crater, nest_simulation::nest::Nest},
         story_time::StoryTime,
     },
@@ -46,10 +45,10 @@ pub fn update_action_menu(
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     settings: Res<Settings>,
     story_time: Res<StoryTime>,
-    mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
     visible_grid: Res<VisibleGrid>,
     nest_query: Query<&Nest>,
     crater_query: Query<&Crater>,
+    mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
 ) {
     let window = primary_window_query.single();
     let ctx = contexts.ctx_mut();
@@ -115,16 +114,16 @@ pub fn update_action_menu(
 
                 if is_nest_visible {
                     if ui.button("View Crater").clicked() {
-                        external_simulation_event_writer.send(ExternalSimulationEvent::ShowCrater);
+                        next_visible_grid_state.set(VisibleGridState::Crater);
                     }
                 } else if is_crater_visible {
                     if ui.button("View Nest").clicked() {
-                        external_simulation_event_writer.send(ExternalSimulationEvent::ShowNest);
+                        next_visible_grid_state.set(VisibleGridState::Nest);
                     }
                 }
             } else {
                 if ui.button("View Nest").clicked() {
-                    external_simulation_event_writer.send(ExternalSimulationEvent::ShowNest);
+                    next_visible_grid_state.set(VisibleGridState::Nest);
                 }
             }
         });

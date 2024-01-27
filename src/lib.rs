@@ -12,7 +12,6 @@ use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
-use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
@@ -20,7 +19,6 @@ use main_camera::MainCameraPlugin;
 use main_menu::update_main_menu;
 
 use story::{
-    grid::VisibleGridState,
     rendering::RenderingPlugin,
     simulation::{SimulationPlugin, SimulationUpdate},
     story_time::StoryPlaybackState,
@@ -42,7 +40,6 @@ impl Plugin for SymbiantsPlugin {
         app.add_state::<AppState>();
         // TODO: call this in setup_story_time?
         app.add_state::<StoryPlaybackState>();
-        app.add_state::<VisibleGridState>();
 
         app.add_plugins(
             DefaultPlugins
@@ -65,7 +62,7 @@ impl Plugin for SymbiantsPlugin {
             });
         })
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
-        .add_plugins((RngPlugin::default(), SavePlugin, TilemapPlugin))
+        .add_plugins((RngPlugin::default(), SavePlugin))
         .add_plugins((
             MainCameraPlugin,
             CoreUIPlugin,

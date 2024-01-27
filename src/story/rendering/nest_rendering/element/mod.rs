@@ -166,12 +166,7 @@ pub fn rerender_elements(
     }
 }
 
-pub fn cleanup_elements(
-    mut commands: Commands,
-    element_tilemap_query: Query<Entity, With<ElementTilemap>>,
-) {
-    let element_tilemap_entity = element_tilemap_query.single();
-    commands.entity(element_tilemap_entity).despawn_recursive();
+pub fn cleanup_elements() {
     // TODO: remove ElementTextureAtlasHandle and ElementSpriteSheetHandle if committing to the full cleanup process
 }
 
