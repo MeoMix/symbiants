@@ -1,4 +1,5 @@
 use bevy::{prelude::*, utils::HashMap};
+use bevy_ecs_tilemap::tiles::TilePos;
 
 use crate::story::{
     common::{position::Position, Zone},
@@ -212,5 +213,13 @@ pub fn on_despawn<Model: Component, Z: Zone>(
         if let Some(view_entity) = model_view_entity_map.remove(&model_entity) {
             commands.entity(view_entity).despawn_recursive();
         }
+    }
+}
+
+// TODO: Better home?
+pub fn grid_to_tile_pos(grid: &Grid, position: Position) -> TilePos {
+    TilePos {
+        x: position.x as u32,
+        y: (grid.height() - position.y - 1) as u32,
     }
 }

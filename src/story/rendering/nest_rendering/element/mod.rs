@@ -4,7 +4,7 @@ use crate::story::{
     common::position::Position,
     element::{Air, Element, ElementExposure},
     grid::Grid,
-    rendering::common::{ModelViewEntityMap, VisibleGrid},
+    rendering::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid},
     simulation::nest_simulation::nest::{AtNest, Nest},
 };
 use bevy::prelude::*;
@@ -90,7 +90,7 @@ pub fn on_update_element_position(
             None => panic!("Expected to find view entity for model entity."),
         };
 
-        let tile_pos = grid.grid_to_tile_pos(*element_position);
+        let tile_pos = grid_to_tile_pos(grid, *element_position);
         commands.entity(element_view_entity).insert(tile_pos);
         // NOTE: This leaves the previous `tile_pos` stale, but that's fine because it's just Air which isn't rendered.
         // TODO: Consider benefits of tracking PreviousPosition in Element and using that to clear stale tile_pos.
@@ -184,7 +184,7 @@ fn spawn_element_sprite(
     model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
 ) {
     let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
-    let tile_pos = grid.grid_to_tile_pos(*element_position);
+    let tile_pos = grid_to_tile_pos(grid, *element_position);
 
     let tile_bundle = (
         AtNest,

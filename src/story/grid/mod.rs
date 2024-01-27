@@ -1,12 +1,10 @@
 pub mod elements_cache;
 
 use bevy::prelude::*;
-use bevy_ecs_tilemap::tiles::TilePos;
 
 use crate::story::common::position::Position;
 
 use self::elements_cache::ElementsCache;
-
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Grid is a cache that is trivially regenerated on app startup from persisted state.
@@ -58,13 +56,6 @@ impl Grid {
             // The view of the model position is just an inversion along the y-axis.
             y: -position.y as f32 + y_offset - 0.5,
             z: 1.0,
-        }
-    }
-
-    pub fn grid_to_tile_pos(&self, position: Position) -> TilePos {
-        TilePos {
-            x: position.x as u32,
-            y: (self.height - position.y - 1) as u32,
         }
     }
 

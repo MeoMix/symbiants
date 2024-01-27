@@ -4,7 +4,7 @@ use bevy_ecs_tilemap::prelude::*;
 use crate::{
     app_state::AppState,
     story::{
-        common::position::Position, grid::Grid, rendering::common::VisibleGrid, simulation::nest_simulation::nest::{AtNest, Nest}, story_time::{StoryTime, TimeInfo}
+        common::position::Position, grid::Grid, rendering::common::{grid_to_tile_pos, VisibleGrid}, simulation::nest_simulation::nest::{AtNest, Nest}, story_time::{StoryTime, TimeInfo}
     },
 };
 
@@ -209,7 +209,7 @@ pub fn spawn_background(
 
             let t_y: f32 = position.y as f32 / nest.surface_level() as f32;
             let color = interpolate_color(north_color, south_color, t_y);
-            let tile_pos = grid.grid_to_tile_pos(position);
+            let tile_pos = grid_to_tile_pos(grid, position);
 
             let tile_entity = commands
                 .spawn((
@@ -244,7 +244,7 @@ pub fn spawn_background(
 
             let color = interpolate_color(top_color, bottom_color, y as f32 / height as f32);
 
-            let tile_pos = grid.grid_to_tile_pos(position);
+            let tile_pos = grid_to_tile_pos(grid, position);
 
             let tile_entity = commands
                 .spawn((
