@@ -1,11 +1,11 @@
+pub mod commands;
+
 use crate::{
     common::{grid::Grid, position::Position, Zone},
     nest_simulation::nest::Nest,
 };
 use bevy::{prelude::*, utils::HashSet};
 use serde::{Deserialize, Serialize};
-
-pub mod commands;
 
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]

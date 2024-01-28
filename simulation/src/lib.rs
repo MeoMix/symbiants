@@ -8,13 +8,6 @@ pub mod settings;
 pub mod simulation_timestep;
 pub mod story_time;
 
-use bevy::{
-    app::{MainScheduleOrder, RunFixedUpdateLoop},
-    ecs::schedule::{LogLevel, ScheduleBuildSettings, ScheduleLabel},
-    prelude::*,
-};
-use bevy_save::SavePlugin;
-
 use self::{
     app_state::{
         begin_story, check_story_over, continue_startup, finalize_startup, restart, AppState,
@@ -79,6 +72,12 @@ use self::{
         update_story_real_world_time, update_time_scale, StoryPlaybackState,
     },
 };
+use bevy::{
+    app::{MainScheduleOrder, RunFixedUpdateLoop},
+    ecs::schedule::{LogLevel, ScheduleBuildSettings, ScheduleLabel},
+    prelude::*,
+};
+use bevy_save::SavePlugin;
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct RunSimulationUpdateLoop;

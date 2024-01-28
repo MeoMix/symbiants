@@ -1,16 +1,13 @@
-use bevy::{prelude::*, utils::HashMap};
+pub mod commands;
 
-use serde::{Deserialize, Serialize};
-
+use self::commands::PheromoneCommandsExt;
 use crate::{
     common::position::Position,
     nest_simulation::nest::AtNest,
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
 };
-
-use self::commands::PheromoneCommandsExt;
-
-pub mod commands;
+use bevy::{prelude::*, utils::HashMap};
+use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

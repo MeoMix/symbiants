@@ -1,13 +1,8 @@
-// TODO: These shouldn't need to be public I think?
-pub mod camera;
+mod camera;
 pub mod common;
 mod crater_rendering;
 mod nest_rendering;
 pub mod pointer;
-
-use bevy::prelude::*;
-use bevy_ecs_tilemap::TilemapPlugin;
-use pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 
 use self::{
     camera::RenderingCameraPlugin,
@@ -44,7 +39,9 @@ use self::{
         },
     },
 };
-
+use bevy::prelude::*;
+use bevy_ecs_tilemap::TilemapPlugin;
+use pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 use simulation::{
     app_state::AppState,
     nest_simulation::{ant::Ant, element::Element, nest::AtNest, pheromone::Pheromone},

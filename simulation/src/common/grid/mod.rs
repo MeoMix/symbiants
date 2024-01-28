@@ -1,10 +1,8 @@
 pub mod elements_cache;
 
-use bevy::prelude::*;
-
-use crate::common::position::Position;
-
 use self::elements_cache::ElementsCache;
+use crate::common::position::Position;
+use bevy::prelude::*;
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Grid is a cache that is trivially regenerated on app startup from persisted state.

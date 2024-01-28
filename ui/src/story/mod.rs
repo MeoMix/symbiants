@@ -1,5 +1,4 @@
-// TODO: It's weird this needs to be public
-pub mod action_menu;
+mod action_menu;
 mod breath_dialog;
 mod info_panel;
 mod loading_dialog;

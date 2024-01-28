@@ -1,7 +1,9 @@
 pub mod sprite_sheet;
 
+use self::sprite_sheet::{get_element_index, ElementTilemap};
 use crate::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid};
-
+use bevy::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 use simulation::{
     common::{grid::Grid, position::Position},
     nest_simulation::{
@@ -9,11 +11,6 @@ use simulation::{
         nest::{AtNest, Nest},
     },
 };
-
-use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
-
-use self::sprite_sheet::{get_element_index, ElementTilemap};
 
 /// When an Element model is added to the simulation, render an associated Element sprite.
 /// This *only* handles the initial rendering of the Element sprite. Updates are handled by other systems.

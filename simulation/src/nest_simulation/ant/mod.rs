@@ -1,25 +1,3 @@
-use bevy_turborand::{DelegatedRng, GlobalRng};
-use serde::{Deserialize, Serialize};
-use std::f32::consts::PI;
-
-use crate::{
-    common::{position::Position, Zone},
-    nest_simulation::{element::Element, nest::AtNest},
-};
-
-use self::{
-    birthing::Birthing, chambering::Chambering, digestion::Digestion, hunger::Hunger,
-    name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
-};
-
-use bevy::{
-    ecs::{
-        entity::{EntityMapper, MapEntities},
-        reflect::ReflectMapEntities,
-    },
-    prelude::*,
-};
-
 pub mod birthing;
 pub mod chambering;
 pub mod commands;
@@ -35,6 +13,25 @@ pub mod nesting;
 pub mod sleep;
 pub mod tunneling;
 pub mod walk;
+
+use self::{
+    birthing::Birthing, chambering::Chambering, digestion::Digestion, hunger::Hunger,
+    name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
+};
+use crate::{
+    common::{position::Position, Zone},
+    nest_simulation::{element::Element, nest::AtNest},
+};
+use bevy::{
+    ecs::{
+        entity::{EntityMapper, MapEntities},
+        reflect::ReflectMapEntities,
+    },
+    prelude::*,
+};
+use bevy_turborand::{DelegatedRng, GlobalRng};
+use serde::{Deserialize, Serialize};
+use std::f32::consts::PI;
 
 #[derive(Bundle)]
 pub struct AntBundle<Z>

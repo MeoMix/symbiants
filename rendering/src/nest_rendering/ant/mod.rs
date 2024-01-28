@@ -1,13 +1,10 @@
 pub mod emote;
 
-use bevy::prelude::*;
-use std::ops::Add;
-
 use crate::{
     common::{ModelViewEntityMap, VisibleGrid},
     nest_rendering::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
 };
-
+use bevy::prelude::*;
 use simulation::{
     common::{grid::Grid, position::Position},
     nest_simulation::{
@@ -16,6 +13,7 @@ use simulation::{
         nest::{AtNest, Nest},
     },
 };
+use std::ops::Add;
 
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
