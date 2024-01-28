@@ -1,16 +1,12 @@
-mod core_ui;
 mod main_camera;
-mod main_menu;
 mod story;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_turborand::prelude::*;
-use core_ui::CoreUIPlugin;
 use main_camera::MainCameraPlugin;
-use main_menu::update_main_menu;
 
-use story::{rendering::RenderingPlugin, ui::StoryUIPlugin};
-use simulation::{app_state::AppState, SimulationPlugin};
+use simulation::SimulationPlugin;
+use story::{rendering::RenderingPlugin, ui::UIPlugin};
 
 pub struct SymbiantsPlugin;
 
@@ -42,15 +38,9 @@ impl Plugin for SymbiantsPlugin {
         .add_plugins((
             RngPlugin::default(),
             MainCameraPlugin,
-            CoreUIPlugin,
-            StoryUIPlugin,
+            UIPlugin,
             SimulationPlugin,
             RenderingPlugin,
         ));
-
-        app.add_systems(
-            Update,
-            update_main_menu.run_if(in_state(AppState::SelectStoryMode)),
-        );
     }
 }
