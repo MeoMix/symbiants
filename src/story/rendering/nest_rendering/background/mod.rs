@@ -1,14 +1,13 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::story::{
-    rendering::common::{grid_to_tile_pos, VisibleGrid},
-    simulation::{
-        app_state::AppState,
-        common::{grid::Grid, position::Position},
-        nest_simulation::nest::{AtNest, Nest},
-        story_time::{StoryTime, TimeInfo},
-    },
+use crate::story::rendering::common::{grid_to_tile_pos, VisibleGrid};
+
+use simulation::{
+    app_state::AppState,
+    common::{grid::Grid, position::Position},
+    nest_simulation::nest::{AtNest, Nest},
+    story_time::{StoryTime, TimeInfo},
 };
 
 #[derive(Component)]

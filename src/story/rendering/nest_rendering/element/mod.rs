@@ -1,15 +1,15 @@
 pub mod sprite_sheet;
 
-use crate::story::{
-    rendering::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid},
-    simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            element::{Air, Element, ElementExposure},
-            nest::{AtNest, Nest},
-        },
+use crate::story::rendering::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid};
+
+use simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        element::{Air, Element, ElementExposure},
+        nest::{AtNest, Nest},
     },
 };
+
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 

@@ -1,7 +1,7 @@
 use bevy::{asset::LoadState, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::story::simulation::{
+use simulation::{
     app_state::AppState,
     nest_simulation::element::{Element, ElementExposure},
 };

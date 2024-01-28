@@ -43,7 +43,11 @@ use self::{
     pan_zoom_camera::PanZoomCameraPlugin,
 };
 
-use super::simulation::{
+use super::pointer::{
+    handle_pointer_tap, initialize_pointer_resources, is_pointer_captured, remove_pointer_resources,
+};
+
+use simulation::{
     app_state::AppState,
     nest_simulation::{ant::Ant, element::Element, nest::AtNest, pheromone::Pheromone},
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
@@ -80,12 +84,25 @@ impl Plugin for RenderingPlugin {
 fn build_common_systems(app: &mut App) {
     app.add_systems(
         OnEnter(AppState::FinishSetup),
-        (initialize_common_resources,).in_set(FinishSetupSet::BeforeSimulationFinishSetup),
+        (
+            initialize_common_resources,
+            (initialize_pointer_resources, apply_deferred).chain(),
+        )
+            .in_set(FinishSetupSet::BeforeSimulationFinishSetup),
     );
 
     app.add_systems(
         Update,
         (on_update_selected, on_update_selected_position).run_if(in_state(AppState::TellStory)),
+    );
+
+    // IMPORTANT: don't process user input in FixedUpdate/SimulationUpdate because event reads can be missed
+    // https://github.com/bevyengine/bevy/issues/7691
+    app.add_systems(
+        Update,
+        (is_pointer_captured, handle_pointer_tap)
+            .run_if(in_state(AppState::TellStory))
+            .chain(),
     );
 
     app.add_systems(
@@ -102,7 +119,11 @@ fn build_common_systems(app: &mut App) {
 
     app.add_systems(
         OnEnter(AppState::Cleanup),
-        (despawn_common_entities, remove_common_resources)
+        (
+            despawn_common_entities,
+            remove_common_resources,
+            remove_pointer_resources,
+        )
             .in_set(CleanupSet::BeforeSimulationCleanup),
     );
 }

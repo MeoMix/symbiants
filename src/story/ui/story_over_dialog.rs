@@ -4,7 +4,7 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::story::simulation::app_state::AppState;
+use simulation::app_state::AppState;
 
 pub fn update_story_over_dialog(
     mut contexts: EguiContexts,

@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
-use crate::story::{rendering::common::VisibleGrid, simulation::nest_simulation::nest::Nest};
+use crate::story::rendering::common::VisibleGrid;
+
+use simulation::nest_simulation::nest::Nest;
 
 pub fn mark_nest_visible(
     nest_query: Query<Entity, With<Nest>>,

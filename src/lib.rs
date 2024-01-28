@@ -1,7 +1,6 @@
 mod core_ui;
 mod main_camera;
 mod main_menu;
-mod save;
 mod story;
 
 use bevy::{
@@ -9,18 +8,15 @@ use bevy::{
     ecs::schedule::{LogLevel, ScheduleBuildSettings},
     prelude::*,
 };
-use bevy_save::SavePlugin;
 use bevy_turborand::prelude::*;
 use core_ui::CoreUIPlugin;
 use main_camera::MainCameraPlugin;
 use main_menu::update_main_menu;
 
-use story::{
-    rendering::RenderingPlugin,
-    simulation::{
-        app_state::AppState, story_time::StoryPlaybackState, SimulationPlugin, SimulationUpdate,
-    },
-    ui::StoryUIPlugin,
+use story::{rendering::RenderingPlugin, ui::StoryUIPlugin};
+
+use simulation::{
+    app_state::AppState, story_time::StoryPlaybackState, SimulationPlugin, SimulationUpdate,
 };
 
 pub struct SymbiantsPlugin;
@@ -58,9 +54,8 @@ impl Plugin for SymbiantsPlugin {
                 ..default()
             });
         })
-        // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
-        .add_plugins((RngPlugin::default(), SavePlugin))
         .add_plugins((
+            RngPlugin::default(),
             MainCameraPlugin,
             CoreUIPlugin,
             StoryUIPlugin,

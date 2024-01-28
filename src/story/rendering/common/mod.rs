@@ -1,7 +1,7 @@
 use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::tiles::TilePos;
 
-use crate::story::simulation::common::{grid::Grid, position::Position, Zone};
+use simulation::common::{grid::Grid, position::Position, Zone};
 
 // TODO: This probably isn't a great home for this. The intent is to mark which of the grid (crater vs nest) is active/shown.
 #[derive(Resource, Default)]

@@ -1,22 +1,21 @@
 pub mod emote;
 
 use std::ops::Add;
+use bevy::prelude::*;
 
-use crate::story::{
-    rendering::{
-        common::{ModelViewEntityMap, VisibleGrid},
-        nest_rendering::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
-    },
-    simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
-            element::{Element, ElementExposure},
-            nest::{AtNest, Nest},
-        },
+use crate::story::rendering::{
+    common::{ModelViewEntityMap, VisibleGrid},
+    nest_rendering::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
+};
+
+use simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
+        element::{Element, ElementExposure},
+        nest::{AtNest, Nest},
     },
 };
-use bevy::prelude::*;
 
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);

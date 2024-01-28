@@ -3,13 +3,12 @@ use bevy_egui::EguiContexts;
 
 use crate::{main_camera::MainCamera, story::ui::action_menu::PointerAction};
 
-use super::{
-    rendering::common::{SelectedEntity, VisibleGrid},
-    simulation::{
-        common::{grid::Grid, position::Position},
-        external_event::ExternalSimulationEvent,
-        nest_simulation::{ant::Ant, nest::Nest},
-    },
+use super::rendering::common::{SelectedEntity, VisibleGrid};
+
+use simulation::{
+    common::{grid::Grid, position::Position},
+    external_event::ExternalSimulationEvent,
+    nest_simulation::{ant::Ant, nest::Nest},
 };
 
 pub fn pointer_action_to_simulation_event(

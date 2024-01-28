@@ -2807,6 +2807,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "238abfbb77c1915110ad968465608b68e869e0772622c9656714e73e5a1a522f"
 
 [[package]]
+name = "simulation"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_save",
+ "bevy_turborand",
+ "brotli",
+ "chrono",
+ "gloo-storage",
+ "js-sys",
+ "rmp-serde",
+ "serde",
+ "sun-times",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2886,17 +2904,11 @@ dependencies = [
  "bevy",
  "bevy_ecs_tilemap",
  "bevy_egui",
- "bevy_save",
  "bevy_turborand",
- "brotli",
- "chrono",
  "console_error_panic_hook",
  "fs_extra",
- "gloo-storage",
  "js-sys",
- "rmp-serde",
- "serde",
- "sun-times",
+ "simulation",
  "wasm-bindgen",
  "wasm-bindgen-test",
  "web-sys",

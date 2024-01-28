@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use crate::story::simulation::{
+use simulation::{
     app_state::AppState,
     nest_simulation::{ant::AntColor, pheromone::PheromoneVisibility},
     settings::Settings,

@@ -1,3 +1,4 @@
+
 [package]
 name = "symbiants_pkg"
 version = "0.1.0"
@@ -8,10 +9,16 @@ build = "build.rs"
 name = "symbiants_lib"
 crate-type = ["cdylib", "rlib"]
 
+[workspace]
+resolver = "2"
+members = ["simulation"]
+
 [build-dependencies]
 fs_extra = "1.2"
 
 [dependencies]
+simulation = { path = "./simulation" }
+
 bevy = { version = "0.12.1", default-features = false, features = [
   "bevy_asset",
   "bevy_scene",
@@ -23,24 +30,17 @@ bevy = { version = "0.12.1", default-features = false, features = [
   "default_font",
   "png",
 ] }
-
-bevy_ecs_tilemap = { git = "https://github.com/MeoMix/bevy_ecs_tilemap", branch = "main", features=["atlas"] }
-
+bevy_ecs_tilemap = { git = "https://github.com/MeoMix/bevy_ecs_tilemap", branch = "main", features = [
+  "atlas",
+] }
 bevy_egui = { version = "0.24.0" }
-bevy_save = { version = "0.13.0" }
 bevy_turborand = { version = "0.7.0" }
-chrono = { version = "0.4.31", features = ["serde"] }
-serde = { version = "1.0.188", features = ["derive"] }
-sun-times = { version = "0.2.0" }
 
 # WASM builds require extra dependencies for logging and persisting state to local storage.
 # WASM builds do not require x11 and cannot use dynamic_linking.
 [target.'cfg(target_family = "wasm")'.dependencies]
-brotli = { version = "3.4.0" }
 console_error_panic_hook = { version = "0.1.7" }
-gloo-storage = "0.3.0"
 js-sys = { version = "0.3.64", default-features = false }
-rmp-serde = { version = "1.1.2" }
 wasm-bindgen = { version = "0.2.87" }
 web-sys = { version = "0.3.64", features = [
   "EventTarget",

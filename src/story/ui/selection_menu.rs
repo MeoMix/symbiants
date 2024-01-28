@@ -1,18 +1,16 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use crate::story::{
-    rendering::common::SelectedEntity,
-    simulation::{
-        common::position::Position,
-        nest_simulation::{
-            ant::{
-                birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole,
-                Dead,
-            },
-            element::Element,
-            pheromone::{Pheromone, PheromoneStrength},
+use crate::story::rendering::common::SelectedEntity;
+
+use simulation::{
+    common::position::Position,
+    nest_simulation::{
+        ant::{
+            birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole, Dead,
         },
+        element::Element,
+        pheromone::{Pheromone, PheromoneStrength},
     },
 };
 

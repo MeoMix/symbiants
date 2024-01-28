@@ -4,7 +4,7 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use crate::story::simulation::app_state::AppState;
+use simulation::app_state::AppState;
 
 // TODO: About menu
 pub fn update_main_menu(

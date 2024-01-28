@@ -1,13 +1,12 @@
 use bevy::prelude::*;
 
-use crate::story::{
-    rendering::common::{ModelViewEntityMap, VisibleGrid},
-    simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            nest::{AtNest, Nest},
-            pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
-        },
+use crate::story::rendering::common::{ModelViewEntityMap, VisibleGrid};
+
+use simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        nest::{AtNest, Nest},
+        pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
     },
 };
 

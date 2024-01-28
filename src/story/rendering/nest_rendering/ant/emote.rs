@@ -1,21 +1,20 @@
-use crate::story::{
-    rendering::common::{ModelViewEntityMap, VisibleGrid},
-    simulation::{
-        common::grid::Grid,
-        nest_simulation::{
-            ant::{
-                emote::{Emote, EmoteType},
-                sleep::Asleep,
-                AntAteFoodEvent,
-            },
-            nest::{AtNest, Nest},
-        },
-        settings::Settings,
-        story_time::DEFAULT_TICKS_PER_SECOND,
-    },
-};
-use bevy::{prelude::*, utils::HashSet};
+use crate::story::rendering::common::{ModelViewEntityMap, VisibleGrid};
 
+use simulation::{
+    common::grid::Grid,
+    nest_simulation::{
+        ant::{
+            emote::{Emote, EmoteType},
+            sleep::Asleep,
+            AntAteFoodEvent,
+        },
+        nest::{AtNest, Nest},
+    },
+    settings::Settings,
+    story_time::DEFAULT_TICKS_PER_SECOND,
+};
+
+use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use super::AntSprite;

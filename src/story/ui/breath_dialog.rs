@@ -5,7 +5,7 @@ use bevy_egui::{
 };
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::story::simulation::{
+use simulation::{
     common::{grid::Grid, position::Position},
     nest_simulation::{
         ant::{hunger::Hunger, Dead},

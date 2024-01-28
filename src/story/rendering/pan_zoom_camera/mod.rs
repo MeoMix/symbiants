@@ -1,8 +1,10 @@
-use crate::{main_camera::MainCamera, story::simulation::common::grid::Grid};
+use crate::main_camera::MainCamera;
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
 };
+
+use simulation::common::grid::Grid;
 
 use self::pancam::{PanCam, PanCamPlugin};
 
