@@ -1,13 +1,14 @@
-// TODO: This shouldn't need to be public I think?
+// TODO: These shouldn't need to be public I think?
+pub mod camera;
 pub mod common;
 mod crater_rendering;
 mod nest_rendering;
-mod pan_zoom_camera;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
 
 use self::{
+    camera::RenderingCameraPlugin,
     common::{
         clear_selection, despawn_common_entities, despawn_view, despawn_view_by_model,
         initialize_common_resources, on_despawn, on_update_selected, on_update_selected_position,
@@ -40,7 +41,6 @@ use self::{
             rerender_pheromones,
         },
     },
-    pan_zoom_camera::PanZoomCameraPlugin,
 };
 
 use super::pointer::{
@@ -72,7 +72,7 @@ pub struct RenderingPlugin;
 ///     This occurs because the simulation may tick multiple times before rendering systems run.
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((PanZoomCameraPlugin, TilemapPlugin));
+        app.add_plugins((RenderingCameraPlugin, TilemapPlugin));
         app.add_state::<VisibleGridState>();
 
         build_common_systems(app);

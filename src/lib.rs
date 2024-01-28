@@ -1,9 +1,7 @@
-mod main_camera;
 mod story;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_turborand::prelude::*;
-use main_camera::MainCameraPlugin;
 
 use simulation::SimulationPlugin;
 use story::{rendering::RenderingPlugin, ui::UIPlugin};
@@ -37,7 +35,6 @@ impl Plugin for SymbiantsPlugin {
         )
         .add_plugins((
             RngPlugin::default(),
-            MainCameraPlugin,
             UIPlugin,
             SimulationPlugin,
             RenderingPlugin,

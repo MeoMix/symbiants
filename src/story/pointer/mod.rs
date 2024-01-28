@@ -1,9 +1,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiContexts;
 
-use crate::{main_camera::MainCamera, story::ui::action_menu::PointerAction};
+use crate::story::ui::story::action_menu::PointerAction;
 
-use super::rendering::common::{SelectedEntity, VisibleGrid};
+use super::rendering::{
+    common::{SelectedEntity, VisibleGrid},
+    camera::RenderingCamera,
+};
 
 use simulation::{
     common::{grid::Grid, position::Position},
@@ -50,7 +53,7 @@ pub fn handle_pointer_tap(
     mouse_input: Res<Input<MouseButton>>,
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
-    mut camera_query: Query<(&Camera, &GlobalTransform), With<MainCamera>>,
+    mut camera_query: Query<(&Camera, &GlobalTransform), With<RenderingCamera>>,
     grid_query: Query<&Grid>,
     visible_grid: Res<VisibleGrid>,
     is_pointer_captured: Res<IsPointerCaptured>,

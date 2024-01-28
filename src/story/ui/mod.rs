@@ -1,12 +1,6 @@
-// TODO: It's weird this needs to be public
-pub mod action_menu;
-mod breath_dialog;
-mod info_panel;
-mod loading_dialog;
+mod camera;
 mod main_menu;
-mod selection_menu;
-mod settings_menu;
-mod story_over_dialog;
+pub mod story;
 
 use bevy::prelude::*;
 use bevy_egui::{
@@ -16,67 +10,17 @@ use bevy_egui::{
 use egui::{FontFamily::Proportional, FontId};
 
 use super::pointer::IsPointerCaptured;
-use simulation::{app_state::AppState, story_time::StoryPlaybackState};
 
-use self::{
-    action_menu::*, breath_dialog::update_breath_dialog, info_panel::*, loading_dialog::*,
-    main_menu::update_main_menu, selection_menu::update_selection_menu,
-    settings_menu::update_settings_menu, story_over_dialog::*,
-};
+use self::{camera::UICameraPlugin, main_menu::MainMenuUIPlugin, story::StoryUIPlugin};
 
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(EguiPlugin);
+        app.add_plugins((EguiPlugin, UICameraPlugin, MainMenuUIPlugin, StoryUIPlugin));
         app.init_resource::<IsPointerCaptured>();
         app.add_systems(Update, set_theme);
-
-        build_story_systems(app);
-        build_main_menu_systems(app);
     }
-}
-
-fn build_main_menu_systems(app: &mut App) {
-    app.add_systems(
-        Update,
-        update_main_menu.run_if(in_state(AppState::SelectStoryMode)),
-    );
-}
-
-fn build_story_systems(app: &mut App) {
-    app.add_systems(OnEnter(AppState::TellStory), setup_action_menu);
-
-    // TODO: Prefer keeping UI around until after Over (but not that simple because can click Reset which skips Over)
-    app.add_systems(
-        Update,
-        (
-            update_info_window,
-            update_loading_dialog.run_if(in_state(StoryPlaybackState::FastForwarding)),
-            update_settings_menu,
-            update_action_menu,
-            update_selection_menu,
-        )
-            .run_if(
-                in_state(AppState::TellStory)
-                    .and_then(not(resource_exists_and_equals(IsShowingBreathDialog(true)))),
-            ),
-    );
-
-    app.add_systems(
-        Update,
-        update_breath_dialog.run_if(resource_exists_and_equals(IsShowingBreathDialog(true))),
-    );
-
-    app.add_systems(OnExit(AppState::TellStory), teardown_action_menu);
-
-    app.add_systems(
-        Update,
-        update_story_over_dialog.run_if(
-            in_state(AppState::EndStory)
-                .and_then(not(resource_exists_and_equals(IsShowingBreathDialog(true)))),
-        ),
-    );
 }
 
 /// This themeing isn't good by any means, but it serves as an example for how to adjust it further. It would be nice to have it look much more like Material UI

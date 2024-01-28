@@ -6,7 +6,17 @@ use bevy_egui::{
 
 use simulation::app_state::AppState;
 
-// TODO: About menu
+pub struct MainMenuUIPlugin;
+
+impl Plugin for MainMenuUIPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            update_main_menu.run_if(in_state(AppState::SelectStoryMode)),
+        );
+    }
+}
+
 pub fn update_main_menu(
     mut contexts: EguiContexts,
     mut next_app_state: ResMut<NextState<AppState>>,

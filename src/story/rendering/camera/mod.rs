@@ -1,4 +1,3 @@
-use crate::main_camera::MainCamera;
 use bevy::{
     prelude::*,
     window::{PrimaryWindow, WindowResized},
@@ -11,6 +10,9 @@ use self::pancam::{PanCam, PanCamPlugin};
 use super::common::VisibleGrid;
 
 mod pancam;
+
+#[derive(Component)]
+pub struct RenderingCamera;
 
 /// Calculate the scale which will minimally cover the window with a grid.
 fn get_best_fit_scale(
@@ -26,7 +28,7 @@ fn get_best_fit_scale(
 fn window_resize(
     primary_window_query: Query<Entity, With<PrimaryWindow>>,
     mut resize_events: EventReader<WindowResized>,
-    mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut main_camera_query: Query<&mut OrthographicProjection, With<RenderingCamera>>,
     visible_grid: Res<VisibleGrid>,
     grid_query: Query<&Grid>,
 ) {
@@ -56,7 +58,7 @@ fn window_resize(
 
 /// Keep in mind that window.width() doesn't fit the viewport until `fit_canvas_to_parent: true` resizes the <canvas />
 fn scale_projection(
-    mut main_camera_query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut main_camera_query: Query<&mut OrthographicProjection, With<RenderingCamera>>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     visible_grid: Res<VisibleGrid>,
     grid_query: Query<&Grid>,
@@ -86,7 +88,7 @@ fn scale_projection(
 }
 
 fn insert_pancam(
-    main_camera_query: Query<Entity, With<MainCamera>>,
+    main_camera_query: Query<Entity, With<RenderingCamera>>,
     visible_grid: Res<VisibleGrid>,
     grid_query: Query<&Grid>,
     mut commands: Commands,
@@ -115,16 +117,18 @@ fn insert_pancam(
     });
 }
 
-pub struct PanZoomCameraPlugin;
+pub struct RenderingCameraPlugin;
 
 /// Rendering the simulation requires a camera capable of panning and zooming. This isn't a requirement for showing the main menu.
-/// So, this plugin is separate from MainCamera and only decorates MainCamera when the simulation is rendered.
-impl Plugin for PanZoomCameraPlugin {
+/// So, this plugin is separate from RenderingCamera and only decorates RenderingCamera when the simulation is rendered.
+impl Plugin for RenderingCameraPlugin {
     fn build(&self, app: &mut App) {
         // TODO: It would be preferable to teardown PanCam when the simulation stops and exits to MainMenu
         // This is hard to do because Bevy doesn't currently support removing systems or plugins.
         // There isn't (AFAIK) any negative side-effects to omitting the teardown. Just feels improper to leave app in a partially dirty state.
         app.add_plugins(PanCamPlugin::default());
+
+        app.add_systems(Startup, setup);
 
         app.add_systems(
             Update,
@@ -135,4 +139,8 @@ impl Plugin for PanZoomCameraPlugin {
             (insert_pancam, scale_projection).run_if(resource_exists::<VisibleGrid>()),
         );
     }
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn((Camera2dBundle::default(), RenderingCamera));
 }
