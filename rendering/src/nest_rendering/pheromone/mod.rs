@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::story::rendering::common::{ModelViewEntityMap, VisibleGrid};
+use crate::common::{ModelViewEntityMap, VisibleGrid};
 
 use simulation::{
     common::{grid::Grid, position::Position},

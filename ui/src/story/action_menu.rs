@@ -2,37 +2,20 @@
 // Used in Sandbox Mode to allow the user to play around with the environment - manually spawning/despawning anything that could exist.
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
-
-use crate::story::rendering::{common::VisibleGrid, VisibleGridState};
-
+use rendering::{common::VisibleGrid, pointer::PointerAction, VisibleGridState};
 use simulation::{
     crater_simulation::crater::Crater, nest_simulation::nest::Nest, settings::Settings,
     story_time::StoryTime,
 };
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
-pub enum PointerAction {
-    #[default]
-    Select,
-    DespawnElement,
-    SpawnFood,
-    SpawnDirt,
-    SpawnSand,
-    KillAnt,
-    SpawnWorkerAnt,
-    DespawnWorkerAnt,
-}
-
-#[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
 pub struct IsShowingBreathDialog(pub bool);
 
 pub fn setup_action_menu(mut commands: Commands) {
-    commands.init_resource::<PointerAction>();
     commands.init_resource::<IsShowingBreathDialog>();
 }
 
 pub fn teardown_action_menu(mut commands: Commands) {
-    commands.remove_resource::<PointerAction>();
     commands.remove_resource::<IsShowingBreathDialog>();
 }
 

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::story::rendering::common::{grid_to_tile_pos, VisibleGrid};
+use crate::common::{grid_to_tile_pos, VisibleGrid};
 
 use simulation::{
     app_state::AppState,

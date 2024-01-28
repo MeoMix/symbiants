@@ -1,9 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
-use bevy_egui::EguiContexts;
 
-use crate::story::ui::story::action_menu::PointerAction;
-
-use super::rendering::{
+use super::{
     camera::RenderingCamera,
     common::{SelectedEntity, VisibleGrid},
 };
@@ -13,6 +10,19 @@ use simulation::{
     external_event::ExternalSimulationEvent,
     nest_simulation::{ant::Ant, nest::Nest},
 };
+
+#[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
+pub enum PointerAction {
+    #[default]
+    Select,
+    DespawnElement,
+    SpawnFood,
+    SpawnDirt,
+    SpawnSand,
+    KillAnt,
+    SpawnWorkerAnt,
+    DespawnWorkerAnt,
+}
 
 pub fn pointer_action_to_simulation_event(
     pointer_action: PointerAction,
@@ -38,11 +48,15 @@ pub struct PointerTapState {
 }
 
 pub fn initialize_pointer_resources(mut commands: Commands) {
+    commands.init_resource::<PointerAction>();
     commands.init_resource::<PointerTapState>();
+    commands.init_resource::<IsPointerCaptured>();
 }
 
 pub fn remove_pointer_resources(mut commands: Commands) {
+    commands.remove_resource::<PointerAction>();
     commands.remove_resource::<PointerTapState>();
+    commands.remove_resource::<IsPointerCaptured>();
 }
 
 const DRAG_THRESHOLD: f32 = 4.0;
@@ -184,11 +198,3 @@ fn get_pointer_released_position(
 
 #[derive(Resource, Default, PartialEq)]
 pub struct IsPointerCaptured(pub bool);
-
-pub fn is_pointer_captured(
-    mut is_pointer_captured: ResMut<IsPointerCaptured>,
-    mut contexts: EguiContexts,
-) {
-    let context = contexts.ctx_mut();
-    is_pointer_captured.0 = context.wants_pointer_input() || context.wants_keyboard_input();
-}

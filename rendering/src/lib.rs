@@ -3,9 +3,11 @@ pub mod camera;
 pub mod common;
 mod crater_rendering;
 mod nest_rendering;
+pub mod pointer;
 
 use bevy::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
+use pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 
 use self::{
     camera::RenderingCameraPlugin,
@@ -41,10 +43,6 @@ use self::{
             rerender_pheromones,
         },
     },
-};
-
-use super::pointer::{
-    handle_pointer_tap, initialize_pointer_resources, is_pointer_captured, remove_pointer_resources,
 };
 
 use simulation::{
@@ -100,7 +98,7 @@ fn build_common_systems(app: &mut App) {
     // https://github.com/bevyengine/bevy/issues/7691
     app.add_systems(
         Update,
-        (is_pointer_captured, handle_pointer_tap)
+        (handle_pointer_tap)
             .run_if(in_state(AppState::TellStory))
             .chain(),
     );

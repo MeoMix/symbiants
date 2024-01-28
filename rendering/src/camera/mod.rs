@@ -1,6 +1,5 @@
 use bevy::{
-    prelude::*,
-    window::{PrimaryWindow, WindowResized},
+    prelude::*, window::{PrimaryWindow, WindowResized}
 };
 
 use simulation::common::grid::Grid;

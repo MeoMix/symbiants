@@ -1,6 +1,6 @@
 pub mod sprite_sheet;
 
-use crate::story::rendering::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid};
+use crate::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid};
 
 use simulation::{
     common::{grid::Grid, position::Position},

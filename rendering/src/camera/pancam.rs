@@ -7,6 +7,8 @@ use bevy::{
     window::PrimaryWindow,
 };
 
+use crate::pointer::IsPointerCaptured;
+
 /// Plugin that adds the necessary systems for `PanCam` components to work
 #[derive(Default)]
 pub struct PanCamPlugin;
@@ -40,27 +42,11 @@ impl Plugin for PanCamPlugin {
         )
         .register_type::<PanCam>();
 
-        app.init_resource::<EguiWantsFocus>()
-            .add_systems(PostUpdate, check_egui_wants_focus)
-            .configure_sets(
-                Update,
-                PanCamSystemSet.run_if(resource_equals(EguiWantsFocus(false))),
-            );
+        app.init_resource::<EguiWantsFocus>().configure_sets(
+            Update,
+            PanCamSystemSet.run_if(resource_exists_and_equals(IsPointerCaptured(false))),
+        );
     }
-}
-
-fn check_egui_wants_focus(
-    mut contexts: Query<&mut bevy_egui::EguiContext>,
-    mut wants_focus: ResMut<EguiWantsFocus>,
-) {
-    let ctx = contexts.iter_mut().next();
-    let new_wants_focus = if let Some(ctx) = ctx {
-        let ctx = ctx.into_inner().get_mut();
-        ctx.wants_pointer_input() || ctx.wants_keyboard_input()
-    } else {
-        false
-    };
-    wants_focus.set_if_neq(EguiWantsFocus(new_wants_focus));
 }
 
 fn on_change_projection(

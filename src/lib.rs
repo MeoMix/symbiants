@@ -1,10 +1,8 @@
-mod story;
-
 use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_turborand::prelude::*;
-
+use rendering::RenderingPlugin;
 use simulation::SimulationPlugin;
-use story::{rendering::RenderingPlugin, ui::UIPlugin};
+use ui::UIPlugin;
 
 pub struct SymbiantsPlugin;
 

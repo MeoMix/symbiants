@@ -11,13 +11,15 @@ crate-type = ["cdylib", "rlib"]
 
 [workspace]
 resolver = "2"
-members = ["simulation"]
+members = ["rendering", "simulation", "ui"]
 
 [build-dependencies]
 fs_extra = "1.2"
 
 [dependencies]
 simulation = { path = "./simulation" }
+rendering = { path = "./rendering" }
+ui = { path = "./ui" }
 
 bevy = { version = "0.12.1", default-features = false, features = [
   "bevy_asset",
@@ -30,10 +32,6 @@ bevy = { version = "0.12.1", default-features = false, features = [
   "default_font",
   "png",
 ] }
-bevy_ecs_tilemap = { git = "https://github.com/MeoMix/bevy_ecs_tilemap", branch = "main", features = [
-  "atlas",
-] }
-bevy_egui = { version = "0.24.0" }
 bevy_turborand = { version = "0.7.0" }
 
 # WASM builds require extra dependencies for logging and persisting state to local storage.

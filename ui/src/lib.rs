@@ -1,4 +1,3 @@
-mod camera;
 mod main_menu;
 pub mod story;
 
@@ -8,18 +7,23 @@ use bevy_egui::{
     EguiContexts, EguiPlugin,
 };
 use egui::{FontFamily::Proportional, FontId};
+use rendering::pointer::IsPointerCaptured;
 
-use super::pointer::IsPointerCaptured;
-
-use self::{camera::UICameraPlugin, main_menu::MainMenuUIPlugin, story::StoryUIPlugin};
+use self::{main_menu::MainMenuUIPlugin, story::StoryUIPlugin};
 
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((EguiPlugin, UICameraPlugin, MainMenuUIPlugin, StoryUIPlugin));
-        app.init_resource::<IsPointerCaptured>();
+        // NOTE: There is no Camera spawned here because UI is built using `bevy_egui` which doesn't care about cameras.
+        // In the future, if UI is rebuilt using Bevy natively, then a UI camera may need to be spawned here.
+        app.add_plugins((EguiPlugin, MainMenuUIPlugin, StoryUIPlugin));
         app.add_systems(Update, set_theme);
+
+        app.add_systems(
+            PostUpdate,
+            is_pointer_captured.run_if(resource_exists::<IsPointerCaptured>()),
+        );
     }
 }
 
@@ -73,4 +77,12 @@ fn set_theme(mut contexts: EguiContexts) {
 
     // Mutate global style with above changes
     ctx.set_style(style);
+}
+
+pub fn is_pointer_captured(
+    mut is_pointer_captured: ResMut<IsPointerCaptured>,
+    mut contexts: EguiContexts,
+) {
+    let context = contexts.ctx_mut();
+    is_pointer_captured.0 = context.wants_pointer_input() || context.wants_keyboard_input();
 }

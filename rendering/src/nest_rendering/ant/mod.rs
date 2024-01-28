@@ -1,9 +1,9 @@
 pub mod emote;
 
-use std::ops::Add;
 use bevy::prelude::*;
+use std::ops::Add;
 
-use crate::story::rendering::{
+use crate::{
     common::{ModelViewEntityMap, VisibleGrid},
     nest_rendering::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
 };
