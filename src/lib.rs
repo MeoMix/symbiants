@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_turborand::prelude::*;
 use rendering::RenderingPlugin;
 use simulation::SimulationPlugin;
@@ -10,6 +10,9 @@ impl Plugin for SymbiantsPlugin {
     fn build(&self, app: &mut App) {
         // Use a shared, common source of randomness so that the simulation is deterministic.
         app.init_resource::<GlobalRng>();
+
+        // See https://github.com/bevyengine/bevy/pull/10623 for details.
+        app.insert_resource(AssetMetaCheck::Never);
 
         app.add_plugins((
             DefaultPlugins

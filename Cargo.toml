@@ -7,6 +7,7 @@ build = "build.rs"
 
 [lib]
 name = "symbiants_lib"
+# TODO: don't remember why I needed cdylib
 crate-type = ["cdylib", "rlib"]
 
 [workspace]

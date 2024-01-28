@@ -5,7 +5,7 @@ mod crater_rendering;
 mod nest_rendering;
 pub mod pointer;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
 use pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 
@@ -72,9 +72,6 @@ impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((RenderingCameraPlugin, TilemapPlugin));
         app.add_state::<VisibleGridState>();
-
-        // See https://github.com/bevyengine/bevy/pull/10623 for details.
-        app.insert_resource(AssetMetaCheck::Never);
 
         // Keep this off to prevent spritesheet bleed at various `projection.scale` levels.
         // See https://github.com/bevyengine/bevy/issues/1949 for details.
