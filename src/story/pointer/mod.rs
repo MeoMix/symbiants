@@ -185,9 +185,6 @@ fn get_pointer_released_position(
 #[derive(Resource, Default, PartialEq)]
 pub struct IsPointerCaptured(pub bool);
 
-#[derive(Component)]
-pub struct NoPointerCapture;
-
 pub fn is_pointer_captured(
     mut is_pointer_captured: ResMut<IsPointerCaptured>,
     mut contexts: EguiContexts,
