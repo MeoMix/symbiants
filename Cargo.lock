@@ -2816,7 +2816,6 @@ dependencies = [
  "brotli",
  "chrono",
  "gloo-storage",
- "js-sys",
  "rmp-serde",
  "serde",
  "sun-times",
@@ -2907,11 +2906,8 @@ dependencies = [
  "bevy_turborand",
  "console_error_panic_hook",
  "fs_extra",
- "js-sys",
  "simulation",
- "wasm-bindgen",
  "wasm-bindgen-test",
- "web-sys",
 ]
 
 [[package]]

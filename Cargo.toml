@@ -40,13 +40,6 @@ bevy_turborand = { version = "0.7.0" }
 # WASM builds do not require x11 and cannot use dynamic_linking.
 [target.'cfg(target_family = "wasm")'.dependencies]
 console_error_panic_hook = { version = "0.1.7" }
-js-sys = { version = "0.3.64", default-features = false }
-wasm-bindgen = { version = "0.2.87" }
-web-sys = { version = "0.3.64", features = [
-  "EventTarget",
-  "Window",
-  "BeforeUnloadEvent",
-] }
 
 # Linux builds require x11 or wayland for display.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
