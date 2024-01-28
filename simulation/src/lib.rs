@@ -10,7 +10,7 @@ pub mod story_time;
 
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
-    ecs::schedule::ScheduleLabel,
+    ecs::schedule::{LogLevel, ScheduleBuildSettings, ScheduleLabel},
     prelude::*,
 };
 use bevy_save::SavePlugin;
@@ -106,10 +106,15 @@ pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
-        info!("SimulationPlugin building");
-
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         app.add_plugins(SavePlugin);
+        // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
+        app.edit_schedule(SimulationUpdate, |schedule| {
+            schedule.set_build_settings(ScheduleBuildSettings {
+                ambiguity_detection: LogLevel::Error,
+                ..default()
+            });
+        });
 
         // TODO: timing of this is weird/important, want to have schedule setup early
         // TODO: I think this should be above simulation code rather than in common?
@@ -117,6 +122,9 @@ impl Plugin for SimulationPlugin {
         app.add_systems(PreStartup, insert_simulation_schedule);
         app.init_schedule(RunSimulationUpdateLoop);
         app.add_systems(RunSimulationUpdateLoop, run_simulation_update_schedule);
+
+        app.add_state::<StoryPlaybackState>();
+        // TODO: AppState feels weird to live in Simulation
         app.add_state::<AppState>();
 
         app.configure_sets(
