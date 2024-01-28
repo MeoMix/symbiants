@@ -7,9 +7,6 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use crate::story::pointer::IsPointerCaptured;
-
-
 /// Plugin that adds the necessary systems for `PanCam` components to work
 #[derive(Default)]
 pub struct PanCamPlugin;
@@ -20,6 +17,9 @@ pub struct PanCamSystemSet;
 
 #[derive(Event)]
 pub struct Pan(pub Vec2);
+
+#[derive(Resource, Deref, DerefMut, PartialEq, Eq, Default)]
+struct EguiWantsFocus(bool);
 
 impl Plugin for PanCamPlugin {
     fn build(&self, app: &mut App) {
@@ -36,11 +36,31 @@ impl Plugin for PanCamPlugin {
                 camera_touch_pan_zoom,
                 on_change_projection,
             )
-                .in_set(PanCamSystemSet)
-                .run_if(resource_exists_and_equals(IsPointerCaptured(false))),
+                .in_set(PanCamSystemSet),
         )
         .register_type::<PanCam>();
+
+        app.init_resource::<EguiWantsFocus>()
+            .add_systems(PostUpdate, check_egui_wants_focus)
+            .configure_sets(
+                Update,
+                PanCamSystemSet.run_if(resource_equals(EguiWantsFocus(false))),
+            );
     }
+}
+
+fn check_egui_wants_focus(
+    mut contexts: Query<&mut bevy_egui::EguiContext>,
+    mut wants_focus: ResMut<EguiWantsFocus>,
+) {
+    let ctx = contexts.iter_mut().next();
+    let new_wants_focus = if let Some(ctx) = ctx {
+        let ctx = ctx.into_inner().get_mut();
+        ctx.wants_pointer_input() || ctx.wants_keyboard_input()
+    } else {
+        false
+    };
+    wants_focus.set_if_neq(EguiWantsFocus(new_wants_focus));
 }
 
 fn on_change_projection(
@@ -251,7 +271,13 @@ fn max_scale_within_bounds(
 
 fn event_pan(
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection, &Camera, &GlobalTransform)>,
+    mut query: Query<(
+        &PanCam,
+        &mut Transform,
+        &OrthographicProjection,
+        &Camera,
+        &GlobalTransform,
+    )>,
     mut events: EventReader<Pan>,
 ) {
     for event in events.read() {
@@ -259,8 +285,15 @@ fn event_pan(
         let window_size = Vec2::new(window.width(), window.height());
 
         for (pancam, mut transform, projection, camera, global_transform) in &mut query {
-            let center = camera.world_to_viewport(global_transform, global_transform.translation()).unwrap();
-            let target = camera.world_to_viewport(global_transform, event.0.extend(global_transform.translation().z)).unwrap();
+            let center = camera
+                .world_to_viewport(global_transform, global_transform.translation())
+                .unwrap();
+            let target = camera
+                .world_to_viewport(
+                    global_transform,
+                    event.0.extend(global_transform.translation().z),
+                )
+                .unwrap();
             let delta_device_pixels = target - center;
 
             if pancam.enabled {
@@ -297,7 +330,7 @@ fn camera_mouse_pan(
             && (cam
                 .grab_buttons
                 .iter()
-                .any(|btn| mouse_buttons.pressed(*btn)))
+                .any(|btn| mouse_buttons.pressed(*btn) && !mouse_buttons.just_pressed(*btn)))
         {
             clamp_translation(
                 cam,

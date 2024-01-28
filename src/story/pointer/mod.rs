@@ -4,8 +4,8 @@ use bevy_egui::EguiContexts;
 use crate::story::ui::story::action_menu::PointerAction;
 
 use super::rendering::{
-    common::{SelectedEntity, VisibleGrid},
     camera::RenderingCamera,
+    common::{SelectedEntity, VisibleGrid},
 };
 
 use simulation::{
@@ -193,11 +193,5 @@ pub fn is_pointer_captured(
     mut contexts: EguiContexts,
 ) {
     let context = contexts.ctx_mut();
-
-    // NOTE: 99% of the time just checking wanting_input is fine, but if you move really quickly then there's a brief moment
-    // where wanting input isn't true. This can cause the underlying window to get panned undesirably. So, check over area, too.
-    let is_pointer_over_egui = context.is_pointer_over_area();
-    let is_egui_wanting_input = context.wants_pointer_input() || context.wants_keyboard_input();
-
-    is_pointer_captured.0 = is_egui_wanting_input || is_pointer_over_egui;
+    is_pointer_captured.0 = context.wants_pointer_input() || context.wants_keyboard_input();
 }
