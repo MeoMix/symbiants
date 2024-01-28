@@ -3,6 +3,7 @@ name = "rendering"
 version = "0.1.0"
 edition = "2021"
 
+# NOTE: rendering does NOT get to depend on ui.
 [dependencies]
 simulation = { path = "../simulation" }
 
