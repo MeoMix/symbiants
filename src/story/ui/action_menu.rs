@@ -7,8 +7,8 @@ use crate::story::{
     rendering::{common::VisibleGrid, VisibleGridState},
     simulation::{
         crater_simulation::crater::Crater, nest_simulation::nest::Nest, settings::Settings,
+        story_time::StoryTime,
     },
-    story_time::StoryTime,
 };
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]

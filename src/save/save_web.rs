@@ -11,12 +11,10 @@ use std::{cell::RefCell, io::Read, io::Write, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
-use crate::story::{
-    simulation::{
-        crater_simulation::crater::Crater,
-        nest_simulation::{ant::Ant, element::Element, nest::Nest, pheromone::Pheromone},
-        settings::Settings,
-    },
+use crate::story::simulation::{
+    crater_simulation::crater::Crater,
+    nest_simulation::{ant::Ant, element::Element, nest::Nest, pheromone::Pheromone},
+    settings::Settings,
     story_time::{StoryRealWorldTime, StoryTime},
 };
 

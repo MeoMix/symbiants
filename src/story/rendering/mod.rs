@@ -43,13 +43,11 @@ use self::{
     pan_zoom_camera::PanZoomCameraPlugin,
 };
 
-use super::{
-    simulation::{
-        app_state::AppState,
-        nest_simulation::{ant::Ant, element::Element, nest::AtNest, pheromone::Pheromone},
-        CleanupSet, FinishSetupSet,
-    },
+use super::simulation::{
+    app_state::AppState,
+    nest_simulation::{ant::Ant, element::Element, nest::AtNest, pheromone::Pheromone},
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
+    CleanupSet, FinishSetupSet,
 };
 
 // TODO: Find a better home for this?

@@ -7,8 +7,8 @@ use crate::story::{
         app_state::AppState,
         common::{grid::Grid, position::Position},
         nest_simulation::nest::{AtNest, Nest},
+        story_time::{StoryTime, TimeInfo},
     },
-    story_time::{StoryTime, TimeInfo},
 };
 
 #[derive(Component)]

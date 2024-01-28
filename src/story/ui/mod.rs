@@ -1,12 +1,12 @@
 pub mod action_menu;
 mod breath_dialog;
-pub mod selection_menu;
-mod settings_menu;
 mod info_panel;
 mod loading_dialog;
+pub mod selection_menu;
+mod settings_menu;
 mod story_over_dialog;
 
-use crate::story::{simulation::app_state::AppState, story_time::StoryPlaybackState};
+use crate::story::simulation::{app_state::AppState, story_time::StoryPlaybackState};
 
 use self::{
     action_menu::*, breath_dialog::update_breath_dialog, info_panel::*, loading_dialog::*,

@@ -2,13 +2,11 @@ use super::{
     commands::AntCommandsExt, digestion::Digestion, AntAteFoodEvent, AntInventory, AntOrientation,
     AntRole, Dead, Initiative,
 };
-use crate::story::{
-    simulation::{
-        common::{grid::Grid, position::Position},
-        nest_simulation::{
-            element::Element,
-            nest::{AtNest, Nest},
-        },
+use crate::story::simulation::{
+    common::{grid::Grid, position::Position},
+    nest_simulation::{
+        element::Element,
+        nest::{AtNest, Nest},
     },
     story_time::DEFAULT_TICKS_PER_SECOND,
 };

@@ -11,8 +11,8 @@ use crate::story::{
             nest::{AtNest, Nest},
         },
         settings::Settings,
+        story_time::DEFAULT_TICKS_PER_SECOND,
     },
-    story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::{prelude::*, utils::HashSet};
 

@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
-use crate::story::{
-    simulation::nest_simulation::{
+use crate::story::simulation::{
+    nest_simulation::{
         ant::{birthing::Birthing, hunger::Hunger, AntRole, Dead},
         element::Food,
     },

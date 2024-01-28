@@ -17,8 +17,9 @@ use main_menu::update_main_menu;
 
 use story::{
     rendering::RenderingPlugin,
-    simulation::{app_state::AppState, SimulationPlugin, SimulationUpdate},
-    story_time::StoryPlaybackState,
+    simulation::{
+        app_state::AppState, story_time::StoryPlaybackState, SimulationPlugin, SimulationUpdate,
+    },
     ui::StoryUIPlugin,
 };
 

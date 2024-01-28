@@ -4,6 +4,8 @@ pub mod crater_simulation;
 pub mod external_event;
 pub mod nest_simulation;
 pub mod settings;
+pub mod simulation_timestep;
+pub mod story_time;
 
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
@@ -61,11 +63,11 @@ use crate::{
             settings::{
                 initialize_settings_resources, register_settings, remove_settings_resources,
             },
-        },
-        story_time::{
-            initialize_story_time_resources, register_story_time, remove_story_time_resources,
-            set_rate_of_time, setup_story_time, update_story_elapsed_ticks,
-            update_story_real_world_time, update_time_scale, StoryPlaybackState,
+            story_time::{
+                initialize_story_time_resources, register_story_time, remove_story_time_resources,
+                set_rate_of_time, setup_story_time, update_story_elapsed_ticks,
+                update_story_real_world_time, update_time_scale, StoryPlaybackState,
+            },
         },
     },
 };
@@ -89,8 +91,10 @@ use self::{
 
 use super::{
     pointer::remove_pointer_resources,
-    simulation::crater_simulation::crater::register_crater,
-    simulation_timestep::{run_simulation_update_schedule, SimulationTime},
+    simulation::{
+        crater_simulation::crater::register_crater,
+        simulation_timestep::{run_simulation_update_schedule, SimulationTime},
+    },
 };
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]

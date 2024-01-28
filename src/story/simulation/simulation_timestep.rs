@@ -2,7 +2,7 @@
 use bevy::prelude::*;
 use bevy::utils::Duration;
 
-use super::simulation::SimulationUpdate;
+use super::SimulationUpdate;
 
 /// The amount of time that must pass before the fixed timestep schedule is run again.
 #[derive(Resource, Debug)]

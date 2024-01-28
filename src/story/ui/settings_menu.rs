@@ -1,12 +1,10 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use crate::story::{
-    simulation::{
-        app_state::AppState,
-        nest_simulation::{ant::AntColor, pheromone::PheromoneVisibility},
-        settings::Settings,
-    },
+use crate::story::simulation::{
+    app_state::AppState,
+    nest_simulation::{ant::AntColor, pheromone::PheromoneVisibility},
+    settings::Settings,
     story_time::{
         StoryPlaybackState, StoryTime, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,
         MAX_USER_TICKS_PER_SECOND,
