@@ -1,0 +1,25 @@
+[package]
+name = "rendering"
+version = "0.1.0"
+edition = "2021"
+
+# NOTE: rendering does NOT get to depend on ui.
+[dependencies]
+simulation = { path = "../simulation" }
+
+# TODO: Trim features down to be crate-specific
+bevy = { version = "0.12.1", default-features = false, features = [
+    "bevy_asset",
+    "bevy_scene",
+    "bevy_winit",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_sprite",
+    "bevy_text",
+    "default_font",
+    "png",
+] }
+bevy_ecs_tilemap = { git = "https://github.com/MeoMix/bevy_ecs_tilemap", branch = "main", features = [
+    "atlas",
+] }
+bevy_turborand = { version = "0.7.0" }

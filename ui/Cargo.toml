@@ -1,0 +1,25 @@
+[package]
+name = "ui"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+simulation = { path = "../simulation" }
+rendering = { path = "../rendering" }
+
+# TODO: Trim features down to be crate-specific
+bevy = { version = "0.12.1", default-features = false, features = [
+  "bevy_asset",
+  "bevy_scene",
+  "bevy_winit",
+  "bevy_render",
+  "bevy_core_pipeline",
+  "bevy_sprite",
+  "bevy_text",
+  "default_font",
+  "png",
+] }
+bevy_egui = { version = "0.24.0" }
+bevy_turborand = { version = "0.7.0" }

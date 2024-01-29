@@ -2679,6 +2679,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "216080ab382b992234dda86873c18d4c48358f5cfcb70fd693d7f6f2131b628b"
 
 [[package]]
+name = "rendering"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_ecs_tilemap",
+ "bevy_turborand",
+ "simulation",
+]
+
+[[package]]
 name = "rmp"
 version = "0.8.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2797,6 +2807,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "238abfbb77c1915110ad968465608b68e869e0772622c9656714e73e5a1a522f"
 
 [[package]]
+name = "simulation"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_save",
+ "bevy_turborand",
+ "brotli",
+ "chrono",
+ "gloo-storage",
+ "rmp-serde",
+ "serde",
+ "sun-times",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2877,18 +2904,12 @@ dependencies = [
  "bevy_egui",
  "bevy_save",
  "bevy_turborand",
- "brotli",
- "chrono",
  "console_error_panic_hook",
  "fs_extra",
- "gloo-storage",
- "js-sys",
- "rmp-serde",
- "serde",
- "sun-times",
- "wasm-bindgen",
+ "rendering",
+ "simulation",
+ "ui",
  "wasm-bindgen-test",
- "web-sys",
 ]
 
 [[package]]
@@ -3120,6 +3141,17 @@ dependencies = [
  "getrandom",
  "instant",
  "serde",
+]
+
+[[package]]
+name = "ui"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy_egui",
+ "bevy_turborand",
+ "rendering",
+ "simulation",
 ]
 
 [[package]]
