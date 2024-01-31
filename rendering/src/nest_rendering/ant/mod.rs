@@ -18,16 +18,13 @@ use std::ops::Add;
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
 
+// TODO: Maybe call this AntView instead?
 #[derive(Component)]
-pub struct AntSprite;
-
-#[derive(Component)]
-pub struct InventoryItemSprite;
-
-#[derive(Bundle)]
-pub struct AntHeldElementSpriteBundle {
-    sprite_sheet_bundle: SpriteSheetBundle,
-    inventory_item_sprite: InventoryItemSprite,
+pub struct AntSpriteContainer {
+    pub sprite_entity: Entity,
+    pub label_entity: Entity,
+    pub inventory_item_entity: Option<Entity>,
+    pub emote_entity: Option<Entity>,
 }
 
 /// When an ant model is added to the simulation, render an associated ant sprite.
@@ -147,10 +144,8 @@ pub fn rerender_ants(
 /// inventory needs to be spawned as a child of AntSprite not as a child of the SpatialBundle container.
 pub fn on_update_ant_inventory(
     mut commands: Commands,
-    ant_model_query: Query<(Entity, &AntInventory), Changed<AntInventory>>,
-    ant_view_query: Query<Option<&Children>>,
-    ant_sprite_view_query: Query<&mut Sprite, With<AntSprite>>,
-    inventory_item_sprite_query: Query<&InventoryItemSprite>,
+    ant_model_query: Query<(Entity, Ref<AntInventory>)>,
+    mut ant_view_query: Query<&mut AntSpriteContainer>,
     elements_query: Query<&Element>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -167,47 +162,35 @@ pub fn on_update_ant_inventory(
     }
 
     for (ant_model_entity, inventory) in ant_model_query.iter() {
+        if inventory.is_added() || !inventory.is_changed() {
+            continue;
+        }
+
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
+            let mut ant_sprite_container = ant_view_query.get_mut(ant_view_entity).unwrap();
+
             if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
                 &inventory,
                 &elements_query,
                 &element_texture_atlas_handle,
             ) {
-                if let Ok(children) = ant_view_query.get(ant_view_entity) {
-                    if let Some(children) = children {
-                        let ant_sprite_entity = children
-                            .iter()
-                            .find(|&&child| ant_sprite_view_query.get(child).is_ok())
-                            .unwrap();
+                let ant_inventory_item_entity = commands.spawn(inventory_item_bundle).id();
 
-                        commands.entity(*ant_sprite_entity).with_children(
-                            |ant_sprite: &mut ChildBuilder| {
-                                // TODO: store entity somewhere and despawn using it rather than searching
-                                ant_sprite.spawn(inventory_item_bundle);
-                            },
-                        );
-                    }
-                }
+                commands
+                    .entity(ant_sprite_container.sprite_entity)
+                    .push_children(&[ant_inventory_item_entity]);
+
+                ant_sprite_container.inventory_item_entity = Some(ant_inventory_item_entity);
             } else {
-                if let Ok(children) = ant_view_query.get(ant_view_entity) {
-                    if let Some(children) = children {
-                        let ant_sprite_entity = children
-                            .iter()
-                            .find(|&&child| ant_sprite_view_query.get(child).is_ok())
-                            .unwrap();
+                let ant_inventory_item_entity = ant_sprite_container.inventory_item_entity.unwrap();
 
-                        if let Ok(children) = ant_view_query.get(*ant_sprite_entity) {
-                            if let Some(children) = children {
-                                for &child in children.iter().filter(|&&child| {
-                                    inventory_item_sprite_query.get(child).is_ok()
-                                }) {
-                                    // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-                                    commands.entity(child).remove_parent().despawn();
-                                }
-                            }
-                        }
-                    }
-                }
+                // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+                commands
+                    .entity(ant_inventory_item_entity)
+                    .remove_parent()
+                    .despawn();
+
+                ant_sprite_container.inventory_item_entity = None;
             }
         }
     }
@@ -246,9 +229,9 @@ pub fn on_update_ant_position(
 }
 
 pub fn on_update_ant_color(
-    ant_model_query: Query<(Entity, &AntColor), (Changed<AntColor>, Without<Dead>)>,
-    ant_view_query: Query<&Children>,
-    mut ant_sprite_view_query: Query<&mut Sprite, With<AntSprite>>,
+    ant_model_query: Query<(Entity, Ref<AntColor>), Without<Dead>>,
+    ant_view_query: Query<&AntSpriteContainer>,
+    mut sprite_query: Query<&mut Sprite>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
     nest_query: Query<&Grid, With<Nest>>,
@@ -263,25 +246,25 @@ pub fn on_update_ant_color(
     }
 
     for (ant_model_entity, color) in ant_model_query.iter() {
+        if !color.is_changed() || color.is_added() {
+            continue;
+        }
+
         if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
-            if let Ok(children) = ant_view_query.get(*ant_view_entity) {
-                if let Some(ant_sprite_entity) = children
-                    .iter()
-                    .find(|&&child| ant_sprite_view_query.get(child).is_ok())
-                {
-                    if let Ok(mut sprite) = ant_sprite_view_query.get_mut(*ant_sprite_entity) {
-                        sprite.color = color.0;
-                    }
-                }
-            }
+            let ant_sprite_container = ant_view_query.get(*ant_view_entity).unwrap();
+            let mut sprite = sprite_query
+                .get_mut(ant_sprite_container.sprite_entity)
+                .unwrap();
+
+            sprite.color = color.0;
         }
     }
 }
 
 pub fn on_update_ant_orientation(
-    ant_model_query: Query<(Entity, &AntOrientation), Changed<AntOrientation>>,
-    ant_view_query: Query<&Children>,
-    mut ant_sprite_view_query: Query<&mut Transform, With<AntSprite>>,
+    ant_model_query: Query<(Entity, Ref<AntOrientation>)>,
+    ant_view_query: Query<&AntSpriteContainer>,
+    mut transform_query: Query<&mut Transform>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
     nest_query: Query<&Grid, With<Nest>>,
@@ -296,26 +279,26 @@ pub fn on_update_ant_orientation(
     }
 
     for (ant_model_entity, orientation) in ant_model_query.iter() {
+        if !orientation.is_changed() || orientation.is_added() {
+            continue;
+        }
+
         if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
-            if let Ok(children) = ant_view_query.get(*ant_view_entity) {
-                if let Some(ant_sprite_entity) = children
-                    .iter()
-                    .find(|&&child| ant_sprite_view_query.get(child).is_ok())
-                {
-                    if let Ok(mut transform) = ant_sprite_view_query.get_mut(*ant_sprite_entity) {
-                        transform.scale = orientation.as_world_scale();
-                        transform.rotation = orientation.as_world_rotation();
-                    }
-                }
-            }
+            let ant_sprite_container = ant_view_query.get(*ant_view_entity).unwrap();
+            let mut transform = transform_query
+                .get_mut(ant_sprite_container.sprite_entity)
+                .unwrap();
+
+            transform.scale = orientation.as_world_scale();
+            transform.rotation = orientation.as_world_rotation();
         }
     }
 }
 
 pub fn on_added_ant_dead(
     ant_model_query: Query<Entity, Added<Dead>>,
-    ant_view_query: Query<&Children>,
-    mut ant_sprite_view_query: Query<(&mut Handle<Image>, &mut Sprite), With<AntSprite>>,
+    ant_view_query: Query<&AntSpriteContainer>,
+    mut sprite_image_query: Query<(&mut Handle<Image>, &mut Sprite)>,
     asset_server: Res<AssetServer>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     nest_query: Query<&Grid, With<Nest>>,
@@ -332,21 +315,15 @@ pub fn on_added_ant_dead(
 
     for ant_model_entity in ant_model_query.iter() {
         if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
-            if let Ok(children) = ant_view_query.get(*ant_view_entity) {
-                if let Some(ant_sprite_entity) = children
-                    .iter()
-                    .find(|&&child| ant_sprite_view_query.get(child).is_ok())
-                {
-                    if let Ok((mut image_handle, mut sprite)) =
-                        ant_sprite_view_query.get_mut(*ant_sprite_entity)
-                    {
-                        *image_handle = asset_server.load("images/ant_dead.png");
+            let ant_sprite_container = ant_view_query.get(*ant_view_entity).unwrap();
+            let (mut image_handle, mut sprite) = sprite_image_query
+                .get_mut(ant_sprite_container.sprite_entity)
+                .unwrap();
 
-                        // Apply gray tint to dead ants.
-                        sprite.color = Color::GRAY;
-                    }
-                }
-            }
+            *image_handle = asset_server.load("images/ant_dead.png");
+
+            // Apply gray tint to dead ants.
+            sprite.color = Color::GRAY;
         }
     }
 }
@@ -382,8 +359,76 @@ fn spawn_ant_sprite(
         ("images/ant.png", color.0)
     };
 
+    // Spawn AntSprite with child inventory/hat
+    let mut ant_sprite = commands.spawn((SpriteBundle {
+        texture: asset_server.load(sprite_image),
+        sprite: Sprite {
+            color: sprite_color,
+            // 1.5 is just a feel good number to make ants slightly larger than the elements they dig up
+            custom_size: Some(Vec2::splat(1.5)),
+            ..default()
+        },
+        transform: Transform {
+            rotation: orientation.as_world_rotation(),
+            scale: orientation.as_world_scale(),
+            ..default()
+        },
+        ..default()
+    },));
+
+    let mut inventory_item_entity = None;
+
+    ant_sprite.with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
+        if let Some(bundle) = get_inventory_item_sprite_bundle(
+            inventory,
+            &elements_query,
+            &element_texture_atlas_handle,
+        ) {
+            inventory_item_entity = Some(parent.spawn(bundle).id());
+        }
+
+        if *role == AntRole::Queen {
+            parent.spawn(SpriteBundle {
+                texture: asset_server.load("images/crown.png"),
+                transform: Transform::from_xyz(0.33, 0.33, 1.0),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(0.5)),
+                    ..default()
+                },
+                ..default()
+            });
+        }
+    });
+
+    let sprite_entity = ant_sprite.id();
+
+    let ant_label = commands.spawn(Text2dBundle {
+        transform: Transform {
+            translation: Vec3::new(0.0, -1.0, 1.0),
+            scale: Vec3::new(0.01, 0.01, 0.0),
+            ..default()
+        },
+        text: Text::from_section(
+            name.0.as_str(),
+            TextStyle {
+                color: Color::WHITE,
+                font_size: 60.0,
+                ..default()
+            },
+        ),
+        ..default()
+    });
+
+    let label_entity = ant_label.id();
+
     let ant_view_entity = commands
         .spawn((
+            AntSpriteContainer {
+                sprite_entity,
+                label_entity,
+                inventory_item_entity,
+                emote_entity: None,
+            },
             translation_offset,
             SpatialBundle {
                 transform: Transform {
@@ -396,65 +441,7 @@ fn spawn_ant_sprite(
             },
             AtNest,
         ))
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    AntSprite,
-                    SpriteBundle {
-                        texture: asset_server.load(sprite_image),
-                        sprite: Sprite {
-                            color: sprite_color,
-                            // 1.5 is just a feel good number to make ants slightly larger than the elements they dig up
-                            custom_size: Some(Vec2::splat(1.5)),
-                            ..default()
-                        },
-                        transform: Transform {
-                            rotation: orientation.as_world_rotation(),
-                            scale: orientation.as_world_scale(),
-                            ..default()
-                        },
-                        ..default()
-                    },
-                ))
-                .with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-                    if let Some(bundle) = get_inventory_item_sprite_bundle(
-                        inventory,
-                        &elements_query,
-                        &element_texture_atlas_handle,
-                    ) {
-                        parent.spawn(bundle);
-                    }
-
-                    if *role == AntRole::Queen {
-                        parent.spawn(SpriteBundle {
-                            texture: asset_server.load("images/crown.png"),
-                            transform: Transform::from_xyz(0.33, 0.33, 1.0),
-                            sprite: Sprite {
-                                custom_size: Some(Vec2::splat(0.5)),
-                                ..default()
-                            },
-                            ..default()
-                        });
-                    }
-                });
-
-            parent.spawn(Text2dBundle {
-                transform: Transform {
-                    translation: Vec3::new(0.0, -1.0, 1.0),
-                    scale: Vec3::new(0.01, 0.01, 0.0),
-                    ..default()
-                },
-                text: Text::from_section(
-                    name.0.as_str(),
-                    TextStyle {
-                        color: Color::WHITE,
-                        font_size: 60.0,
-                        ..default()
-                    },
-                ),
-                ..default()
-            });
-        })
+        .push_children(&[sprite_entity, label_entity])
         .id();
 
     model_view_entity_map.insert(model_entity, ant_view_entity);
@@ -464,7 +451,7 @@ fn get_inventory_item_sprite_bundle(
     inventory: &AntInventory,
     elements_query: &Query<&Element>,
     element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
-) -> Option<AntHeldElementSpriteBundle> {
+) -> Option<SpriteSheetBundle> {
     let element_entity = match inventory.0 {
         Some(element_entity) => element_entity,
         None => return None,
@@ -489,8 +476,5 @@ fn get_inventory_item_sprite_bundle(
         ..default()
     };
 
-    Some(AntHeldElementSpriteBundle {
-        sprite_sheet_bundle,
-        inventory_item_sprite: InventoryItemSprite,
-    })
+    Some(sprite_sheet_bundle)
 }

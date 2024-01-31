@@ -1,5 +1,7 @@
+use super::AntSpriteContainer;
 use crate::common::{ModelViewEntityMap, VisibleGrid};
-
+use bevy::prelude::*;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 use simulation::{
     common::grid::Grid,
     nest_simulation::{
@@ -14,20 +16,9 @@ use simulation::{
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 
-use bevy::{prelude::*, utils::HashSet};
-use bevy_turborand::{DelegatedRng, GlobalRng};
-
-use super::AntSprite;
-
-#[derive(Component)]
-pub struct EmoteSprite {
-    parent_entity: Entity,
-}
-
-// TODO: Invert ownership would make this O(1) instead of O(n).
 pub fn on_removed_emote(
     mut removed: RemovedComponents<Emote>,
-    emote_view_query: Query<(Entity, &EmoteSprite)>,
+    mut ant_view_query: Query<&mut AntSpriteContainer>,
     mut commands: Commands,
     nest_query: Query<&Grid, With<Nest>>,
     visible_grid: Res<VisibleGrid>,
@@ -41,12 +32,15 @@ pub fn on_removed_emote(
         return;
     }
 
-    let emoting_view_entities = &mut removed.read().collect::<HashSet<_>>();
-
-    for (emote_view_entity, emote_sprite) in emote_view_query.iter() {
-        if emoting_view_entities.contains(&emote_sprite.parent_entity) {
+    for emote_view_entity in removed.read() {
+        if let Ok(mut ant_sprite_container) = ant_view_query.get_mut(emote_view_entity) {
             // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-            commands.entity(emote_view_entity).remove_parent().despawn();
+            commands
+                .entity(ant_sprite_container.emote_entity.unwrap())
+                .remove_parent()
+                .despawn();
+
+            ant_sprite_container.emote_entity = None;
         }
     }
 }
@@ -68,8 +62,7 @@ pub fn on_tick_emote(
 }
 
 pub fn on_added_ant_emote(
-    ant_view_query: Query<(Entity, &Emote, &Children), Added<Emote>>,
-    ant_sprite_view_query: Query<&AntSprite>,
+    mut ant_view_query: Query<(&Emote, &mut AntSpriteContainer), Added<Emote>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     nest_query: Query<&Grid, With<Nest>>,
@@ -84,35 +77,28 @@ pub fn on_added_ant_emote(
         return;
     }
 
-    for (ant_view_entity, emote, children) in ant_view_query.iter() {
-        if let Some(ant_sprite_view_entity) = children
-            .iter()
-            .find(|&&child| ant_sprite_view_query.get(child).is_ok())
-        {
-            commands
-                .entity(*ant_sprite_view_entity)
-                .with_children(|parent| {
-                    let texture = match emote.emote_type() {
-                        EmoteType::Asleep => asset_server.load("images/zzz.png"),
-                        EmoteType::FoodLove => asset_server.load("images/foodlove.png"),
-                    };
+    for (emote, mut ant_sprite_container) in ant_view_query.iter_mut() {
+        let texture = match emote.emote_type() {
+            EmoteType::Asleep => asset_server.load("images/zzz.png"),
+            EmoteType::FoodLove => asset_server.load("images/foodlove.png"),
+        };
 
-                    parent.spawn((
-                        EmoteSprite {
-                            parent_entity: ant_view_entity,
-                        },
-                        SpriteBundle {
-                            transform: Transform::from_xyz(0.75, 1.0, 1.0),
-                            sprite: Sprite {
-                                custom_size: Some(Vec2::splat(1.0)),
-                                ..default()
-                            },
-                            texture,
-                            ..default()
-                        },
-                    ));
-                });
-        }
+        let ant_emote_entity = commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_xyz(0.75, 1.0, 1.0),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(1.0)),
+                    ..default()
+                },
+                texture,
+                ..default()
+            })
+            .id();
+
+        commands
+            .entity(ant_sprite_container.sprite_entity)
+            .push_children(&[ant_emote_entity]);
+        ant_sprite_container.emote_entity = Some(ant_emote_entity);
     }
 }
 
