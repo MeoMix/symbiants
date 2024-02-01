@@ -5,16 +5,41 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use simulation::{
     common::grid::Grid,
     nest_simulation::{
-        ant::{
-            emote::{Emote, EmoteType},
-            sleep::Asleep,
-            AntAteFoodEvent,
-        },
+        ant::{sleep::Asleep, AntAteFoodEvent},
         nest::{AtNest, Nest},
     },
     settings::Settings,
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
 };
+
+#[derive(Component, Debug, PartialEq, Copy, Clone)]
+pub enum EmoteType {
+    Asleep,
+    FoodLove,
+}
+
+#[derive(Component, Debug, PartialEq, Copy, Clone)]
+pub struct Emote {
+    emote_type: EmoteType,
+    expires_at: isize,
+}
+
+impl Emote {
+    pub fn new(emote_type: EmoteType, expires_at: isize) -> Self {
+        Self {
+            emote_type,
+            expires_at,
+        }
+    }
+
+    pub fn emote_type(&self) -> EmoteType {
+        self.emote_type
+    }
+
+    pub fn expires_at(&self) -> isize {
+        self.expires_at
+    }
+}
 
 pub fn on_removed_ant_emote(
     mut removed: RemovedComponents<Emote>,

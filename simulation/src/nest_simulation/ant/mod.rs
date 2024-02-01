@@ -5,7 +5,6 @@ pub mod death;
 pub mod dig;
 pub mod digestion;
 pub mod drop;
-pub mod emote;
 pub mod hunger;
 mod name_list;
 pub mod nest_expansion;
