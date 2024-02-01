@@ -11,16 +11,14 @@ pub enum EmoteType {
 #[derive(Component, Debug, PartialEq, Copy, Clone)]
 pub struct Emote {
     emote_type: EmoteType,
-    value: f32,
-    max: f32,
+    expires_at: isize,
 }
 
 impl Emote {
-    pub fn new(emote_type: EmoteType) -> Self {
+    pub fn new(emote_type: EmoteType, expires_at: isize) -> Self {
         Self {
             emote_type,
-            value: 0.0,
-            max: 100.0,
+            expires_at,
         }
     }
 
@@ -28,15 +26,7 @@ impl Emote {
         self.emote_type
     }
 
-    pub fn max(&self) -> f32 {
-        self.max
-    }
-
-    pub fn tick(&mut self, rate_of_emote: f32) {
-        self.value = (self.value + rate_of_emote).min(self.max);
-    }
-
-    pub fn is_expired(&self) -> bool {
-        self.value >= self.max
+    pub fn expires_at(&self) -> isize {
+        self.expires_at
     }
 }

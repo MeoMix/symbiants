@@ -137,6 +137,10 @@ pub fn rerender_ants(
 
 /// When an Ant model picks up or sets down an inventory item (i.e. an Element), its view
 /// needs to be updated to reflect the change.
+/// 
+/// CAREFUL: Simulation can tick multiple times before rendering. So, it's possible for change detection to
+/// indicate a change to inventory has occurred, but that *multiple* changes have occurred. Do not implement this
+/// as a simple toggle spawn/despawn of the sprite.
 ///
 /// Note that the root view of an ant is a SpatialBundle container with AntSprite as a child of the SpatialBundle.
 /// This is because Label is associated with the Ant's position, but is not associated with the Ant's rotation.
@@ -166,14 +170,27 @@ pub fn on_update_ant_inventory(
             continue;
         }
 
+        // If inventory changed then, if there is an inventory sprite, need to despawn it.
+        // Then, if there is inventory currently, need to spawn it.
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             let mut ant_sprite_container = ant_view_query.get_mut(ant_view_entity).unwrap();
 
-            if let Some(inventory_item_bundle) = get_inventory_item_sprite_bundle(
-                &inventory,
-                &elements_query,
-                &element_texture_atlas_handle,
-            ) {
+            if let Some(inventory_item_entity) = ant_sprite_container.inventory_item_entity {
+                // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
+                commands
+                    .entity(inventory_item_entity)
+                    .remove_parent()
+                    .despawn();
+                ant_sprite_container.inventory_item_entity = None;
+            }
+
+            if let Some(element_entity) = inventory.0 {
+                let inventory_item_bundle = get_inventory_item_bundle(
+                    element_entity,
+                    &elements_query,
+                    &element_texture_atlas_handle,
+                );
+
                 let ant_inventory_item_entity = commands.spawn(inventory_item_bundle).id();
 
                 commands
@@ -181,16 +198,6 @@ pub fn on_update_ant_inventory(
                     .push_children(&[ant_inventory_item_entity]);
 
                 ant_sprite_container.inventory_item_entity = Some(ant_inventory_item_entity);
-            } else {
-                let ant_inventory_item_entity = ant_sprite_container.inventory_item_entity.unwrap();
-
-                // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-                commands
-                    .entity(ant_inventory_item_entity)
-                    .remove_parent()
-                    .despawn();
-
-                ant_sprite_container.inventory_item_entity = None;
             }
         }
     }
@@ -217,6 +224,8 @@ pub fn on_update_ant_position(
     };
 
     for (ant_model_entity, position) in ant_model_query.iter() {
+        // TODO: I think this is running on Added but no need to?
+
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Ok((mut transform, translation_offset)) = ant_view_query.get_mut(ant_view_entity)
             {
@@ -379,11 +388,13 @@ fn spawn_ant_sprite(
     let mut inventory_item_entity = None;
 
     ant_sprite.with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
-        if let Some(bundle) = get_inventory_item_sprite_bundle(
-            inventory,
-            &elements_query,
-            &element_texture_atlas_handle,
-        ) {
+        if let Some(element_entity) = inventory.0 {
+            let bundle = get_inventory_item_bundle(
+                element_entity,
+                &elements_query,
+                &element_texture_atlas_handle,
+            );
+
             inventory_item_entity = Some(parent.spawn(bundle).id());
         }
 
@@ -447,16 +458,11 @@ fn spawn_ant_sprite(
     model_view_entity_map.insert(model_entity, ant_view_entity);
 }
 
-fn get_inventory_item_sprite_bundle(
-    inventory: &AntInventory,
+fn get_inventory_item_bundle(
+    element_entity: Entity,
     elements_query: &Query<&Element>,
     element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
-) -> Option<SpriteSheetBundle> {
-    let element_entity = match inventory.0 {
-        Some(element_entity) => element_entity,
-        None => return None,
-    };
-
+) -> SpriteSheetBundle {
     let element = elements_query.get(element_entity).unwrap();
 
     let element_exposure = ElementExposure {
@@ -469,12 +475,10 @@ fn get_inventory_item_sprite_bundle(
     let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure, *element));
     sprite.custom_size = Some(Vec2::splat(1.0));
 
-    let sprite_sheet_bundle = SpriteSheetBundle {
+    SpriteSheetBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
         sprite,
         texture_atlas: element_texture_atlas_handle.0.clone(),
         ..default()
-    };
-
-    Some(sprite_sheet_bundle)
+    }
 }

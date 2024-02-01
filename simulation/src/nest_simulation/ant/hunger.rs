@@ -234,6 +234,8 @@ pub fn ants_regurgitate(
             continue;
         }
 
+        // TODO: Consider `is_digesting` because an ant remains hungry for a while, even if its digesting food,
+        // so it would be possible to transfer it too much food if don't consider how full its stomach is
         digestion.value -= digestion_transfer_amount;
         other_ant_digestion.value += digestion_transfer_amount;
 

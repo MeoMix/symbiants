@@ -1,6 +1,4 @@
-use crate::{
-    nest_simulation::nest::AtNest, story_time::DEFAULT_TICKS_PER_SECOND,
-};
+use crate::{nest_simulation::nest::AtNest, story_time::DEFAULT_TICKS_PER_SECOND};
 
 use super::{hunger::Hunger, Dead};
 use bevy::prelude::*;
@@ -26,6 +24,10 @@ impl Digestion {
             max,
             rate,
         }
+    }
+
+    pub fn is_digesting(&self) -> bool {
+        self.value < self.max
     }
 
     pub fn value(&self) -> f32 {

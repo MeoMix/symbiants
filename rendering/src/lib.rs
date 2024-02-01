@@ -14,10 +14,7 @@ use self::{
     nest_rendering::{
         ant::{
             cleanup_ants,
-            emote::{
-                ants_sleep_emote, on_added_ant_emote, on_ant_ate_food, on_ant_wake_up,
-                on_removed_emote, on_tick_emote,
-            },
+            emote::{ants_sleep_emote, despawn_expired_emotes, on_ant_ate_food, on_ant_wake_up},
             on_added_ant_dead, on_spawn_ant, on_update_ant_color, on_update_ant_inventory,
             on_update_ant_orientation, on_update_ant_position, rerender_ants,
         },
@@ -41,6 +38,7 @@ use self::{
 };
 use bevy::prelude::*;
 use bevy_ecs_tilemap::TilemapPlugin;
+use nest_rendering::ant::emote::{on_added_ant_emote, on_removed_ant_emote};
 use pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 use simulation::{
     app_state::AppState,
@@ -168,27 +166,30 @@ fn build_nest_systems(app: &mut App) {
                 on_despawn::<Pheromone, AtNest>,
             ),
             // Added
-            (on_added_ant_dead, on_added_ant_emote),
+            (on_added_ant_emote, on_added_ant_dead),
             // Removed
-            (on_removed_emote),
+            (on_removed_ant_emote),
             // Updated
             (
                 on_update_ant_position,
                 on_update_ant_orientation,
                 on_update_ant_color,
                 on_update_ant_inventory,
+                on_update_element_position,
+                on_update_element_exposure,
+                on_update_pheromone_visibility,
+            ),
+            // Misc
+            (
                 on_ant_ate_food,
+                on_ant_wake_up,
                 // TODO: naming inconsistencies, but probably want to go more this direction rather than away.
                 ants_sleep_emote.run_if(
                     // TODO: this feels hacky? trying to rate limit how often checks for sleeping emoting occurs.
                     resource_exists::<StoryTime>()
                         .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
                 ),
-                on_ant_wake_up,
-                on_tick_emote,
-                on_update_element_position,
-                on_update_element_exposure,
-                on_update_pheromone_visibility,
+                despawn_expired_emotes,
             ),
         )
             .run_if(in_state(AppState::TellStory)),
