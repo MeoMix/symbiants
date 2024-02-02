@@ -1,13 +1,13 @@
 use bevy::prelude::*;
-
-use crate::story::grid::Grid;
-
-use super::crater::{AtCrater, Crater};
+use simulation::{
+    common::grid::Grid,
+    crater_simulation::crater::{AtCrater, Crater},
+};
 
 #[derive(Component)]
 pub struct CraterBackground;
 
-pub fn setup_background(mut commands: Commands, crater_query: Query<&Grid, With<Crater>>) {
+pub fn spawn_background(mut commands: Commands, crater_query: Query<&Grid, With<Crater>>) {
     let grid = crater_query.single();
 
     let crater_background_sprite = SpriteBundle {
@@ -22,14 +22,10 @@ pub fn setup_background(mut commands: Commands, crater_query: Query<&Grid, With<
     commands.spawn((crater_background_sprite, CraterBackground, AtCrater));
 }
 
-pub fn teardown_background(
+pub fn cleanup_background(
     crater_background_query: Query<Entity, With<CraterBackground>>,
     mut commands: Commands,
 ) {
-    for crater_background_entity in crater_background_query.iter() {
-        commands
-            .entity(crater_background_entity)
-            .remove_parent()
-            .despawn();
-    }
+    let crater_background_entity = crater_background_query.single();
+    commands.entity(crater_background_entity).despawn();
 }

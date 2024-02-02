@@ -78,6 +78,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_save::SavePlugin;
+use crater_simulation::crater::insert_crater_grid;
 
 #[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
 pub struct RunSimulationUpdateLoop;
@@ -331,6 +332,14 @@ fn build_crater_systems(app: &mut App) {
             .chain()
             .after(initialize_save_resources)
             .before(finalize_startup),),
+    );
+
+    app.add_systems(
+        OnEnter(AppState::FinishSetup),
+        ((insert_crater_grid, apply_deferred).chain(),)
+            .chain()
+            .before(begin_story)
+            .in_set(FinishSetupSet::SimulationFinishSetup),
     );
 
     app.add_systems(
