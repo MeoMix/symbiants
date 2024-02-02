@@ -2,7 +2,7 @@ pub mod emote;
 
 use crate::{
     common::{visible_grid::VisibleGrid, ModelViewEntityMap},
-    nest_rendering::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
+    nest::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
 };
 use bevy::prelude::*;
 use simulation::{

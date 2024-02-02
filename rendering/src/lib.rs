@@ -1,15 +1,11 @@
-mod camera;
 pub mod common;
-mod crater_rendering;
-mod nest_rendering;
-pub mod pointer;
+mod crater;
+mod nest;
 
-use self::camera::RenderingCameraPlugin;
 use bevy::prelude::*;
-use bevy_ecs_tilemap::TilemapPlugin;
 use common::CommonRenderingPlugin;
-use crater_rendering::CraterRenderingPlugin;
-use nest_rendering::NestRenderingPlugin;
+use crater::CraterRenderingPlugin;
+use nest::NestRenderingPlugin;
 
 pub struct RenderingPlugin;
 
@@ -20,8 +16,6 @@ impl Plugin for RenderingPlugin {
         app.insert_resource(Msaa::Off);
 
         app.add_plugins((
-            RenderingCameraPlugin,
-            TilemapPlugin,
             CommonRenderingPlugin,
             CraterRenderingPlugin,
             NestRenderingPlugin,

@@ -1,5 +1,3 @@
-pub mod crater;
-
 use bevy::prelude::*;
 
 pub struct CraterRenderingPlugin;

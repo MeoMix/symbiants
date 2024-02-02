@@ -1,15 +1,19 @@
+pub mod camera;
+pub mod pointer;
 pub mod selection;
 pub mod visible_grid;
 
 use self::{
+    camera::RenderingCameraPlugin,
+    pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources},
     selection::{
         clear_selection, on_update_selected, on_update_selected_position, SelectedEntity,
         SelectionSprite,
     },
     visible_grid::{VisibleGrid, VisibleGridState},
 };
-use super::pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 use bevy::{prelude::*, utils::HashMap};
+use bevy_ecs_tilemap::TilemapPlugin;
 use simulation::{
     app_state::AppState,
     common::{grid::Grid, Zone},
@@ -97,6 +101,7 @@ pub struct CommonRenderingPlugin;
 /// Systems which apply to both Nest and Crater rendering.
 impl Plugin for CommonRenderingPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins((RenderingCameraPlugin, TilemapPlugin));
         app.add_state::<VisibleGridState>();
 
         app.add_systems(

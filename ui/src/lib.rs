@@ -7,7 +7,7 @@ use bevy_egui::{
     EguiContexts, EguiPlugin,
 };
 use egui::{FontFamily::Proportional, FontId};
-use rendering::pointer::IsPointerCaptured;
+use rendering::common::pointer::IsPointerCaptured;
 
 use self::{main_menu::MainMenuUIPlugin, story::StoryUIPlugin};
 

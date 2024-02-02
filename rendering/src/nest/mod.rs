@@ -1,7 +1,6 @@
 pub mod ant;
 pub mod background;
 pub mod element;
-pub mod nest;
 pub mod pheromone;
 
 use self::{
@@ -25,18 +24,23 @@ use self::{
             check_element_sprite_sheet_loaded, start_load_element_sprite_sheet, ElementTilemap,
         },
     },
-    nest::{mark_nest_hidden, mark_nest_visible},
     pheromone::{
         cleanup_pheromones, on_spawn_pheromone, on_update_pheromone_visibility, rerender_pheromones,
     },
 };
 use super::common::{
-    despawn_view, despawn_view_by_model, on_despawn, visible_grid::VisibleGridState,
+    despawn_view, despawn_view_by_model, on_despawn,
+    visible_grid::{VisibleGrid, VisibleGridState},
 };
 use bevy::prelude::*;
 use simulation::{
     app_state::AppState,
-    nest_simulation::{ant::Ant, element::Element, nest::AtNest, pheromone::Pheromone},
+    nest_simulation::{
+        ant::Ant,
+        element::Element,
+        nest::{AtNest, Nest},
+        pheromone::Pheromone,
+    },
     story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
     CleanupSet, FinishSetupSet,
 };
@@ -170,4 +174,15 @@ fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) 
             false
         }
     }
+}
+
+pub fn mark_nest_visible(
+    nest_query: Query<Entity, With<Nest>>,
+    mut visible_grid: ResMut<VisibleGrid>,
+) {
+    visible_grid.0 = Some(nest_query.single());
+}
+
+pub fn mark_nest_hidden(mut visible_grid: ResMut<VisibleGrid>) {
+    visible_grid.0 = None;
 }

@@ -1,9 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use super::{
-    camera::RenderingCamera,
-    common::{selection::SelectedEntity, visible_grid::VisibleGrid},
-};
+use super::{camera::RenderingCamera, selection::SelectedEntity, visible_grid::VisibleGrid};
 
 use simulation::{
     common::{grid::Grid, position::Position},

@@ -1,14 +1,12 @@
-use bevy::{
-    prelude::*, window::{PrimaryWindow, WindowResized}
-};
-
-use simulation::common::grid::Grid;
+mod pancam;
 
 use self::pancam::{PanCam, PanCamPlugin};
-
-use super::common::visible_grid::VisibleGrid;
-
-mod pancam;
+use super::visible_grid::VisibleGrid;
+use bevy::{
+    prelude::*,
+    window::{PrimaryWindow, WindowResized},
+};
+use simulation::common::grid::Grid;
 
 #[derive(Component)]
 pub struct RenderingCamera;
