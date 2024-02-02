@@ -98,9 +98,8 @@ pub fn on_update_pheromone_visibility(
     }
 }
 
-pub fn cleanup_pheromones() {
-    // TODO: Cleanup anything else related to Pheromones here.
-}
+/// Remove resources, etc.
+pub fn cleanup_pheromones() {}
 
 /// Non-System Helper Functions:
 

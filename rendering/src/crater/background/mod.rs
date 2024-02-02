@@ -22,10 +22,5 @@ pub fn spawn_background(mut commands: Commands, crater_query: Query<&Grid, With<
     commands.spawn((crater_background_sprite, CraterBackground, AtCrater));
 }
 
-pub fn cleanup_background(
-    crater_background_query: Query<Entity, With<CraterBackground>>,
-    mut commands: Commands,
-) {
-    let crater_background_entity = crater_background_query.single();
-    commands.entity(crater_background_entity).despawn();
-}
+/// Remove resources, etc.
+pub fn cleanup_background() {}

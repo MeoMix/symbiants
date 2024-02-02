@@ -268,6 +268,5 @@ pub fn spawn_background(
     }
 }
 
-pub fn cleanup_background() {
-    // TODO: Cleanup anything else related to background here.
-}
+/// Remove resources, etc.
+pub fn cleanup_background() {}
