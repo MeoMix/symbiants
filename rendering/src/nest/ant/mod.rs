@@ -337,9 +337,8 @@ pub fn on_added_ant_dead(
     }
 }
 
-pub fn cleanup_ants() {
-    // TODO: Cleanup anything else related to ants here.
-}
+/// Remove resources, etc.
+pub fn cleanup_ants() {}
 
 /// Non-System Helper Functions:
 
