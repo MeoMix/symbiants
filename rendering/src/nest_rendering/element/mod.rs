@@ -1,7 +1,10 @@
 pub mod sprite_sheet;
 
 use self::sprite_sheet::{get_element_index, ElementTilemap};
-use crate::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid};
+use crate::common::{
+    visible_grid::{grid_to_tile_pos, VisibleGrid},
+    ModelViewEntityMap,
+};
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use simulation::{

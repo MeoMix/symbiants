@@ -6,7 +6,7 @@ use simulation::common::grid::Grid;
 
 use self::pancam::{PanCam, PanCamPlugin};
 
-use super::common::VisibleGrid;
+use super::common::visible_grid::VisibleGrid;
 
 mod pancam;
 

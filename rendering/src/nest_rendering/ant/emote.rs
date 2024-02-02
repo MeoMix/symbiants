@@ -1,5 +1,5 @@
 use super::AntSpriteContainer;
-use crate::common::{ModelViewEntityMap, VisibleGrid};
+use crate::common::{ModelViewEntityMap, visible_grid::VisibleGrid};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use simulation::{

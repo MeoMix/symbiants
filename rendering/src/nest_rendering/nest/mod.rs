@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::common::VisibleGrid;
+use crate::common::visible_grid::VisibleGrid;
 
 use simulation::nest_simulation::nest::Nest;
 

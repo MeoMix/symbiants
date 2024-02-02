@@ -1,7 +1,7 @@
 pub mod emote;
 
 use crate::{
-    common::{ModelViewEntityMap, VisibleGrid},
+    common::{visible_grid::VisibleGrid, ModelViewEntityMap},
     nest_rendering::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
 };
 use bevy::prelude::*;
@@ -137,7 +137,7 @@ pub fn rerender_ants(
 
 /// When an Ant model picks up or sets down an inventory item (i.e. an Element), its view
 /// needs to be updated to reflect the change.
-/// 
+///
 /// CAREFUL: Simulation can tick multiple times before rendering. So, it's possible for change detection to
 /// indicate a change to inventory has occurred, but that *multiple* changes have occurred. Do not implement this
 /// as a simple toggle spawn/despawn of the sprite.

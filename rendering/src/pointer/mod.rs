@@ -2,7 +2,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 
 use super::{
     camera::RenderingCamera,
-    common::{SelectedEntity, VisibleGrid},
+    common::{selection::SelectedEntity, visible_grid::VisibleGrid},
 };
 
 use simulation::{

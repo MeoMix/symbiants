@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use rendering::common::SelectedEntity;
+use rendering::common::selection::SelectedEntity;
 
 use simulation::{
     common::position::Position,

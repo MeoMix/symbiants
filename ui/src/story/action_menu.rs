@@ -2,7 +2,10 @@
 // Used in Sandbox Mode to allow the user to play around with the environment - manually spawning/despawning anything that could exist.
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
-use rendering::{common::VisibleGrid, pointer::PointerAction, VisibleGridState};
+use rendering::{
+    common::visible_grid::{VisibleGrid, VisibleGridState},
+    pointer::PointerAction,
+};
 use simulation::{
     crater_simulation::crater::Crater, nest_simulation::nest::Nest, settings::Settings,
     story_time::StoryTime,
