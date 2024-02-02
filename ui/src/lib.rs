@@ -1,6 +1,7 @@
 mod main_menu;
 pub mod story;
 
+use self::{main_menu::MainMenuUIPlugin, story::StoryUIPlugin};
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, TextStyle},
@@ -8,9 +9,6 @@ use bevy_egui::{
 };
 use egui::{FontFamily::Proportional, FontId};
 use rendering::common::pointer::IsPointerCaptured;
-
-use self::{main_menu::MainMenuUIPlugin, story::StoryUIPlugin};
-
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
@@ -18,6 +16,10 @@ impl Plugin for UIPlugin {
         // NOTE: There is no Camera spawned here because UI is built using `bevy_egui` which doesn't care about cameras.
         // In the future, if UI is rebuilt using Bevy natively, then a UI camera may need to be spawned here.
         app.add_plugins((EguiPlugin, MainMenuUIPlugin, StoryUIPlugin));
+
+        #[cfg(feature = "dev-inspector")]
+        app.add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new());
+
         app.add_systems(Update, set_theme);
 
         app.add_systems(
