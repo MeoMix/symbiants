@@ -197,8 +197,9 @@ pub fn rerender_elements(
     }
 }
 
-pub fn cleanup_elements() {
-    // TODO: remove ElementTextureAtlasHandle and ElementSpriteSheetHandle if committing to the full cleanup process
+pub fn cleanup_elements(mut commands: Commands) {
+    commands.remove_resource::<ElementSpriteSheetHandle>();
+    commands.remove_resource::<ElementSpriteSheetHandle>();
 }
 
 /// Non-System Helper Functions:

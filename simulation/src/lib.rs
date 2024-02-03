@@ -65,7 +65,7 @@ use self::{
         remove_save_resources, save, unbind_save_onbeforeunload,
     },
     settings::{initialize_settings_resources, register_settings, remove_settings_resources},
-    simulation_timestep::{run_simulation_update_schedule, SimulationTime},
+    simulation_timestep::run_simulation_update_schedule,
     story_time::{
         initialize_story_time_resources, register_story_time, remove_story_time_resources,
         set_rate_of_time, setup_story_time, update_story_elapsed_ticks,
@@ -116,12 +116,12 @@ impl Plugin for SimulationPlugin {
             });
         });
 
-        // TODO: timing of this is weird/important, want to have schedule setup early
-        // TODO: I think this should be above simulation code rather than in common?
-        app.init_resource::<SimulationTime>();
         app.add_systems(PreStartup, insert_simulation_schedule);
         app.init_schedule(RunSimulationUpdateLoop);
-        app.add_systems(RunSimulationUpdateLoop, run_simulation_update_schedule);
+        app.add_systems(
+            RunSimulationUpdateLoop,
+            run_simulation_update_schedule.run_if(in_state(AppState::TellStory)),
+        );
 
         app.add_state::<StoryPlaybackState>();
         // TODO: AppState feels weird to live in Simulation

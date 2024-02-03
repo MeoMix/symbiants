@@ -197,7 +197,6 @@ pub fn initialize_story_time_resources(mut commands: Commands) {
     commands.init_resource::<StoryTime>();
     commands.init_resource::<FastForwardingStateInfo>();
     commands.init_resource::<TicksPerSecond>();
-
     commands.insert_resource(SimulationTime::new_from_secs(
         1.0 / DEFAULT_TICKS_PER_SECOND as f32,
     ));
@@ -208,9 +207,7 @@ pub fn remove_story_time_resources(mut commands: Commands) {
     commands.remove_resource::<StoryTime>();
     commands.remove_resource::<FastForwardingStateInfo>();
     commands.remove_resource::<TicksPerSecond>();
-
-    // `SimulationTime` is managed by Bevy and can't be removed with panic occurring.
-    commands.insert_resource(SimulationTime::default());
+    commands.remove_resource::<SimulationTime>();
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,
