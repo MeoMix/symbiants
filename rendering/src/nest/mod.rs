@@ -41,7 +41,6 @@ use simulation::{
         nest::{AtNest, Nest},
         pheromone::Pheromone,
     },
-    story_time::{StoryTime, DEFAULT_TICKS_PER_SECOND},
     CleanupSet, FinishSetupSet,
 };
 
@@ -105,11 +104,7 @@ impl Plugin for NestRenderingPlugin {
                     on_ant_ate_food,
                     on_ant_wake_up,
                     // TODO: naming inconsistencies, but probably want to go more this direction rather than away.
-                    ants_sleep_emote.run_if(
-                        // TODO: this feels hacky? trying to rate limit how often checks for sleeping emoting occurs.
-                        resource_exists::<StoryTime>()
-                            .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
-                    ),
+                    ants_sleep_emote,
                     despawn_expired_emotes,
                     update_sky_background,
                 ),
@@ -169,17 +164,6 @@ impl Plugin for NestRenderingPlugin {
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );
-    }
-}
-
-fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) -> bool {
-    move |mut last_run_tick_count: Local<isize>, story_time: Res<StoryTime>| {
-        if *last_run_tick_count + ticks <= story_time.elapsed_ticks() {
-            *last_run_tick_count = story_time.elapsed_ticks();
-            true
-        } else {
-            false
-        }
     }
 }
 
