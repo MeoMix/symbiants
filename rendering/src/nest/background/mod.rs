@@ -260,7 +260,7 @@ pub fn spawn_background(
 pub struct LastUpdateSky(TimeInfo);
 
 pub fn initialize_background_resources(mut commands: Commands) {
-    commands.insert_resource(LastUpdateSky::default());
+    commands.init_resource::<LastUpdateSky>();
 }
 
 /// Remove resources, etc.

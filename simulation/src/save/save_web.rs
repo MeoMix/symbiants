@@ -35,32 +35,40 @@ struct PersistentModelQueryFilter {
     )>,
 }
 
+#[derive(Resource, Default)]
+pub struct LastSnapshotTime(f32);
+
+#[derive(Resource, Default)]
+pub struct LastSaveTime(f32);
+
 /// Provide an opportunity to write world state to disk.
 /// This system does not run every time because saving is costly, but it does run periodically, rather than simply JIT,
 /// to avoid losing too much state in the event of a crash.
 /// NOTE: intentionally don't run immediately on first run because it's expensive and nothing has changed.
 /// Let the full interval pass before creating anything rather than initializing on first run then waiting.
-pub fn save(world: &mut World, mut last_snapshot_time: Local<f32>, mut last_save_time: Local<f32>) {
+pub fn save(world: &mut World) {
     let current_time = world.resource::<Time<Real>>().elapsed_seconds();
+    let last_snapshot_time = world.resource::<LastSnapshotTime>();
     let snapshot_interval = world.resource::<Settings>().snapshot_interval;
-    if current_time - *last_snapshot_time < snapshot_interval as f32 {
+    if current_time - last_snapshot_time.0 < snapshot_interval as f32 {
         return;
     }
 
     if let Some(snapshot) = create_save_snapshot(world) {
         *SAVE_SNAPSHOT.lock().unwrap() = Some(snapshot);
-        *last_snapshot_time = current_time;
+        world.resource_mut::<LastSnapshotTime>().0 = current_time;
     } else {
         error!("Failed to create snapshot");
     }
 
     let save_interval = world.resource::<Settings>().save_interval;
-    if current_time - *last_save_time < save_interval as f32 {
+    let last_save_time = world.resource::<LastSaveTime>();
+    if current_time - last_save_time.0 < save_interval as f32 {
         return;
     }
 
     if write_save_snapshot() {
-        *last_save_time = current_time;
+        world.resource_mut::<LastSaveTime>().0 = current_time;
     }
 }
 
@@ -161,10 +169,14 @@ pub fn delete_save_file() {
 
 pub fn initialize_save_resources(mut commands: Commands) {
     commands.init_resource::<CompressedWebStorageBackend>();
+    commands.init_resource::<LastSnapshotTime>();
+    commands.init_resource::<LastSaveTime>();
 }
 
 pub fn remove_save_resources(mut commands: Commands) {
     commands.remove_resource::<CompressedWebStorageBackend>();
+    commands.remove_resource::<LastSnapshotTime>();
+    commands.remove_resource::<LastSaveTime>();
 }
 
 pub fn load(world: &mut World) -> bool {
