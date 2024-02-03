@@ -92,6 +92,7 @@ pub fn update_action_menu(
                 }
             });
 
+            #[cfg(feature = "dev-beta")]
             if let Some(visible_grid_entity) = visible_grid.0 {
                 let is_nest_visible = nest_query.get(visible_grid_entity).is_ok();
                 let is_crater_visible = crater_query.get(visible_grid_entity).is_ok();
