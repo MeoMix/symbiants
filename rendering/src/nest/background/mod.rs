@@ -96,8 +96,7 @@ fn get_sky_gradient_color(
 
 pub fn update_sky_background(
     mut sky_tile_query: Query<(&mut TileColor, &Position), With<SkyBackground>>,
-    mut last_run_time_info: Local<TimeInfo>,
-    last_update_sky: ResMut<LastUpdateSky>,
+    mut last_update_sky: ResMut<LastUpdateSky>,
     nest_query: Query<&Nest>,
     visible_grid: Res<VisibleGrid>,
     story_time: Res<StoryTime>,
@@ -117,7 +116,7 @@ pub fn update_sky_background(
     // Update the sky's colors once a minute of elapsed *story time* not real-world time.
     if time_info.days() == last_update_sky.0.days()
         && time_info.hours() == last_update_sky.0.hours()
-        // Check if difference between time_info and last_run_time_info minutes is 1
+        // Check if difference between time_info and last_update_sky minutes is 1
         && (time_info.minutes() - last_update_sky.0.minutes()).abs() < 1
     {
         return;
@@ -139,7 +138,7 @@ pub fn update_sky_background(
         *tile_color = color.into();
     }
 
-    *last_run_time_info = time_info;
+    last_update_sky.0 = time_info;
 }
 
 pub fn spawn_background_tilemap(mut commands: Commands, nest_query: Query<&Grid, With<Nest>>) {
