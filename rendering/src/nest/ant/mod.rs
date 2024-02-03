@@ -207,7 +207,7 @@ pub fn on_update_ant_inventory(
 /// This affects the translation of the SpatialBundle wrapping the AntSprite.
 /// This allows for the ant's associated Label to move in sync with the AntSprite.
 pub fn on_update_ant_position(
-    ant_model_query: Query<(Entity, &Position), (With<Ant>, Changed<Position>)>,
+    ant_model_query: Query<(Entity, Ref<Position>), With<Ant>>,
     mut ant_view_query: Query<(&mut Transform, &TranslationOffset)>,
     nest_query: Query<&Grid, With<Nest>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -224,7 +224,9 @@ pub fn on_update_ant_position(
     };
 
     for (ant_model_entity, position) in ant_model_query.iter() {
-        // TODO: I think this is running on Added but no need to?
+        if position.is_added() || !position.is_changed() {
+            continue;
+        }
 
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Ok((mut transform, translation_offset)) = ant_view_query.get_mut(ant_view_entity)

@@ -120,9 +120,6 @@ pub struct RenderingCameraPlugin;
 /// So, this plugin is separate from RenderingCamera and only decorates RenderingCamera when the simulation is rendered.
 impl Plugin for RenderingCameraPlugin {
     fn build(&self, app: &mut App) {
-        // TODO: It would be preferable to teardown PanCam when the simulation stops and exits to MainMenu
-        // This is hard to do because Bevy doesn't currently support removing systems or plugins.
-        // There isn't (AFAIK) any negative side-effects to omitting the teardown. Just feels improper to leave app in a partially dirty state.
         app.add_plugins(PanCamPlugin::default());
 
         app.add_systems(Startup, setup);
