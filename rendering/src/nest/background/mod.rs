@@ -4,7 +4,6 @@ use bevy_ecs_tilemap::prelude::*;
 use crate::common::visible_grid::{grid_to_tile_pos, VisibleGrid};
 
 use simulation::{
-    app_state::AppState,
     common::{grid::Grid, position::Position},
     nest_simulation::nest::{AtNest, Nest},
     story_time::{StoryTime, TimeInfo},
@@ -97,22 +96,13 @@ fn get_sky_gradient_color(
 
 pub fn update_sky_background(
     mut sky_tile_query: Query<(&mut TileColor, &Position), With<SkyBackground>>,
-    // TODO: Relying on Local<> while trying to support "Reset Sandbox" without the ability to remove systems entirely is challenging.
-    // Probably rewrite this to be a resource instead of a Local.
     mut last_run_time_info: Local<TimeInfo>,
-    app_state: Res<State<AppState>>,
+    last_update_sky: ResMut<LastUpdateSky>,
     nest_query: Query<&Nest>,
-    // Optional due to running during cleanup
-    visible_grid: Option<Res<VisibleGrid>>,
-    story_time: Option<Res<StoryTime>>,
+    visible_grid: Res<VisibleGrid>,
+    story_time: Res<StoryTime>,
 ) {
-    // Reset local when in initializing to prevent data retention issue when clicking "Reset" in Sandbox Mode
-    if *app_state == AppState::Cleanup {
-        *last_run_time_info = TimeInfo::default();
-        return;
-    }
-
-    let visible_grid_entity = match visible_grid.unwrap().0 {
+    let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
         None => return,
     };
@@ -121,15 +111,14 @@ pub fn update_sky_background(
         return;
     }
 
-    let story_time = story_time.unwrap();
     let nest = nest_query.single();
     let time_info = story_time.as_time_info();
 
     // Update the sky's colors once a minute of elapsed *story time* not real-world time.
-    if time_info.days() == last_run_time_info.days()
-        && time_info.hours() == last_run_time_info.hours()
+    if time_info.days() == last_update_sky.0.days()
+        && time_info.hours() == last_update_sky.0.hours()
         // Check if difference between time_info and last_run_time_info minutes is 1
-        && (time_info.minutes() - last_run_time_info.minutes()).abs() < 1
+        && (time_info.minutes() - last_update_sky.0.minutes()).abs() < 1
     {
         return;
     }
@@ -268,5 +257,14 @@ pub fn spawn_background(
     }
 }
 
+#[derive(Resource, Default)]
+pub struct LastUpdateSky(TimeInfo);
+
+pub fn initialize_background_resources(mut commands: Commands) {
+    commands.insert_resource(LastUpdateSky::default());
+}
+
 /// Remove resources, etc.
-pub fn cleanup_background() {}
+pub fn cleanup_background(mut commands: Commands) {
+    commands.remove_resource::<LastUpdateSky>();
+}

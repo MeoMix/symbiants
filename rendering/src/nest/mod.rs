@@ -14,8 +14,8 @@ use self::{
         on_update_ant_orientation, on_update_ant_position, rerender_ants,
     },
     background::{
-        cleanup_background, spawn_background, spawn_background_tilemap, update_sky_background,
-        Background, BackgroundTilemap,
+        cleanup_background, initialize_background_resources, spawn_background,
+        spawn_background_tilemap, update_sky_background, Background, BackgroundTilemap,
     },
     element::{
         cleanup_elements, on_spawn_element, on_update_element_exposure, on_update_element_position,
@@ -67,20 +67,12 @@ impl Plugin for NestRenderingPlugin {
                 spawn_background_tilemap,
                 spawn_element_tilemap,
                 initialize_pheromone_resources,
+                initialize_background_resources,
                 apply_deferred,
                 spawn_background,
             )
                 .chain()
                 .in_set(FinishSetupSet::AfterSimulationFinishSetup),
-        );
-
-        app.add_systems(
-            Update,
-            update_sky_background.run_if(
-                // TODO: `update_sky_background` uses Local<_> which needs to be reset during cleanup.
-                // This is pretty hacky. Once Bevy supports removing systems it'll be easier to remove.
-                in_state(AppState::TellStory).or_else(in_state(AppState::Cleanup)),
-            ),
         );
 
         app.add_systems(
@@ -119,6 +111,7 @@ impl Plugin for NestRenderingPlugin {
                             .and_then(tick_count_elapsed(DEFAULT_TICKS_PER_SECOND)),
                     ),
                     despawn_expired_emotes,
+                    update_sky_background,
                 ),
             )
                 .run_if(in_state(AppState::TellStory)),
@@ -179,7 +172,6 @@ impl Plugin for NestRenderingPlugin {
     }
 }
 
-// TODO: Maybe do this according to time rather than number of ticks elapsing to keep things consistent
 fn tick_count_elapsed(ticks: isize) -> impl FnMut(Local<isize>, Res<StoryTime>) -> bool {
     move |mut last_run_tick_count: Local<isize>, story_time: Res<StoryTime>| {
         if *last_run_tick_count + ticks <= story_time.elapsed_ticks() {
