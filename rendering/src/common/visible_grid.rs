@@ -10,6 +10,7 @@ pub struct VisibleGrid(pub Option<Entity>);
 #[derive(States, Default, Hash, Clone, Copy, Eq, PartialEq, Debug)]
 pub enum VisibleGridState {
     #[default]
+    None,
     Nest,
     Crater,
 }
@@ -19,4 +20,16 @@ pub fn grid_to_tile_pos(grid: &Grid, position: Position) -> TilePos {
         x: position.x as u32,
         y: (grid.height() - position.y - 1) as u32,
     }
+}
+
+pub fn set_visible_grid_state_none(
+    mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
+) {
+    next_visible_grid_state.set(VisibleGridState::None);
+}
+
+pub fn set_visible_grid_state_nest(
+    mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>,
+) {
+    next_visible_grid_state.set(VisibleGridState::Nest);
 }

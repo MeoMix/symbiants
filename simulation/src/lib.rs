@@ -10,7 +10,8 @@ pub mod story_time;
 
 use self::{
     app_state::{
-        begin_story, check_story_over, continue_startup, finalize_startup, restart, AppState,
+        begin_story, check_story_over, post_setup_clear_change_detection, continue_startup,
+        finalize_startup, restart, AppState,
     },
     common::{despawn_model, register_common},
     crater_simulation::crater::register_crater,
@@ -197,7 +198,7 @@ fn build_nest_systems(app: &mut App) {
             (update_element_exposure, apply_deferred).chain(),
         )
             .chain()
-            .before(begin_story)
+            .before(post_setup_clear_change_detection)
             .in_set(FinishSetupSet::SimulationFinishSetup),
     );
 
@@ -336,7 +337,7 @@ fn build_crater_systems(app: &mut App) {
         OnEnter(AppState::FinishSetup),
         ((insert_crater_grid, apply_deferred).chain(),)
             .chain()
-            .before(begin_story)
+            .before(post_setup_clear_change_detection)
             .in_set(FinishSetupSet::SimulationFinishSetup),
     );
 
@@ -377,7 +378,7 @@ fn build_common_systems(app: &mut App) {
             (initialize_external_event_resources, apply_deferred).chain(),
             // TODO: Feels weird to say saving is part of the simulation logic.
             bind_save_onbeforeunload,
-            begin_story,
+            post_setup_clear_change_detection,
         )
             .chain()
             .in_set(FinishSetupSet::SimulationFinishSetup),
@@ -386,6 +387,8 @@ fn build_common_systems(app: &mut App) {
     // IMPORTANT: setup_story_time sets FixedTime.accumulated which is reset when transitioning between schedules.
     // If this is ran OnEnter FinishSetup then the accumulated time will be reset to zero before FixedUpdate runs.
     app.add_systems(OnExit(AppState::FinishSetup), setup_story_time);
+
+    app.add_systems(OnEnter(AppState::PostSetupClearChangeDetection), begin_story);
 
     app.add_systems(
         Update,

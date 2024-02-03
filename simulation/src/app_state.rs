@@ -13,6 +13,10 @@ pub enum AppState {
     SelectStoryMode,
     CreateNewStory,
     FinishSetup,
+    // Bevy does not currently support adding systems at runtime. So, systems
+    // which monitor for Added<_> have a backlog to process, but this is not desirable
+    // as they are intended for a running simulation not an initializing simulation. 
+    PostSetupClearChangeDetection,
     TellStory,
     EndStory,
     Cleanup,
@@ -39,6 +43,10 @@ pub fn continue_startup(
 
 pub fn finalize_startup(mut next_app_state: ResMut<NextState<AppState>>) {
     next_app_state.set(AppState::FinishSetup);
+}
+
+pub fn post_setup_clear_change_detection(mut next_app_state: ResMut<NextState<AppState>>) {
+    next_app_state.set(AppState::PostSetupClearChangeDetection);
 }
 
 pub fn begin_story(mut next_app_state: ResMut<NextState<AppState>>) {

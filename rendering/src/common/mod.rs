@@ -10,7 +10,7 @@ use self::{
         clear_selection, on_update_selected, on_update_selected_position, SelectedEntity,
         SelectionSprite,
     },
-    visible_grid::{VisibleGrid, VisibleGridState},
+    visible_grid::{set_visible_grid_state_none, VisibleGrid, VisibleGridState},
 };
 use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::TilemapPlugin;
@@ -155,7 +155,7 @@ impl Plugin for CommonRenderingPlugin {
                 despawn_common_entities,
                 remove_common_resources,
                 remove_pointer_resources,
-                reset_visible_grid_state,
+                set_visible_grid_state_none,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );
@@ -182,8 +182,4 @@ fn despawn_common_entities(
     if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
         commands.entity(selection_sprite_entity).despawn();
     }
-}
-
-fn reset_visible_grid_state(mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>) {
-    next_visible_grid_state.set(VisibleGridState::Nest);
 }

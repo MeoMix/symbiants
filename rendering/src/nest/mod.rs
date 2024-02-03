@@ -3,6 +3,8 @@ pub mod background;
 pub mod element;
 pub mod pheromone;
 
+use crate::common::visible_grid::set_visible_grid_state_nest;
+
 use self::{
     ant::{
         cleanup_ants,
@@ -58,17 +60,11 @@ impl Plugin for NestRenderingPlugin {
             check_element_sprite_sheet_loaded.run_if(in_state(AppState::BeginSetup)),
         );
 
-        // TODO: It's unfortunate this is necessary. It would be nice to drive this all via `OnEnter(VisibleGridState:Nest)`
-        // Also, it naively assumes that Nest is rendered on first load. This is true but isn't an assumption that should be made.
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
-                spawn_background_tilemap,
-                spawn_element_tilemap,
                 initialize_pheromone_resources,
                 initialize_background_resources,
-                apply_deferred,
-                spawn_background,
             )
                 .chain()
                 .in_set(FinishSetupSet::AfterSimulationFinishSetup),
@@ -109,28 +105,29 @@ impl Plugin for NestRenderingPlugin {
                     update_sky_background,
                 ),
             )
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(
+                    in_state(AppState::TellStory)
+                        .or_else(in_state(AppState::PostSetupClearChangeDetection)),
+                ),
         );
 
         // When beginning the story, start by showing the Nest.
-        app.add_systems(OnEnter(AppState::TellStory), mark_nest_visible);
+        app.add_systems(OnEnter(AppState::TellStory), set_visible_grid_state_nest);
 
         app.add_systems(
-            // Note that the run condition below prevents these systems from running on app load.
             OnEnter(VisibleGridState::Nest),
             (
+                (spawn_background_tilemap, spawn_element_tilemap),
+                apply_deferred,
                 (
-                    spawn_background_tilemap,
-                    spawn_element_tilemap,
-                    apply_deferred,
                     spawn_background,
-                )
-                    .chain(),
-                rerender_ants,
-                rerender_elements,
-                rerender_pheromones,
-                mark_nest_visible,
+                    rerender_ants,
+                    rerender_elements,
+                    rerender_pheromones,
+                    mark_nest_visible,
+                ),
             )
+                .chain()
                 .run_if(in_state(AppState::TellStory)),
         );
 
