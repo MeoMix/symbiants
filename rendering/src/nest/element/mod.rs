@@ -1,6 +1,6 @@
 pub mod sprite_sheet;
 
-use self::sprite_sheet::{get_element_index, ElementTilemap};
+use self::sprite_sheet::{get_element_index, ElementSpriteSheetHandle};
 use crate::common::{
     visible_grid::{grid_to_tile_pos, VisibleGrid},
     ModelViewEntityMap,
@@ -14,6 +14,34 @@ use simulation::{
         nest::{AtNest, Nest},
     },
 };
+
+#[derive(Component)]
+pub struct ElementTilemap;
+
+pub fn spawn_element_tilemap(
+    element_sprite_sheet_handle: Res<ElementSpriteSheetHandle>,
+    mut commands: Commands,
+) {
+    let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
+    let map_type = TilemapType::default();
+    let map_size = TilemapSize { x: 144, y: 144 };
+
+    commands.spawn((
+        ElementTilemap,
+        TilemapBundle {
+            grid_size,
+            map_type,
+            size: map_size,
+            storage: TileStorage::empty(map_size),
+            texture: TilemapTexture::Single(element_sprite_sheet_handle.0.clone()),
+            tile_size: TilemapTileSize { x: 128.0, y: 128.0 },
+            physical_tile_size: TilemapPhysicalTileSize { x: 1.0, y: 1.0 },
+            // Element tiles go at z: 1 because they should appear above the background which is rendered at z: 0.
+            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 1.0),
+            ..default()
+        },
+    ));
+}
 
 /// When an Element model is added to the simulation, render an associated Element sprite.
 /// This *only* handles the initial rendering of the Element sprite. Updates are handled by other systems.

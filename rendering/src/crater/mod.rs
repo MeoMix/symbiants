@@ -1,16 +1,12 @@
 pub mod background;
 
-use bevy::prelude::*;
-use simulation::{
-    app_state::AppState, crater_simulation::crater::Crater, CleanupSet, FinishSetupSet,
-};
-
+use self::background::{cleanup_background, spawn_background, CraterBackground};
 use crate::common::{
     despawn_view,
     visible_grid::{VisibleGrid, VisibleGridState},
 };
-
-use self::background::{cleanup_background, spawn_background, CraterBackground};
+use bevy::prelude::*;
+use simulation::{app_state::AppState, crater_simulation::crater::Crater, CleanupSet};
 
 pub struct CraterRenderingPlugin;
 
@@ -20,13 +16,6 @@ pub struct CraterRenderingPlugin;
 
 impl Plugin for CraterRenderingPlugin {
     fn build(&self, app: &mut App) {
-        // app.add_systems(
-        //     OnEnter(AppState::FinishSetup),
-        //     (spawn_background)
-        //         .chain()
-        //         .in_set(FinishSetupSet::AfterSimulationFinishSetup),
-        // );
-
         app.add_systems(
             OnEnter(VisibleGridState::Crater),
             (spawn_background, mark_crater_visible)

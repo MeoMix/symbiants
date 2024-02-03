@@ -19,10 +19,9 @@ use self::{
     },
     element::{
         cleanup_elements, on_spawn_element, on_update_element_exposure, on_update_element_position,
-        rerender_elements,
-        sprite_sheet::{
-            check_element_sprite_sheet_loaded, start_load_element_sprite_sheet, ElementTilemap,
-        },
+        rerender_elements, spawn_element_tilemap,
+        sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
+        ElementTilemap,
     },
     pheromone::{
         cleanup_pheromones, on_spawn_pheromone, on_update_pheromone_visibility, rerender_pheromones,
@@ -63,7 +62,12 @@ impl Plugin for NestRenderingPlugin {
         // Also, it naively assumes that Nest is rendered on first load. This is true but isn't an assumption that should be made.
         app.add_systems(
             OnEnter(AppState::FinishSetup),
-            (spawn_background_tilemap, apply_deferred, spawn_background)
+            (
+                spawn_background_tilemap,
+                spawn_element_tilemap,
+                apply_deferred,
+                spawn_background,
+            )
                 .chain()
                 .in_set(FinishSetupSet::AfterSimulationFinishSetup),
         );
@@ -125,7 +129,13 @@ impl Plugin for NestRenderingPlugin {
             // Note that the run condition below prevents these systems from running on app load.
             OnEnter(VisibleGridState::Nest),
             (
-                (spawn_background_tilemap, apply_deferred, spawn_background).chain(),
+                (
+                    spawn_background_tilemap,
+                    spawn_element_tilemap,
+                    apply_deferred,
+                    spawn_background,
+                )
+                    .chain(),
                 rerender_ants,
                 rerender_elements,
                 rerender_pheromones,
@@ -141,7 +151,7 @@ impl Plugin for NestRenderingPlugin {
                 despawn_view::<BackgroundTilemap>,
                 despawn_view_by_model::<Ant>,
                 despawn_view_by_model::<Element>,
-                // TODO: Despawn ElementTilemap?
+                despawn_view::<ElementTilemap>,
                 despawn_view_by_model::<Pheromone>,
                 mark_nest_hidden,
             )

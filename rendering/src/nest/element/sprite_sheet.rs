@@ -1,13 +1,9 @@
 use bevy::{asset::LoadState, prelude::*};
-use bevy_ecs_tilemap::prelude::*;
 
 use simulation::{
     app_state::AppState,
     nest_simulation::element::{Element, ElementExposure},
 };
-
-#[derive(Component)]
-pub struct ElementTilemap;
 
 #[derive(Resource)]
 pub struct ElementSpriteSheetHandle(pub Handle<Image>);
@@ -42,28 +38,6 @@ pub fn check_element_sprite_sheet_loaded(
 
         commands.insert_resource(ElementTextureAtlasHandle(
             texture_atlases.add(texture_atlas),
-        ));
-
-        // TODO: I'm not convinced I should spawn ElementTilemap here.
-        // Creating a Tilemap from resources is distinct from loading its associated assets.
-        let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
-        let map_type = TilemapType::default();
-        let map_size = TilemapSize { x: 144, y: 144 };
-
-        commands.spawn((
-            ElementTilemap,
-            TilemapBundle {
-                grid_size,
-                map_type,
-                size: map_size,
-                storage: TileStorage::empty(map_size),
-                texture: TilemapTexture::Single(element_sprite_sheet_handle.0.clone()),
-                tile_size: TilemapTileSize { x: 128.0, y: 128.0 },
-                physical_tile_size: TilemapPhysicalTileSize { x: 1.0, y: 1.0 },
-                // Element tiles go at z: 1 because they should appear above the background which is rendered at z: 0.
-                transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 1.0),
-                ..default()
-            },
         ));
 
         next_state.set(AppState::TryLoadSave);
