@@ -1,9 +1,10 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
+use rendering::nest::pheromone::PheromoneVisibility;
 use simulation::{
     app_state::AppState,
-    nest_simulation::{ant::AntColor, pheromone::PheromoneVisibility},
+    nest_simulation::ant::AntColor,
     settings::Settings,
     story_time::{
         StoryPlaybackState, StoryTime, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,

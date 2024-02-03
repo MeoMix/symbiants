@@ -6,9 +6,12 @@ use simulation::{
     common::{grid::Grid, position::Position},
     nest_simulation::{
         nest::{AtNest, Nest},
-        pheromone::{Pheromone, PheromoneStrength, PheromoneVisibility},
+        pheromone::{Pheromone, PheromoneStrength},
     },
 };
+
+#[derive(Resource)]
+pub struct PheromoneVisibility(pub Visibility);
 
 pub fn on_spawn_pheromone(
     pheromone_query: Query<
@@ -98,8 +101,14 @@ pub fn on_update_pheromone_visibility(
     }
 }
 
+pub fn initialize_pheromone_resources(mut commands: Commands) {
+    commands.insert_resource(PheromoneVisibility(Visibility::Visible));
+}
+
 /// Remove resources, etc.
-pub fn cleanup_pheromones() {}
+pub fn cleanup_pheromones(mut commands: Commands) {
+    commands.remove_resource::<PheromoneVisibility>();
+}
 
 /// Non-System Helper Functions:
 

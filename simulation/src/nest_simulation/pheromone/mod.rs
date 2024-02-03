@@ -72,9 +72,6 @@ impl PheromoneDuration {
     }
 }
 
-#[derive(Resource)]
-pub struct PheromoneVisibility(pub Visibility);
-
 /// Note the intentional omission of reflection/serialization.
 /// This is because PheromoneMap is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]
@@ -103,14 +100,10 @@ pub fn initialize_pheromone_resources(
         .collect::<HashMap<_, _>>();
 
     commands.insert_resource(PheromoneMap(pheromone_map));
-
-    // TODO: better separate model/view
-    commands.insert_resource(PheromoneVisibility(Visibility::Visible));
 }
 
 pub fn remove_pheromone_resources(mut commands: Commands) {
     commands.remove_resource::<PheromoneMap>();
-    commands.remove_resource::<PheromoneVisibility>();
 }
 
 pub fn pheromone_duration_tick(

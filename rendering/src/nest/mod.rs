@@ -24,7 +24,8 @@ use self::{
         ElementTilemap,
     },
     pheromone::{
-        cleanup_pheromones, on_spawn_pheromone, on_update_pheromone_visibility, rerender_pheromones,
+        cleanup_pheromones, initialize_pheromone_resources, on_spawn_pheromone,
+        on_update_pheromone_visibility, rerender_pheromones,
     },
 };
 use super::common::{
@@ -65,6 +66,7 @@ impl Plugin for NestRenderingPlugin {
             (
                 spawn_background_tilemap,
                 spawn_element_tilemap,
+                initialize_pheromone_resources,
                 apply_deferred,
                 spawn_background,
             )

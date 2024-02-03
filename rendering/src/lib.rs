@@ -1,12 +1,11 @@
 pub mod common;
-mod crater;
-mod nest;
+pub mod crater;
+pub mod nest;
 
 use bevy::prelude::*;
 use common::CommonRenderingPlugin;
 use crater::CraterRenderingPlugin;
 use nest::NestRenderingPlugin;
-
 pub struct RenderingPlugin;
 
 impl Plugin for RenderingPlugin {

@@ -158,7 +158,6 @@ pub fn insert_simulation_schedule(mut main_schedule_order: ResMut<MainScheduleOr
 }
 
 fn build_nest_systems(app: &mut App) {
-    // TODO: This isn't a good home for this. Need to create a view-specific layer and initialize it there.
     app.add_event::<AntAteFoodEvent>();
 
     app.add_systems(
@@ -306,7 +305,6 @@ fn build_nest_systems(app: &mut App) {
             // to prevent running FixedUpdate schedule repeatedly (while no-oping) when coming back to a hidden tab with a paused sim.
             (update_story_real_world_time, set_rate_of_time).chain(),
         )
-            .run_if(in_state(AppState::TellStory))
             .chain(),
     );
 
