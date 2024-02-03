@@ -155,6 +155,7 @@ impl Plugin for CommonRenderingPlugin {
                 despawn_common_entities,
                 remove_common_resources,
                 remove_pointer_resources,
+                reset_visible_grid_state,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );
@@ -181,4 +182,8 @@ fn despawn_common_entities(
     if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
         commands.entity(selection_sprite_entity).despawn();
     }
+}
+
+fn reset_visible_grid_state(mut next_visible_grid_state: ResMut<NextState<VisibleGridState>>) {
+    next_visible_grid_state.set(VisibleGridState::Nest);
 }

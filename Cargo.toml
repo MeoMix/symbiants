@@ -64,6 +64,4 @@ opt-level = 1
 opt-level = 3
 
 [features]
-default = ["dev-beta"]
-dev-beta = []
 dev-inspector = ["ui/dev-inspector"]

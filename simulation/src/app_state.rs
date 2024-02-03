@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::nest_simulation::ant::{AntRole, Dead};
+use crate::{
+    nest_simulation::ant::{AntRole, Dead},
+    story_time::StoryPlaybackState,
+};
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 pub enum AppState {
@@ -15,7 +18,11 @@ pub enum AppState {
     Cleanup,
 }
 
-pub fn restart(mut next_app_state: ResMut<NextState<AppState>>) {
+pub fn restart(
+    mut next_app_state: ResMut<NextState<AppState>>,
+    mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
+) {
+    next_story_playback_state.set(StoryPlaybackState::Stopped);
     next_app_state.set(AppState::BeginSetup);
 }
 
