@@ -66,7 +66,8 @@ impl Plugin for CommonSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::TryLoadSave),
             (
-                (initialize_save_resources, apply_deferred).chain(),
+                initialize_save_resources,
+                apply_deferred,
                 load.pipe(continue_startup),
             )
                 .chain(),
@@ -74,19 +75,14 @@ impl Plugin for CommonSimulationPlugin {
 
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
-            (
-                initialize_settings_resources,
-                finalize_startup,
-            )
-                .chain(),
+            (initialize_settings_resources, finalize_startup).chain(),
         );
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
-                (initialize_story_time_resources, apply_deferred).chain(),
-                (initialize_external_event_resources, apply_deferred).chain(),
-                // TODO: Feels weird to say saving is part of the simulation logic.
+                initialize_story_time_resources,
+                initialize_external_event_resources,
                 bind_save_onbeforeunload,
                 post_setup_clear_change_detection,
             )

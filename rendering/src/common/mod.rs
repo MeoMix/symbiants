@@ -106,10 +106,7 @@ impl Plugin for CommonRenderingPlugin {
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
-            (
-                initialize_common_resources,
-                (initialize_pointer_resources, apply_deferred).chain(),
-            )
+            (initialize_common_resources, initialize_pointer_resources)
                 .in_set(FinishSetupSet::BeforeSimulationFinishSetup),
         );
 

@@ -9,10 +9,8 @@ pub mod simulation_timestep;
 pub mod story_time;
 
 use self::{
-    app_state::{post_setup_clear_change_detection, AppState},
-    common::despawn_model,
-    simulation_timestep::run_simulation_update_schedule,
-    story_time::StoryPlaybackState,
+    app_state::AppState, common::despawn_model,
+    simulation_timestep::run_simulation_update_schedule, story_time::StoryPlaybackState,
 };
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},

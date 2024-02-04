@@ -43,8 +43,8 @@ use self::{
     },
 };
 use super::{
-    despawn_model, post_setup_clear_change_detection, settings::initialize_settings_resources,
-    AppState, CleanupSet, FinishSetupSet, SimulationTickSet, SimulationUpdate, StoryPlaybackState,
+    despawn_model, settings::initialize_settings_resources, AppState, CleanupSet, FinishSetupSet,
+    SimulationTickSet, SimulationUpdate, StoryPlaybackState,
 };
 use bevy::prelude::*;
 
@@ -77,23 +77,24 @@ impl Plugin for NestSimulationPlugin {
                 (spawn_nest_elements, spawn_nest_ants),
             )
                 .chain()
-                // TODO: Stop using this gross after function logic and rely on sets/schedules
                 .after(initialize_settings_resources),
         );
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
-                (insert_nest_grid, apply_deferred).chain(),
-                (initialize_pheromone_resources, apply_deferred).chain(),
-                // IMPORTANT:
-                // `ElementExposure` isn't persisted because it's derivable. It is required for rendering.
-                // Don't rely on `SimulationUpdate` to set `ElementExposure` because it should be possible to render
-                // the world's initial state without advancing the simulation.
-                (update_element_exposure, apply_deferred).chain(),
+                insert_nest_grid,
+                apply_deferred,
+                (
+                    initialize_pheromone_resources,
+                    // IMPORTANT:
+                    // `ElementExposure` isn't persisted because it's derivable. It is required for rendering.
+                    // Don't rely on `SimulationUpdate` to set `ElementExposure` because it should be possible to render
+                    // the world's initial state without advancing the simulation.
+                    update_element_exposure,
+                ),
             )
                 .chain()
-                .before(post_setup_clear_change_detection)
                 .in_set(FinishSetupSet::SimulationFinishSetup),
         );
 
