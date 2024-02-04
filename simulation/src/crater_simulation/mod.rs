@@ -18,7 +18,11 @@ impl Plugin for CraterSimulationPlugin {
 
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
-            (spawn_crater, apply_deferred)
+            (
+                // Call `apply_deferred` to ensure Settings (via `initialize_settings_resources`) is available for use.
+                apply_deferred,
+                spawn_crater,
+            )
                 .chain()
                 .after(initialize_settings_resources),
         );

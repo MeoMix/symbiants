@@ -70,12 +70,11 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
             (
+                // Call `apply_deferred` to ensure Settings (via `initialize_settings_resources`) is available for use.
+                apply_deferred,
                 spawn_nest,
                 apply_deferred,
-                spawn_nest_elements,
-                apply_deferred,
-                spawn_nest_ants,
-                apply_deferred,
+                (spawn_nest_elements, spawn_nest_ants),
             )
                 .chain()
                 // TODO: Stop using this gross after function logic and rely on sets/schedules

@@ -75,7 +75,7 @@ impl Plugin for CommonSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
             (
-                (initialize_settings_resources, apply_deferred).chain(),
+                initialize_settings_resources,
                 finalize_startup,
             )
                 .chain(),
