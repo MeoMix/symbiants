@@ -9,12 +9,10 @@ pub mod simulation_timestep;
 pub mod story_time;
 
 use self::{
-    app_state::{finalize_startup, post_setup_clear_change_detection, AppState},
+    app_state::{post_setup_clear_change_detection, AppState},
     common::despawn_model,
-    external_event::process_external_event,
-    save::initialize_save_resources,
     simulation_timestep::run_simulation_update_schedule,
-    story_time::{set_rate_of_time, StoryPlaybackState},
+    story_time::StoryPlaybackState,
 };
 use bevy::{
     app::{MainScheduleOrder, RunFixedUpdateLoop},
@@ -48,6 +46,17 @@ pub enum CleanupSet {
     AfterSimulationCleanup,
 }
 
+/// First and Last run even in the simulation is paused.
+/// This is useful for having the simulation react to user input when paused.
+#[derive(SystemSet, Debug, PartialEq, Eq, Clone, Hash)]
+pub enum SimulationTickSet {
+    First,
+    PreSimulationTick,
+    SimulationTick,
+    PostSimulationTick,
+    Last,
+}
+
 pub struct SimulationPlugin;
 
 impl Plugin for SimulationPlugin {
@@ -79,6 +88,18 @@ impl Plugin for SimulationPlugin {
                 FinishSetupSet::BeforeSimulationFinishSetup,
                 FinishSetupSet::SimulationFinishSetup,
                 FinishSetupSet::AfterSimulationFinishSetup,
+            )
+                .chain(),
+        );
+
+        app.configure_sets(
+            SimulationUpdate,
+            (
+                SimulationTickSet::First,
+                SimulationTickSet::PreSimulationTick,
+                SimulationTickSet::SimulationTick,
+                SimulationTickSet::PostSimulationTick,
+                SimulationTickSet::Last,
             )
                 .chain(),
         );

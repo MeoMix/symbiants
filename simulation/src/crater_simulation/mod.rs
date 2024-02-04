@@ -5,8 +5,8 @@ use self::{
     crater::{spawn_crater, Crater},
 };
 use super::{
-    apply_deferred, despawn_model, finalize_startup, initialize_save_resources, insert_crater_grid,
-    post_setup_clear_change_detection, AppState, CleanupSet, FinishSetupSet,
+    apply_deferred, despawn_model, insert_crater_grid, post_setup_clear_change_detection,
+    settings::initialize_settings_resources, AppState, CleanupSet, FinishSetupSet,
 };
 use bevy::prelude::*;
 
@@ -18,10 +18,9 @@ impl Plugin for CraterSimulationPlugin {
 
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
-            (((spawn_crater, apply_deferred).chain(),)
+            (spawn_crater, apply_deferred)
                 .chain()
-                .after(initialize_save_resources)
-                .before(finalize_startup),),
+                .after(initialize_settings_resources),
         );
 
         app.add_systems(
