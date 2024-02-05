@@ -1,13 +1,15 @@
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
-    common::{grid::Grid, position::Position},
+    common::{
+        grid::{Grid, GridElements},
+        position::Position,
+    },
     nest_simulation::{
         element::Element,
         nest::{AtNest, Nest},
     },
     settings::Settings,
 };
-
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -25,6 +27,7 @@ pub fn ants_dig(
     >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
+    grid_elements: GridElements<AtNest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
@@ -54,6 +57,7 @@ pub fn ants_dig(
             &elements_query,
             &ants_query,
             &nest_query,
+            &grid_elements,
             &mut commands,
             &settings,
             &mut rng,
@@ -80,6 +84,7 @@ fn try_dig(
         With<AtNest>,
     >,
     nest_query: &Query<(&Grid, &Nest)>,
+    grid_elements: &GridElements<AtNest>,
     commands: &mut Commands,
     settings: &Res<Settings>,
     rng: &mut ResMut<GlobalRng>,
@@ -91,7 +96,7 @@ fn try_dig(
     }
 
     // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = grid.elements().get_element_entity(dig_position).unwrap();
+    let element_entity = grid_elements.entity(dig_position);
     let element = elements_query.get(*element_entity).unwrap();
     if *element == Element::Air {
         return false;

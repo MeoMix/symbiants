@@ -1,9 +1,5 @@
 use crate::{
-    common::{
-        grid::{elements_cache::ElementsCache, Grid},
-        position::Position,
-        Zone,
-    },
+    common::{grid::Grid, position::Position, Zone},
     // TODO: Move most of Element and Ant to Common
     nest_simulation::{
         ant::{
@@ -57,7 +53,7 @@ pub fn insert_crater_grid(
     commands.entity(crater_query.single()).insert(Grid::new(
         settings.crater_width,
         settings.crater_height,
-        ElementsCache::new(elements_cache),
+        elements_cache,
     ));
 }
 

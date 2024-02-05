@@ -1,13 +1,12 @@
+use super::{AntOrientation, Initiative};
 use crate::{
-    common::{grid::Grid, position::Position},
+    common::{grid::GridElements, position::Position},
     nest_simulation::{
         element::Element,
         nest::{AtNest, Nest},
     },
     settings::Settings,
 };
-
-use super::{AntOrientation, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
@@ -20,10 +19,11 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 pub fn ants_stabilize_footing_movement(
     mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation), With<AtNest>>,
     elements_query: Query<&Element>,
-    nest_query: Query<(&Grid, &Nest)>,
+    nest_query: Query<&Nest>,
+    grid_elements: GridElements<AtNest>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    let (grid, nest) = nest_query.single();
+    let nest = nest_query.single();
 
     for (mut initiative, position, mut orientation) in ants_query.iter_mut() {
         if !initiative.can_move() {
@@ -31,9 +31,7 @@ pub fn ants_stabilize_footing_movement(
         }
 
         let below_position = orientation.get_below_position(&position);
-        let has_air_below =
-            grid.elements()
-                .is_element(&elements_query, below_position, Element::Air);
+        let has_air_below = grid_elements.is(below_position, Element::Air);
         if !has_air_below {
             continue;
         }
@@ -42,9 +40,9 @@ pub fn ants_stabilize_footing_movement(
             &orientation,
             &position,
             &elements_query,
-            &grid,
             &nest,
             &mut rng,
+            &grid_elements,
         );
 
         initiative.consume_movement();
@@ -55,11 +53,12 @@ pub fn ants_stabilize_footing_movement(
 pub fn ants_walk(
     mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), With<AtNest>>,
     elements_query: Query<&Element>,
-    nest_query: Query<(&Grid, &Nest)>,
+    nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
+    grid_elements: GridElements<AtNest>,
 ) {
-    let (grid, nest) = nest_query.single();
+    let nest = nest_query.single();
 
     for (mut initiative, mut position, mut orientation) in ants_query.iter_mut() {
         if !initiative.can_move() {
@@ -68,14 +67,13 @@ pub fn ants_walk(
 
         // An ant might be attempting to walk forward into a solid block. If so, they'll turn and walk up the block.
         let ahead_position = orientation.get_ahead_position(&position);
-        let has_air_ahead =
-            grid.elements()
-                .get_element_entity(ahead_position)
-                .map_or(false, |entity| {
-                    elements_query
-                        .get(*entity)
-                        .map_or(false, |element| *element == Element::Air)
-                });
+        let has_air_ahead = grid_elements
+            .get_entity(ahead_position)
+            .map_or(false, |entity| {
+                elements_query
+                    .get(*entity)
+                    .map_or(false, |element| *element == Element::Air)
+            });
 
         // An ant might turn randomly. This is to prevent ants from getting stuck in loops and add visual variety.
         let is_turning_randomly = rng.chance(settings.probabilities.random_turn.into());
@@ -85,9 +83,9 @@ pub fn ants_walk(
                 &orientation,
                 &position,
                 &elements_query,
-                &grid,
                 &nest,
                 &mut rng,
+                &grid_elements,
             );
 
             initiative.consume_movement();
@@ -98,7 +96,7 @@ pub fn ants_walk(
         let foot_orientation = orientation.rotate_forward();
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
-        if let Some(foot_entity) = grid.elements().get_element_entity(foot_position) {
+        if let Some(foot_entity) = grid_elements.get_entity(foot_position) {
             let foot_element = elements_query.get(*foot_entity).unwrap();
 
             if *foot_element == Element::Air {
@@ -127,18 +125,30 @@ pub fn get_turned_orientation(
     orientation: &AntOrientation,
     position: &Position,
     elements_query: &Query<&Element>,
-    grid: &Grid,
     nest: &Nest,
     rng: &mut ResMut<GlobalRng>,
+    grid_elements: &GridElements<AtNest>,
 ) -> AntOrientation {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
     let back_orientation = orientation.rotate_backward();
-    if is_valid_location(back_orientation, *position, elements_query, grid, nest) {
+    if is_valid_location(
+        back_orientation,
+        *position,
+        elements_query,
+        nest,
+        grid_elements,
+    ) {
         return back_orientation;
     }
 
     let opposite_orientation = orientation.turn_around();
-    if is_valid_location(opposite_orientation, *position, elements_query, grid, nest) {
+    if is_valid_location(
+        opposite_orientation,
+        *position,
+        elements_query,
+        nest,
+        grid_elements,
+    ) {
         return opposite_orientation;
     }
 
@@ -148,7 +158,13 @@ pub fn get_turned_orientation(
         .iter()
         .filter(|&&inner_orientation| inner_orientation != *orientation)
         .filter(|&&inner_orientation| {
-            is_valid_location(inner_orientation, *position, elements_query, grid, nest)
+            is_valid_location(
+                inner_orientation,
+                *position,
+                elements_query,
+                nest,
+                grid_elements,
+            )
         })
         .collect::<Vec<_>>();
 
@@ -164,11 +180,11 @@ fn is_valid_location(
     orientation: AntOrientation,
     position: Position,
     elements_query: &Query<&Element>,
-    grid: &Grid,
     nest: &Nest,
+    grid_elemenets: &GridElements<AtNest>,
 ) -> bool {
     // Need air at the ants' body for it to be a legal ant zone.
-    let Some(entity) = grid.elements().get_element_entity(position) else {
+    let Some(entity) = grid_elemenets.get_entity(position) else {
         return false;
     };
     let Ok(element) = elements_query.get(*entity) else {
@@ -181,7 +197,7 @@ fn is_valid_location(
 
     // Get the zone beneath the ants' feet and check for air
     let below_position = orientation.get_below_position(&position);
-    let Some(entity) = grid.elements().get_element_entity(below_position) else {
+    let Some(entity) = grid_elemenets.get_entity(below_position) else {
         // SPECIAL CASE: if underground then an out-of-bounds zone is considered dirt to walk on
         if nest.is_underground(&below_position) {
             return true;

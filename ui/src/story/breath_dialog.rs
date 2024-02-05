@@ -1,20 +1,18 @@
+use super::action_menu::IsShowingBreathDialog;
 use bevy::{prelude::*, utils::HashSet};
 use bevy_egui::{
     egui::{self, Align2},
     EguiContexts,
 };
 use bevy_turborand::{DelegatedRng, GlobalRng};
-
 use simulation::{
-    common::{grid::Grid, position::Position},
+    common::{grid::GridElements, position::Position},
     nest_simulation::{
         ant::{hunger::Hunger, Dead},
         element::{commands::ElementCommandsExt, Air, Element, Food},
-        nest::{AtNest, Nest},
+        nest::AtNest,
     },
 };
-
-use super::action_menu::IsShowingBreathDialog;
 
 pub struct IsOpen(bool);
 
@@ -32,7 +30,7 @@ pub fn update_breath_dialog(
     food_query: Query<&Food>,
     air_query: Query<&Position, With<Air>>,
     mut rng: ResMut<GlobalRng>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_elements: GridElements<AtNest>,
     mut commands: Commands,
     mut is_running: Local<bool>,
     mut is_open: Local<IsOpen>,
@@ -137,10 +135,8 @@ pub fn update_breath_dialog(
                                 spawn_positions.insert(*position);
                             }
 
-                            let nest = nest_query.single();
                             for position in spawn_positions.iter() {
-                                if let Some(entity) = nest.elements().get_element_entity(*position)
-                                {
+                                if let Some(entity) = grid_elements.get_entity(*position) {
                                     commands.replace_element(
                                         *position,
                                         Element::Food,

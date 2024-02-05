@@ -1,12 +1,6 @@
-/// A worker ant may randomly decide to dig a tunnel in a tunnel east/west/south of the nest under the following conditions:
-///     1) The ant must not be hungry. If the ant is hungry it's assumed that nest expansion isn't desirable because resources are scarce.
-///     2) The ant must feel crowded. If the ant doesn't feel crowded then it's assumed that nest expansion isn't desirable because there's plenty of space.
-/// For now, crowding will be a really naive implementation where if an ant has at least two other ants adjacent to it then it is crowded.
-use bevy::prelude::*;
-use bevy_turborand::{DelegatedRng, GlobalRng};
-
+use super::{AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
-    common::{grid::Grid, position::Position},
+    common::{grid::GridElements, position::Position},
     nest_simulation::{
         ant::commands::AntCommandsExt,
         element::Element,
@@ -15,9 +9,13 @@ use crate::{
     },
     settings::Settings,
 };
+use bevy::prelude::*;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use super::{AntInventory, AntOrientation, AntRole, Initiative};
-
+/// A worker ant may randomly decide to dig a tunnel in a tunnel east/west/south of the nest under the following conditions:
+///     1) The ant must not be hungry. If the ant is hungry it's assumed that nest expansion isn't desirable because resources are scarce.
+///     2) The ant must feel crowded. If the ant doesn't feel crowded then it's assumed that nest expansion isn't desirable because there's plenty of space.
+/// For now, crowding will be a really naive implementation where if an ant has at least two other ants adjacent to it then it is crowded.
 pub fn ants_nest_expansion(
     ants_query: Query<
         (
@@ -30,13 +28,13 @@ pub fn ants_nest_expansion(
         ),
         With<AtNest>,
     >,
-    elements_query: Query<&Element>,
+    grid_elements: GridElements<AtNest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
-    nest_query: Query<(&Grid, &Nest)>,
+    nest_query: Query<&Nest>,
 ) {
-    let (grid, nest) = nest_query.single();
+    let nest = nest_query.single();
 
     let ant_entity_positions = ants_query
         .iter()
@@ -69,29 +67,20 @@ pub fn ants_nest_expansion(
         if is_crowded && rng.f32() < settings.probabilities.expand_nest {
             let dirt_position = ant_orientation.get_ahead_position(ant_position);
 
-            if !grid
-                .elements()
-                .is_element(&elements_query, dirt_position, Element::Dirt)
-            {
+            if !grid_elements.is(dirt_position, Element::Dirt) {
                 continue;
             }
 
             // Must be attempting to dig a tunnel which means there needs to be dirt on either side of the dig site.
             let dirt_adjacent_position_above = ant_orientation.get_above_position(&dirt_position);
             let dirt_adjacent_position_below = ant_orientation.get_below_position(&dirt_position);
-            if grid.elements().is_element(
-                &elements_query,
-                dirt_adjacent_position_above,
-                Element::Air,
-            ) || grid.elements().is_element(
-                &elements_query,
-                dirt_adjacent_position_below,
-                Element::Air,
-            ) {
+            if grid_elements.is(dirt_adjacent_position_above, Element::Air)
+                || grid_elements.is(dirt_adjacent_position_below, Element::Air)
+            {
                 continue;
             }
 
-            let dig_target_entity = *grid.elements().element_entity(dirt_position);
+            let dig_target_entity = *grid_elements.entity(dirt_position);
             commands.dig(ant_entity, dirt_position, dig_target_entity, AtNest);
             commands.spawn_pheromone(
                 dirt_position,

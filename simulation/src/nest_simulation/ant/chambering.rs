@@ -1,8 +1,9 @@
-use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-
+use super::birthing::Birthing;
 use crate::{
-    common::{grid::Grid, position::Position},
+    common::{
+        grid::{Grid, GridElements},
+        position::Position,
+    },
     nest_simulation::{
         ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
         element::Element,
@@ -11,10 +12,9 @@ use crate::{
     },
     settings::Settings,
 };
-
+use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
-
-use super::birthing::Birthing;
+use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -38,7 +38,8 @@ pub fn ants_chamber_pheromone_act(
         With<AtNest>,
     >,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
+    grid_elements: GridElements<AtNest>,
     mut commands: Commands,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -67,7 +68,8 @@ pub fn ants_chamber_pheromone_act(
             &ant_entity,
             &position,
             &elements_query,
-            &nest_query,
+            &grid_query,
+            &grid_elements,
             &mut commands,
         ) {
             // Subtract 1 because not placing pheromone at ant_position but instead placing it at a position adjacent
@@ -147,22 +149,23 @@ pub fn ants_remove_chamber_pheromone(
     }
 }
 
+// TODO: Duplicate try_dig fn?!
 // TODO: better home for this? maybe in commands?
 fn try_dig(
     ant_entity: &Entity,
     dig_position: &Position,
     elements_query: &Query<&Element>,
-    nest_query: &Query<&Grid, With<Nest>>,
+    grid_query: &Query<&Grid, With<AtNest>>,
+    grid_elements: &GridElements<AtNest>,
     commands: &mut Commands,
 ) -> bool {
-    let grid = nest_query.single();
-
-    if !grid.is_within_bounds(&dig_position) {
+    if !grid_query.single().is_within_bounds(&dig_position) {
         return false;
     }
 
     // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = grid.elements().element_entity(*dig_position);
+    let element_entity = grid_elements.entity(*dig_position);
+    // TODO: Consider going through grid_elements here
     let element = elements_query.get(*element_entity).unwrap();
     if *element == Element::Air {
         return false;

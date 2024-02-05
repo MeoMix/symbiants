@@ -1,8 +1,14 @@
-use std::marker::PhantomData;
-
 use super::{Element, ElementBundle};
-use crate::common::{grid::Grid, position::Position, Zone};
-use bevy::{ecs::system::Command, prelude::*};
+use crate::common::{
+    grid::{GridElements, GridElementsMut},
+    position::Position,
+    Zone,
+};
+use bevy::{
+    ecs::system::{Command, SystemState},
+    prelude::*,
+};
+use std::marker::PhantomData;
 
 pub trait ElementCommandsExt {
     fn replace_element<Z: Zone>(
@@ -75,9 +81,10 @@ struct ReplaceElementCommand<Z: Zone> {
 
 impl<Z: Zone> Command for ReplaceElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
+        let mut system_state: SystemState<GridElements<Z>> = SystemState::new(world);
+        let grid_elements = system_state.get(world);
 
-        let existing_entity = match grid.elements().get_element_entity(self.position) {
+        let existing_entity = match grid_elements.get_entity(self.position) {
             Some(entity) => entity,
             None => {
                 info!("No entity found at position {:?}", self.position);
@@ -96,11 +103,10 @@ impl<Z: Zone> Command for ReplaceElementCommand<Z> {
             .spawn(ElementBundle::new(self.element, self.position, self.zone))
             .id();
 
-        let mut grid = world
-            .query_filtered::<&mut Grid, With<Z>>()
-            .single_mut(world);
+        let mut system_state: SystemState<GridElementsMut<Z>> = SystemState::new(world);
+        let mut grid_elements = system_state.get_mut(world);
 
-        grid.elements_mut().set_element(self.position, entity);
+        grid_elements.set(self.position, entity);
     }
 }
 
@@ -112,9 +118,10 @@ struct SpawnElementCommand<Z: Zone> {
 
 impl<Z: Zone> Command for SpawnElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
+        let mut system_state: SystemState<GridElements<Z>> = SystemState::new(world);
+        let grid_elements = system_state.get(world);
 
-        if let Some(existing_entity) = grid.elements().get_element_entity(self.position) {
+        if let Some(existing_entity) = grid_elements.get_entity(self.position) {
             info!(
                 "Entity {:?} already exists at position {:?}",
                 existing_entity, self.position
@@ -126,11 +133,10 @@ impl<Z: Zone> Command for SpawnElementCommand<Z> {
             .spawn(ElementBundle::new(self.element, self.position, self.zone))
             .id();
 
-        let mut grid = world
-            .query_filtered::<&mut Grid, With<Z>>()
-            .single_mut(world);
+        let mut system_state: SystemState<GridElementsMut<Z>> = SystemState::new(world);
+        let mut grid_elements = system_state.get_mut(world);
 
-        grid.elements_mut().set_element(self.position, entity);
+        grid_elements.set(self.position, entity);
     }
 }
 
@@ -144,9 +150,10 @@ struct ToggleElementCommand<C: Component, Z: Zone> {
 
 impl<C: Component, Z: Zone> Command for ToggleElementCommand<C, Z> {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
+        let mut system_state: SystemState<GridElements<Z>> = SystemState::new(world);
+        let grid_elements = system_state.get(world);
 
-        let element_entity = match grid.elements().get_element_entity(self.position) {
+        let element_entity = match grid_elements.get_entity(self.position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.position);

@@ -1,15 +1,20 @@
-use core::panic;
-
-use bevy::{ecs::system::Command, prelude::*};
-
 use crate::{
-    common::{grid::Grid, position::Position, Zone},
+    common::{
+        grid::{GridElements, GridElementsMut},
+        position::Position,
+        Zone,
+    },
     nest_simulation::{
         ant::AntInventory,
         element::{Element, ElementBundle},
     },
     settings::Settings,
 };
+use bevy::{
+    ecs::system::{Command, SystemState},
+    prelude::*,
+};
+use core::panic;
 
 use super::{
     digestion::Digestion, hunger::Hunger, Ant, AntBundle, AntColor, AntName, AntOrientation,
@@ -109,9 +114,10 @@ struct DigElementCommand<Z: Zone> {
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
 impl<Z: Zone> Command for DigElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
+        let mut system_state: SystemState<GridElements<Z>> = SystemState::new(world);
+        let grid_elements = system_state.get(world);
 
-        let element_entity = match grid.elements().get_element_entity(self.target_position) {
+        let element_entity = match grid_elements.get_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -145,12 +151,10 @@ impl<Z: Zone> Command for DigElementCommand<Z> {
             ))
             .id();
 
-        let mut grid = world
-            .query_filtered::<&mut Grid, With<Z>>()
-            .single_mut(world);
+        let mut system_state: SystemState<GridElementsMut<Z>> = SystemState::new(world);
+        let mut grid_elements = system_state.get_mut(world);
 
-        grid.elements_mut()
-            .set_element(self.target_position, air_entity);
+        grid_elements.set(self.target_position, air_entity);
 
         // TODO: There's probably a more elegant way to express this - "denseness" of sand rather than changing between dirt/sand.
         let mut inventory_element = element;
@@ -183,9 +187,10 @@ struct DropElementCommand<Z: Zone> {
 
 impl<Z: Zone> Command for DropElementCommand<Z> {
     fn apply(self, world: &mut World) {
-        let grid = world.query_filtered::<&mut Grid, With<Z>>().single(world);
+        let mut system_state: SystemState<GridElements<Z>> = SystemState::new(world);
+        let grid_elements = system_state.get(world);
 
-        let air_entity = match grid.elements().get_element_entity(self.target_position) {
+        let air_entity = match grid_elements.get_entity(self.target_position) {
             Some(entity) => *entity,
             None => {
                 info!("No entity found at position {:?}", self.target_position);
@@ -222,12 +227,10 @@ impl<Z: Zone> Command for DropElementCommand<Z> {
             ))
             .id();
 
-        let mut grid = world
-            .query_filtered::<&mut Grid, With<Z>>()
-            .single_mut(world);
+        let mut system_state: SystemState<GridElementsMut<Z>> = SystemState::new(world);
+        let mut grid_elements = system_state.get_mut(world);
 
-        grid.elements_mut()
-            .set_element(self.target_position, element_entity);
+        grid_elements.set(self.target_position, element_entity);
 
         // Remove element from ant inventory.
         world.entity_mut(inventory_item_entity).despawn();

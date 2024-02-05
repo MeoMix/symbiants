@@ -1,14 +1,5 @@
-use bevy::prelude::*;
-
-use bevy_turborand::{DelegatedRng, GlobalRng};
-use serde::{Deserialize, Serialize};
-
 use crate::{
-    common::{
-        grid::{elements_cache::ElementsCache, Grid},
-        position::Position,
-        Zone,
-    },
+    common::{grid::Grid, position::Position, Zone},
     nest_simulation::{
         ant::{
             digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
@@ -18,6 +9,9 @@ use crate::{
     },
     settings::Settings,
 };
+use bevy::prelude::*;
+use bevy_turborand::{DelegatedRng, GlobalRng};
+use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -161,6 +155,6 @@ pub fn insert_nest_grid(
     commands.entity(nest_query.single()).insert(Grid::new(
         settings.nest_width,
         settings.nest_height,
-        ElementsCache::new(elements_cache),
+        elements_cache,
     ));
 }

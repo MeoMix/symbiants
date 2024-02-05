@@ -3,11 +3,8 @@ use super::{
     AntRole, Dead, Initiative,
 };
 use crate::{
-    common::{grid::Grid, position::Position},
-    nest_simulation::{
-        element::Element,
-        nest::{AtNest, Nest},
-    },
+    common::{grid::GridElements, position::Position},
+    nest_simulation::{element::Element, nest::AtNest},
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;
@@ -89,12 +86,10 @@ pub fn ants_hunger_act(
         With<AtNest>,
     >,
     elements_query: Query<&Element>,
+    grid_elements: GridElements<AtNest>,
     mut commands: Commands,
-    nest_query: Query<&Grid, With<Nest>>,
     mut ant_ate_food_event_writer: EventWriter<AntAteFoodEvent>,
 ) {
-    let grid = nest_query.single();
-
     for (ant_entity, hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
         ants_hunger_query.iter_mut()
     {
@@ -111,11 +106,8 @@ pub fn ants_hunger_act(
             // If there is food near the hungry ant then pick it up and if the ant is holding food then eat it.
             if inventory.0 == None {
                 let ahead_position = orientation.get_ahead_position(position);
-                if grid
-                    .elements()
-                    .is_element(&elements_query, ahead_position, Element::Food)
-                {
-                    let food_entity = grid.elements().get_element_entity(ahead_position).unwrap();
+                if grid_elements.is(ahead_position, Element::Food) {
+                    let food_entity = grid_elements.entity(ahead_position);
                     commands.dig(ant_entity, ahead_position, *food_entity, AtNest);
                 }
             } else {

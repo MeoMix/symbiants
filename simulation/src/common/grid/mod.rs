@@ -1,8 +1,6 @@
-pub mod elements_cache;
-
-use self::elements_cache::ElementsCache;
-use crate::common::position::Position;
-use bevy::prelude::*;
+use super::Zone;
+use crate::{common::position::Position, nest_simulation::element::Element};
+use bevy::{ecs::system::SystemParam, prelude::*};
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because Grid is a cache that is trivially regenerated on app startup from persisted state.
@@ -10,11 +8,11 @@ use bevy::prelude::*;
 pub struct Grid {
     width: isize,
     height: isize,
-    elements_cache: ElementsCache,
+    elements_cache: Vec<Vec<Entity>>,
 }
 
 impl Grid {
-    pub fn new(width: isize, height: isize, elements_cache: ElementsCache) -> Self {
+    pub fn new(width: isize, height: isize, elements_cache: Vec<Vec<Entity>>) -> Self {
         Self {
             width,
             height,
@@ -30,11 +28,12 @@ impl Grid {
         self.height
     }
 
-    pub fn elements(&self) -> &ElementsCache {
+    // TODO: Feel like these should be eliminated in favor of GridElements and GridElementsMut
+    pub fn elements(&self) -> &Vec<Vec<Entity>> {
         &self.elements_cache
     }
 
-    pub fn elements_mut(&mut self) -> &mut ElementsCache {
+    pub fn elements_mut(&mut self) -> &mut Vec<Vec<Entity>> {
         &mut self.elements_cache
     }
 
@@ -65,5 +64,55 @@ impl Grid {
             x: x.abs().round() as isize,
             y: y.abs().round() as isize,
         }
+    }
+}
+
+#[derive(SystemParam)]
+pub struct GridElements<'w, 's, Z: Zone> {
+    grid: Query<'w, 's, &'static Grid, With<Z>>,
+    elements: Query<'w, 's, &'static Element, With<Z>>,
+}
+
+impl<'w, 's, Z: Zone> GridElements<'w, 's, Z> {
+    // TODO: Maybe this shouldn't return a reference?
+    pub fn entity(&self, position: Position) -> &Entity {
+        self.get_entity(position).expect(&format!(
+            "Element entity not found at the position: {:?}",
+            position
+        ))
+    }
+
+    // TODO: Maybe this shouldn't return a reference?
+    pub fn get_entity(&self, position: Position) -> Option<&Entity> {
+        self.grid
+            .single()
+            .elements()
+            .get(position.y as usize)
+            .and_then(|row| row.get(position.x as usize))
+    }
+
+    pub fn is(&self, position: Position, element: Element) -> bool {
+        self.get_entity(position).map_or(false, |&element_entity| {
+            self.elements
+                .get(element_entity)
+                .map_or(false, |&queried_element| queried_element == element)
+        })
+    }
+
+    // Returns true if every element in `positions` matches the provided Element type.
+    // NOTE: This returns true if given 0 positions.
+    pub fn is_all(&self, positions: &[Position], element: Element) -> bool {
+        positions.iter().all(|&position| self.is(position, element))
+    }
+}
+
+#[derive(SystemParam)]
+pub struct GridElementsMut<'w, 's, Z: Zone> {
+    grid: Query<'w, 's, &'static mut Grid, With<Z>>,
+}
+
+impl<'w, 's, Z: Zone> GridElementsMut<'w, 's, Z> {
+    pub fn set(&mut self, position: Position, entity: Entity) {
+        self.grid.single_mut().elements_mut()[position.y as usize][position.x as usize] = entity;
     }
 }

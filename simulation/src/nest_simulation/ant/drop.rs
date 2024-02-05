@@ -1,13 +1,15 @@
+use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
-    common::{grid::Grid, position::Position},
+    common::{
+        grid::{Grid, GridElements},
+        position::Position,
+    },
     nest_simulation::{
         element::Element,
         nest::{AtNest, Nest},
     },
     settings::Settings,
 };
-
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
 
@@ -25,6 +27,7 @@ pub fn ants_drop(
     >,
     elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
+    grid_elements: GridElements<AtNest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
@@ -47,13 +50,13 @@ pub fn ants_drop(
 
         // Use ahead position for random inventory drop.
         if rng.f32() < settings.probabilities.random_drop {
-            let target_element_entity = grid.elements().element_entity(ahead_position);
+            let target_element_entity = grid_elements.entity(ahead_position);
             commands.drop(ant_entity, ahead_position, *target_element_entity, AtNest);
             continue;
         }
 
         // Check if hitting a solid element and, if so, consider digging through it.
-        let entity = grid.elements().get_element_entity(ahead_position).unwrap();
+        let entity = grid_elements.entity(ahead_position);
         let element = elements_query.get(*entity).unwrap();
         if *element != Element::Air {
             continue;
@@ -76,23 +79,16 @@ pub fn ants_drop(
         if *inventory_item_element == Element::Food {
             if nest.is_underground(&ahead_position) {
                 // Don't let ants drop food in tunnels that don't have space for them to navigate around dropped food.
-                if grid.elements().is_element(
-                    &elements_query,
+                if grid_elements.is(
                     orientation.get_above_position(&ahead_position),
                     Element::Air,
-                ) && grid.elements().is_element(
-                    &elements_query,
-                    orientation.get_above_position(position),
-                    Element::Air,
-                ) {
+                ) && grid_elements.is(orientation.get_above_position(position), Element::Air)
+                {
                     drop_food = rng.f32() < settings.probabilities.below_surface_food_drop;
 
                     // If ant is adjacent to food then strongly consider dropping food (creates food piles)
-                    let is_food_below = grid.elements().is_element(
-                        &elements_query,
-                        orientation.get_below_position(position),
-                        Element::Food,
-                    );
+                    let is_food_below =
+                        grid_elements.is(orientation.get_below_position(position), Element::Food);
 
                     if is_food_below
                         && rng.f32() < settings.probabilities.below_surface_food_adjacent_food_drop
@@ -109,7 +105,7 @@ pub fn ants_drop(
 
         if drop_sand || drop_food {
             // Drop inventory in front of ant
-            let target_element_entity = grid.elements().element_entity(ahead_position);
+            let target_element_entity = grid_elements.entity(ahead_position);
             commands.drop(ant_entity, ahead_position, *target_element_entity, AtNest);
             continue;
         }

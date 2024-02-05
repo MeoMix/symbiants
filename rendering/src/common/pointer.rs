@@ -1,11 +1,13 @@
-use bevy::{prelude::*, window::PrimaryWindow};
-
 use super::{camera::RenderingCamera, selection::SelectedEntity, visible_grid::VisibleGrid};
-
+use bevy::{prelude::*, window::PrimaryWindow};
 use simulation::{
-    common::{grid::Grid, position::Position, Zone},
+    common::{
+        grid::{Grid, GridElements},
+        position::Position,
+        Zone,
+    },
     external_event::ExternalSimulationEvent,
-    nest_simulation::{ant::Ant, nest::Nest},
+    nest_simulation::ant::Ant,
 };
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
@@ -69,6 +71,7 @@ pub fn handle_pointer_tap<Z: Zone + Copy>(
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<(&Camera, &GlobalTransform), With<RenderingCamera>>,
     grid_query: Query<(Entity, &Grid, &Z)>,
+    grid_elements: GridElements<Z>,
     visible_grid: Res<VisibleGrid>,
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
@@ -136,7 +139,7 @@ pub fn handle_pointer_tap<Z: Zone + Copy>(
         .find(|(_, &position)| position == grid_position)
         .map(|(entity, _)| entity);
 
-    let element_entity_at_position = grid.elements().get_element_entity(grid_position);
+    let element_entity_at_position = grid_elements.get_entity(grid_position);
 
     let currently_selected_entity = selected_entity.0;
 

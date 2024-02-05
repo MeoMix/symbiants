@@ -1,9 +1,7 @@
 pub mod commands;
 
-use crate::{
-    common::{grid::Grid, position::Position, Zone},
-    nest_simulation::nest::Nest,
-};
+use super::nest::AtNest;
+use crate::common::{grid::GridElements, position::Position, Zone};
 use bevy::{prelude::*, utils::HashSet};
 use serde::{Deserialize, Serialize};
 
@@ -115,10 +113,9 @@ pub struct ElementExposure {
 pub fn update_element_exposure(
     changed_elements_query: Query<(Entity, &Position, &Element), Changed<Position>>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
+    grid_elements: GridElements<AtNest>,
 ) {
-    let grid = nest_query.single();
     let mut entities = HashSet::new();
 
     for (entity, position, element) in changed_elements_query.iter() {
@@ -127,9 +124,7 @@ pub fn update_element_exposure(
         }
 
         for adjacent_position in position.get_adjacent_positions() {
-            if let Some(adjacent_element_entity) =
-                grid.elements().get_element_entity(adjacent_position)
-            {
+            if let Some(adjacent_element_entity) = grid_elements.get_entity(adjacent_position) {
                 let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
 
                 if *adjacent_element != Element::Air {
@@ -141,22 +136,10 @@ pub fn update_element_exposure(
 
     for (entity, position) in entities {
         commands.entity(entity).insert(ElementExposure {
-            north: grid.elements().is_element(
-                &elements_query,
-                position - Position::Y,
-                Element::Air,
-            ),
-            east: grid
-                .elements()
-                .is_element(&elements_query, position + Position::X, Element::Air),
-            south: grid.elements().is_element(
-                &elements_query,
-                position + Position::Y,
-                Element::Air,
-            ),
-            west: grid
-                .elements()
-                .is_element(&elements_query, position - Position::X, Element::Air),
+            north: grid_elements.is(position - Position::Y, Element::Air),
+            east: grid_elements.is(position + Position::X, Element::Air),
+            south: grid_elements.is(position + Position::Y, Element::Air),
+            west: grid_elements.is(position - Position::X, Element::Air),
         });
     }
 }

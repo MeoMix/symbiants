@@ -1,17 +1,19 @@
-use bevy::prelude::*;
-use bevy_turborand::GlobalRng;
-
 use crate::{
-    common::{grid::Grid, position::Position, Zone}, crater_simulation::crater::AtCrater, nest_simulation::{
+    common::{grid::GridElements, position::Position, Zone},
+    crater_simulation::crater::AtCrater,
+    nest_simulation::{
         ant::commands::AntCommandsExt,
         ant::{
             Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
             Initiative,
         },
         element::{commands::ElementCommandsExt, Element},
-        nest::{AtNest, Nest},
-    }, settings::Settings
+        nest::AtNest,
+    },
+    settings::Settings,
 };
+use bevy::prelude::*;
+use bevy_turborand::GlobalRng;
 
 #[derive(Event, PartialEq, Copy, Clone, Debug)]
 pub enum ExternalSimulationEvent<Z: Zone> {
@@ -41,54 +43,39 @@ pub fn remove_external_event_resources(mut commands: Commands) {
 pub fn process_external_event<Z: Zone + Copy>(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent<Z>>>,
     mut commands: Commands,
-    grid_query: Query<&Grid, With<Z>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
-    // TODO: Not filtering on <Z> here
-    elements_query: Query<&Element>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory), With<Z>>,
+    grid_elements: GridElements<Z>,
 ) {
-    let grid: &Grid = grid_query.single();
-
     for event in external_simulation_events.drain() {
         match event {
             ExternalSimulationEvent::SpawnFood(grid_position, zone) => {
-                if grid
-                    .elements()
-                    .is_element(&elements_query, grid_position, Element::Air)
-                {
-                    let entity = grid.elements().element_entity(grid_position);
+                if grid_elements.is(grid_position, Element::Air) {
+                    let entity = grid_elements.entity(grid_position);
                     commands.replace_element(grid_position, Element::Food, *entity, zone);
                 }
             }
             ExternalSimulationEvent::SpawnSand(grid_position, zone) => {
-                if grid
-                    .elements()
-                    .is_element(&elements_query, grid_position, Element::Air)
-                {
-                    let entity = grid.elements().element_entity(grid_position);
+                if grid_elements.is(grid_position, Element::Air) {
+                    let entity = grid_elements.entity(grid_position);
                     commands.replace_element(grid_position, Element::Sand, *entity, zone);
                 }
             }
             ExternalSimulationEvent::SpawnDirt(grid_position, zone) => {
-                if grid
-                    .elements()
-                    .is_element(&elements_query, grid_position, Element::Air)
-                {
-                    let entity = grid.elements().element_entity(grid_position);
+                if grid_elements.is(grid_position, Element::Air) {
+                    let entity = grid_elements.entity(grid_position);
                     commands.replace_element(grid_position, Element::Dirt, *entity, zone);
                 }
             }
             ExternalSimulationEvent::DespawnElement(grid_position, zone) => {
-                if let Some(entity) = grid.elements().get_element_entity(grid_position) {
+                // TODO: Why is this allowed to fail?
+                if let Some(entity) = grid_elements.get_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Air, *entity, zone);
                 }
             }
             ExternalSimulationEvent::SpawnWorkerAnt(grid_position, zone) => {
-                if grid
-                    .elements()
-                    .is_element(&elements_query, grid_position, Element::Air)
-                {
+                if grid_elements.is(grid_position, Element::Air) {
                     commands.spawn_ant(
                         grid_position,
                         AntColor(settings.ant_color),
