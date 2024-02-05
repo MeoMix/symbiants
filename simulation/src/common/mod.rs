@@ -101,7 +101,8 @@ impl Plugin for CommonSimulationPlugin {
         app.add_systems(
             SimulationUpdate,
             (
-                process_external_event,
+                process_external_event::<AtNest>,
+                process_external_event::<AtCrater>,
                 apply_deferred,
                 denormalize_element,
                 apply_deferred,

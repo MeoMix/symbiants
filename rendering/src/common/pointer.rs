@@ -3,7 +3,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use super::{camera::RenderingCamera, selection::SelectedEntity, visible_grid::VisibleGrid};
 
 use simulation::{
-    common::{grid::Grid, position::Position},
+    common::{grid::Grid, position::Position, Zone},
     external_event::ExternalSimulationEvent,
     nest_simulation::{ant::Ant, nest::Nest},
 };
@@ -21,21 +21,24 @@ pub enum PointerAction {
     DespawnWorkerAnt,
 }
 
-pub fn pointer_action_to_simulation_event(
+pub fn pointer_action_to_simulation_event<Z: Zone>(
     pointer_action: PointerAction,
     position: Position,
-) -> ExternalSimulationEvent {
+    zone: Z,
+) -> ExternalSimulationEvent<Z> {
     match pointer_action {
         PointerAction::Select => {
             panic!("Cannot convert PointerAction::Select to ExternalSimulationEvent")
         }
-        PointerAction::DespawnElement => ExternalSimulationEvent::DespawnElement(position),
-        PointerAction::SpawnFood => ExternalSimulationEvent::SpawnFood(position),
-        PointerAction::SpawnDirt => ExternalSimulationEvent::SpawnDirt(position),
-        PointerAction::SpawnSand => ExternalSimulationEvent::SpawnSand(position),
-        PointerAction::KillAnt => ExternalSimulationEvent::KillAnt(position),
-        PointerAction::SpawnWorkerAnt => ExternalSimulationEvent::SpawnWorkerAnt(position),
-        PointerAction::DespawnWorkerAnt => ExternalSimulationEvent::DespawnWorkerAnt(position),
+        PointerAction::DespawnElement => ExternalSimulationEvent::DespawnElement(position, zone),
+        PointerAction::SpawnFood => ExternalSimulationEvent::SpawnFood(position, zone),
+        PointerAction::SpawnDirt => ExternalSimulationEvent::SpawnDirt(position, zone),
+        PointerAction::SpawnSand => ExternalSimulationEvent::SpawnSand(position, zone),
+        PointerAction::KillAnt => ExternalSimulationEvent::KillAnt(position, zone),
+        PointerAction::SpawnWorkerAnt => ExternalSimulationEvent::SpawnWorkerAnt(position, zone),
+        PointerAction::DespawnWorkerAnt => {
+            ExternalSimulationEvent::DespawnWorkerAnt(position, zone)
+        }
     }
 }
 
@@ -60,19 +63,18 @@ const DRAG_THRESHOLD: f32 = 4.0;
 
 // Map user input to simulation events which will be processed manually at the start of the next simulation run.
 // This needs to occur because events aren't reliably read from within systems which don't necessarily run this/next frame.
-pub fn handle_pointer_tap(
+pub fn handle_pointer_tap<Z: Zone + Copy>(
     mouse_input: Res<Input<MouseButton>>,
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<(&Camera, &GlobalTransform), With<RenderingCamera>>,
-    grid_query: Query<&Grid>,
+    grid_query: Query<(Entity, &Grid, &Z)>,
     visible_grid: Res<VisibleGrid>,
     is_pointer_captured: Res<IsPointerCaptured>,
     pointer_action: Res<PointerAction>,
-    mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent>,
+    mut external_simulation_event_writer: EventWriter<ExternalSimulationEvent<Z>>,
     mut pointer_tap_state: ResMut<PointerTapState>,
-    ants_query: Query<(Entity, &Position), With<Ant>>,
-    nest_query: Query<&Grid, With<Nest>>,
+    ants_query: Query<(Entity, &Position), (With<Ant>, With<Z>)>,
     mut selected_entity: ResMut<SelectedEntity>,
 ) {
     if is_pointer_captured.0 {
@@ -111,21 +113,22 @@ pub fn handle_pointer_tap(
         .viewport_to_world_2d(camera_transform, pointer_tap_state.position.unwrap())
         .unwrap();
 
-    let grid_position = grid_query
-        .get(visible_grid.0.unwrap())
-        .unwrap()
-        .world_to_grid_position(world_position);
+    let (grid_entity, grid, zone) = grid_query.single();
+    if grid_entity != visible_grid.0.unwrap() {
+        return;
+    }
+
+    let grid_position = grid.world_to_grid_position(world_position);
 
     if *pointer_action != PointerAction::Select {
         external_simulation_event_writer.send(pointer_action_to_simulation_event(
             *pointer_action,
             grid_position,
+            *zone,
         ));
 
         return;
     }
-
-    let nest = nest_query.single();
 
     // TODO: Support multiple ants at a given position. Need to select them in a fixed order so that there's a "last ant" so that selecting Element is possible afterward.
     let ant_entity_at_position = ants_query
@@ -133,7 +136,7 @@ pub fn handle_pointer_tap(
         .find(|(_, &position)| position == grid_position)
         .map(|(entity, _)| entity);
 
-    let element_entity_at_position = nest.elements().get_element_entity(grid_position);
+    let element_entity_at_position = grid.elements().get_element_entity(grid_position);
 
     let currently_selected_entity = selected_entity.0;
 

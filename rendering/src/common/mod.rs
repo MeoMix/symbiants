@@ -17,6 +17,8 @@ use bevy_ecs_tilemap::TilemapPlugin;
 use simulation::{
     app_state::AppState,
     common::{grid::Grid, Zone},
+    crater_simulation::crater::AtCrater,
+    nest_simulation::nest::AtNest,
     CleanupSet, FinishSetupSet,
 };
 
@@ -119,7 +121,7 @@ impl Plugin for CommonRenderingPlugin {
         // https://github.com/bevyengine/bevy/issues/7691
         app.add_systems(
             Update,
-            (handle_pointer_tap)
+            (handle_pointer_tap::<AtNest>, handle_pointer_tap::<AtCrater>)
                 .run_if(in_state(AppState::TellStory))
                 .chain(),
         );
