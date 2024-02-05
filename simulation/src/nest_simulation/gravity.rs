@@ -191,7 +191,6 @@ pub fn gravity_mark_unstable(
             With<AtNest>,
         ),
     >,
-    elements_query: Query<&Element>,
     mut commands: Commands,
     nest_query: Query<&Nest>,
     grid_elements: GridElements<AtNest>,
@@ -209,7 +208,7 @@ pub fn gravity_mark_unstable(
     for &position in &positions {
         // If the current position contains a sand or food element, mark it as unstable
         if let Some(entity) = grid_elements.get_entity(position) {
-            if let Ok(element) = elements_query.get(*entity) {
+            if let Some(element) = grid_elements.get_element(*entity) {
                 if matches!(*element, Element::Sand | Element::Food) {
                     commands.toggle_element_command(
                         *entity,

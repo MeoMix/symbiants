@@ -37,7 +37,6 @@ pub fn ants_chamber_pheromone_act(
         ),
         With<AtNest>,
     >,
-    elements_query: Query<&Element>,
     grid_query: Query<&Grid, With<AtNest>>,
     grid_elements: GridElements<AtNest>,
     mut commands: Commands,
@@ -67,7 +66,6 @@ pub fn ants_chamber_pheromone_act(
         if try_dig(
             &ant_entity,
             &position,
-            &elements_query,
             &grid_query,
             &grid_elements,
             &mut commands,
@@ -149,12 +147,9 @@ pub fn ants_remove_chamber_pheromone(
     }
 }
 
-// TODO: Duplicate try_dig fn?!
-// TODO: better home for this? maybe in commands?
 fn try_dig(
     ant_entity: &Entity,
     dig_position: &Position,
-    elements_query: &Query<&Element>,
     grid_query: &Query<&Grid, With<AtNest>>,
     grid_elements: &GridElements<AtNest>,
     commands: &mut Commands,
@@ -165,8 +160,7 @@ fn try_dig(
 
     // Check if hitting a solid element and, if so, consider digging through it.
     let element_entity = grid_elements.entity(*dig_position);
-    // TODO: Consider going through grid_elements here
-    let element = elements_query.get(*element_entity).unwrap();
+    let element = grid_elements.element(*element_entity);
     if *element == Element::Air {
         return false;
     }

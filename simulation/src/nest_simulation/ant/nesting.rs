@@ -59,7 +59,6 @@ pub fn ants_nesting_movement(
         ),
         With<AtNest>,
     >,
-    elements_query: Query<&Element>,
     nest_query: Query<&Nest>,
     mut rng: ResMut<GlobalRng>,
     grid_elements: GridElements<AtNest>,
@@ -93,14 +92,8 @@ pub fn ants_nesting_movement(
             continue;
         }
 
-        *orientation = get_turned_orientation(
-            &orientation,
-            &position,
-            &elements_query,
-            &nest,
-            &mut rng,
-            &grid_elements,
-        );
+        *orientation =
+            get_turned_orientation(&orientation, &position, &nest, &mut rng, &grid_elements);
 
         initiative.consume_movement();
     }
@@ -118,7 +111,6 @@ pub fn ants_nesting_action(
         ),
         With<AtNest>,
     >,
-    elements_query: Query<&Element>,
     nest_query: Query<&Nest>,
     grid_elements: GridElements<AtNest>,
     settings: Res<Settings>,
@@ -141,7 +133,6 @@ pub fn ants_nesting_action(
             &position,
             &orientation,
             &nest,
-            &elements_query,
             &grid_elements,
             &settings,
         ) {
@@ -190,7 +181,6 @@ fn can_start_nesting(
     ant_position: &Position,
     ant_orientation: &AntOrientation,
     nest: &Nest,
-    elements_query: &Query<&Element>,
     grid_elements: &GridElements<AtNest>,
     settings: &Settings,
 ) -> bool {
@@ -212,8 +202,8 @@ fn can_start_nesting(
     let dig_position = ant_orientation.get_below_position(ant_position);
     let dig_target_entity = grid_elements.entity(dig_position);
 
-    let is_element_diggable = elements_query
-        .get(*dig_target_entity)
+    let is_element_diggable = grid_elements
+        .get_element(*dig_target_entity)
         .map_or(false, |element| element.is_diggable());
 
     has_valid_dig_site && is_element_diggable

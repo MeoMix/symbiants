@@ -33,7 +33,6 @@ pub fn ants_tunnel_pheromone_move(
         (&mut AntOrientation, &mut Initiative, &mut Position),
         (With<Tunneling>, With<AtNest>),
     >,
-    elements_query: Query<&Element>,
     nest_query: Query<&Nest>,
     mut rng: ResMut<GlobalRng>,
     grid_elements: GridElements<AtNest>,
@@ -53,8 +52,8 @@ pub fn ants_tunnel_pheromone_move(
         let has_air_ahead = grid_elements
             .get_entity(ahead_position)
             .map_or(false, |entity| {
-                elements_query
-                    .get(*entity)
+                grid_elements
+                    .get_element(*entity)
                     .map_or(false, |element| *element == Element::Air)
             });
 
@@ -62,8 +61,8 @@ pub fn ants_tunnel_pheromone_move(
         let has_air_above = grid_elements
             .get_entity(above_position)
             .map_or(false, |entity| {
-                elements_query
-                    .get(*entity)
+                grid_elements
+                    .get_element(*entity)
                     .map_or(false, |element| *element == Element::Air)
             });
 
@@ -71,7 +70,6 @@ pub fn ants_tunnel_pheromone_move(
             *orientation = get_turned_orientation(
                 &orientation,
                 &ant_position,
-                &elements_query,
                 &nest,
                 &mut rng,
                 &grid_elements,
@@ -91,7 +89,7 @@ pub fn ants_tunnel_pheromone_move(
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
         if let Some(foot_entity) = grid_elements.get_entity(foot_position) {
-            let foot_element = elements_query.get(*foot_entity).unwrap();
+            let foot_element = grid_elements.element(*foot_entity);
 
             if *foot_element == Element::Air {
                 // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
@@ -119,7 +117,6 @@ pub fn ants_tunnel_pheromone_act(
         ),
         With<AtNest>,
     >,
-    elements_query: Query<&Element>,
     grid_query: Query<&Grid, With<AtNest>>,
     grid_elements: GridElements<AtNest>,
     mut commands: Commands,
@@ -150,9 +147,7 @@ pub fn ants_tunnel_pheromone_act(
 
         // Check if hitting a solid element and, if so, consider digging through it.
         let entity = grid_elements.entity(ahead_position);
-        let Ok(element) = elements_query.get(*entity) else {
-            panic!("act - expected entity to exist")
-        };
+        let element = grid_elements.element(*entity);
 
         if *element == Element::Air {
             continue;

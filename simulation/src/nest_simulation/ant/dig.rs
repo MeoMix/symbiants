@@ -25,7 +25,6 @@ pub fn ants_dig(
         ),
         With<AtNest>,
     >,
-    elements_query: Query<&Element>,
     nest_query: Query<(&Grid, &Nest)>,
     grid_elements: GridElements<AtNest>,
     settings: Res<Settings>,
@@ -54,7 +53,6 @@ pub fn ants_dig(
             ant_entity,
             role,
             *position,
-            &elements_query,
             &ants_query,
             &nest_query,
             &grid_elements,
@@ -71,7 +69,6 @@ fn try_dig(
     ant_entity: Entity,
     ant_role: &AntRole,
     dig_position: Position,
-    elements_query: &Query<&Element>,
     ants_query: &Query<
         (
             &AntOrientation,
@@ -97,7 +94,7 @@ fn try_dig(
 
     // Check if hitting a solid element and, if so, consider digging through it.
     let element_entity = grid_elements.entity(dig_position);
-    let element = elements_query.get(*element_entity).unwrap();
+    let element = grid_elements.element(*element_entity);
     if *element == Element::Air {
         return false;
     }

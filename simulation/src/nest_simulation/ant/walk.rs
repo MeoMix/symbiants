@@ -18,7 +18,6 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 ///     * Code could be written better such that movement initiative isn't consumed if there's not a valid orientation to turn to.
 pub fn ants_stabilize_footing_movement(
     mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation), With<AtNest>>,
-    elements_query: Query<&Element>,
     nest_query: Query<&Nest>,
     grid_elements: GridElements<AtNest>,
     mut rng: ResMut<GlobalRng>,
@@ -36,14 +35,8 @@ pub fn ants_stabilize_footing_movement(
             continue;
         }
 
-        *orientation = get_turned_orientation(
-            &orientation,
-            &position,
-            &elements_query,
-            &nest,
-            &mut rng,
-            &grid_elements,
-        );
+        *orientation =
+            get_turned_orientation(&orientation, &position, &nest, &mut rng, &grid_elements);
 
         initiative.consume_movement();
     }
@@ -52,7 +45,6 @@ pub fn ants_stabilize_footing_movement(
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
     mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), With<AtNest>>,
-    elements_query: Query<&Element>,
     nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -70,8 +62,8 @@ pub fn ants_walk(
         let has_air_ahead = grid_elements
             .get_entity(ahead_position)
             .map_or(false, |entity| {
-                elements_query
-                    .get(*entity)
+                grid_elements
+                    .get_element(*entity)
                     .map_or(false, |element| *element == Element::Air)
             });
 
@@ -79,14 +71,8 @@ pub fn ants_walk(
         let is_turning_randomly = rng.chance(settings.probabilities.random_turn.into());
 
         if !has_air_ahead || is_turning_randomly {
-            *orientation = get_turned_orientation(
-                &orientation,
-                &position,
-                &elements_query,
-                &nest,
-                &mut rng,
-                &grid_elements,
-            );
+            *orientation =
+                get_turned_orientation(&orientation, &position, &nest, &mut rng, &grid_elements);
 
             initiative.consume_movement();
             continue;
@@ -97,7 +83,7 @@ pub fn ants_walk(
         let foot_position = foot_orientation.get_ahead_position(&ahead_position);
 
         if let Some(foot_entity) = grid_elements.get_entity(foot_position) {
-            let foot_element = elements_query.get(*foot_entity).unwrap();
+            let foot_element = grid_elements.element(*foot_entity);
 
             if *foot_element == Element::Air {
                 // If ant moves straight forward, it will be standing over air. Instead, turn into the air and remain standing on current block
@@ -124,31 +110,18 @@ pub fn ants_walk(
 pub fn get_turned_orientation(
     orientation: &AntOrientation,
     position: &Position,
-    elements_query: &Query<&Element>,
     nest: &Nest,
     rng: &mut ResMut<GlobalRng>,
     grid_elements: &GridElements<AtNest>,
 ) -> AntOrientation {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
     let back_orientation = orientation.rotate_backward();
-    if is_valid_location(
-        back_orientation,
-        *position,
-        elements_query,
-        nest,
-        grid_elements,
-    ) {
+    if is_valid_location(back_orientation, *position, nest, grid_elements) {
         return back_orientation;
     }
 
     let opposite_orientation = orientation.turn_around();
-    if is_valid_location(
-        opposite_orientation,
-        *position,
-        elements_query,
-        nest,
-        grid_elements,
-    ) {
+    if is_valid_location(opposite_orientation, *position, nest, grid_elements) {
         return opposite_orientation;
     }
 
@@ -158,13 +131,7 @@ pub fn get_turned_orientation(
         .iter()
         .filter(|&&inner_orientation| inner_orientation != *orientation)
         .filter(|&&inner_orientation| {
-            is_valid_location(
-                inner_orientation,
-                *position,
-                elements_query,
-                nest,
-                grid_elements,
-            )
+            is_valid_location(inner_orientation, *position, nest, grid_elements)
         })
         .collect::<Vec<_>>();
 
@@ -179,7 +146,6 @@ pub fn get_turned_orientation(
 fn is_valid_location(
     orientation: AntOrientation,
     position: Position,
-    elements_query: &Query<&Element>,
     nest: &Nest,
     grid_elemenets: &GridElements<AtNest>,
 ) -> bool {
@@ -187,10 +153,8 @@ fn is_valid_location(
     let Some(entity) = grid_elemenets.get_entity(position) else {
         return false;
     };
-    let Ok(element) = elements_query.get(*entity) else {
-        panic!("is_valid_location - expected entity to exist")
-    };
 
+    let element = grid_elemenets.element(*entity);
     if *element != Element::Air {
         return false;
     }
@@ -205,10 +169,8 @@ fn is_valid_location(
 
         return false;
     };
-    let Ok(element) = elements_query.get(*entity) else {
-        panic!("is_valid_location - expected entity to exist")
-    };
 
+    let element = grid_elemenets.element(*entity);
     if *element == Element::Air {
         return false;
     }

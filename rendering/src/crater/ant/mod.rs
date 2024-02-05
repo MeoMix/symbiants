@@ -1,15 +1,11 @@
+use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
 use bevy::prelude::*;
 use simulation::{
     common::{grid::Grid, position::Position},
     crater_simulation::crater::{AtCrater, Crater},
-    nest_simulation::{
-        ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
-        element::Element,
-    },
+    nest_simulation::ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
 };
 use std::ops::Add;
-
-use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
 
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
@@ -46,7 +42,6 @@ pub fn on_spawn_ant(
         (Added<Ant>, With<AtCrater>),
     >,
     asset_server: Res<AssetServer>,
-    elements_query: Query<&Element>,
     crater_query: Query<&Grid, With<Crater>>,
     // element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
@@ -75,7 +70,6 @@ pub fn on_spawn_ant(
             inventory,
             dead,
             &asset_server,
-            &elements_query,
             &grid,
             // &element_texture_atlas_handle,
             &mut model_view_entity_map,
@@ -102,7 +96,6 @@ pub fn rerender_ants(
     >,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    elements_query: Query<&Element>,
     crater_query: Query<&Grid, With<Crater>>,
     // element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
@@ -123,7 +116,6 @@ pub fn rerender_ants(
             inventory,
             dead,
             &asset_server,
-            &elements_query,
             &grid,
             // &element_texture_atlas_handle,
             &mut model_view_entity_map,
@@ -147,7 +139,6 @@ fn spawn_ant_sprite(
     inventory: &AntInventory,
     dead: Option<&Dead>,
     asset_server: &Res<AssetServer>,
-    elements_query: &Query<&Element>,
     grid: &Grid,
     // element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
     model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
@@ -184,7 +175,7 @@ fn spawn_ant_sprite(
     //     // if let Some(element_entity) = inventory.0 {
     //     //     let bundle = get_inventory_item_bundle(
     //     //         element_entity,
-    //     //         &elements_query,
+    //     //         &grid_elements,
     //     //         &element_texture_atlas_handle,
     //     //     );
 

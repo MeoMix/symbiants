@@ -112,7 +112,6 @@ pub struct ElementExposure {
 /// Run against all elements changing position - this supports recalculating on Element removal by responding to Air being added.
 pub fn update_element_exposure(
     changed_elements_query: Query<(Entity, &Position, &Element), Changed<Position>>,
-    elements_query: Query<&Element>,
     mut commands: Commands,
     grid_elements: GridElements<AtNest>,
 ) {
@@ -125,7 +124,7 @@ pub fn update_element_exposure(
 
         for adjacent_position in position.get_adjacent_positions() {
             if let Some(adjacent_element_entity) = grid_elements.get_entity(adjacent_position) {
-                let adjacent_element = elements_query.get(*adjacent_element_entity).unwrap();
+                let adjacent_element = grid_elements.element(*adjacent_element_entity);
 
                 if *adjacent_element != Element::Air {
                     entities.insert((*adjacent_element_entity, adjacent_position));

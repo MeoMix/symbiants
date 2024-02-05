@@ -57,7 +57,7 @@ pub fn ants_drop(
 
         // Check if hitting a solid element and, if so, consider digging through it.
         let entity = grid_elements.entity(ahead_position);
-        let element = elements_query.get(*entity).unwrap();
+        let element = grid_elements.element(*entity);
         if *element != Element::Air {
             continue;
         }

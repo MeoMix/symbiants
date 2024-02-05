@@ -73,6 +73,7 @@ pub struct GridElements<'w, 's, Z: Zone> {
     elements: Query<'w, 's, &'static Element, With<Z>>,
 }
 
+// TODO: The interface here is a little unclear - sometimes querying by Entity other times by Position
 impl<'w, 's, Z: Zone> GridElements<'w, 's, Z> {
     // TODO: Maybe this shouldn't return a reference?
     pub fn entity(&self, position: Position) -> &Entity {
@@ -91,10 +92,21 @@ impl<'w, 's, Z: Zone> GridElements<'w, 's, Z> {
             .and_then(|row| row.get(position.x as usize))
     }
 
+    pub fn element(&self, entity: Entity) -> &Element {
+        self.get_element(entity)
+            .expect(&format!("Element not found for the entity: {:?}", entity))
+    }
+
+    pub fn get_element(&self, entity: Entity) -> Option<&Element> {
+        match self.elements.get(entity) {
+            Ok(element) => Some(element),
+            Err(_) => None,
+        }
+    }
+
     pub fn is(&self, position: Position, element: Element) -> bool {
         self.get_entity(position).map_or(false, |&element_entity| {
-            self.elements
-                .get(element_entity)
+            self.get_element(element_entity)
                 .map_or(false, |&queried_element| queried_element == element)
         })
     }
