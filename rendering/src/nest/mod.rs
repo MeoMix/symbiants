@@ -50,6 +50,7 @@ pub struct NestRenderingPlugin;
 
 impl Plugin for NestRenderingPlugin {
     fn build(&self, app: &mut App) {
+        // TODO: Move these to Common
         app.add_systems(
             OnEnter(AppState::BeginSetup),
             start_load_element_sprite_sheet,
@@ -136,10 +137,10 @@ impl Plugin for NestRenderingPlugin {
             (
                 despawn_view::<Background>,
                 despawn_view::<BackgroundTilemap>,
-                despawn_view_by_model::<Ant>,
-                despawn_view_by_model::<Element>,
+                despawn_view_by_model::<Ant, AtNest>,
+                despawn_view_by_model::<Element, AtNest>,
                 despawn_view::<ElementTilemap>,
-                despawn_view_by_model::<Pheromone>,
+                despawn_view_by_model::<Pheromone, AtNest>,
                 mark_nest_hidden,
             )
                 .run_if(in_state(AppState::TellStory)),
@@ -151,12 +152,12 @@ impl Plugin for NestRenderingPlugin {
                 despawn_view::<Background>,
                 despawn_view::<BackgroundTilemap>,
                 cleanup_background,
-                despawn_view_by_model::<Ant>,
+                despawn_view_by_model::<Ant, AtNest>,
                 cleanup_ants,
-                despawn_view_by_model::<Element>,
+                despawn_view_by_model::<Element, AtNest>,
                 despawn_view::<ElementTilemap>,
                 cleanup_elements,
-                despawn_view_by_model::<Pheromone>,
+                despawn_view_by_model::<Pheromone, AtNest>,
                 cleanup_pheromones,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),

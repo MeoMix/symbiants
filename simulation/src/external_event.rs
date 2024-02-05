@@ -41,50 +41,50 @@ pub fn remove_external_event_resources(mut commands: Commands) {
 pub fn process_external_event(
     mut external_simulation_events: ResMut<Events<ExternalSimulationEvent>>,
     mut commands: Commands,
-    nest_query: Query<(Entity, &Grid), With<Nest>>,
+    nest_query: Query<&Grid, With<Nest>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     elements_query: Query<&Element>,
     ants_query: Query<(Entity, &Position, &AntRole, &AntInventory)>,
 ) {
-    let (_, nest) = nest_query.single();
+    let grid: &Grid = nest_query.single();
 
     for event in external_simulation_events.drain() {
         match event {
             ExternalSimulationEvent::SpawnFood(grid_position) => {
-                if nest
+                if grid
                     .elements()
                     .is_element(&elements_query, grid_position, Element::Air)
                 {
-                    let entity = nest.elements().element_entity(grid_position);
+                    let entity = grid.elements().element_entity(grid_position);
                     commands.replace_element(grid_position, Element::Food, *entity, AtNest);
                 }
             }
             ExternalSimulationEvent::SpawnSand(grid_position) => {
-                if nest
+                if grid
                     .elements()
                     .is_element(&elements_query, grid_position, Element::Air)
                 {
-                    let entity = nest.elements().element_entity(grid_position);
+                    let entity = grid.elements().element_entity(grid_position);
                     commands.replace_element(grid_position, Element::Sand, *entity, AtNest);
                 }
             }
             ExternalSimulationEvent::SpawnDirt(grid_position) => {
-                if nest
+                if grid
                     .elements()
                     .is_element(&elements_query, grid_position, Element::Air)
                 {
-                    let entity = nest.elements().element_entity(grid_position);
+                    let entity = grid.elements().element_entity(grid_position);
                     commands.replace_element(grid_position, Element::Dirt, *entity, AtNest);
                 }
             }
             ExternalSimulationEvent::DespawnElement(grid_position) => {
-                if let Some(entity) = nest.elements().get_element_entity(grid_position) {
+                if let Some(entity) = grid.elements().get_element_entity(grid_position) {
                     commands.replace_element(grid_position, Element::Air, *entity, AtNest);
                 }
             }
             ExternalSimulationEvent::SpawnWorkerAnt(grid_position) => {
-                if nest
+                if grid
                     .elements()
                     .is_element(&elements_query, grid_position, Element::Air)
                 {

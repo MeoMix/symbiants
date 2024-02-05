@@ -58,8 +58,8 @@ pub fn despawn_view<View: Component>(
 }
 
 // TODO: It would be nice to make this template expectation tighter and only apply to entities stored in ModelViewEntityMap.
-pub fn despawn_view_by_model<Model: Component>(
-    model_query: Query<Entity, With<Model>>,
+pub fn despawn_view_by_model<Model: Component, Z: Zone>(
+    model_query: Query<Entity, (With<Model>, With<Z>)>,
     mut commands: Commands,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {

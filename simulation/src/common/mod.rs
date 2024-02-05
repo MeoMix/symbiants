@@ -2,8 +2,7 @@ pub mod grid;
 pub mod position;
 
 use crate::{
-    app_state::check_story_over, nest_simulation::element::update_element_exposure,
-    story_time::set_rate_of_time,
+    app_state::check_story_over, crater_simulation::crater::AtCrater, nest_simulation::{element::update_element_exposure, nest::AtNest}, story_time::set_rate_of_time
 };
 
 use self::position::Position;

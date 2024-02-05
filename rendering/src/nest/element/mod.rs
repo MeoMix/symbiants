@@ -84,6 +84,35 @@ pub fn on_spawn_element(
     }
 }
 
+/// When user switches to a different scene (Nest->Crater) all Nest views are despawned.
+/// Thus, when switching back to Nest, all Elements need to be redrawn once. Their underlying models
+/// have not been changed or added, though, so a separate rerender system is needed.
+pub fn rerender_elements(
+    mut element_query: Query<
+        (&Position, &Element, &ElementExposure, Entity),
+        (With<AtNest>, Without<Air>),
+    >,
+    nest_query: Query<&Grid, With<Nest>>,
+    mut commands: Commands,
+    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    let grid = nest_query.single();
+
+    for (element_position, element, element_exposure, entity) in element_query.iter_mut() {
+        spawn_element_sprite(
+            entity,
+            element,
+            element_position,
+            element_exposure,
+            &grid,
+            &mut commands,
+            &mut tilemap_query,
+            &mut model_view_entity_map,
+        );
+    }
+}
+
 /// When an Element model has its Position updated, reflect the change in Position by updating the Translation
 /// on its associated view. Update TileStorage to reflect the change in position, too.
 /// This does not include the initial spawn of the Element model, which is handled by `on_spawn_element`.
@@ -165,35 +194,6 @@ pub fn on_update_element_exposure(
         let texture_index = TileTextureIndex(get_element_index(*element_exposure, *element) as u32);
 
         commands.entity(element_view_entity).insert(texture_index);
-    }
-}
-
-/// When user switches to a different scene (Nest->Crater) all Nest views are despawned.
-/// Thus, when switching back to Nest, all Elements need to be redrawn once. Their underlying models
-/// have not been changed or added, though, so a separate rerender system is needed.
-pub fn rerender_elements(
-    mut element_query: Query<
-        (&Position, &Element, &ElementExposure, Entity),
-        (With<AtNest>, Without<Air>),
-    >,
-    nest_query: Query<&Grid, With<Nest>>,
-    mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
-    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
-) {
-    let grid = nest_query.single();
-
-    for (element_position, element, element_exposure, entity) in element_query.iter_mut() {
-        spawn_element_sprite(
-            entity,
-            element,
-            element_position,
-            element_exposure,
-            &grid,
-            &mut commands,
-            &mut tilemap_query,
-            &mut model_view_entity_map,
-        );
     }
 }
 

@@ -47,7 +47,7 @@ pub fn on_spawn_ant(
             &AntInventory,
             Option<&Dead>,
         ),
-        Added<Ant>,
+        (Added<Ant>, With<AtNest>),
     >,
     asset_server: Res<AssetServer>,
     elements_query: Query<&Element>,
@@ -148,7 +148,7 @@ pub fn rerender_ants(
 /// inventory needs to be spawned as a child of AntSprite not as a child of the SpatialBundle container.
 pub fn on_update_ant_inventory(
     mut commands: Commands,
-    ant_model_query: Query<(Entity, Ref<AntInventory>)>,
+    ant_model_query: Query<(Entity, Ref<AntInventory>), With<AtNest>>,
     mut ant_view_query: Query<&mut AntSpriteContainer>,
     elements_query: Query<&Element>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
@@ -207,7 +207,7 @@ pub fn on_update_ant_inventory(
 /// This affects the translation of the SpatialBundle wrapping the AntSprite.
 /// This allows for the ant's associated Label to move in sync with the AntSprite.
 pub fn on_update_ant_position(
-    ant_model_query: Query<(Entity, Ref<Position>), With<Ant>>,
+    ant_model_query: Query<(Entity, Ref<Position>), (With<Ant>, With<AtNest>)>,
     mut ant_view_query: Query<(&mut Transform, &TranslationOffset)>,
     nest_query: Query<&Grid, With<Nest>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -240,7 +240,8 @@ pub fn on_update_ant_position(
 }
 
 pub fn on_update_ant_color(
-    ant_model_query: Query<(Entity, Ref<AntColor>), Without<Dead>>,
+    // TODO: Prefer not needing to exclude Dead here?
+    ant_model_query: Query<(Entity, Ref<AntColor>), (Without<Dead>, With<AtNest>)>,
     ant_view_query: Query<&AntSpriteContainer>,
     mut sprite_query: Query<&mut Sprite>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -273,7 +274,7 @@ pub fn on_update_ant_color(
 }
 
 pub fn on_update_ant_orientation(
-    ant_model_query: Query<(Entity, Ref<AntOrientation>)>,
+    ant_model_query: Query<(Entity, Ref<AntOrientation>), With<AtNest>>,
     ant_view_query: Query<&AntSpriteContainer>,
     mut transform_query: Query<&mut Transform>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -307,7 +308,7 @@ pub fn on_update_ant_orientation(
 }
 
 pub fn on_added_ant_dead(
-    ant_model_query: Query<Entity, Added<Dead>>,
+    ant_model_query: Query<Entity, (Added<Dead>, With<AtNest>)>,
     ant_view_query: Query<&AntSpriteContainer>,
     mut sprite_image_query: Query<(&mut Handle<Image>, &mut Sprite)>,
     asset_server: Res<AssetServer>,
