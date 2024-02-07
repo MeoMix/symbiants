@@ -19,7 +19,4 @@ bevy = { version = "0.12.1", default-features = false, features = [
     "default_font",
     "png",
 ] }
-bevy_ecs_tilemap = { git = "https://github.com/MeoMix/bevy_ecs_tilemap", branch = "main", features = [
-    "atlas",
-] }
 bevy_turborand = { version = "0.7.0" }

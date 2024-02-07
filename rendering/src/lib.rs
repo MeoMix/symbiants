@@ -37,10 +37,11 @@ use self::{
             cleanup_pheromones, on_spawn_pheromone, on_update_pheromone_visibility,
             rerender_pheromones,
         },
+        world::plugin::WorldViewPlugin,
     },
 };
 use bevy::prelude::*;
-use bevy_ecs_tilemap::TilemapPlugin;
+use nest_rendering::ant::emote::{on_added_ant_emote, on_removed_ant_emote};
 use pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 use simulation::{
     app_state::AppState,
@@ -67,7 +68,7 @@ pub struct RenderingPlugin;
 ///     This occurs because the simulation may tick multiple times before rendering systems run.
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((RenderingCameraPlugin, TilemapPlugin));
+        app.add_plugins((RenderingCameraPlugin, WorldViewPlugin));
         app.add_state::<VisibleGridState>();
 
         // Keep this off to prevent spritesheet bleed at various `projection.scale` levels.

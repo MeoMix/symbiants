@@ -1,9 +1,8 @@
 pub mod sprite_sheet;
 
 use self::sprite_sheet::{get_element_index, ElementTilemap};
-use crate::common::{grid_to_tile_pos, ModelViewEntityMap, VisibleGrid};
+use crate::common::{ModelViewEntityMap, VisibleGrid};
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
 use simulation::{
     common::{grid::Grid, position::Position},
     nest_simulation::{
@@ -21,7 +20,6 @@ pub fn on_spawn_element(
     >,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
 ) {
@@ -47,7 +45,6 @@ pub fn on_spawn_element(
             element_exposure,
             &grid,
             &mut commands,
-            &mut tilemap_query,
             &mut model_view_entity_map,
         );
     }
@@ -61,7 +58,6 @@ pub fn on_update_element_position(
     element_query: Query<(Ref<Position>, Entity), (With<AtNest>, Without<Air>)>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    mut tilemap_query: Query<&mut TileStorage, With<ElementTilemap>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
 ) {
@@ -77,25 +73,25 @@ pub fn on_update_element_position(
         Err(_) => return,
     };
 
-    let mut tile_storage = tilemap_query.single_mut();
+    // let mut tile_storage = tilemap_query.single_mut();
 
-    for (element_position, element_model_entity) in element_query.iter() {
-        // `on_spawn_element` handles `Added<Position>`
-        if element_position.is_added() || !element_position.is_changed() {
-            continue;
-        }
+    // for (element_position, element_model_entity) in element_query.iter() {
+    //     // `on_spawn_element` handles `Added<Position>`
+    //     if element_position.is_added() || !element_position.is_changed() {
+    //         continue;
+    //     }
 
-        let element_view_entity = match model_view_entity_map.get(&element_model_entity) {
-            Some(&element_view_entity) => element_view_entity,
-            None => panic!("Expected to find view entity for model entity."),
-        };
+    //     let element_view_entity = match model_view_entity_map.get(&element_model_entity) {
+    //         Some(&element_view_entity) => element_view_entity,
+    //         None => panic!("Expected to find view entity for model entity."),
+    //     };
 
-        let tile_pos = grid_to_tile_pos(grid, *element_position);
-        commands.entity(element_view_entity).insert(tile_pos);
-        // NOTE: This leaves the previous `tile_pos` stale, but that's fine because it's just Air which isn't rendered.
-        // TODO: Consider benefits of tracking PreviousPosition in Element and using that to clear stale tile_pos.
-        tile_storage.set(&tile_pos, element_view_entity);
-    }
+    //     let tile_pos = grid_to_tile_pos(grid, *element_position);
+    //     commands.entity(element_view_entity).insert(tile_pos);
+    //     // NOTE: This leaves the previous `tile_pos` stale, but that's fine because it's just Air which isn't rendered.
+    //     // TODO: Consider benefits of tracking PreviousPosition in Element and using that to clear stale tile_pos.
+    //     tile_storage.set(&tile_pos, element_view_entity);
+    // }
 }
 
 /// When an Element model has its ElementExposure updated, reflect the change in Position by updating the TileTextureIndex
@@ -130,10 +126,6 @@ pub fn on_update_element_exposure(
             Some(&element_view_entity) => element_view_entity,
             None => panic!("Expected to find view entity for model entity."),
         };
-
-        let texture_index = TileTextureIndex(get_element_index(*element_exposure, *element) as u32);
-
-        commands.entity(element_view_entity).insert(texture_index);
     }
 }
 
@@ -147,7 +139,6 @@ pub fn rerender_elements(
     >,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
-    mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = nest_query.single();
@@ -160,7 +151,6 @@ pub fn rerender_elements(
             element_exposure,
             &grid,
             &mut commands,
-            &mut tilemap_query,
             &mut model_view_entity_map,
         );
     }
@@ -180,23 +170,22 @@ fn spawn_element_sprite(
     element_exposure: &ElementExposure,
     grid: &Grid,
     commands: &mut Commands,
-    tilemap_query: &mut Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
 ) {
-    let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
-    let tile_pos = grid_to_tile_pos(grid, *element_position);
+    // let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
+    // let tile_pos = grid_to_tile_pos(grid, *element_position);
 
-    let tile_bundle = (
-        AtNest,
-        TileBundle {
-            position: tile_pos,
-            tilemap_id: TilemapId(tilemap_entity),
-            texture_index: TileTextureIndex(get_element_index(*element_exposure, *element) as u32),
-            ..default()
-        },
-    );
+    // let tile_bundle = (
+    //     AtNest,
+    //     TileBundle {
+    //         position: tile_pos,
+    //         tilemap_id: TilemapId(tilemap_entity),
+    //         texture_index: TileTextureIndex(get_element_index(*element_exposure, *element) as u32),
+    //         ..default()
+    //     },
+    // );
 
-    let element_view_entity = commands.spawn(tile_bundle).id();
-    model_view_entity_map.insert(element_model_entity, element_view_entity);
-    tile_storage.set(&tile_pos, element_view_entity);
+    // let element_view_entity = commands.spawn(tile_bundle).id();
+    // model_view_entity_map.insert(element_model_entity, element_view_entity);
+    // tile_storage.set(&tile_pos, element_view_entity);
 }
