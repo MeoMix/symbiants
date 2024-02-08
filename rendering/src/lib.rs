@@ -41,7 +41,6 @@ use self::{
     },
 };
 use bevy::prelude::*;
-use nest_rendering::ant::emote::{on_added_ant_emote, on_removed_ant_emote};
 use pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources};
 use simulation::{
     app_state::AppState,

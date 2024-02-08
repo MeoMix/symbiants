@@ -2,8 +2,6 @@ pub mod elements_cache;
 
 use bevy::prelude::*;
 
-use crate::story::common::position::Position;
-
 use self::elements_cache::ElementsCache;
 use crate::common::position::Position;
 use bevy::prelude::*;

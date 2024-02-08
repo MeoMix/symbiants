@@ -1,18 +1,4 @@
-mod app_state;
-mod core_ui;
-mod main_camera;
-mod main_menu;
-mod save;
-mod settings;
-mod story;
-
-use app_state::AppState;
-use bevy::{
-    asset::AssetMetaCheck,
-    ecs::schedule::{LogLevel, ScheduleBuildSettings},
-    prelude::*,
-};
-use bevy_save::SavePlugin;
+use bevy::{asset::AssetMetaCheck, prelude::*};
 use bevy_turborand::prelude::*;
 use rendering::RenderingPlugin;
 use simulation::SimulationPlugin;
