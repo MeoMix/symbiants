@@ -25,19 +25,15 @@ use self::{
             cleanup_background, spawn_background, spawn_background_tilemap, update_sky_background,
             Background, BackgroundTilemap,
         },
-        element::{
-            cleanup_elements, on_spawn_element, on_update_element_exposure,
-            on_update_element_position, rerender_elements,
-            sprite_sheet::{
-                check_element_sprite_sheet_loaded, start_load_element_sprite_sheet, ElementTilemap,
-            },
+        element::sprite_sheet::{
+            check_element_sprite_sheet_loaded, start_load_element_sprite_sheet, ElementTilemap,
         },
         nest::{mark_nest_hidden, mark_nest_visible},
         pheromone::{
             cleanup_pheromones, on_spawn_pheromone, on_update_pheromone_visibility,
             rerender_pheromones,
         },
-        world::plugin::WorldViewPlugin,
+        world::WorldViewPlugin,
     },
 };
 use bevy::prelude::*;
@@ -160,7 +156,7 @@ fn build_nest_systems(app: &mut App) {
         Update,
         (
             // Spawn
-            (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
+            (on_spawn_ant, on_spawn_pheromone),
             // Despawn
             (
                 on_despawn::<Ant, AtNest>,
@@ -186,8 +182,6 @@ fn build_nest_systems(app: &mut App) {
                 ),
                 on_ant_wake_up,
                 on_tick_emote,
-                on_update_element_position,
-                on_update_element_exposure,
                 on_update_pheromone_visibility,
             ),
         )
@@ -202,7 +196,6 @@ fn build_nest_systems(app: &mut App) {
         (
             (spawn_background_tilemap, apply_deferred, spawn_background).chain(),
             rerender_ants,
-            rerender_elements,
             rerender_pheromones,
             mark_nest_visible,
         )
@@ -234,7 +227,6 @@ fn build_nest_systems(app: &mut App) {
             cleanup_ants,
             despawn_view_by_model::<Element>,
             despawn_view::<ElementTilemap>,
-            cleanup_elements,
             despawn_view_by_model::<Pheromone>,
             cleanup_pheromones,
         )
