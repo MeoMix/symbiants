@@ -2,10 +2,9 @@ pub mod ant;
 pub mod element;
 pub mod gravity;
 pub mod nest;
-pub mod pheromone;
 
 use crate::common::pheromone::{
-    initialize_pheromone_resources, remove_pheromone_resources, Pheromone,
+    initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources, Pheromone,
 };
 
 use self::{
@@ -43,7 +42,6 @@ use self::{
         insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants, spawn_nest_elements, AtNest,
         Nest,
     },
-    pheromone::pheromone_duration_tick,
 };
 use super::{
     despawn_model, settings::initialize_settings_resources, AppState, CleanupSet, FinishSetupSet,
@@ -142,7 +140,7 @@ impl Plugin for NestSimulationPlugin {
                     )
                         .chain(),
                     (ants_nest_expansion, apply_deferred).chain(),
-                    (pheromone_duration_tick, apply_deferred).chain(),
+                    (pheromone_duration_tick::<AtNest>, apply_deferred).chain(),
                     // Tunneling Pheromone:
                     (
                         // Fade first (or last) to ensure that if movement occurs that resulting position is reflective

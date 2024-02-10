@@ -2,14 +2,13 @@ use super::{AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
     common::{
         grid::GridElements,
-        pheromone::{Pheromone, PheromoneStrength},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
         position::Position,
     },
     nest_simulation::{
         ant::commands::AntCommandsExt,
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::commands::PheromoneCommandsExt,
     },
     settings::Settings,
 };

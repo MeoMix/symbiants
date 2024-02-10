@@ -1,13 +1,14 @@
 use super::birthing::Birthing;
 use crate::{
     common::{
-        grid::{Grid, GridElements}, pheromone::{Pheromone, PheromoneMap, PheromoneStrength}, position::Position
+        grid::{Grid, GridElements},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+        position::Position,
     },
     nest_simulation::{
         ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::commands::PheromoneCommandsExt,
     },
     settings::Settings,
 };

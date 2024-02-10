@@ -1,7 +1,11 @@
-use crate::common::{pheromone::{Pheromone, PheromoneMap, PheromoneStrength}, position::Position, Zone};
-use bevy::{ecs::system::Command, prelude::*};
+use std::marker::PhantomData;
 
-use super::PheromoneDuration;
+use crate::common::{
+    pheromone::{Pheromone, PheromoneDuration, PheromoneMap, PheromoneStrength},
+    position::Position,
+    Zone,
+};
+use bevy::{ecs::system::Command, prelude::*};
 
 pub trait PheromoneCommandsExt {
     fn spawn_pheromone<Z: Zone>(
@@ -11,7 +15,12 @@ pub trait PheromoneCommandsExt {
         pheromone_strength: PheromoneStrength,
         zone: Z,
     );
-    fn despawn_pheromone<Z: Zone>(&mut self, pheromone_entity: Entity, position: Position, zone: Z);
+    fn despawn_pheromone<Z: Zone>(
+        &mut self,
+        pheromone_entity: Entity,
+        position: Position,
+        zone: PhantomData<Z>,
+    );
 }
 
 impl<'w, 's> PheromoneCommandsExt for Commands<'w, 's> {
@@ -34,7 +43,7 @@ impl<'w, 's> PheromoneCommandsExt for Commands<'w, 's> {
         &mut self,
         pheromone_entity: Entity,
         position: Position,
-        zone: Z,
+        zone: PhantomData<Z>,
     ) {
         self.add(DespawnPheromoneCommand {
             pheromone_entity,
@@ -80,7 +89,7 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
 struct DespawnPheromoneCommand<Z: Zone> {
     pheromone_entity: Entity,
     position: Position,
-    zone: Z,
+    zone: PhantomData<Z>,
 }
 
 impl<Z: Zone> Command for DespawnPheromoneCommand<Z> {

@@ -5,14 +5,13 @@ use super::{
 use crate::{
     common::{
         grid::GridElements,
-        pheromone::{Pheromone, PheromoneStrength},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
         position::Position,
     },
     nest_simulation::{
         ant::birthing::Birthing,
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::commands::PheromoneCommandsExt,
     },
     settings::Settings,
 };

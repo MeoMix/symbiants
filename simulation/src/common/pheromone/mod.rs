@@ -1,4 +1,8 @@
+pub mod commands;
+
+use self::commands::PheromoneCommandsExt;
 use super::{position::Position, Zone};
+use crate::story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR};
 use bevy::{prelude::*, utils::HashMap};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -114,4 +118,21 @@ pub fn initialize_pheromone_resources<Z: Zone>(
 
 pub fn remove_pheromone_resources<Z: Zone>(mut commands: Commands) {
     commands.remove_resource::<PheromoneMap<Z>>();
+}
+
+pub fn pheromone_duration_tick<Z: Zone>(
+    mut pheromone_query: Query<(&mut PheromoneDuration, &Position, Entity), With<Z>>,
+    mut commands: Commands,
+) {
+    for (mut pheromone_duration, position, pheromone_entity) in pheromone_query.iter_mut() {
+        // Get 100% expired once every hour
+        let rate_of_pheromone_expiration =
+            pheromone_duration.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
+
+        pheromone_duration.tick(rate_of_pheromone_expiration);
+
+        if pheromone_duration.is_expired() {
+            commands.despawn_pheromone(pheromone_entity, *position, PhantomData::<Z>);
+        }
+    }
 }

@@ -1,10 +1,12 @@
 pub mod ant;
 pub mod crater;
 pub mod element;
-pub mod pheromone;
 
 use crate::{
-    common::pheromone::{initialize_pheromone_resources, remove_pheromone_resources, Pheromone},
+    common::pheromone::{
+        initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
+        Pheromone,
+    },
     nest_simulation::{
         ant::{ants_initiative, Ant},
         element::Element,
@@ -21,7 +23,6 @@ use self::{
     crater::{
         register_crater, spawn_crater, spawn_crater_ants, spawn_crater_elements, AtCrater, Crater,
     },
-    pheromone::pheromone_duration_tick,
 };
 use super::{
     apply_deferred, despawn_model, insert_crater_grid, settings::initialize_settings_resources,
@@ -65,7 +66,7 @@ impl Plugin for CraterSimulationPlugin {
         app.add_systems(
             SimulationUpdate,
             (
-                (pheromone_duration_tick, apply_deferred).chain(),
+                (pheromone_duration_tick::<AtCrater>, apply_deferred).chain(),
                 (ants_set_pheromone_emitter, apply_deferred).chain(),
                 ants_emit_pheromone,
                 // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
