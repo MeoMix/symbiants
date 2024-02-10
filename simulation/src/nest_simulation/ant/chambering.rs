@@ -1,14 +1,13 @@
 use super::birthing::Birthing;
 use crate::{
     common::{
-        grid::{Grid, GridElements},
-        position::Position,
+        grid::{Grid, GridElements}, pheromone::{Pheromone, PheromoneMap, PheromoneStrength}, position::Position
     },
     nest_simulation::{
         ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+        pheromone::commands::PheromoneCommandsExt,
     },
     settings::Settings,
 };
@@ -76,7 +75,7 @@ pub fn ants_chamber_pheromone_act(
                     *position,
                     Pheromone::Chamber,
                     PheromoneStrength::new(chambering.0 - 1, settings.chamber_size),
-                    AtNest
+                    AtNest,
                 );
             }
             return;

@@ -4,10 +4,10 @@ pub mod element;
 pub mod pheromone;
 
 use crate::{
+    common::pheromone::{initialize_pheromone_resources, remove_pheromone_resources, Pheromone},
     nest_simulation::{
         ant::{ants_initiative, Ant},
         element::Element,
-        pheromone::Pheromone,
     },
     story_time::StoryPlaybackState,
     SimulationTickSet, SimulationUpdate,
@@ -21,9 +21,7 @@ use self::{
     crater::{
         register_crater, spawn_crater, spawn_crater_ants, spawn_crater_elements, AtCrater, Crater,
     },
-    pheromone::{
-        initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
-    },
+    pheromone::pheromone_duration_tick,
 };
 use super::{
     apply_deferred, despawn_model, insert_crater_grid, settings::initialize_settings_resources,
@@ -58,7 +56,7 @@ impl Plugin for CraterSimulationPlugin {
             (
                 insert_crater_grid,
                 apply_deferred,
-                initialize_pheromone_resources,
+                initialize_pheromone_resources::<AtCrater>,
             )
                 .chain()
                 .in_set(FinishSetupSet::SimulationFinishSetup),
@@ -90,7 +88,7 @@ impl Plugin for CraterSimulationPlugin {
                 despawn_model::<Element, AtCrater>,
                 despawn_model::<Pheromone, AtCrater>,
                 despawn_model::<Crater, AtCrater>,
-                remove_pheromone_resources,
+                remove_pheromone_resources::<AtCrater>,
             )
                 .in_set(CleanupSet::SimulationCleanup),
         );

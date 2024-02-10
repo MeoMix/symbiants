@@ -4,13 +4,15 @@ use bevy_egui::{egui, EguiContexts};
 use rendering::common::selection::SelectedEntity;
 
 use simulation::{
-    common::position::Position,
+    common::{
+        pheromone::{Pheromone, PheromoneStrength},
+        position::Position,
+    },
     nest_simulation::{
         ant::{
             birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole, Dead,
         },
         element::Element,
-        pheromone::{Pheromone, PheromoneStrength},
     },
 };
 

@@ -1,7 +1,7 @@
-use crate::common::{position::Position, Zone};
+use crate::common::{pheromone::{Pheromone, PheromoneMap, PheromoneStrength}, position::Position, Zone};
 use bevy::{ecs::system::Command, prelude::*};
 
-use super::{Pheromone, PheromoneDuration, PheromoneMap, PheromoneStrength};
+use super::PheromoneDuration;
 
 pub trait PheromoneCommandsExt {
     fn spawn_pheromone<Z: Zone>(
@@ -87,7 +87,8 @@ impl<Z: Zone> Command for DespawnPheromoneCommand<Z> {
     /// Spawn a new Pheromone entity and update the associate PheromoneMap cache.
     /// Performed in a custom command to provide a transactional wrapper around issuing command + updating cache.
     fn apply(self, world: &mut World) {
-        if let Some(pheromone_entity) = world.resource::<PheromoneMap<Z>>().map.get(&self.position) {
+        if let Some(pheromone_entity) = world.resource::<PheromoneMap<Z>>().map.get(&self.position)
+        {
             if *pheromone_entity != self.pheromone_entity {
                 error!(
                     "Found pheromone_entity {:?}, expected {:?} at position {:?}",

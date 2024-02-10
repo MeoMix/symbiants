@@ -1,11 +1,12 @@
-use bevy::prelude::*;
-
 use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
-
+use bevy::prelude::*;
 use simulation::{
-    common::{grid::Grid, position::Position},
+    common::{
+        grid::Grid,
+        pheromone::{Pheromone, PheromoneStrength},
+        position::Position,
+    },
     crater_simulation::crater::AtCrater,
-    nest_simulation::pheromone::{Pheromone, PheromoneStrength},
 };
 
 // #[derive(Resource)]

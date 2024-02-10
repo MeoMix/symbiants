@@ -1,11 +1,15 @@
 use super::{AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
-    common::{grid::GridElements, position::Position},
+    common::{
+        grid::GridElements,
+        pheromone::{Pheromone, PheromoneStrength},
+        position::Position,
+    },
     nest_simulation::{
         ant::commands::AntCommandsExt,
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+        pheromone::commands::PheromoneCommandsExt,
     },
     settings::Settings,
 };
@@ -86,7 +90,7 @@ pub fn ants_nest_expansion(
                 dirt_position,
                 Pheromone::Tunnel,
                 PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
-                AtNest
+                AtNest,
             );
         }
     }

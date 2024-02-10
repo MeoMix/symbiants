@@ -2,9 +2,9 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::position::Position,
+    common::{pheromone::{Pheromone, PheromoneStrength}, position::Position},
     crater_simulation::crater::AtCrater,
-    nest_simulation::{ant::Initiative, pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength}},
+    nest_simulation::{ant::Initiative, pheromone::commands::PheromoneCommandsExt},
 };
 
 // TODO: Need to persist LeavingNest and LeavingFood

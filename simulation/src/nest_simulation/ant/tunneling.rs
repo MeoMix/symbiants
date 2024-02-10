@@ -2,6 +2,7 @@ use super::birthing::Birthing;
 use crate::{
     common::{
         grid::{Grid, GridElements},
+        pheromone::{Pheromone, PheromoneMap, PheromoneStrength},
         position::Position,
     },
     nest_simulation::{
@@ -11,7 +12,7 @@ use crate::{
         },
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+        pheromone::commands::PheromoneCommandsExt,
     },
     settings::Settings,
 };

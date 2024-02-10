@@ -21,7 +21,7 @@ use self::{
     },
     element::{
         cleanup_elements, on_spawn_element, on_update_element_exposure, on_update_element_position,
-        spawn_elements, spawn_element_tilemap,
+        spawn_element_tilemap, spawn_elements,
         sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         ElementTilemap,
     },
@@ -36,14 +36,11 @@ use super::common::{
 };
 use bevy::prelude::*;
 use simulation::{
-    app_state::AppState,
-    nest_simulation::{
+    app_state::AppState, common::pheromone::Pheromone, nest_simulation::{
         ant::Ant,
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::Pheromone,
-    },
-    CleanupSet, FinishSetupSet,
+    }, CleanupSet, FinishSetupSet
 };
 
 pub struct NestRenderingPlugin;

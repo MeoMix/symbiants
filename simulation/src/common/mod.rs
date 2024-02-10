@@ -1,11 +1,17 @@
+pub mod ant;
+pub mod element;
 pub mod grid;
+pub mod pheromone;
 pub mod position;
 
 use crate::{
-    app_state::check_story_over, crater_simulation::crater::AtCrater, nest_simulation::{element::update_element_exposure, nest::AtNest}, story_time::set_rate_of_time
+    app_state::check_story_over,
+    crater_simulation::crater::AtCrater,
+    nest_simulation::{element::update_element_exposure, nest::AtNest},
+    story_time::set_rate_of_time,
 };
 
-use self::position::Position;
+use self::{pheromone::register_pheromone, position::Position};
 use super::{
     app_state::{
         begin_story, continue_startup, finalize_startup, post_setup_clear_change_detection,
@@ -59,7 +65,12 @@ impl Plugin for CommonSimulationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(AppState::BeginSetup),
-            (register_settings, register_common, register_story_time),
+            (
+                register_settings,
+                register_common,
+                register_story_time,
+                register_pheromone,
+            ),
         );
 
         app.add_systems(

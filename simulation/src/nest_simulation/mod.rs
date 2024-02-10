@@ -4,6 +4,10 @@ pub mod gravity;
 pub mod nest;
 pub mod pheromone;
 
+use crate::common::pheromone::{
+    initialize_pheromone_resources, remove_pheromone_resources, Pheromone,
+};
+
 use self::{
     ant::{
         ants_initiative,
@@ -39,10 +43,7 @@ use self::{
         insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants, spawn_nest_elements, AtNest,
         Nest,
     },
-    pheromone::{
-        initialize_pheromone_resources, pheromone_duration_tick, register_pheromone,
-        remove_pheromone_resources, Pheromone,
-    },
+    pheromone::pheromone_duration_tick,
 };
 use super::{
     despawn_model, settings::initialize_settings_resources, AppState, CleanupSet, FinishSetupSet,
@@ -64,7 +65,6 @@ impl Plugin for NestSimulationPlugin {
                 register_element,
                 register_gravity,
                 register_ant,
-                register_pheromone,
                 register_nest,
             ),
         );
@@ -88,7 +88,7 @@ impl Plugin for NestSimulationPlugin {
                 insert_nest_grid,
                 apply_deferred,
                 (
-                    initialize_pheromone_resources,
+                    initialize_pheromone_resources::<AtNest>,
                     // IMPORTANT:
                     // `ElementExposure` isn't persisted because it's derivable. It is required for rendering.
                     // Don't rely on `SimulationUpdate` to set `ElementExposure` because it should be possible to render
@@ -202,7 +202,7 @@ impl Plugin for NestSimulationPlugin {
                 despawn_model::<Element, AtNest>,
                 despawn_model::<Pheromone, AtNest>,
                 despawn_model::<Nest, AtNest>,
-                remove_pheromone_resources,
+                remove_pheromone_resources::<AtNest>,
             )
                 .in_set(CleanupSet::SimulationCleanup),
         );

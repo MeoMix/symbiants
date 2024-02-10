@@ -3,11 +3,8 @@ use bevy::prelude::*;
 use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
 
 use simulation::{
-    common::{grid::Grid, position::Position},
-    nest_simulation::{
-        nest::AtNest,
-        pheromone::{Pheromone, PheromoneStrength},
-    },
+    common::{grid::Grid, pheromone::{Pheromone, PheromoneStrength}, position::Position},
+    nest_simulation::nest::AtNest,
 };
 
 #[derive(Resource)]

@@ -3,12 +3,16 @@ use super::{
     Facing, Initiative,
 };
 use crate::{
-    common::{grid::GridElements, position::Position},
+    common::{
+        grid::GridElements,
+        pheromone::{Pheromone, PheromoneStrength},
+        position::Position,
+    },
     nest_simulation::{
         ant::birthing::Birthing,
         element::Element,
         nest::{AtNest, Nest},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+        pheromone::commands::PheromoneCommandsExt,
     },
     settings::Settings,
 };
@@ -232,7 +236,7 @@ fn start_digging_nest(
         dig_position,
         Pheromone::Tunnel,
         PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
-        AtNest
+        AtNest,
     );
 }
 
