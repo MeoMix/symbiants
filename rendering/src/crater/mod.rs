@@ -12,7 +12,7 @@ use self::{
     element::{
         cleanup_elements, on_spawn_element, spawn_element_tilemap, spawn_elements, ElementTilemap,
     },
-    pheromone::{cleanup_pheromones, on_spawn_pheromone, spawn_pheromones},
+    pheromone::{on_spawn_pheromone, spawn_pheromones},
 };
 use crate::common::{
     despawn_view, despawn_view_by_model, on_despawn,
@@ -97,7 +97,6 @@ impl Plugin for CraterRenderingPlugin {
                 despawn_view::<ElementTilemap>,
                 cleanup_elements,
                 despawn_view_by_model::<Pheromone, AtCrater>,
-                cleanup_pheromones,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );

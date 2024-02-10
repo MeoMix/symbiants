@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 
-use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
-
-use simulation::{
-    common::{grid::Grid, pheromone::{Pheromone, PheromoneStrength}, position::Position},
-    nest_simulation::nest::AtNest,
+use crate::common::{
+    pheromone::PheromoneVisibility, visible_grid::VisibleGrid, ModelViewEntityMap,
 };
 
-#[derive(Resource)]
-pub struct PheromoneVisibility(pub Visibility);
+use simulation::{
+    common::{
+        grid::Grid,
+        pheromone::{Pheromone, PheromoneStrength},
+        position::Position,
+    },
+    nest_simulation::nest::AtNest,
+};
 
 pub fn on_spawn_pheromone(
     pheromone_query: Query<
@@ -96,15 +99,6 @@ pub fn on_update_pheromone_visibility(
             }
         }
     }
-}
-
-pub fn initialize_pheromone_resources(mut commands: Commands) {
-    commands.insert_resource(PheromoneVisibility(Visibility::Visible));
-}
-
-/// Remove resources, etc.
-pub fn cleanup_pheromones(mut commands: Commands) {
-    commands.remove_resource::<PheromoneVisibility>();
 }
 
 /// Non-System Helper Functions:

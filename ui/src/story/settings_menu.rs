@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContexts};
 
-use rendering::nest::pheromone::PheromoneVisibility;
+use rendering::common::pheromone::PheromoneVisibility;
 use simulation::{
     app_state::AppState,
     nest_simulation::ant::AntColor,

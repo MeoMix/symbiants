@@ -1,10 +1,12 @@
 pub mod camera;
+pub mod pheromone;
 pub mod pointer;
 pub mod selection;
 pub mod visible_grid;
 
 use self::{
     camera::RenderingCameraPlugin,
+    pheromone::{cleanup_pheromones, initialize_pheromone_resources},
     pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources},
     selection::{
         clear_selection, on_update_selected, on_update_selected_position, SelectedEntity,
@@ -113,6 +115,11 @@ impl Plugin for CommonRenderingPlugin {
         );
 
         app.add_systems(
+            OnEnter(AppState::FinishSetup),
+            (initialize_pheromone_resources).in_set(FinishSetupSet::AfterSimulationFinishSetup),
+        );
+
+        app.add_systems(
             Update,
             (on_update_selected, on_update_selected_position).run_if(in_state(AppState::TellStory)),
         );
@@ -154,6 +161,7 @@ impl Plugin for CommonRenderingPlugin {
                 despawn_common_entities,
                 remove_common_resources,
                 remove_pointer_resources,
+                cleanup_pheromones,
                 set_visible_grid_state_none,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),

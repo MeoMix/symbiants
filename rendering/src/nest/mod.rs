@@ -25,10 +25,7 @@ use self::{
         sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         ElementTilemap,
     },
-    pheromone::{
-        cleanup_pheromones, initialize_pheromone_resources, on_spawn_pheromone,
-        on_update_pheromone_visibility, spawn_pheromones,
-    },
+    pheromone::{on_spawn_pheromone, on_update_pheromone_visibility, spawn_pheromones},
 };
 use super::common::{
     despawn_view, despawn_view_by_model, on_despawn,
@@ -36,11 +33,14 @@ use super::common::{
 };
 use bevy::prelude::*;
 use simulation::{
-    app_state::AppState, common::pheromone::Pheromone, nest_simulation::{
+    app_state::AppState,
+    common::pheromone::Pheromone,
+    nest_simulation::{
         ant::Ant,
         element::Element,
         nest::{AtNest, Nest},
-    }, CleanupSet, FinishSetupSet
+    },
+    CleanupSet, FinishSetupSet,
 };
 
 pub struct NestRenderingPlugin;
@@ -60,12 +60,7 @@ impl Plugin for NestRenderingPlugin {
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
-            (
-                initialize_pheromone_resources,
-                initialize_background_resources,
-            )
-                .chain()
-                .in_set(FinishSetupSet::AfterSimulationFinishSetup),
+            (initialize_background_resources,).in_set(FinishSetupSet::AfterSimulationFinishSetup),
         );
 
         app.add_systems(
@@ -155,7 +150,6 @@ impl Plugin for NestRenderingPlugin {
                 despawn_view::<ElementTilemap>,
                 cleanup_elements,
                 despawn_view_by_model::<Pheromone, AtNest>,
-                cleanup_pheromones,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );
