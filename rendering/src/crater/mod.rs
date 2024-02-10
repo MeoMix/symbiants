@@ -1,14 +1,18 @@
 pub mod ant;
 pub mod background;
 pub mod element;
+pub mod pheromone;
 
 use self::{
-    ant::{cleanup_ants, on_spawn_ant, rerender_ants},
+    ant::{
+        cleanup_ants, on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation,
+        on_update_ant_position, spawn_ants,
+    },
     background::{cleanup_background, spawn_background, CraterBackground},
     element::{
-        cleanup_elements, on_spawn_element, rerender_elements, spawn_element_tilemap,
-        ElementTilemap,
+        cleanup_elements, on_spawn_element, spawn_element_tilemap, spawn_elements, ElementTilemap,
     },
+    pheromone::{cleanup_pheromones, on_spawn_pheromone, spawn_pheromones},
 };
 use crate::common::{
     despawn_view, despawn_view_by_model, on_despawn,
@@ -18,15 +22,11 @@ use bevy::prelude::*;
 use simulation::{
     app_state::AppState,
     crater_simulation::crater::{AtCrater, Crater},
-    nest_simulation::{ant::Ant, element::Element},
+    nest_simulation::{ant::Ant, element::Element, pheromone::Pheromone},
     CleanupSet,
 };
 
 pub struct CraterRenderingPlugin;
-
-// TODO: Create a CraterGrid + CraterBackground
-// Initially every spot in the grid is filled with air and the background draws a gray/brown floor
-// Then need to spawn food at a location, put an ant sprite, and implement walking so that ant can grab it
 
 impl Plugin for CraterRenderingPlugin {
     fn build(&self, app: &mut App) {
@@ -34,9 +34,20 @@ impl Plugin for CraterRenderingPlugin {
             Update,
             (
                 // Spawn
-                (on_spawn_ant, on_spawn_element),
+                (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
                 // Despawn
-                (on_despawn::<Ant, AtCrater>, on_despawn::<Element, AtCrater>),
+                (
+                    on_despawn::<Ant, AtCrater>,
+                    on_despawn::<Element, AtCrater>,
+                    on_despawn::<Pheromone, AtCrater>,
+                ),
+                // Updated
+                (
+                    on_update_ant_position,
+                    on_update_ant_orientation,
+                    on_update_ant_inventory,
+                    // on_update_pheromone_visibility,
+                ),
             )
                 .run_if(
                     in_state(AppState::TellStory)
@@ -51,8 +62,9 @@ impl Plugin for CraterRenderingPlugin {
                 apply_deferred,
                 (
                     spawn_background,
-                    rerender_ants,
-                    rerender_elements,
+                    spawn_ants,
+                    spawn_elements,
+                    spawn_pheromones,
                     mark_crater_visible,
                 ),
             )
@@ -67,6 +79,7 @@ impl Plugin for CraterRenderingPlugin {
                 despawn_view_by_model::<Ant, AtCrater>,
                 despawn_view_by_model::<Element, AtCrater>,
                 despawn_view::<ElementTilemap>,
+                despawn_view_by_model::<Pheromone, AtCrater>,
                 mark_crater_hidden,
             )
                 .run_if(in_state(AppState::TellStory)),
@@ -82,6 +95,8 @@ impl Plugin for CraterRenderingPlugin {
                 despawn_view_by_model::<Element, AtCrater>,
                 despawn_view::<ElementTilemap>,
                 cleanup_elements,
+                despawn_view_by_model::<Pheromone, AtCrater>,
+                cleanup_pheromones,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );

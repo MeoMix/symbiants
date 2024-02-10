@@ -19,7 +19,7 @@ use self::{
 };
 use crate::{
     common::{position::Position, Zone},
-    nest_simulation::{element::Element, nest::AtNest},
+    nest_simulation::element::Element,
 };
 use bevy::{
     ecs::{
@@ -403,8 +403,8 @@ impl AntOrientation {
 // Each ant maintains an internal timer that determines when it will act next.
 // This adds a little realism by varying when movements occur and allows for flexibility
 // in the simulation run speed.
-pub fn ants_initiative(
-    mut alive_ants_query: Query<&mut Initiative, With<AtNest>>,
+pub fn ants_initiative<Z: Zone>(
+    mut alive_ants_query: Query<&mut Initiative, With<Z>>,
     mut rng: ResMut<GlobalRng>,
 ) {
     for mut initiative in alive_ants_query.iter_mut() {

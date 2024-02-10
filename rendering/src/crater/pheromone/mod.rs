@@ -4,23 +4,21 @@ use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
 
 use simulation::{
     common::{grid::Grid, position::Position},
-    nest_simulation::{
-        nest::AtNest,
-        pheromone::{Pheromone, PheromoneStrength},
-    },
+    crater_simulation::crater::AtCrater,
+    nest_simulation::pheromone::{Pheromone, PheromoneStrength},
 };
 
-#[derive(Resource)]
-pub struct PheromoneVisibility(pub Visibility);
+// #[derive(Resource)]
+// pub struct PheromoneVisibility(pub Visibility);
 
 pub fn on_spawn_pheromone(
     pheromone_query: Query<
         (Entity, &Position, &Pheromone, &PheromoneStrength),
-        (Added<Pheromone>, With<AtNest>),
+        (Added<Pheromone>, With<AtCrater>),
     >,
-    pheromone_visibility: Res<PheromoneVisibility>,
+    // pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    grid_query: Query<&Grid, With<AtNest>>,
+    grid_query: Query<&Grid, With<AtCrater>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
 ) {
@@ -40,7 +38,7 @@ pub fn on_spawn_pheromone(
             pheromone,
             position,
             pheromone_strength,
-            &pheromone_visibility,
+            // &pheromone_visibility,
             grid,
             &mut commands,
             &mut model_view_entity_map,
@@ -49,10 +47,13 @@ pub fn on_spawn_pheromone(
 }
 
 pub fn spawn_pheromones(
-    pheromone_model_query: Query<(Entity, &Position, &Pheromone, &PheromoneStrength), With<AtNest>>,
-    pheromone_visibility: Res<PheromoneVisibility>,
+    pheromone_model_query: Query<
+        (Entity, &Position, &Pheromone, &PheromoneStrength),
+        With<AtCrater>,
+    >,
+    // pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
-    grid_query: Query<&Grid, With<AtNest>>,
+    grid_query: Query<&Grid, With<AtCrater>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = grid_query.single();
@@ -64,7 +65,7 @@ pub fn spawn_pheromones(
             pheromone,
             position,
             pheromone_strength,
-            &pheromone_visibility,
+            // &pheromone_visibility,
             grid,
             &mut commands,
             &mut model_view_entity_map,
@@ -72,42 +73,42 @@ pub fn spawn_pheromones(
     }
 }
 
-pub fn on_update_pheromone_visibility(
-    pheromone_model_query: Query<Entity, With<Pheromone>>,
-    mut pheromone_view_query: Query<&mut Visibility>,
-    pheromone_visibility: Res<PheromoneVisibility>,
-    model_view_entity_map: Res<ModelViewEntityMap>,
-    grid_query: Query<&Grid, With<AtNest>>,
-    visible_grid: Res<VisibleGrid>,
-) {
-    let visible_grid_entity = match visible_grid.0 {
-        Some(visible_grid_entity) => visible_grid_entity,
-        None => return,
-    };
+// pub fn on_update_pheromone_visibility(
+//     pheromone_model_query: Query<Entity, With<Pheromone>>,
+//     mut pheromone_view_query: Query<&mut Visibility>,
+//     // pheromone_visibility: Res<PheromoneVisibility>,
+//     model_view_entity_map: Res<ModelViewEntityMap>,
+//     grid_query: Query<&Grid, With<AtCrater>>,
+//     visible_grid: Res<VisibleGrid>,
+// ) {
+//     let visible_grid_entity = match visible_grid.0 {
+//         Some(visible_grid_entity) => visible_grid_entity,
+//         None => return,
+//     };
 
-    if grid_query.get(visible_grid_entity).is_err() {
-        return;
-    }
+//     if grid_query.get(visible_grid_entity).is_err() {
+//         return;
+//     }
 
-    if pheromone_visibility.is_changed() {
-        for pheromone_model_entity in pheromone_model_query.iter() {
-            if let Some(pheromone_view_entity) = model_view_entity_map.get(&pheromone_model_entity)
-            {
-                if let Ok(mut visibility) = pheromone_view_query.get_mut(*pheromone_view_entity) {
-                    *visibility = pheromone_visibility.0;
-                }
-            }
-        }
-    }
-}
+//     if pheromone_visibility.is_changed() {
+//         for pheromone_model_entity in pheromone_model_query.iter() {
+//             if let Some(pheromone_view_entity) = model_view_entity_map.get(&pheromone_model_entity)
+//             {
+//                 if let Ok(mut visibility) = pheromone_view_query.get_mut(*pheromone_view_entity) {
+//                     *visibility = pheromone_visibility.0;
+//                 }
+//             }
+//         }
+//     }
+// }
 
 pub fn initialize_pheromone_resources(mut commands: Commands) {
-    commands.insert_resource(PheromoneVisibility(Visibility::Visible));
+    // commands.insert_resource(PheromoneVisibility(Visibility::Visible));
 }
 
 /// Remove resources, etc.
 pub fn cleanup_pheromones(mut commands: Commands) {
-    commands.remove_resource::<PheromoneVisibility>();
+    // commands.remove_resource::<PheromoneVisibility>();
 }
 
 /// Non-System Helper Functions:
@@ -117,7 +118,7 @@ fn spawn_pheromone(
     pheromone: &Pheromone,
     pheromone_position: &Position,
     pheromone_strength: &PheromoneStrength,
-    pheromone_visibility: &PheromoneVisibility,
+    // pheromone_visibility: &PheromoneVisibility,
     grid: &Grid,
     commands: &mut Commands,
     model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
@@ -129,10 +130,10 @@ fn spawn_pheromone(
                     grid.grid_to_world_position(*pheromone_position),
                 ),
                 sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-                visibility: pheromone_visibility.0,
+                // visibility: pheromone_visibility.0,
                 ..default()
             },
-            AtNest,
+            AtCrater,
         ))
         .id();
 
@@ -146,10 +147,11 @@ fn get_pheromone_sprite(pheromone: &Pheromone, pheromone_strength: &PheromoneStr
     let pheromone_opacity = initial_pheromone_opacity * pheromone_strength_opacity;
 
     let color = match pheromone {
-        Pheromone::Chamber => Color::rgba(1.0, 0.08, 0.58, pheromone_opacity),
-        Pheromone::Tunnel => Color::rgba(0.25, 0.88, 0.82, pheromone_opacity),
-        Pheromone::Nest => panic!("not supported"),
-        Pheromone::Food => panic!("not supported"),
+        Pheromone::Chamber => panic!("not supported"),
+        Pheromone::Tunnel => panic!("not supported"),
+        // TODO: better colors
+        Pheromone::Nest => Color::rgba(1.0, 0.08, 0.58, pheromone_opacity),
+        Pheromone::Food => Color::rgba(0.25, 0.88, 0.82, pheromone_opacity),
     };
 
     Sprite { color, ..default() }

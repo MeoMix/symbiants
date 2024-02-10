@@ -10,7 +10,7 @@ use simulation::{
     nest_simulation::{
         ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
         element::{Element, ElementExposure},
-        nest::{AtNest, Nest},
+        nest::AtNest,
     },
 };
 use std::ops::Add;
@@ -33,7 +33,7 @@ pub struct AntSpriteContainer {
 /// and properly draws it as dead if the model is dead when spawned.
 /// This does not handle rendering the ant's emote.
 /// All of this is a bit dubious because ants aren't expected to spawn dead, or to spawn holding anything, but
-/// allows for code reuse when rerendering exists ants after toggling between scenes.
+/// allows for code reuse when spawning exists ants after toggling between scenes.
 pub fn on_spawn_ant(
     mut commands: Commands,
     ants_query: Query<
@@ -51,7 +51,7 @@ pub fn on_spawn_ant(
     >,
     asset_server: Res<AssetServer>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
@@ -61,7 +61,7 @@ pub fn on_spawn_ant(
         None => return,
     };
 
-    let grid = match nest_query.get(visible_grid_entity) {
+    let grid = match grid_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
     };
@@ -89,8 +89,8 @@ pub fn on_spawn_ant(
 
 /// When user switches to a different scene (Nest->Crater) all Nest views are despawned.
 /// Thus, when switching back to Nest, all Ants need to be redrawn once. Their underlying models
-/// have not been changed or added, though, so a separate rerender system is needed.
-pub fn rerender_ants(
+/// have not been changed or added, though, so a separate spawn system is needed.
+pub fn spawn_ants(
     ant_model_query: Query<
         (
             Entity,
@@ -107,11 +107,11 @@ pub fn rerender_ants(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     elements_query: Query<&Element>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
-    let grid = nest_query.single();
+    let grid = grid_query.single();
 
     for (ant_model_entity, position, color, orientation, name, role, inventory, dead) in
         ant_model_query.iter()
@@ -153,7 +153,7 @@ pub fn on_update_ant_inventory(
     elements_query: Query<&Element>,
     element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
     model_view_entity_map: Res<ModelViewEntityMap>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
     visible_grid: Res<VisibleGrid>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
@@ -161,7 +161,7 @@ pub fn on_update_ant_inventory(
         None => return,
     };
 
-    if nest_query.get(visible_grid_entity).is_err() {
+    if grid_query.get(visible_grid_entity).is_err() {
         return;
     }
 
@@ -209,7 +209,7 @@ pub fn on_update_ant_inventory(
 pub fn on_update_ant_position(
     ant_model_query: Query<(Entity, Ref<Position>), (With<Ant>, With<AtNest>)>,
     mut ant_view_query: Query<(&mut Transform, &TranslationOffset)>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
 ) {
@@ -218,7 +218,7 @@ pub fn on_update_ant_position(
         None => return,
     };
 
-    let grid = match nest_query.get(visible_grid_entity) {
+    let grid = match grid_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
     };
@@ -246,14 +246,14 @@ pub fn on_update_ant_color(
     mut sprite_query: Query<&mut Sprite>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
         None => return,
     };
 
-    if nest_query.get(visible_grid_entity).is_err() {
+    if grid_query.get(visible_grid_entity).is_err() {
         return;
     }
 
@@ -279,14 +279,14 @@ pub fn on_update_ant_orientation(
     mut transform_query: Query<&mut Transform>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
         None => return,
     };
 
-    if nest_query.get(visible_grid_entity).is_err() {
+    if grid_query.get(visible_grid_entity).is_err() {
         return;
     }
 
@@ -313,7 +313,7 @@ pub fn on_added_ant_dead(
     mut sprite_image_query: Query<(&mut Handle<Image>, &mut Sprite)>,
     asset_server: Res<AssetServer>,
     model_view_entity_map: Res<ModelViewEntityMap>,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
     visible_grid: Res<VisibleGrid>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
@@ -321,7 +321,7 @@ pub fn on_added_ant_dead(
         None => return,
     };
 
-    if nest_query.get(visible_grid_entity).is_err() {
+    if grid_query.get(visible_grid_entity).is_err() {
         return;
     }
 

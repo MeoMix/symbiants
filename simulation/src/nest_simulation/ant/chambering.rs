@@ -76,6 +76,7 @@ pub fn ants_chamber_pheromone_act(
                     *position,
                     Pheromone::Chamber,
                     PheromoneStrength::new(chambering.0 - 1, settings.chamber_size),
+                    AtNest
                 );
             }
             return;
@@ -96,7 +97,7 @@ pub fn ants_add_chamber_pheromone(
         ),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
-    pheromone_map: Res<PheromoneMap>,
+    pheromone_map: Res<PheromoneMap<AtNest>>,
     mut commands: Commands,
 ) {
     for (ant_entity, ant_position, inventory) in ants_query.iter() {
@@ -104,7 +105,7 @@ pub fn ants_add_chamber_pheromone(
             continue;
         }
 
-        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position) {
+        if let Some(pheromone_entity) = pheromone_map.map.get(ant_position) {
             let (pheromone, pheromone_strength) = pheromone_query.get(*pheromone_entity).unwrap();
 
             if *pheromone == Pheromone::Chamber {

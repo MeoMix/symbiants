@@ -1,8 +1,29 @@
+pub mod ant;
 pub mod crater;
+pub mod element;
+pub mod pheromone;
+
+use crate::{
+    nest_simulation::{
+        ant::{ants_initiative, Ant},
+        element::Element,
+        pheromone::Pheromone,
+    },
+    story_time::StoryPlaybackState,
+    SimulationTickSet, SimulationUpdate,
+};
 
 use self::{
-    crater::register_crater,
-    crater::{spawn_crater, spawn_crater_ants, spawn_crater_elements, Crater},
+    ant::{
+        dig::ants_dig, emit_pheromone::ants_emit_pheromone, register_ant,
+        set_pheromone_emitter::ants_set_pheromone_emitter, walk::ants_walk,
+    },
+    crater::{
+        register_crater, spawn_crater, spawn_crater_ants, spawn_crater_elements, AtCrater, Crater,
+    },
+    pheromone::{
+        initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
+    },
 };
 use super::{
     apply_deferred, despawn_model, insert_crater_grid, settings::initialize_settings_resources,
@@ -14,7 +35,10 @@ pub struct CraterSimulationPlugin;
 
 impl Plugin for CraterSimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::BeginSetup), register_crater);
+        app.add_systems(
+            OnEnter(AppState::BeginSetup),
+            (register_crater, register_ant),
+        );
 
         app.add_systems(
             OnEnter(AppState::CreateNewStory),
@@ -31,14 +55,44 @@ impl Plugin for CraterSimulationPlugin {
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
-            (insert_crater_grid,)
+            (
+                insert_crater_grid,
+                apply_deferred,
+                initialize_pheromone_resources,
+            )
                 .chain()
                 .in_set(FinishSetupSet::SimulationFinishSetup),
         );
 
         app.add_systems(
+            SimulationUpdate,
+            (
+                (pheromone_duration_tick, apply_deferred).chain(),
+                (ants_set_pheromone_emitter, apply_deferred).chain(),
+                ants_emit_pheromone,
+                // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
+                // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
+                ants_walk,
+                ants_dig,
+                apply_deferred,
+                // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
+                ants_initiative::<AtCrater>,
+            )
+                .run_if(not(in_state(StoryPlaybackState::Paused)))
+                .chain()
+                .in_set(SimulationTickSet::SimulationTick),
+        );
+
+        app.add_systems(
             OnEnter(AppState::Cleanup),
-            (despawn_model::<Crater>,).in_set(CleanupSet::SimulationCleanup),
+            (
+                despawn_model::<Ant, AtCrater>,
+                despawn_model::<Element, AtCrater>,
+                despawn_model::<Pheromone, AtCrater>,
+                despawn_model::<Crater, AtCrater>,
+                remove_pheromone_resources,
+            )
+                .in_set(CleanupSet::SimulationCleanup),
         );
     }
 }

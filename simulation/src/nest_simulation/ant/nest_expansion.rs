@@ -86,6 +86,7 @@ pub fn ants_nest_expansion(
                 dirt_position,
                 Pheromone::Tunnel,
                 PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
+                AtNest
             );
         }
     }

@@ -61,13 +61,15 @@ impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         app.add_plugins(SavePlugin);
+
+        // TODO: Need to resolve this between Crater and Nest - they can run in parallel
         // Be aggressive in preventing ambiguous systems from running in parallel to prevent unintended headaches.
-        app.edit_schedule(SimulationUpdate, |schedule| {
-            schedule.set_build_settings(ScheduleBuildSettings {
-                ambiguity_detection: LogLevel::Error,
-                ..default()
-            });
-        });
+        // app.edit_schedule(SimulationUpdate, |schedule| {
+        //     schedule.set_build_settings(ScheduleBuildSettings {
+        //         ambiguity_detection: LogLevel::Error,
+        //         ..default()
+        //     });
+        // });
 
         app.add_systems(PreStartup, insert_simulation_schedule);
         app.init_schedule(RunSimulationUpdateLoop);

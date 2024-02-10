@@ -165,6 +165,7 @@ pub fn ants_tunnel_pheromone_act(
                 dig_position,
                 Pheromone::Tunnel,
                 PheromoneStrength::new(tunneling.0 - 1, settings.tunnel_length),
+                AtNest,
             );
         }
     }
@@ -184,7 +185,7 @@ pub fn ants_add_tunnel_pheromone(
         ),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
-    pheromone_map: Res<PheromoneMap>,
+    pheromone_map: Res<PheromoneMap<AtNest>>,
     mut commands: Commands,
 ) {
     for (ant_entity, ant_position, inventory, ant_orientation) in ants_query.iter() {
@@ -196,7 +197,7 @@ pub fn ants_add_tunnel_pheromone(
             continue;
         }
 
-        if let Some(pheromone_entity) = pheromone_map.0.get(ant_position) {
+        if let Some(pheromone_entity) = pheromone_map.map.get(ant_position) {
             let (pheromone, pheromone_strength) = pheromone_query.get(*pheromone_entity).unwrap();
 
             if *pheromone == Pheromone::Tunnel {
@@ -226,7 +227,7 @@ pub fn ants_remove_tunnel_pheromone(
         (Or<(Changed<Position>, Changed<AntInventory>)>, With<AtNest>),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
-    pheromone_map: Res<PheromoneMap>,
+    pheromone_map: Res<PheromoneMap<AtNest>>,
     mut commands: Commands,
     nest_query: Query<&Nest>,
     settings: Res<Settings>,
@@ -246,7 +247,7 @@ pub fn ants_remove_tunnel_pheromone(
                 .iter()
                 .filter_map(|position| {
                     pheromone_map
-                        .0
+                        .map
                         .get(position)
                         .and_then(|pheromone_entity| pheromone_query.get(*pheromone_entity).ok())
                 })
@@ -265,6 +266,7 @@ pub fn ants_remove_tunnel_pheromone(
                     *ant_position,
                     Pheromone::Chamber,
                     PheromoneStrength::new(settings.chamber_size, settings.chamber_size),
+                    AtNest,
                 );
             }
         }

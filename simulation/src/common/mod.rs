@@ -44,8 +44,8 @@ pub fn register_common(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Position>();
 }
 
-pub fn despawn_model<Model: Component>(
-    model_query: Query<Entity, With<Model>>,
+pub fn despawn_model<Model: Component, Z: Zone>(
+    model_query: Query<Entity, (With<Model>, With<Z>)>,
     mut commands: Commands,
 ) {
     for model_entity in model_query.iter() {

@@ -1,8 +1,10 @@
 pub mod commands;
 
+use std::marker::PhantomData;
+
 use self::commands::PheromoneCommandsExt;
 use crate::{
-    common::position::Position,
+    common::{position::Position, Zone},
     nest_simulation::nest::AtNest,
     story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR},
 };
@@ -15,6 +17,8 @@ pub enum Pheromone {
     #[default]
     Tunnel,
     Chamber,
+    Food,
+    Nest,
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -75,7 +79,19 @@ impl PheromoneDuration {
 /// Note the intentional omission of reflection/serialization.
 /// This is because PheromoneMap is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]
-pub struct PheromoneMap(pub HashMap<Position, Entity>);
+pub struct PheromoneMap<Z: Zone> {
+    pub map: HashMap<Position, Entity>,
+    _marker: PhantomData<Z>,
+}
+
+impl<Z: Zone> PheromoneMap<Z> {
+    pub fn new(map: HashMap<Position, Entity>) -> Self {
+        Self {
+            map,
+            _marker: PhantomData,
+        }
+    }
+}
 
 /// Note the intentional omission of PheromoneMap. It would be wasteful to persist
 /// because it's able to be trivially regenerated at runtime.
@@ -99,11 +115,11 @@ pub fn initialize_pheromone_resources(
         .map(|(position, entity)| (*position, entity))
         .collect::<HashMap<_, _>>();
 
-    commands.insert_resource(PheromoneMap(pheromone_map));
+    commands.insert_resource(PheromoneMap::<AtNest>::new(pheromone_map));
 }
 
 pub fn remove_pheromone_resources(mut commands: Commands) {
-    commands.remove_resource::<PheromoneMap>();
+    commands.remove_resource::<PheromoneMap<AtNest>>();
 }
 
 pub fn pheromone_duration_tick(
@@ -118,7 +134,7 @@ pub fn pheromone_duration_tick(
         pheromone_duration.tick(rate_of_pheromone_expiration);
 
         if pheromone_duration.is_expired() {
-            commands.despawn_pheromone(pheromone_entity, *position);
+            commands.despawn_pheromone(pheromone_entity, *position, AtNest);
         }
     }
 }

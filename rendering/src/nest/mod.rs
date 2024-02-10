@@ -13,7 +13,7 @@ use self::{
             on_ant_wake_up, on_removed_ant_emote,
         },
         on_added_ant_dead, on_spawn_ant, on_update_ant_color, on_update_ant_inventory,
-        on_update_ant_orientation, on_update_ant_position, rerender_ants,
+        on_update_ant_orientation, on_update_ant_position, spawn_ants,
     },
     background::{
         cleanup_background, initialize_background_resources, spawn_background,
@@ -21,13 +21,13 @@ use self::{
     },
     element::{
         cleanup_elements, on_spawn_element, on_update_element_exposure, on_update_element_position,
-        rerender_elements, spawn_element_tilemap,
+        spawn_elements, spawn_element_tilemap,
         sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         ElementTilemap,
     },
     pheromone::{
         cleanup_pheromones, initialize_pheromone_resources, on_spawn_pheromone,
-        on_update_pheromone_visibility, rerender_pheromones,
+        on_update_pheromone_visibility, spawn_pheromones,
     },
 };
 use super::common::{
@@ -122,9 +122,9 @@ impl Plugin for NestRenderingPlugin {
                 apply_deferred,
                 (
                     spawn_background,
-                    rerender_ants,
-                    rerender_elements,
-                    rerender_pheromones,
+                    spawn_ants,
+                    spawn_elements,
+                    spawn_pheromones,
                     mark_nest_visible,
                 ),
             )

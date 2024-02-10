@@ -18,8 +18,9 @@ use self::{
         drop::ants_drop,
         hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate},
         nest_expansion::ants_nest_expansion,
-        nesting::ants_nesting_start,
-        nesting::{ants_nesting_action, ants_nesting_movement, register_nesting},
+        nesting::{
+            ants_nesting_action, ants_nesting_movement, ants_nesting_start, register_nesting,
+        },
         register_ant,
         sleep::{ants_sleep, ants_wake},
         tunneling::{
@@ -35,7 +36,8 @@ use self::{
         gravity_set_stability, register_gravity,
     },
     nest::{
-        insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants, spawn_nest_elements, Nest,
+        insert_nest_grid, register_nest, spawn_nest, spawn_nest_ants, spawn_nest_elements, AtNest,
+        Nest,
     },
     pheromone::{
         initialize_pheromone_resources, pheromone_duration_tick, register_pheromone,
@@ -181,9 +183,10 @@ impl Plugin for NestSimulationPlugin {
                         apply_deferred,
                     )
                         .chain(),
+                    // TODO: Maybe this should go in PostSimulationTick since it's an implicit reaction and doesn't require initative
                     on_ants_add_dead,
                     // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
-                    ants_initiative,
+                    ants_initiative::<AtNest>,
                 )
                     .chain(),
             )
@@ -195,10 +198,10 @@ impl Plugin for NestSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::Cleanup),
             (
-                despawn_model::<Ant>,
-                despawn_model::<Element>,
-                despawn_model::<Pheromone>,
-                despawn_model::<Nest>,
+                despawn_model::<Ant, AtNest>,
+                despawn_model::<Element, AtNest>,
+                despawn_model::<Pheromone, AtNest>,
+                despawn_model::<Nest, AtNest>,
                 remove_pheromone_resources,
             )
                 .in_set(CleanupSet::SimulationCleanup),

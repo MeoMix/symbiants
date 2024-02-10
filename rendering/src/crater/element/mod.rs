@@ -85,8 +85,8 @@ pub fn on_spawn_element(
 
 /// When user switches to a different scene (Crater->Nest) all Crater views are despawned.
 /// Thus, when switching back to Crater, all Elements need to be redrawn once. Their underlying models
-/// have not been changed or added, though, so a separate rerender system is needed.
-pub fn rerender_elements(
+/// have not been changed or added, though, so a separate spawn system is needed.
+pub fn spawn_elements(
     mut element_query: Query<
         (&Position, &Element, &ElementExposure, Entity),
         (With<AtCrater>, Without<Air>),

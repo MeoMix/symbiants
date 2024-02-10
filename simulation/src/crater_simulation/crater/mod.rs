@@ -14,6 +14,8 @@ use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
+use super::ant::emit_pheromone::LeavingNest;
+
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct AtCrater;
@@ -65,11 +67,7 @@ pub fn insert_crater_grid(
 pub fn spawn_crater_elements(settings: Res<Settings>, mut commands: Commands) {
     for y in 0..settings.crater_height {
         for x in 0..settings.crater_width {
-            let position = Position::new(x, y);
-
-            commands.spawn(ElementBundle::new(Element::Air, position, AtCrater));
-
-            // TODO: Fill with some food at random locations.
+            commands.spawn(ElementBundle::new(Element::Air, Position::new(x, y), AtCrater));
         }
     }
 }
@@ -97,5 +95,14 @@ pub fn spawn_crater_ants(
         Digestion::new(settings.max_digestion_time),
     );
 
-    commands.spawn(worker_ant_bundle);
+    let ant_entity = commands.spawn(worker_ant_bundle).id();
+
+    // TODO: Remove this, just using it for testing
+    commands.entity(ant_entity).insert(LeavingNest(100));
+}
+
+pub fn spawn_crater_nest(
+
+) {
+
 }
