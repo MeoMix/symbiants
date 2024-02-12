@@ -29,7 +29,7 @@ pub trait AntCommandsExt {
         initiative: Initiative,
         zone: Z,
     );
-    fn dig<Z: Zone>(
+    fn dig<Z: Zone + Copy>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
@@ -69,7 +69,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         });
     }
 
-    fn dig<Z: Zone>(
+    fn dig<Z: Zone + Copy>(
         &mut self,
         ant_entity: Entity,
         target_position: Position,
@@ -100,7 +100,7 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
     }
 }
 
-struct DigElementCommand<Z: Zone> {
+struct DigElementCommand<Z: Zone + Copy> {
     ant_entity: Entity,
     target_element_entity: Entity,
     target_position: Position,
@@ -108,7 +108,7 @@ struct DigElementCommand<Z: Zone> {
 }
 
 // TODO: Confirm that ant and element are adjacent to one another at time action is taken.
-impl<Z: Zone> Command for DigElementCommand<Z> {
+impl<Z: Zone + Copy> Command for DigElementCommand<Z> {
     fn apply(self, world: &mut World) {
         let mut system_state: SystemState<GridElements<Z>> = SystemState::new(world);
         let grid_elements = system_state.get(world);
@@ -159,7 +159,7 @@ impl<Z: Zone> Command for DigElementCommand<Z> {
         }
 
         let inventory_item_entity = world
-            .spawn(InventoryItemBundle::new(inventory_element))
+            .spawn(InventoryItemBundle::new(inventory_element, self.zone))
             .id();
 
         match world.get_mut::<AntInventory>(self.ant_entity) {

@@ -136,6 +136,7 @@ impl Plugin for CommonSimulationPlugin {
         app.add_systems(
             SimulationUpdate,
             (
+                apply_deferred,
                 (
                     ants_digestion::<AtNest>,
                     ants_digestion::<AtCrater>,
@@ -149,9 +150,6 @@ impl Plugin for CommonSimulationPlugin {
                     apply_deferred,
                 )
                     .chain(),
-                // TODO: I'm letting this run at an arbitrary time now - but before I moved it to common it ran after most other systems. Is this OK?
-                // TODO: Maybe this should go in PostSimulationTick since it's an implicit reaction and doesn't require initative
-                // TODO: reset initative in post simulation tick
                 on_ants_add_dead::<AtNest>,
                 on_ants_add_dead::<AtCrater>,
             )
@@ -163,6 +161,7 @@ impl Plugin for CommonSimulationPlugin {
         app.add_systems(
             SimulationUpdate,
             (
+                // TODO: maybe want to run initative at the end of the simulation tick but not in PostSimulationTick? :s
                 apply_deferred,
                 // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
                 ants_initiative::<AtNest>,

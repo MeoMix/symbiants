@@ -120,16 +120,21 @@ pub enum AntRole {
 pub struct InventoryItem;
 
 #[derive(Bundle)]
-pub struct InventoryItemBundle {
+pub struct InventoryItemBundle<Z>
+where
+    Z: Zone,
+{
     element: Element,
     inventory_item: InventoryItem,
+    zone: Z
 }
 
-impl InventoryItemBundle {
-    pub fn new(element: Element) -> Self {
+impl<Z: Zone> InventoryItemBundle<Z> {
+    pub fn new(element: Element, zone: Z) -> Self {
         InventoryItemBundle {
             element,
             inventory_item: InventoryItem,
+            zone,
         }
     }
 }
