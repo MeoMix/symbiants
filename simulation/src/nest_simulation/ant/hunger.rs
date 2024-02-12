@@ -86,6 +86,7 @@ pub fn ants_hunger_act(
         With<AtNest>,
     >,
     grid_elements: GridElements<AtNest>,
+    elements_query: Query<&Element, With<AtNest>>,
     mut commands: Commands,
     mut ant_ate_food_event_writer: EventWriter<AntAteFoodEvent>,
 ) {
@@ -110,7 +111,7 @@ pub fn ants_hunger_act(
                     commands.dig(ant_entity, ahead_position, *food_entity, AtNest);
                 }
             } else {
-                let element = grid_elements.element(inventory.0.unwrap());
+                let element = elements_query.get(inventory.0.unwrap()).unwrap();
 
                 if *element == Element::Food {
                     inventory.0 = None;
