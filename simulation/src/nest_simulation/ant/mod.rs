@@ -17,10 +17,7 @@ use self::{
     birthing::Birthing, chambering::Chambering, digestion::Digestion, hunger::Hunger,
     name_list::get_random_name, sleep::Asleep, tunneling::Tunneling,
 };
-use crate::{
-    common::{position::Position, Zone},
-    nest_simulation::element::Element,
-};
+use crate::common::{element::Element, position::Position, Zone};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},

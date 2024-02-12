@@ -1,10 +1,7 @@
 use super::{AntOrientation, Initiative};
 use crate::{
-    common::{grid::GridElements, position::Position},
-    nest_simulation::{
-        element::Element,
-        nest::{AtNest, Nest},
-    },
+    common::{element::Element, grid::GridElements, position::Position},
+    nest_simulation::nest::{AtNest, Nest},
     settings::Settings,
 };
 use bevy::prelude::*;

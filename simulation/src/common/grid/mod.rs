@@ -1,5 +1,5 @@
 use super::Zone;
-use crate::{common::position::Position, nest_simulation::element::Element};
+use crate::common::{element::Element, position::Position};
 use bevy::{ecs::system::SystemParam, prelude::*};
 
 /// Note the intentional omission of reflection/serialization.

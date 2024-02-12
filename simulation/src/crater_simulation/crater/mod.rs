@@ -1,12 +1,14 @@
 use crate::{
-    common::{grid::Grid, position::Position, Zone},
-    // TODO: Move most of Element and Ant to Common
-    nest_simulation::{
-        ant::{
-            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
-            AntName, AntOrientation, AntRole, Facing, Initiative,
-        },
+    common::{
         element::{Element, ElementBundle},
+        grid::Grid,
+        position::Position,
+        Zone,
+    },
+    // TODO: Move= most of Ant to Common
+    nest_simulation::ant::{
+        digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory, AntName,
+        AntOrientation, AntRole, Facing, Initiative,
     },
     settings::Settings,
 };
@@ -67,7 +69,11 @@ pub fn insert_crater_grid(
 pub fn spawn_crater_elements(settings: Res<Settings>, mut commands: Commands) {
     for y in 0..settings.crater_height {
         for x in 0..settings.crater_width {
-            commands.spawn(ElementBundle::new(Element::Air, Position::new(x, y), AtCrater));
+            commands.spawn(ElementBundle::new(
+                Element::Air,
+                Position::new(x, y),
+                AtCrater,
+            ));
         }
     }
 }
@@ -101,8 +107,4 @@ pub fn spawn_crater_ants(
     commands.entity(ant_entity).insert(LeavingNest(100));
 }
 
-pub fn spawn_crater_nest(
-
-) {
-
-}
+pub fn spawn_crater_nest() {}

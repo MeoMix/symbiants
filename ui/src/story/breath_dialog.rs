@@ -6,10 +6,13 @@ use bevy_egui::{
 };
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use simulation::{
-    common::{grid::GridElements, position::Position},
+    common::{
+        element::{commands::ElementCommandsExt, Air, Element, Food},
+        grid::GridElements,
+        position::Position,
+    },
     nest_simulation::{
         ant::{hunger::Hunger, Dead},
-        element::{commands::ElementCommandsExt, Air, Element, Food},
         nest::AtNest,
     },
 };

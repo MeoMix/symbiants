@@ -9,18 +9,17 @@ use crate::{
     nest_simulation::nest::AtNest, story_time::set_rate_of_time,
 };
 
-use self::{pheromone::register_pheromone, position::Position};
+use self::{element::register_element, pheromone::register_pheromone, position::Position};
 use super::{
     app_state::{
         begin_story, continue_startup, finalize_startup, post_setup_clear_change_detection,
         restart, AppState,
     },
+    common::element::map_element_to_marker,
     external_event::{
         initialize_external_event_resources, process_external_event,
         remove_external_event_resources,
     },
-    // TODO: Element should live in common once I finish adding it to Crater.
-    nest_simulation::element::map_element_to_marker,
     save::{
         bind_save_onbeforeunload, delete_save_file, initialize_save_resources, load,
         remove_save_resources, save, unbind_save_onbeforeunload,
@@ -31,10 +30,7 @@ use super::{
         setup_story_time, update_story_elapsed_ticks, update_story_real_world_time,
         update_time_scale, StoryPlaybackState,
     },
-    CleanupSet,
-    FinishSetupSet,
-    SimulationTickSet,
-    SimulationUpdate,
+    CleanupSet, FinishSetupSet, SimulationTickSet, SimulationUpdate,
 };
 use bevy::prelude::*;
 
@@ -67,6 +63,7 @@ impl Plugin for CommonSimulationPlugin {
                 register_settings,
                 register_common,
                 register_story_time,
+                register_element,
                 register_pheromone,
             ),
         );

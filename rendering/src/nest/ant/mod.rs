@@ -6,10 +6,9 @@ use crate::{
 };
 use bevy::prelude::*;
 use simulation::{
-    common::{grid::Grid, position::Position},
+    common::{element::Element, grid::Grid, position::Position},
     nest_simulation::{
         ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
-        element::Element,
         nest::AtNest,
     },
 };

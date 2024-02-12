@@ -75,7 +75,6 @@ struct ReplaceElementCommand<Z: Zone> {
     target_element: Entity,
     element: Element,
     position: Position,
-    // TODO: maybe just infer this from target_element
     zone: Z,
 }
 

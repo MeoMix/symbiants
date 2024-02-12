@@ -11,9 +11,12 @@ use crate::{
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use simulation::{
-    common::{grid::Grid, position::Position},
+    common::{
+        element::{Air, Element},
+        grid::Grid,
+        position::Position,
+    },
     crater_simulation::crater::{AtCrater, Crater},
-    nest_simulation::element::{Air, Element},
 };
 
 #[derive(Component)]

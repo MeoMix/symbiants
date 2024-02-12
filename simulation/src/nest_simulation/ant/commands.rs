@@ -1,13 +1,11 @@
 use crate::{
     common::{
+        element::{Element, ElementBundle},
         grid::{GridElements, GridElementsMut},
         position::Position,
         Zone,
     },
-    nest_simulation::{
-        ant::AntInventory,
-        element::{Element, ElementBundle},
-    },
+    nest_simulation::ant::AntInventory,
     settings::Settings,
 };
 use bevy::{

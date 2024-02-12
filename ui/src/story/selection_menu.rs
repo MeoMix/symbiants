@@ -5,14 +5,12 @@ use rendering::common::selection::SelectedEntity;
 
 use simulation::{
     common::{
+        element::Element,
         pheromone::{Pheromone, PheromoneStrength},
         position::Position,
     },
-    nest_simulation::{
-        ant::{
-            birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole, Dead,
-        },
-        element::Element,
+    nest_simulation::ant::{
+        birthing::Birthing, hunger::Hunger, sleep::Asleep, AntInventory, AntName, AntRole, Dead,
     },
 };
 

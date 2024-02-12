@@ -1,16 +1,14 @@
 use bevy::prelude::*;
-use bevy_turborand::{DelegatedRng, GlobalRng};
+use bevy_turborand::GlobalRng;
 
 use crate::{
     common::{
+        element::Element,
         grid::{Grid, GridElements},
         position::Position,
     },
     crater_simulation::crater::AtCrater,
-    nest_simulation::{
-        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
-        element::Element,
-    },
+    nest_simulation::ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
 };
 
 pub fn ants_dig(
@@ -26,7 +24,6 @@ pub fn ants_dig(
     >,
     grid_query: Query<&Grid, With<AtCrater>>,
     grid_elements: GridElements<AtCrater>,
-    mut rng: ResMut<GlobalRng>,
     mut commands: Commands,
 ) {
     for (orientation, inventory, initiative, position, ant_entity) in ants_query.iter() {
@@ -41,14 +38,6 @@ pub fn ants_dig(
 
         // TODO: Maybe support looking in 3 directions for food, but don't just pick one randomly here since it's weird it ignores food right in front of it.
         let position = orientation.get_ahead_position(position);
-
-        // let positions = [
-        //     orientation.get_ahead_position(position),
-        //     orientation.get_below_position(position),
-        //     orientation.get_above_position(position),
-        // ];
-
-        // let position = rng.sample(&positions).unwrap();
 
         if try_dig(
             ant_entity,

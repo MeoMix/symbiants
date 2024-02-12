@@ -20,7 +20,11 @@ use self::{
         spawn_background_tilemap, update_sky_background, Background, BackgroundTilemap,
     },
     element::{
-        cleanup_elements, initialize_element_resources, insert_element_exposure_map, on_spawn_element, on_update_element_position, process_element_exposure_changed_events, remove_element_exposure_map, spawn_element_tilemap, spawn_elements, sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet}, update_element_exposure_map, ElementExposureChangedEvent, ElementTilemap
+        cleanup_elements, initialize_element_resources, insert_element_exposure_map,
+        on_spawn_element, on_update_element_position, process_element_exposure_changed_events,
+        remove_element_exposure_map, spawn_element_tilemap, spawn_elements,
+        sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
+        update_element_exposure_map, ElementTilemap,
     },
     pheromone::{on_spawn_pheromone, on_update_pheromone_visibility, spawn_pheromones},
 };
@@ -31,10 +35,9 @@ use super::common::{
 use bevy::prelude::*;
 use simulation::{
     app_state::AppState,
-    common::pheromone::Pheromone,
+    common::{element::Element, pheromone::Pheromone},
     nest_simulation::{
         ant::Ant,
-        element::Element,
         nest::{AtNest, Nest},
     },
     CleanupSet, FinishSetupSet,
@@ -119,7 +122,11 @@ impl Plugin for NestRenderingPlugin {
         app.add_systems(
             OnEnter(VisibleGridState::Nest),
             (
-                (spawn_background_tilemap, spawn_element_tilemap, insert_element_exposure_map),
+                (
+                    spawn_background_tilemap,
+                    spawn_element_tilemap,
+                    insert_element_exposure_map,
+                ),
                 apply_deferred,
                 (
                     spawn_background,

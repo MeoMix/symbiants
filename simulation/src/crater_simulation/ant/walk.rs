@@ -2,12 +2,9 @@ use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
-    common::{grid::GridElements, position::Position},
+    common::{element::Element, grid::GridElements, position::Position},
     crater_simulation::crater::AtCrater,
-    nest_simulation::{
-        ant::{AntOrientation, Initiative},
-        element::Element,
-    },
+    nest_simulation::ant::{AntOrientation, Initiative},
     settings::Settings,
 };
 

@@ -1,13 +1,11 @@
 use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
     common::{
+        element::Element,
         grid::{Grid, GridElements},
         position::Position,
     },
-    nest_simulation::{
-        element::Element,
-        nest::{AtNest, Nest},
-    },
+    nest_simulation::nest::{AtNest, Nest},
     settings::Settings,
 };
 use bevy::prelude::*;

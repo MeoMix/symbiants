@@ -12,13 +12,11 @@ use bevy::{
 use bevy_ecs_tilemap::prelude::*;
 use simulation::{
     common::{
+        element::{Air, Element},
         grid::{Grid, GridElements},
         position::Position,
     },
-    nest_simulation::{
-        element::{Air, Element},
-        nest::{AtNest, Nest},
-    },
+    nest_simulation::nest::{AtNest, Nest},
 };
 
 #[derive(Component)]

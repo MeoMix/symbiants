@@ -1,5 +1,10 @@
 use crate::{
-    common::{grid::GridElements, position::Position, Zone},
+    common::{
+        element::{commands::ElementCommandsExt, Element},
+        grid::GridElements,
+        position::Position,
+        Zone,
+    },
     crater_simulation::crater::AtCrater,
     nest_simulation::{
         ant::commands::AntCommandsExt,
@@ -7,7 +12,6 @@ use crate::{
             Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
             Initiative,
         },
-        element::{commands::ElementCommandsExt, Element},
         nest::AtNest,
     },
     settings::Settings,

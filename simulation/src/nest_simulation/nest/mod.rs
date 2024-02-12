@@ -1,11 +1,13 @@
 use crate::{
-    common::{grid::Grid, position::Position, Zone},
-    nest_simulation::{
-        ant::{
-            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
-            AntName, AntOrientation, AntRole, Facing, Initiative,
-        },
+    common::{
         element::{Element, ElementBundle},
+        grid::Grid,
+        position::Position,
+        Zone,
+    },
+    nest_simulation::ant::{
+        digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory, AntName,
+        AntOrientation, AntRole, Facing, Initiative,
     },
     settings::Settings,
 };

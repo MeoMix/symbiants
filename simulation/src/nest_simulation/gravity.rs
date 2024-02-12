@@ -1,12 +1,12 @@
 use super::nest::AtNest;
 use crate::{
     common::{
+        element::{commands::ElementCommandsExt, Air, Element},
         grid::{Grid, GridElements, GridElementsMut},
         position::Position,
     },
     nest_simulation::{
         ant::{AntOrientation, Dead, Initiative},
-        element::{commands::ElementCommandsExt, Air, Element},
         nest::Nest,
     },
     settings::Settings,

@@ -12,9 +12,9 @@ use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
 use crate::{
-    common::pheromone::Pheromone,
+    common::{element::Element, pheromone::Pheromone},
     crater_simulation::crater::Crater,
-    nest_simulation::{ant::Ant, element::Element, nest::Nest},
+    nest_simulation::{ant::Ant, nest::Nest},
     settings::Settings,
     story_time::{StoryRealWorldTime, StoryTime},
 };

@@ -3,8 +3,8 @@ use super::{
     AntRole, Dead, Initiative,
 };
 use crate::{
-    common::{grid::GridElements, position::Position},
-    nest_simulation::{element::Element, nest::AtNest},
+    common::{element::Element, grid::GridElements, position::Position},
+    nest_simulation::nest::AtNest,
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;

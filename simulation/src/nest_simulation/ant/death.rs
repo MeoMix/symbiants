@@ -1,9 +1,9 @@
 use super::Dead;
 use crate::{
-    common::{grid::GridElements, position::Position},
+    common::{grid::GridElements, position::Position, 
+        element::Element},
     nest_simulation::{
         ant::{commands::AntCommandsExt, AntInventory},
-        element::Element,
         nest::AtNest,
     },
 };

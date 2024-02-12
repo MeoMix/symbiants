@@ -1,11 +1,10 @@
 pub mod ant;
-pub mod element;
 pub mod gravity;
 pub mod nest;
 
-use crate::common::pheromone::{
+use crate::common::{element::Element, pheromone::{
     initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources, Pheromone,
-};
+}};
 
 use self::{
     ant::{
@@ -33,7 +32,6 @@ use self::{
         walk::{ants_stabilize_footing_movement, ants_walk},
         Ant, AntAteFoodEvent,
     },
-    element::{register_element, Element},
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
         gravity_set_stability, register_gravity,
@@ -60,7 +58,6 @@ impl Plugin for NestSimulationPlugin {
             (
                 register_nesting,
                 register_birthing,
-                register_element,
                 register_gravity,
                 register_ant,
                 register_nest,

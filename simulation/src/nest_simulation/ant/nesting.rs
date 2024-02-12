@@ -7,10 +7,10 @@ use crate::{
         grid::GridElements,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
         position::Position,
+        element::Element,
     },
     nest_simulation::{
         ant::birthing::Birthing,
-        element::Element,
         nest::{AtNest, Nest},
     },
     settings::Settings,

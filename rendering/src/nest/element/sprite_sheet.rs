@@ -1,6 +1,6 @@
 use bevy::{asset::LoadState, prelude::*};
 
-use simulation::{app_state::AppState, nest_simulation::element::Element};
+use simulation::{app_state::AppState, common::element::Element};
 
 use super::ElementExposure;
 
