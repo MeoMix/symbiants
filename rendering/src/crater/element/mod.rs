@@ -1,17 +1,19 @@
-// use self::sprite_sheet::{get_element_index, ElementSpriteSheetHandle};
 use crate::{
     common::{
         visible_grid::{grid_to_tile_pos, VisibleGrid},
         ModelViewEntityMap,
     },
-    nest::element::sprite_sheet::{get_element_index, ElementSpriteSheetHandle},
+    nest::element::{
+        sprite_sheet::{get_element_index, ElementSpriteSheetHandle},
+        ElementExposure,
+    },
 };
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use simulation::{
     common::{grid::Grid, position::Position},
     crater_simulation::crater::{AtCrater, Crater},
-    nest_simulation::element::{Air, Element, ElementExposure},
+    nest_simulation::element::{Air, Element},
 };
 
 #[derive(Component)]
@@ -46,7 +48,7 @@ pub fn spawn_element_tilemap(
 /// This *only* handles the initial rendering of the Element sprite. Updates are handled by other systems.
 pub fn on_spawn_element(
     mut element_query: Query<
-        (&Position, &Element, &ElementExposure, Entity),
+        (&Position, &Element, Entity),
         (Added<Element>, With<AtCrater>, Without<Air>),
     >,
     crater_query: Query<&Grid, With<Crater>>,
@@ -67,14 +69,11 @@ pub fn on_spawn_element(
         Err(_) => return,
     };
 
-    for (element_position, element, element_exposure, element_model_entity) in
-        element_query.iter_mut()
-    {
+    for (element_position, element, element_model_entity) in element_query.iter_mut() {
         spawn_element_sprite(
             element_model_entity,
             element,
             element_position,
-            // element_exposure,
             &grid,
             &mut commands,
             &mut tilemap_query,
@@ -87,10 +86,7 @@ pub fn on_spawn_element(
 /// Thus, when switching back to Crater, all Elements need to be redrawn once. Their underlying models
 /// have not been changed or added, though, so a separate spawn system is needed.
 pub fn spawn_elements(
-    mut element_query: Query<
-        (&Position, &Element, &ElementExposure, Entity),
-        (With<AtCrater>, Without<Air>),
-    >,
+    mut element_query: Query<(&Position, &Element, Entity), (With<AtCrater>, Without<Air>)>,
     crater_query: Query<&Grid, With<Crater>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
@@ -98,12 +94,11 @@ pub fn spawn_elements(
 ) {
     let grid = crater_query.single();
 
-    for (element_position, element, element_exposure, entity) in element_query.iter_mut() {
+    for (element_position, element, entity) in element_query.iter_mut() {
         spawn_element_sprite(
             entity,
             element,
             element_position,
-            // element_exposure,
             &grid,
             &mut commands,
             &mut tilemap_query,
@@ -124,7 +119,6 @@ fn spawn_element_sprite(
     element_model_entity: Entity,
     element: &Element,
     element_position: &Position,
-    // element_exposure: &ElementExposure,
     grid: &Grid,
     commands: &mut Commands,
     tilemap_query: &mut Query<(Entity, &mut TileStorage), With<ElementTilemap>>,

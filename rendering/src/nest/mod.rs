@@ -20,10 +20,7 @@ use self::{
         spawn_background_tilemap, update_sky_background, Background, BackgroundTilemap,
     },
     element::{
-        cleanup_elements, on_spawn_element, on_update_element_exposure, on_update_element_position,
-        spawn_element_tilemap, spawn_elements,
-        sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
-        ElementTilemap,
+        cleanup_elements, initialize_element_resources, insert_element_exposure_map, on_spawn_element, on_update_element_position, process_element_exposure_changed_events, remove_element_exposure_map, spawn_element_tilemap, spawn_elements, sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet}, update_element_exposure_map, ElementExposureChangedEvent, ElementTilemap
     },
     pheromone::{on_spawn_pheromone, on_update_pheromone_visibility, spawn_pheromones},
 };
@@ -60,44 +57,56 @@ impl Plugin for NestRenderingPlugin {
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
-            (initialize_background_resources,).in_set(FinishSetupSet::AfterSimulationFinishSetup),
+            (
+                initialize_background_resources,
+                initialize_element_resources,
+            )
+                .in_set(FinishSetupSet::AfterSimulationFinishSetup),
         );
 
         app.add_systems(
             Update,
             (
-                // Spawn
-                (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
-                // Despawn
                 (
-                    on_despawn::<Ant, AtNest>,
-                    on_despawn::<Element, AtNest>,
-                    on_despawn::<Pheromone, AtNest>,
-                ),
-                // Added
-                (on_added_ant_emote, on_added_ant_dead),
-                // Removed
-                (on_removed_ant_emote),
-                // Updated
+                    update_element_exposure_map,
+                    apply_deferred,
+                    process_element_exposure_changed_events,
+                )
+                    .chain(),
                 (
-                    on_update_ant_position,
-                    on_update_ant_orientation,
-                    on_update_ant_color,
-                    on_update_ant_inventory,
-                    on_update_element_position,
-                    on_update_element_exposure,
-                    on_update_pheromone_visibility,
-                ),
-                // Misc
-                (
-                    on_ant_ate_food,
-                    on_ant_wake_up,
-                    // TODO: naming inconsistencies, but probably want to go more this direction rather than away.
-                    ants_sleep_emote,
-                    despawn_expired_emotes,
-                    update_sky_background,
+                    // Spawn
+                    (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
+                    // Despawn
+                    (
+                        on_despawn::<Ant, AtNest>,
+                        on_despawn::<Element, AtNest>,
+                        on_despawn::<Pheromone, AtNest>,
+                    ),
+                    // Added
+                    (on_added_ant_emote, on_added_ant_dead),
+                    // Removed
+                    (on_removed_ant_emote),
+                    // Updated
+                    (
+                        on_update_ant_position,
+                        on_update_ant_orientation,
+                        on_update_ant_color,
+                        on_update_ant_inventory,
+                        on_update_element_position,
+                        on_update_pheromone_visibility,
+                    ),
+                    // Misc
+                    (
+                        on_ant_ate_food,
+                        on_ant_wake_up,
+                        // TODO: naming inconsistencies, but probably want to go more this direction rather than away.
+                        ants_sleep_emote,
+                        despawn_expired_emotes,
+                        update_sky_background,
+                    ),
                 ),
             )
+                .chain()
                 .run_if(
                     in_state(AppState::TellStory)
                         .or_else(in_state(AppState::PostSetupClearChangeDetection)),
@@ -110,7 +119,7 @@ impl Plugin for NestRenderingPlugin {
         app.add_systems(
             OnEnter(VisibleGridState::Nest),
             (
-                (spawn_background_tilemap, spawn_element_tilemap),
+                (spawn_background_tilemap, spawn_element_tilemap, insert_element_exposure_map),
                 apply_deferred,
                 (
                     spawn_background,
@@ -133,6 +142,7 @@ impl Plugin for NestRenderingPlugin {
                 despawn_view_by_model::<Element, AtNest>,
                 despawn_view::<ElementTilemap>,
                 despawn_view_by_model::<Pheromone, AtNest>,
+                remove_element_exposure_map,
                 mark_nest_hidden,
             )
                 .run_if(in_state(AppState::TellStory)),

@@ -33,7 +33,7 @@ use self::{
         walk::{ants_stabilize_footing_movement, ants_walk},
         Ant, AntAteFoodEvent,
     },
-    element::{register_element, update_element_exposure, Element},
+    element::{register_element, Element},
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
         gravity_set_stability, register_gravity,
@@ -85,14 +85,7 @@ impl Plugin for NestSimulationPlugin {
             (
                 insert_nest_grid,
                 apply_deferred,
-                (
-                    initialize_pheromone_resources::<AtNest>,
-                    // IMPORTANT:
-                    // `ElementExposure` isn't persisted because it's derivable. It is required for rendering.
-                    // Don't rely on `SimulationUpdate` to set `ElementExposure` because it should be possible to render
-                    // the world's initial state without advancing the simulation.
-                    update_element_exposure,
-                ),
+                initialize_pheromone_resources::<AtNest>,
             )
                 .chain()
                 .in_set(FinishSetupSet::SimulationFinishSetup),

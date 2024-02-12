@@ -1,9 +1,8 @@
 use bevy::{asset::LoadState, prelude::*};
 
-use simulation::{
-    app_state::AppState,
-    nest_simulation::element::{Element, ElementExposure},
-};
+use simulation::{app_state::AppState, nest_simulation::element::Element};
+
+use super::ElementExposure;
 
 #[derive(Resource)]
 pub struct ElementSpriteSheetHandle(pub Handle<Image>);

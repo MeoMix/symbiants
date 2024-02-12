@@ -5,10 +5,8 @@ pub mod pheromone;
 pub mod position;
 
 use crate::{
-    app_state::check_story_over,
-    crater_simulation::crater::AtCrater,
-    nest_simulation::{element::update_element_exposure, nest::AtNest},
-    story_time::set_rate_of_time,
+    app_state::check_story_over, crater_simulation::crater::AtCrater,
+    nest_simulation::nest::AtNest, story_time::set_rate_of_time,
 };
 
 use self::{pheromone::register_pheromone, position::Position};
@@ -22,7 +20,7 @@ use super::{
         remove_external_event_resources,
     },
     // TODO: Element should live in common once I finish adding it to Crater.
-    nest_simulation::element::denormalize_element,
+    nest_simulation::element::map_element_to_marker,
     save::{
         bind_save_onbeforeunload, delete_save_file, initialize_save_resources, load,
         remove_save_resources, save, unbind_save_onbeforeunload,
@@ -95,6 +93,9 @@ impl Plugin for CommonSimulationPlugin {
                 initialize_external_event_resources,
                 bind_save_onbeforeunload,
                 post_setup_clear_change_detection,
+                // TODO: This needs to run once before Simulation runs because UI update runs before first simulation tick.
+                // If this doesn't run, UI filter queries like Without<Air> won't properly exclude.
+                map_element_to_marker,
             )
                 .chain()
                 .in_set(FinishSetupSet::SimulationFinishSetup),
@@ -115,7 +116,7 @@ impl Plugin for CommonSimulationPlugin {
                 process_external_event::<AtNest>,
                 process_external_event::<AtCrater>,
                 apply_deferred,
-                denormalize_element,
+                map_element_to_marker,
                 apply_deferred,
             )
                 .chain()
@@ -137,8 +138,10 @@ impl Plugin for CommonSimulationPlugin {
             (
                 // If this doesn't run then when user spawns elements they won't gain exposure if simulation is paused.
                 apply_deferred,
+                // TODO: Need to run this after simulation (as well as before) to ensure UI layer reads fresh data.
+                map_element_to_marker,
+                apply_deferred,
                 check_story_over,
-                update_element_exposure,
                 // real-world time should update even if the story is paused because real-world time doesn't pause
                 // rate_of_time needs to run when app is paused because fixed_time accumulations need to be cleared while app is paused
                 // to prevent running FixedUpdate schedule repeatedly (while no-oping) when coming back to a hidden tab with a paused sim.

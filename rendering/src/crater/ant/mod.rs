@@ -1,6 +1,9 @@
 use crate::{
     common::{visible_grid::VisibleGrid, ModelViewEntityMap},
-    nest::element::sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
+    nest::element::{
+        sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
+        ElementExposure,
+    },
 };
 use bevy::prelude::*;
 use simulation::{
@@ -8,7 +11,7 @@ use simulation::{
     crater_simulation::crater::{AtCrater, Crater},
     nest_simulation::{
         ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, Dead},
-        element::{Element, ElementExposure},
+        element::Element,
     },
 };
 use std::ops::Add;

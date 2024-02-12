@@ -5,18 +5,43 @@ use crate::common::{
     visible_grid::{grid_to_tile_pos, VisibleGrid},
     ModelViewEntityMap,
 };
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    utils::{HashMap, HashSet},
+};
 use bevy_ecs_tilemap::prelude::*;
 use simulation::{
-    common::{grid::Grid, position::Position},
+    common::{
+        grid::{Grid, GridElements},
+        position::Position,
+    },
     nest_simulation::{
-        element::{Air, Element, ElementExposure},
+        element::{Air, Element},
         nest::{AtNest, Nest},
     },
 };
 
 #[derive(Component)]
 pub struct ElementTilemap;
+
+/// For each non-Air element, track whether there is Air to the north, east, south, and west.
+/// This is used to determine which sprite to render for each element.
+#[derive(Resource, Default)]
+pub struct ElementExposureMap(pub HashMap<Entity, ElementExposure>);
+
+// TODO: It feels wrong to use HashMap + Event rather than Component + ChangeDetection
+// But if I want to store Component on the View Entity then I'd need to spawn it in a default state and then update it.
+// This is possible, but it would show the default state for a frame before the update without a lot of extra work.
+#[derive(Event, PartialEq, Copy, Clone, Debug)]
+pub struct ElementExposureChangedEvent(pub Entity);
+
+#[derive(Copy, Clone)]
+pub struct ElementExposure {
+    pub north: bool,
+    pub east: bool,
+    pub south: bool,
+    pub west: bool,
+}
 
 pub fn spawn_element_tilemap(
     element_sprite_sheet_handle: Res<ElementSpriteSheetHandle>,
@@ -47,14 +72,15 @@ pub fn spawn_element_tilemap(
 /// This *only* handles the initial rendering of the Element sprite. Updates are handled by other systems.
 pub fn on_spawn_element(
     mut element_query: Query<
-        (&Position, &Element, &ElementExposure, Entity),
+        (&Position, &Element, Entity),
         (Added<Element>, With<AtNest>, Without<Air>),
     >,
-    nest_query: Query<&Grid, With<Nest>>,
+    grid_query: Query<&Grid, With<AtNest>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
+    element_exposure_map: Option<Res<ElementExposureMap>>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
@@ -63,14 +89,19 @@ pub fn on_spawn_element(
 
     // Early exit when Nest isn't visible because there's no view to update.
     // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
-    let grid = match nest_query.get(visible_grid_entity) {
+    let grid = match grid_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
     };
 
-    for (element_position, element, element_exposure, element_model_entity) in
-        element_query.iter_mut()
-    {
+    let element_exposure_map = match element_exposure_map {
+        Some(element_exposure_map) => element_exposure_map,
+        None => panic!("Expected ElementExposureMap to exist whenever grid is visible"),
+    };
+
+    for (element_position, element, element_model_entity) in element_query.iter_mut() {
+        let element_exposure = element_exposure_map.0.get(&element_model_entity).unwrap();
+
         spawn_element_sprite(
             element_model_entity,
             element,
@@ -88,20 +119,20 @@ pub fn on_spawn_element(
 /// Thus, when switching back to Nest, all Elements need to be redrawn once. Their underlying models
 /// have not been changed or added, though, so a separate spawn system is needed.
 pub fn spawn_elements(
-    mut element_query: Query<
-        (&Position, &Element, &ElementExposure, Entity),
-        (With<AtNest>, Without<Air>),
-    >,
+    mut element_query: Query<(&Position, &Element, Entity), (With<AtNest>, Without<Air>)>,
     nest_query: Query<&Grid, With<Nest>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+    element_exposure_map: Res<ElementExposureMap>,
 ) {
     let grid = nest_query.single();
 
-    for (element_position, element, element_exposure, entity) in element_query.iter_mut() {
+    for (element_position, element, element_model_entity) in element_query.iter_mut() {
+        let element_exposure = element_exposure_map.0.get(&element_model_entity).unwrap();
+
         spawn_element_sprite(
-            entity,
+            element_model_entity,
             element,
             element_position,
             element_exposure,
@@ -158,15 +189,13 @@ pub fn on_update_element_position(
     }
 }
 
-/// When an Element model has its ElementExposure updated, reflect the change in Position by updating the TileTextureIndex
-/// on its associated view.
-/// This does not include the initial spawn of the Element model, which is handled by `on_spawn_element`.
-/// This relies on Ref<ElementExposure> instead of Changed<ElementExposure> to be able to filter against `is_added()`
-pub fn on_update_element_exposure(
-    element_query: Query<(Ref<ElementExposure>, &Element, Entity), (With<AtNest>, Without<Air>)>,
-    nest_query: Query<&Grid, With<Nest>>,
+pub fn process_element_exposure_changed_events(
+    mut element_exposure_changed_events: ResMut<Events<ElementExposureChangedEvent>>,
+    element_query: Query<&Element, (With<AtNest>, Without<Air>)>,
+    element_exposure_map: Option<Res<ElementExposureMap>>,
     mut commands: Commands,
     model_view_entity_map: Res<ModelViewEntityMap>,
+    grid_query: Query<&Grid, With<AtNest>>,
     visible_grid: Res<VisibleGrid>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
@@ -174,32 +203,70 @@ pub fn on_update_element_exposure(
         None => return,
     };
 
-    // Early exit when Nest isn't visible because there's no view to update.
+    // Early exit when grid isn't visible because there's no view to update.
     // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
-    if nest_query.get(visible_grid_entity).is_err() {
+    if grid_query.get(visible_grid_entity).is_err() {
         return;
     }
 
-    for (element_exposure, element, element_model_entity) in element_query.iter() {
-        // `on_spawn_element` handles `Added<ElementExposure>`
-        if element_exposure.is_added() || !element_exposure.is_changed() {
-            continue;
-        }
+    let element_exposure_map = match element_exposure_map {
+        Some(element_exposure_map) => element_exposure_map,
+        None => panic!("Expected ElementExposureMap to exist whenever grid is visible"),
+    };
+
+    for event in element_exposure_changed_events.drain() {
+        let element_model_entity = event.0;
+        let element = element_query.get(element_model_entity).unwrap();
+        let element_exposure = element_exposure_map.0.get(&element_model_entity).unwrap();
+        let texture_index = TileTextureIndex(get_element_index(*element_exposure, *element) as u32);
 
         let element_view_entity = match model_view_entity_map.get(&element_model_entity) {
             Some(&element_view_entity) => element_view_entity,
-            None => panic!("Expected to find view entity for model entity."),
+            // It's OK to fail to find here because view might not have spawned yet. View will spawn with correct details.
+            None => continue,
         };
-
-        let texture_index = TileTextureIndex(get_element_index(*element_exposure, *element) as u32);
 
         commands.entity(element_view_entity).insert(texture_index);
     }
 }
 
+pub fn insert_element_exposure_map(
+    elements_query: Query<(Entity, &Position), (Without<Air>, With<AtNest>)>,
+    mut commands: Commands,
+    grid_elements: GridElements<AtNest>,
+) {
+    let map: bevy::utils::hashbrown::HashMap<Entity, ElementExposure> = elements_query
+        .iter()
+        .map(|(entity, &position)| {
+            (
+                entity,
+                ElementExposure {
+                    north: grid_elements.is(position - Position::Y, Element::Air),
+                    east: grid_elements.is(position + Position::X, Element::Air),
+                    south: grid_elements.is(position + Position::Y, Element::Air),
+                    west: grid_elements.is(position - Position::X, Element::Air),
+                },
+            )
+        })
+        .collect::<HashMap<_, _>>();
+
+    commands.insert_resource(ElementExposureMap(map));
+}
+
+pub fn remove_element_exposure_map(mut commands: Commands) {
+    commands.remove_resource::<ElementExposureMap>();
+}
+
+pub fn initialize_element_resources(mut commands: Commands) {
+    commands.init_resource::<Events<ElementExposureChangedEvent>>();
+}
+
 pub fn cleanup_elements(mut commands: Commands) {
+    // TODO: Should one of these be 'ElementTextureAtlasHandle' and also why is this in both Crater and Nest?
     commands.remove_resource::<ElementSpriteSheetHandle>();
     commands.remove_resource::<ElementSpriteSheetHandle>();
+    commands.remove_resource::<ElementExposureMap>();
+    commands.remove_resource::<Events<ElementExposureChangedEvent>>();
 }
 
 /// Non-System Helper Functions:
@@ -231,4 +298,65 @@ fn spawn_element_sprite(
     let element_view_entity = commands.spawn(tile_bundle).id();
     model_view_entity_map.insert(element_model_entity, element_view_entity);
     tile_storage.set(&tile_pos, element_view_entity);
+}
+
+// TODO: Feel like it would be more clear to run this by relying on RemovedComponents + Changed and excluding Air.
+/// Eagerly calculate which sides of a given Element are exposed to Air.
+/// Run against all elements changing position - this supports recalculating on Element removal by responding to Air being added.
+pub fn update_element_exposure_map(
+    // TODO: Consider 'Added'?
+    changed_elements_query: Query<(Entity, &Position, &Element), Changed<Position>>,
+    grid_elements: GridElements<AtNest>,
+    element_exposure_map: Option<ResMut<ElementExposureMap>>,
+    mut element_exposure_changed_event_writer: EventWriter<ElementExposureChangedEvent>,
+    visible_grid: Res<VisibleGrid>,
+    grid_query: Query<&Grid, With<AtNest>>,
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    // Early exit when grid isn't visible because there's no view to update.
+    // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
+    if grid_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
+    let mut element_exposure_map = match element_exposure_map {
+        Some(element_exposure_map) => element_exposure_map,
+        None => panic!("Expected ElementExposureMap to exist whenever grid is visible"),
+    };
+
+    let mut entities = HashSet::new();
+
+    for (entity, position, element) in changed_elements_query.iter() {
+        if *element != Element::Air {
+            entities.insert((entity, *position));
+        }
+
+        for adjacent_position in position.get_adjacent_positions() {
+            if let Some(adjacent_element_entity) = grid_elements.get_entity(adjacent_position) {
+                let adjacent_element = grid_elements.element(*adjacent_element_entity);
+
+                if *adjacent_element != Element::Air {
+                    entities.insert((*adjacent_element_entity, adjacent_position));
+                }
+            }
+        }
+    }
+
+    for (entity, position) in entities {
+        element_exposure_map.0.insert(
+            entity,
+            ElementExposure {
+                north: grid_elements.is(position - Position::Y, Element::Air),
+                east: grid_elements.is(position + Position::X, Element::Air),
+                south: grid_elements.is(position + Position::Y, Element::Air),
+                west: grid_elements.is(position - Position::X, Element::Air),
+            },
+        );
+
+        element_exposure_changed_event_writer.send(ElementExposureChangedEvent(entity));
+    }
 }

@@ -207,7 +207,7 @@ fn can_start_nesting(
 
     let is_element_diggable = grid_elements
         .get_element(*dig_target_entity)
-        .map_or(false, |element| element.is_diggable());
+        .map_or(false, |element| *element != Element::Air);
 
     has_valid_dig_site && is_element_diggable
 }

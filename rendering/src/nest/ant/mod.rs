@@ -9,11 +9,13 @@ use simulation::{
     common::{grid::Grid, position::Position},
     nest_simulation::{
         ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
-        element::{Element, ElementExposure},
+        element::Element,
         nest::AtNest,
     },
 };
 use std::ops::Add;
+
+use super::element::ElementExposure;
 
 #[derive(Component, Copy, Clone)]
 pub struct TranslationOffset(pub Vec3);
