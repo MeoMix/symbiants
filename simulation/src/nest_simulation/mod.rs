@@ -2,9 +2,14 @@ pub mod ant;
 pub mod gravity;
 pub mod nest;
 
-use crate::common::{ant::{ants_initiative, Ant}, element::Element, pheromone::{
-    initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources, Pheromone,
-}};
+use crate::common::{
+    ant::{ants_initiative, digestion::ants_digestion, hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate}, Ant},
+    element::Element,
+    pheromone::{
+        initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
+        Pheromone,
+    },
+};
 
 use self::{
     ant::{
@@ -15,9 +20,7 @@ use self::{
         },
         death::on_ants_add_dead,
         dig::ants_dig,
-        digestion::ants_digestion,
         drop::ants_drop,
-        hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate},
         nest_expansion::ants_nest_expansion,
         nesting::{
             ants_nesting_action, ants_nesting_movement, ants_nesting_start, register_nesting,
@@ -107,6 +110,7 @@ impl Plugin for NestSimulationPlugin {
                     ants_stabilize_footing_movement,
                     // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
                     (
+                        // TODO: hunger/digestion should be common behavior not nest-specific
                         ants_digestion,
                         ants_hunger_tick,
                         ants_hunger_act,

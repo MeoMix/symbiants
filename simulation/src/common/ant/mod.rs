@@ -1,12 +1,12 @@
 pub mod commands;
 // pub mod death;
-// pub mod digestion;
-// pub mod hunger;
+pub mod digestion;
+pub mod hunger;
 // pub mod sleep;
 mod name_list;
 
-use self::name_list::get_random_name;
-use crate::{common::{element::Element, position::Position, Zone}, nest_simulation::ant::{digestion::Digestion, hunger::Hunger}};
+use self::{digestion::Digestion, hunger::Hunger, name_list::get_random_name};
+use crate::common::{element::Element, position::Position, Zone};
 use bevy::{
     ecs::{
         entity::{EntityMapper, MapEntities},
@@ -413,17 +413,18 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Ant>();
     app_type_registry.write().register::<AntName>();
     app_type_registry.write().register::<AntColor>();
-    app_type_registry.write().register::<Dead>();
     app_type_registry.write().register::<Initiative>();
     app_type_registry.write().register::<AntOrientation>();
     app_type_registry.write().register::<Facing>();
     app_type_registry.write().register::<Angle>();
     app_type_registry.write().register::<AntRole>();
-    app_type_registry.write().register::<Hunger>();
-    app_type_registry.write().register::<Digestion>();
     app_type_registry.write().register::<AntInventory>();
     app_type_registry.write().register::<InventoryItem>();
 
+    app_type_registry.write().register::<Dead>();
+    app_type_registry.write().register::<Hunger>();
+    app_type_registry.write().register::<Digestion>();
+    
     // TODO: This might be nest-specific, but maybe needs to be supported at crater just in case
     // app_type_registry.write().register::<Asleep>();
 }

@@ -2,8 +2,11 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use simulation::{
-    common::{ant::{AntRole, Dead}, element::Food},
-    nest_simulation::ant::{birthing::Birthing, hunger::Hunger},
+    common::{
+        ant::{hunger::Hunger, AntRole, Dead},
+        element::Food,
+    },
+    nest_simulation::ant::birthing::Birthing,
     story_time::StoryTime,
 };
 

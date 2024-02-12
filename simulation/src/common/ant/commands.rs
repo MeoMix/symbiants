@@ -1,15 +1,14 @@
 use crate::{
     common::{
         ant::{
-            AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Initiative,
-            InventoryItemBundle,
+            digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName,
+            AntOrientation, AntRole, Initiative, InventoryItemBundle,
         },
         element::{Element, ElementBundle},
         grid::{GridElements, GridElementsMut},
         position::Position,
         Zone,
     },
-    nest_simulation::ant::{digestion::Digestion, hunger::Hunger},
     settings::Settings,
 };
 use bevy::{

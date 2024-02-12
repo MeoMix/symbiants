@@ -7,12 +7,12 @@ use bevy_egui::{
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use simulation::{
     common::{
-        ant::Dead,
+        ant::{hunger::Hunger, Dead},
         element::{commands::ElementCommandsExt, Air, Element, Food},
         grid::GridElements,
         position::Position,
     },
-    nest_simulation::{ant::hunger::Hunger, nest::AtNest},
+    nest_simulation::nest::AtNest,
 };
 
 pub struct IsOpen(bool);

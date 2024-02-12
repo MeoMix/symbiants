@@ -5,12 +5,12 @@ use rendering::common::selection::SelectedEntity;
 
 use simulation::{
     common::{
-        ant::{AntInventory, AntName, AntRole, Dead},
+        ant::{hunger::Hunger, AntInventory, AntName, AntRole, Dead},
         element::Element,
         pheromone::{Pheromone, PheromoneStrength},
         position::Position,
     },
-    nest_simulation::ant::{birthing::Birthing, hunger::Hunger, sleep::Asleep},
+    nest_simulation::ant::{birthing::Birthing, sleep::Asleep},
 };
 
 #[derive(Component, Default, PartialEq, Copy, Clone, Debug)]
