@@ -1,6 +1,5 @@
 pub mod birthing;
 pub mod chambering;
-pub mod death;
 pub mod dig;
 pub mod drop;
 pub mod nest_expansion;

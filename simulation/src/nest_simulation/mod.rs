@@ -3,7 +3,7 @@ pub mod gravity;
 pub mod nest;
 
 use crate::common::{
-    ant::{ants_initiative, digestion::ants_digestion, hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate}, Ant},
+    ant::{ants_initiative, death::on_ants_add_dead, digestion::ants_digestion, hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate}, Ant},
     element::Element,
     pheromone::{
         initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
@@ -18,7 +18,6 @@ use self::{
             ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_fade_chamber_pheromone,
             ants_remove_chamber_pheromone,
         },
-        death::on_ants_add_dead,
         dig::ants_dig,
         drop::ants_drop,
         nest_expansion::ants_nest_expansion,

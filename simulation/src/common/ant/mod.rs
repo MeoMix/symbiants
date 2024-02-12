@@ -1,5 +1,5 @@
 pub mod commands;
-// pub mod death;
+pub mod death;
 pub mod digestion;
 pub mod hunger;
 // pub mod sleep;
@@ -424,7 +424,7 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Dead>();
     app_type_registry.write().register::<Hunger>();
     app_type_registry.write().register::<Digestion>();
-    
+
     // TODO: This might be nest-specific, but maybe needs to be supported at crater just in case
     // app_type_registry.write().register::<Asleep>();
 }
