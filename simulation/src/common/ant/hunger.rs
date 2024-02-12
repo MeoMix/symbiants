@@ -8,8 +8,8 @@ use crate::{
         element::Element,
         grid::GridElements,
         position::Position,
+        Zone,
     },
-    nest_simulation::nest::AtNest,
     story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;
@@ -70,14 +70,15 @@ impl Hunger {
 
 // TODO: Ants stop getting hungry while asleep which isn't really intended, but I haven't thought through Initative removal enough clearly
 // because sometimes I want it for Dead + Sleep, sometimes just one or the other, and it's becoming a leaky abstraction.
-pub fn ants_hunger_tick(mut ants_hunger_query: Query<&mut Hunger, (Without<Dead>, With<AtNest>)>) {
+pub fn ants_hunger_tick<Z: Zone>(
+    mut ants_hunger_query: Query<&mut Hunger, (Without<Dead>, With<Z>)>,
+) {
     for mut hunger in ants_hunger_query.iter_mut() {
         hunger.tick();
     }
 }
 
-// TODO: hunger should apply to ants AtCrater too
-pub fn ants_hunger_act(
+pub fn ants_hunger_act<Z: Zone + Copy>(
     mut ants_hunger_query: Query<
         (
             Entity,
@@ -87,16 +88,25 @@ pub fn ants_hunger_act(
             &Position,
             &mut AntInventory,
             &mut Initiative,
+            &Z,
         ),
-        With<AtNest>,
+        With<Z>,
     >,
-    grid_elements: GridElements<AtNest>,
-    elements_query: Query<&Element, With<AtNest>>,
+    grid_elements: GridElements<Z>,
+    elements_query: Query<&Element, With<Z>>,
     mut commands: Commands,
     mut ant_ate_food_event_writer: EventWriter<AntAteFoodEvent>,
 ) {
-    for (ant_entity, hunger, mut digestion, orientation, position, mut inventory, mut initiative) in
-        ants_hunger_query.iter_mut()
+    for (
+        ant_entity,
+        hunger,
+        mut digestion,
+        orientation,
+        position,
+        mut inventory,
+        mut initiative,
+        zone,
+    ) in ants_hunger_query.iter_mut()
     {
         if hunger.is_starved() {
             commands
@@ -113,7 +123,7 @@ pub fn ants_hunger_act(
                 let ahead_position = orientation.get_ahead_position(position);
                 if grid_elements.is(ahead_position, Element::Food) {
                     let food_entity = grid_elements.entity(ahead_position);
-                    commands.dig(ant_entity, ahead_position, *food_entity, AtNest);
+                    commands.dig(ant_entity, ahead_position, *food_entity, *zone);
                 }
             } else {
                 let element = elements_query.get(inventory.0.unwrap()).unwrap();
@@ -131,6 +141,7 @@ pub fn ants_hunger_act(
     }
 }
 
+// TODO: I haven't strongly considered whether this logic is robust enough to run AtCrater, it was written for AtNest originally.
 // If an ant is face-to-face with another ant then it is able to regurgitate food from itself to the other ant.
 // It will only do this if the other ant is hungry.
 // If the queen is starving then a worker will transfer food to it irrespective of the workers hunger level. The worker gives all it has up to 20%.
@@ -139,7 +150,7 @@ pub fn ants_hunger_act(
 // Step 1: Find all ants which are hungry or worse.
 // Step 2: For each hungry-or-worse ant, look at the position directly in front of it.
 // Step 3: If there is an ant in that position, and if that ant is facing towards the hungry ant, then transfer food to the hungry ant.
-pub fn ants_regurgitate(
+pub fn ants_hunger_regurgitate<Z: Zone>(
     mut ants_hunger_query: Query<
         (
             Entity,
@@ -151,7 +162,7 @@ pub fn ants_regurgitate(
             &mut Initiative,
             &mut AntRole,
         ),
-        With<AtNest>,
+        With<Z>,
     >,
     mut ant_ate_food_event_writer: EventWriter<AntAteFoodEvent>,
 ) {

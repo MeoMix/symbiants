@@ -3,7 +3,7 @@ pub mod crater;
 
 use crate::{
     common::{
-        ant::{ants_initiative, Ant},
+        ant::Ant,
         element::Element,
         pheromone::{
             initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
@@ -72,9 +72,6 @@ impl Plugin for CraterSimulationPlugin {
                 // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
                 ants_walk,
                 ants_dig,
-                apply_deferred,
-                // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
-                ants_initiative::<AtCrater>,
             )
                 .run_if(not(in_state(StoryPlaybackState::Paused)))
                 .chain()

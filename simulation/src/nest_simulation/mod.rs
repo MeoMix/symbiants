@@ -3,7 +3,7 @@ pub mod gravity;
 pub mod nest;
 
 use crate::common::{
-    ant::{ants_initiative, death::on_ants_add_dead, digestion::ants_digestion, hunger::{ants_hunger_act, ants_hunger_tick, ants_regurgitate}, Ant},
+    ant::Ant,
     element::Element,
     pheromone::{
         initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
@@ -86,6 +86,7 @@ impl Plugin for NestSimulationPlugin {
                 .in_set(FinishSetupSet::SimulationFinishSetup),
         );
 
+        // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
         app.add_systems(
             SimulationUpdate,
             (
@@ -107,17 +108,6 @@ impl Plugin for NestSimulationPlugin {
                     // Apply specific ant actions in priority order because ants take a maximum of one action per tick.
                     // An ant should not starve to hunger due to continually choosing to dig a tunnel, etc.
                     ants_stabilize_footing_movement,
-                    // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
-                    (
-                        // TODO: hunger/digestion should be common behavior not nest-specific
-                        ants_digestion,
-                        ants_hunger_tick,
-                        ants_hunger_act,
-                        apply_deferred,
-                        ants_regurgitate,
-                        apply_deferred,
-                    )
-                        .chain(),
                     (ants_birthing, apply_deferred).chain(),
                     (ants_sleep, ants_wake, apply_deferred).chain(),
                     (
@@ -170,10 +160,6 @@ impl Plugin for NestSimulationPlugin {
                         apply_deferred,
                     )
                         .chain(),
-                    // TODO: Maybe this should go in PostSimulationTick since it's an implicit reaction and doesn't require initative
-                    on_ants_add_dead,
-                    // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
-                    ants_initiative::<AtNest>,
                 )
                     .chain(),
             )

@@ -9,7 +9,18 @@ use crate::{
     nest_simulation::nest::AtNest, story_time::set_rate_of_time,
 };
 
-use self::{ant::AntAteFoodEvent, element::register_element, pheromone::register_pheromone, position::Position};
+use self::{
+    ant::{
+        death::on_ants_add_dead,
+        digestion::ants_digestion,
+        hunger::{ants_hunger_act, ants_hunger_regurgitate, ants_hunger_tick},
+        initiative::ants_initiative,
+        AntAteFoodEvent,
+    },
+    element::register_element,
+    pheromone::register_pheromone,
+    position::Position,
+};
 use super::{
     app_state::{
         begin_story, continue_startup, finalize_startup, post_setup_clear_change_detection,
@@ -124,7 +135,40 @@ impl Plugin for CommonSimulationPlugin {
 
         app.add_systems(
             SimulationUpdate,
-            (update_story_elapsed_ticks,)
+            (
+                (
+                    ants_digestion::<AtNest>,
+                    ants_digestion::<AtCrater>,
+                    ants_hunger_tick::<AtNest>,
+                    ants_hunger_tick::<AtCrater>,
+                    ants_hunger_act::<AtNest>,
+                    ants_hunger_act::<AtCrater>,
+                    apply_deferred,
+                    ants_hunger_regurgitate::<AtNest>,
+                    ants_hunger_regurgitate::<AtCrater>,
+                    apply_deferred,
+                )
+                    .chain(),
+                // TODO: I'm letting this run at an arbitrary time now - but before I moved it to common it ran after most other systems. Is this OK?
+                // TODO: Maybe this should go in PostSimulationTick since it's an implicit reaction and doesn't require initative
+                // TODO: reset initative in post simulation tick
+                on_ants_add_dead::<AtNest>,
+                on_ants_add_dead::<AtCrater>,
+            )
+                .chain()
+                .run_if(not(in_state(StoryPlaybackState::Paused)))
+                .in_set(SimulationTickSet::SimulationTick),
+        );
+
+        app.add_systems(
+            SimulationUpdate,
+            (
+                apply_deferred,
+                // Reset initiative only after all actions have occurred to ensure initiative properly throttles actions-per-tick.
+                ants_initiative::<AtNest>,
+                ants_initiative::<AtCrater>,
+                update_story_elapsed_ticks,
+            )
                 .chain()
                 .in_set(SimulationTickSet::PostSimulationTick)
                 .run_if(not(in_state(StoryPlaybackState::Paused))),
