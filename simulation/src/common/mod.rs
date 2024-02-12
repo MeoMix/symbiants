@@ -11,11 +11,7 @@ use crate::{
 
 use self::{
     ant::{
-        death::on_ants_add_dead,
-        digestion::ants_digestion,
-        hunger::{ants_hunger_act, ants_hunger_regurgitate, ants_hunger_tick},
-        initiative::ants_initiative,
-        AntAteFoodEvent,
+        death::on_ants_add_dead, digestion::ants_digestion, hunger::{ants_hunger_act, ants_hunger_regurgitate, ants_hunger_tick}, initiative::ants_initiative, register_ant, AntAteFoodEvent
     },
     element::register_element,
     pheromone::register_pheromone,
@@ -78,6 +74,7 @@ impl Plugin for CommonSimulationPlugin {
                 register_story_time,
                 register_element,
                 register_pheromone,
+                register_ant,
             ),
         );
 
