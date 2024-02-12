@@ -2,13 +2,12 @@ pub mod ant;
 pub mod gravity;
 pub mod nest;
 
-use crate::common::{element::Element, pheromone::{
+use crate::common::{ant::{ants_initiative, Ant}, element::Element, pheromone::{
     initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources, Pheromone,
 }};
 
 use self::{
     ant::{
-        ants_initiative,
         birthing::{ants_birthing, register_birthing},
         chambering::{
             ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_fade_chamber_pheromone,
@@ -30,7 +29,6 @@ use self::{
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
         },
         walk::{ants_stabilize_footing_movement, ants_walk},
-        Ant, AntAteFoodEvent,
     },
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
@@ -51,8 +49,6 @@ pub struct NestSimulationPlugin;
 
 impl Plugin for NestSimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<AntAteFoodEvent>();
-
         app.add_systems(
             OnEnter(AppState::BeginSetup),
             (

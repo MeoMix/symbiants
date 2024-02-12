@@ -1,14 +1,12 @@
 use super::nest::AtNest;
 use crate::{
     common::{
+        ant::{AntOrientation, Dead, Initiative},
         element::{commands::ElementCommandsExt, Air, Element},
         grid::{Grid, GridElements, GridElementsMut},
         position::Position,
     },
-    nest_simulation::{
-        ant::{AntOrientation, Dead, Initiative},
-        nest::Nest,
-    },
+    nest_simulation::nest::Nest,
     settings::Settings,
 };
 use bevy::{prelude::*, utils::HashSet};

@@ -1,11 +1,11 @@
-use super::Dead;
 use crate::{
-    common::{grid::GridElements, position::Position, 
-        element::Element},
-    nest_simulation::{
-        ant::{commands::AntCommandsExt, AntInventory},
-        nest::AtNest,
+    common::{
+        ant::{commands::AntCommandsExt, AntInventory, Dead},
+        element::Element,
+        grid::GridElements,
+        position::Position,
     },
+    nest_simulation::nest::AtNest,
 };
 use bevy::prelude::*;
 

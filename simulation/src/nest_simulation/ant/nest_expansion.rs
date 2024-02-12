@@ -1,15 +1,12 @@
-use super::{AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
     common::{
+        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative},
+        element::Element,
         grid::GridElements,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
         position::Position,
-        element::Element,
     },
-    nest_simulation::{
-        ant::commands::AntCommandsExt,
-        nest::{AtNest, Nest},
-    },
+    nest_simulation::nest::{AtNest, Nest},
     settings::Settings,
 };
 use bevy::prelude::*;

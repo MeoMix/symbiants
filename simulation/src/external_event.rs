@@ -1,19 +1,16 @@
 use crate::{
     common::{
+        ant::{
+            commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation,
+            AntRole, Dead, Facing, Initiative,
+        },
         element::{commands::ElementCommandsExt, Element},
         grid::GridElements,
         position::Position,
         Zone,
     },
     crater_simulation::crater::AtCrater,
-    nest_simulation::{
-        ant::commands::AntCommandsExt,
-        ant::{
-            Angle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead, Facing,
-            Initiative,
-        },
-        nest::AtNest,
-    },
+    nest_simulation::nest::AtNest,
     settings::Settings,
 };
 use bevy::prelude::*;
@@ -92,7 +89,7 @@ pub fn process_external_event<Z: Zone + Copy>(
                     );
                 }
             }
-            ExternalSimulationEvent::KillAnt(grid_position, zone) => {
+            ExternalSimulationEvent::KillAnt(grid_position, _zone) => {
                 if let Some((entity, _, _, _)) = ants_query
                     .iter()
                     .find(|(_, &position, _, _)| position == grid_position)
@@ -100,7 +97,7 @@ pub fn process_external_event<Z: Zone + Copy>(
                     commands.entity(entity).insert(Dead).remove::<Initiative>();
                 }
             }
-            ExternalSimulationEvent::DespawnWorkerAnt(grid_position, zone) => {
+            ExternalSimulationEvent::DespawnWorkerAnt(grid_position, _zone) => {
                 if let Some((ant_entity, _, _, inventory)) =
                     ants_query.iter().find(|(_, &position, &role, _)| {
                         position == grid_position && role == AntRole::Worker

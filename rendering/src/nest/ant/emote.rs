@@ -1,11 +1,11 @@
 use super::AntSpriteContainer;
-use crate::common::{ModelViewEntityMap, visible_grid::VisibleGrid};
+use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use simulation::{
-    common::grid::Grid,
+    common::{ant::AntAteFoodEvent, grid::Grid},
     nest_simulation::{
-        ant::{sleep::Asleep, AntAteFoodEvent},
+        ant::sleep::Asleep,
         nest::{AtNest, Nest},
     },
     settings::Settings,

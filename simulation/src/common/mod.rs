@@ -9,7 +9,7 @@ use crate::{
     nest_simulation::nest::AtNest, story_time::set_rate_of_time,
 };
 
-use self::{element::register_element, pheromone::register_pheromone, position::Position};
+use self::{ant::AntAteFoodEvent, element::register_element, pheromone::register_pheromone, position::Position};
 use super::{
     app_state::{
         begin_story, continue_startup, finalize_startup, post_setup_clear_change_detection,
@@ -57,6 +57,8 @@ pub struct CommonSimulationPlugin;
 
 impl Plugin for CommonSimulationPlugin {
     fn build(&self, app: &mut App) {
+        app.add_event::<AntAteFoodEvent>();
+
         app.add_systems(
             OnEnter(AppState::BeginSetup),
             (

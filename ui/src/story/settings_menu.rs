@@ -4,7 +4,7 @@ use bevy_egui::{egui, EguiContexts};
 use rendering::common::pheromone::PheromoneVisibility;
 use simulation::{
     app_state::AppState,
-    nest_simulation::ant::AntColor,
+    common::ant::AntColor,
     settings::Settings,
     story_time::{
         StoryPlaybackState, StoryTime, TicksPerSecond, DEFAULT_TICKS_PER_SECOND,

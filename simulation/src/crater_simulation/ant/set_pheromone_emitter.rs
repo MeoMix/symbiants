@@ -1,4 +1,4 @@
-use crate::{crater_simulation::crater::AtCrater, nest_simulation::ant::AntInventory};
+use crate::{common::ant::AntInventory, crater_simulation::crater::AtCrater};
 use bevy::prelude::*;
 
 use super::emit_pheromone::{LeavingFood, LeavingNest};

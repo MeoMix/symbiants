@@ -1,6 +1,10 @@
-use super::{AntOrientation, Initiative};
 use crate::{
-    common::{element::Element, grid::GridElements, position::Position},
+    common::{
+        ant::{AntOrientation, Initiative},
+        element::Element,
+        grid::GridElements,
+        position::Position,
+    },
     nest_simulation::nest::{AtNest, Nest},
     settings::Settings,
 };

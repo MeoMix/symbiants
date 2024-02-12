@@ -1,9 +1,14 @@
-use super::{
-    commands::AntCommandsExt, digestion::Digestion, AntAteFoodEvent, AntInventory, AntOrientation,
-    AntRole, Dead, Initiative,
-};
+use super::digestion::Digestion;
 use crate::{
-    common::{element::Element, grid::GridElements, position::Position},
+    common::{
+        ant::{
+            commands::AntCommandsExt, AntAteFoodEvent, AntInventory, AntOrientation, AntRole, Dead,
+            Initiative,
+        },
+        element::Element,
+        grid::GridElements,
+        position::Position,
+    },
     nest_simulation::nest::AtNest,
     story_time::DEFAULT_TICKS_PER_SECOND,
 };

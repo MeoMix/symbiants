@@ -6,11 +6,13 @@ use crate::{
 };
 use bevy::prelude::*;
 use simulation::{
-    common::{element::Element, grid::Grid, position::Position},
-    nest_simulation::{
+    common::{
         ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
-        nest::AtNest,
+        element::Element,
+        grid::Grid,
+        position::Position,
     },
+    nest_simulation::nest::AtNest,
 };
 use std::ops::Add;
 

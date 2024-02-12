@@ -3,13 +3,13 @@ pub mod crater;
 
 use crate::{
     common::{
+        ant::{ants_initiative, Ant},
         element::Element,
         pheromone::{
             initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
             Pheromone,
         },
     },
-    nest_simulation::ant::{ants_initiative, Ant},
     story_time::StoryPlaybackState,
     SimulationTickSet, SimulationUpdate,
 };

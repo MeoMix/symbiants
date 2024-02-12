@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    nest_simulation::ant::{AntRole, Dead},
-    story_time::StoryPlaybackState,
+    common::ant::{AntRole, Dead}, story_time::StoryPlaybackState
 };
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]

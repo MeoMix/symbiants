@@ -1,13 +1,13 @@
-use super::{
-    commands::AntCommandsExt, walk::get_turned_orientation, AntInventory, AntOrientation, AntRole,
-    Facing, Initiative,
-};
+use super::walk::get_turned_orientation;
 use crate::{
     common::{
+        ant::{
+            commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Facing, Initiative,
+        },
+        element::Element,
         grid::GridElements,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
         position::Position,
-        element::Element,
     },
     nest_simulation::{
         ant::birthing::Birthing,

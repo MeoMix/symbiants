@@ -1,11 +1,15 @@
 use crate::{
     common::{
+        ant::{
+            AntBundle, AntColor, AntInventory, AntName, AntOrientation, AntRole, Initiative,
+            InventoryItemBundle,
+        },
         element::{Element, ElementBundle},
         grid::{GridElements, GridElementsMut},
         position::Position,
         Zone,
     },
-    nest_simulation::ant::AntInventory,
+    nest_simulation::ant::{digestion::Digestion, hunger::Hunger},
     settings::Settings,
 };
 use bevy::{
@@ -13,11 +17,6 @@ use bevy::{
     prelude::*,
 };
 use core::panic;
-
-use super::{
-    digestion::Digestion, hunger::Hunger, Ant, AntBundle, AntColor, AntName, AntOrientation,
-    AntRole, Initiative, InventoryItemBundle,
-};
 
 pub trait AntCommandsExt {
     fn spawn_ant<Z: Zone>(
@@ -263,18 +262,17 @@ impl<Z: Zone> Command for SpawnAntCommand<Z> {
     fn apply(self, world: &mut World) {
         let settings = world.resource::<Settings>();
 
-        world.spawn(AntBundle {
-            ant: Ant,
-            position: self.position,
-            orientation: self.orientation,
-            inventory: self.inventory,
-            role: self.role,
-            initiative: self.initiative,
-            name: self.name,
-            color: self.color,
-            zone: self.zone,
-            hunger: Hunger::new(settings.max_hunger_time),
-            digestion: Digestion::new(settings.max_digestion_time),
-        });
+        world.spawn(AntBundle::new(
+            self.position,
+            self.color,
+            self.orientation,
+            self.inventory,
+            self.role,
+            self.name,
+            self.initiative,
+            self.zone,
+            Hunger::new(settings.max_hunger_time),
+            Digestion::new(settings.max_digestion_time),
+        ));
     }
 }

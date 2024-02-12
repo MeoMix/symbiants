@@ -35,11 +35,8 @@ use super::common::{
 use bevy::prelude::*;
 use simulation::{
     app_state::AppState,
-    common::{element::Element, pheromone::Pheromone},
-    nest_simulation::{
-        ant::Ant,
-        nest::{AtNest, Nest},
-    },
+    common::{ant::Ant, element::Element, pheromone::Pheromone},
+    nest_simulation::nest::{AtNest, Nest},
     CleanupSet, FinishSetupSet,
 };
 

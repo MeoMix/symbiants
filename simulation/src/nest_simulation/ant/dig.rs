@@ -1,6 +1,6 @@
-use super::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative};
 use crate::{
     common::{
+        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative},
         element::Element,
         grid::{Grid, GridElements},
         position::Position,

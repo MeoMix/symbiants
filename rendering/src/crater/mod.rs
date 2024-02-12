@@ -21,9 +21,8 @@ use crate::common::{
 use bevy::prelude::*;
 use simulation::{
     app_state::AppState,
-    common::{element::Element, pheromone::Pheromone},
+    common::{ant::Ant, element::Element, pheromone::Pheromone},
     crater_simulation::crater::{AtCrater, Crater},
-    nest_simulation::ant::Ant,
     CleanupSet,
 };
 

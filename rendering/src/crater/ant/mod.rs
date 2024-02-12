@@ -7,9 +7,13 @@ use crate::{
 };
 use bevy::prelude::*;
 use simulation::{
-    common::{element::Element, grid::Grid, position::Position},
+    common::{
+        ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, Dead},
+        element::Element,
+        grid::Grid,
+        position::Position,
+    },
     crater_simulation::crater::{AtCrater, Crater},
-    nest_simulation::ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, Dead},
 };
 use std::ops::Add;
 

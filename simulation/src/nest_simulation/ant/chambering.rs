@@ -1,15 +1,13 @@
 use super::birthing::Birthing;
 use crate::{
     common::{
+        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
         element::Element,
         grid::{Grid, GridElements},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
         position::Position,
     },
-    nest_simulation::{
-        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
-        nest::{AtNest, Nest},
-    },
+    nest_simulation::nest::{AtNest, Nest},
     settings::Settings,
 };
 use bevy::prelude::*;

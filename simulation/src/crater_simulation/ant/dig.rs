@@ -1,14 +1,13 @@
 use bevy::prelude::*;
-use bevy_turborand::GlobalRng;
 
 use crate::{
     common::{
+        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
         element::Element,
         grid::{Grid, GridElements},
         position::Position,
     },
     crater_simulation::crater::AtCrater,
-    nest_simulation::ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
 };
 
 pub fn ants_dig(

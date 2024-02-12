@@ -2,12 +2,12 @@ use super::{camera::RenderingCamera, selection::SelectedEntity, visible_grid::Vi
 use bevy::{prelude::*, window::PrimaryWindow};
 use simulation::{
     common::{
+        ant::Ant,
         grid::{Grid, GridElements},
         position::Position,
         Zone,
     },
     external_event::ExternalSimulationEvent,
-    nest_simulation::ant::Ant,
 };
 
 #[derive(Resource, Default, PartialEq, Copy, Clone, Debug)]
