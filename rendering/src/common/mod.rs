@@ -75,6 +75,30 @@ pub fn despawn_view_by_model<Model: Component, Z: Zone>(
     }
 }
 
+pub fn on_model_removed_zone<Z: Zone>(
+    mut removed: RemovedComponents<Z>,
+    mut commands: Commands,
+    grid_query: Query<&Grid, With<Z>>,
+    visible_grid: Res<VisibleGrid>,
+    mut model_view_entity_map: ResMut<ModelViewEntityMap>,
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if grid_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
+    for at_zone_entity in removed.read() {
+        if let Some(&view_entity) = model_view_entity_map.get(&at_zone_entity) {
+            commands.entity(view_entity).despawn_recursive();
+            model_view_entity_map.remove(&at_zone_entity);
+        }
+    }
+}
+
 /// When a model is despawned its corresponding view should be despawned, too.
 /// If model is despawned when the Zone it's in isn't shown then there is no view to despawn.
 /// Noop instead of skipping running `on_despawn` to ensure `RemovedComponents` doesn't become backlogged.

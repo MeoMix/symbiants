@@ -29,14 +29,9 @@ pub struct AntSpriteContainer {
     pub emote_entity: Option<Entity>,
 }
 
-/// When an ant model is added to the simulation, render an associated ant sprite.
-/// This *only* handles the initial rendering of the ant sprite. Updates are handled by other systems.
-/// This does handle rendering the ant's held inventory item, it's role-associated hat, it's name label,
-/// and properly draws it as dead if the model is dead when spawned.
-/// This does not handle rendering the ant's emote.
-/// All of this is a bit dubious because ants aren't expected to spawn dead, or to spawn holding anything, but
-/// allows for code reuse when spawning exists ants after toggling between scenes.
-pub fn on_spawn_ant(
+/// When an ant model gains AtCrater render an associated ant sprite.
+/// This handles the initial rendering of the ant sprite on load as well as when ants transition between zones.
+pub fn on_added_ant_at_crater(
     mut commands: Commands,
     ants_query: Query<
         (
@@ -48,7 +43,7 @@ pub fn on_spawn_ant(
             &AntInventory,
             Option<&Dead>,
         ),
-        (Added<Ant>, With<AtCrater>),
+        Added<AtCrater>,
     >,
     asset_server: Res<AssetServer>,
     elements_query: Query<&Element>,

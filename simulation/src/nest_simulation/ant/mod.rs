@@ -5,6 +5,7 @@ pub mod drop;
 pub mod nest_expansion;
 pub mod nesting;
 pub mod sleep;
+pub mod travel;
 pub mod tunneling;
 pub mod walk;
 

@@ -99,10 +99,7 @@ pub fn spawn_crater_ants(
         Hunger::new(settings.max_hunger_time),
         Digestion::new(settings.max_digestion_time),
     );
-
     let ant_entity = commands.spawn(worker_ant_bundle).id();
-
-    // TODO: Remove this, just using it for testing
     commands.entity(ant_entity).insert(LeavingNest(100));
 }
 

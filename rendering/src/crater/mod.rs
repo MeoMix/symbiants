@@ -1,22 +1,23 @@
 pub mod ant;
 pub mod background;
 pub mod element;
+pub mod nest_entrance;
 pub mod pheromone;
 
 use self::{
     ant::{
-        cleanup_ants, on_spawn_ant, on_update_ant_inventory, on_update_ant_orientation,
+        cleanup_ants, on_added_ant_at_crater, on_update_ant_inventory, on_update_ant_orientation,
         on_update_ant_position, spawn_ants,
     },
     background::{cleanup_background, spawn_background, CraterBackground},
     element::{
         cleanup_elements, on_spawn_element, spawn_element_tilemap, spawn_elements, ElementTilemap,
     },
+    nest_entrance::{cleanup_nest_entrance, spawn_nest_entrance, NestEntrance},
     pheromone::{on_spawn_pheromone, spawn_pheromones},
 };
 use crate::common::{
-    despawn_view, despawn_view_by_model, on_despawn,
-    visible_grid::{VisibleGrid, VisibleGridState},
+    despawn_view, despawn_view_by_model, on_despawn, on_model_removed_zone, visible_grid::{VisibleGrid, VisibleGridState}
 };
 use bevy::prelude::*;
 use simulation::{
@@ -34,13 +35,17 @@ impl Plugin for CraterRenderingPlugin {
             Update,
             (
                 // Spawn
-                (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
+                (on_spawn_element, on_spawn_pheromone),
                 // Despawn
                 (
                     on_despawn::<Ant, AtCrater>,
                     on_despawn::<Element, AtCrater>,
                     on_despawn::<Pheromone, AtCrater>,
                 ),
+                // Added
+                (on_added_ant_at_crater),
+                // Removed
+                (on_model_removed_zone::<AtCrater>),
                 // Updated
                 (
                     on_update_ant_position,
@@ -62,6 +67,7 @@ impl Plugin for CraterRenderingPlugin {
                 apply_deferred,
                 (
                     spawn_background,
+                    spawn_nest_entrance,
                     spawn_ants,
                     spawn_elements,
                     spawn_pheromones,
@@ -76,6 +82,7 @@ impl Plugin for CraterRenderingPlugin {
             OnExit(VisibleGridState::Crater),
             (
                 despawn_view::<CraterBackground>,
+                despawn_view::<NestEntrance>,
                 despawn_view_by_model::<Ant, AtCrater>,
                 despawn_view_by_model::<Element, AtCrater>,
                 despawn_view::<ElementTilemap>,
@@ -90,6 +97,8 @@ impl Plugin for CraterRenderingPlugin {
             (
                 despawn_view::<CraterBackground>,
                 cleanup_background,
+                despawn_view::<NestEntrance>,
+                cleanup_nest_entrance,
                 despawn_view_by_model::<Ant, AtCrater>,
                 cleanup_ants,
                 despawn_view_by_model::<Element, AtCrater>,

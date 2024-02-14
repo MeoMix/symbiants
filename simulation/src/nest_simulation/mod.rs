@@ -13,24 +13,15 @@ use crate::common::{
 
 use self::{
     ant::{
-        birthing::{ants_birthing, register_birthing},
-        chambering::{
+        birthing::{ants_birthing, register_birthing}, chambering::{
             ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_fade_chamber_pheromone,
             ants_remove_chamber_pheromone,
-        },
-        dig::ants_dig,
-        drop::ants_drop,
-        nest_expansion::ants_nest_expansion,
-        nesting::{
+        }, dig::ants_dig, drop::ants_drop, nest_expansion::ants_nest_expansion, nesting::{
             ants_nesting_action, ants_nesting_movement, ants_nesting_start, register_nesting,
-        },
-        register_ant,
-        sleep::{ants_sleep, ants_wake},
-        tunneling::{
+        }, register_ant, sleep::{ants_sleep, ants_wake}, travel::ants_travel_to_crater, tunneling::{
             ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone, ants_remove_tunnel_pheromone,
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
-        },
-        walk::{ants_stabilize_footing_movement, ants_walk},
+        }, walk::{ants_stabilize_footing_movement, ants_walk}
     },
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
@@ -153,6 +144,8 @@ impl Plugin for NestSimulationPlugin {
                     // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
                     // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
                     (
+                        ants_travel_to_crater,
+                        apply_deferred,
                         ants_walk,
                         ants_dig,
                         apply_deferred,

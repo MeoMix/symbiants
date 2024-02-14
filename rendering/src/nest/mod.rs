@@ -3,17 +3,14 @@ pub mod background;
 pub mod element;
 pub mod pheromone;
 
-use crate::common::visible_grid::set_visible_grid_state_nest;
+use crate::common::{on_model_removed_zone, visible_grid::set_visible_grid_state_nest};
 
 use self::{
     ant::{
-        cleanup_ants,
-        emote::{
+        cleanup_ants, emote::{
             ants_sleep_emote, despawn_expired_emotes, on_added_ant_emote, on_ant_ate_food,
             on_ant_wake_up, on_removed_ant_emote,
-        },
-        on_added_ant_dead, on_spawn_ant, on_update_ant_color, on_update_ant_inventory,
-        on_update_ant_orientation, on_update_ant_position, spawn_ants,
+        }, on_added_ant_at_nest, on_added_ant_dead, on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position, spawn_ants
     },
     background::{
         cleanup_background, initialize_background_resources, spawn_background,
@@ -75,7 +72,7 @@ impl Plugin for NestRenderingPlugin {
                     .chain(),
                 (
                     // Spawn
-                    (on_spawn_ant, on_spawn_element, on_spawn_pheromone),
+                    (on_spawn_element, on_spawn_pheromone),
                     // Despawn
                     (
                         on_despawn::<Ant, AtNest>,
@@ -83,9 +80,9 @@ impl Plugin for NestRenderingPlugin {
                         on_despawn::<Pheromone, AtNest>,
                     ),
                     // Added
-                    (on_added_ant_emote, on_added_ant_dead),
+                    (on_added_ant_emote, on_added_ant_dead, on_added_ant_at_nest),
                     // Removed
-                    (on_removed_ant_emote),
+                    (on_removed_ant_emote, on_model_removed_zone::<AtNest>),
                     // Updated
                     (
                         on_update_ant_position,

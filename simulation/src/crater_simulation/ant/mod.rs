@@ -1,6 +1,7 @@
 pub mod dig;
 pub mod emit_pheromone;
 pub mod set_pheromone_emitter;
+pub mod travel;
 pub mod walk;
 
 use self::emit_pheromone::{LeavingFood, LeavingNest};
