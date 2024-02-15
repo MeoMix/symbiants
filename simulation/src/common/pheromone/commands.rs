@@ -64,8 +64,21 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
     /// Spawn a new Pheromone entity and update the associate PheromoneMap cache.
     /// Performed in a custom command to provide a transactional wrapper around issuing command + updating cache.
     fn apply(self, world: &mut World) {
-        // TODO: maybe overwrite existing pheromone instead of noop?
-        if let Some(_) = world.resource::<PheromoneMap<Z>>().map.get(&self.position) {
+        let pheromone_entities = world
+            .resource::<PheromoneMap<Z>>()
+            .map
+            .get(&self.position)
+            .map_or_else(Vec::new, |pheromone_entities| pheromone_entities.clone());
+
+        let has_pheromone = pheromone_entities.iter().any(|&entity| {
+            world
+                .query::<&Pheromone>()
+                .get(world, entity)
+                .map_or(false, |pheromone| *pheromone == self.pheromone)
+        });
+
+        // TODO: Instead of early exit, seems better to "sum" the PheromoneStrengths, but don't want the strength to grow indefinitely.
+        if has_pheromone {
             return;
         }
 
@@ -79,10 +92,12 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
             ))
             .id();
 
-        world
-            .resource_mut::<PheromoneMap<Z>>()
+        let mut pheromone_map = world.resource_mut::<PheromoneMap<Z>>();
+        pheromone_map
             .map
-            .insert(self.position, pheromone_entity);
+            .entry(self.position)
+            .and_modify(|entities| entities.push(pheromone_entity))
+            .or_insert_with(|| vec![pheromone_entity]);
     }
 }
 
@@ -93,31 +108,36 @@ struct DespawnPheromoneCommand<Z: Zone> {
 }
 
 impl<Z: Zone> Command for DespawnPheromoneCommand<Z> {
-    /// Spawn a new Pheromone entity and update the associate PheromoneMap cache.
+    /// Despawn a specific Pheromone entity and update the associated PheromoneMap cache.
     /// Performed in a custom command to provide a transactional wrapper around issuing command + updating cache.
     fn apply(self, world: &mut World) {
-        if let Some(pheromone_entity) = world.resource::<PheromoneMap<Z>>().map.get(&self.position)
-        {
-            if *pheromone_entity != self.pheromone_entity {
-                error!(
-                    "Found pheromone_entity {:?}, expected {:?} at position {:?}",
-                    pheromone_entity, self.pheromone_entity, self.position
-                );
-                return;
-            }
-        } else {
-            info!(
-                "Expected pheromone_entity {:?} at position {:?} to exist",
-                self.pheromone_entity, self.position
-            );
-            return;
-        }
-
-        world.despawn(self.pheromone_entity);
-
-        world
+        if let Some(pheromone_entities) = world
             .resource_mut::<PheromoneMap<Z>>()
             .map
-            .remove(&self.position);
+            .get_mut(&self.position)
+        {
+            if let Some(pos) = pheromone_entities
+                .iter()
+                .position(|&e| e == self.pheromone_entity)
+            {
+                pheromone_entities.remove(pos);
+
+                if pheromone_entities.is_empty() {
+                    world
+                        .resource_mut::<PheromoneMap<Z>>()
+                        .map
+                        .remove(&self.position);
+                }
+
+                world.despawn(self.pheromone_entity);
+                return;
+            }
+        }
+
+        // Log information if the pheromone entity does not exist
+        info!(
+            "Expected pheromone_entity {:?} at position {:?} to exist",
+            self.pheromone_entity, self.position
+        );
     }
 }

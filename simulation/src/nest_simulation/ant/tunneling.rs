@@ -17,6 +17,7 @@ use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
+// TODO: Consider replacing this with something more like a "CurrentAction" enum to reflect that an Ant shouldn't perform multiple actions at once.
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Tunneling(pub isize);
@@ -195,13 +196,17 @@ pub fn ants_add_tunnel_pheromone(
             continue;
         }
 
-        if let Some(pheromone_entity) = pheromone_map.map.get(ant_position) {
-            let (pheromone, pheromone_strength) = pheromone_query.get(*pheromone_entity).unwrap();
+        if let Some(pheromone_entities) = pheromone_map.map.get(ant_position) {
+            // There should only be one Pheromone::Tunnel at a given position.
+            for pheromone_entity in pheromone_entities {
+                let (pheromone, pheromone_strength) =
+                    pheromone_query.get(*pheromone_entity).unwrap();
 
-            if *pheromone == Pheromone::Tunnel {
-                commands
-                    .entity(ant_entity)
-                    .insert(Tunneling(pheromone_strength.value()));
+                if *pheromone == Pheromone::Tunnel {
+                    commands
+                        .entity(ant_entity)
+                        .insert(Tunneling(pheromone_strength.value()));
+                }
             }
         }
     }
@@ -243,12 +248,9 @@ pub fn ants_remove_tunnel_pheromone(
             let adjacent_pheromones = ant_position
                 .get_adjacent_positions()
                 .iter()
-                .filter_map(|position| {
-                    pheromone_map
-                        .map
-                        .get(position)
-                        .and_then(|pheromone_entity| pheromone_query.get(*pheromone_entity).ok())
-                })
+                .filter_map(|position| pheromone_map.map.get(position))
+                .flat_map(|entities| entities.iter())
+                .filter_map(|entity| pheromone_query.get(*entity).ok())
                 .collect::<Vec<(&Pheromone, &PheromoneStrength)>>();
 
             let has_adjacant_low_strength_tunnel_pheromone =

@@ -78,12 +78,12 @@ impl PheromoneDuration {
 /// This is because PheromoneMap is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]
 pub struct PheromoneMap<Z: Zone> {
-    pub map: HashMap<Position, Entity>,
+    pub map: HashMap<Position, Vec<Entity>>,
     _marker: PhantomData<Z>,
 }
 
 impl<Z: Zone> PheromoneMap<Z> {
-    pub fn new(map: HashMap<Position, Entity>) -> Self {
+    pub fn new(map: HashMap<Position, Vec<Entity>>) -> Self {
         Self {
             map,
             _marker: PhantomData,
@@ -108,10 +108,11 @@ pub fn initialize_pheromone_resources<Z: Zone>(
     pheromone_query: Query<(&mut Position, Entity), (With<Pheromone>, With<Z>)>,
     mut commands: Commands,
 ) {
-    let pheromone_map = pheromone_query
-        .iter()
-        .map(|(position, entity)| (*position, entity))
-        .collect::<HashMap<_, _>>();
+    let mut pheromone_map: HashMap<Position, Vec<Entity>> = HashMap::new();
+
+    for (position, entity) in pheromone_query.iter() {
+        pheromone_map.entry(*position).or_insert_with(Vec::new).push(entity);
+    }
 
     commands.insert_resource(PheromoneMap::<Z>::new(pheromone_map));
 }

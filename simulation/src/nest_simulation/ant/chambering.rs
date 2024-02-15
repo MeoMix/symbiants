@@ -103,13 +103,17 @@ pub fn ants_add_chamber_pheromone(
             continue;
         }
 
-        if let Some(pheromone_entity) = pheromone_map.map.get(ant_position) {
-            let (pheromone, pheromone_strength) = pheromone_query.get(*pheromone_entity).unwrap();
+        if let Some(pheromone_entities) = pheromone_map.map.get(ant_position) {
+            // There should only be one Pheromone::Chamber at a given position.
+            for pheromone_entity in pheromone_entities {
+                let (pheromone, pheromone_strength) =
+                    pheromone_query.get(*pheromone_entity).unwrap();
 
-            if *pheromone == Pheromone::Chamber {
-                commands
-                    .entity(ant_entity)
-                    .insert(Chambering(pheromone_strength.value()));
+                if *pheromone == Pheromone::Chamber {
+                    commands
+                        .entity(ant_entity)
+                        .insert(Chambering(pheromone_strength.value()));
+                }
             }
         }
     }
