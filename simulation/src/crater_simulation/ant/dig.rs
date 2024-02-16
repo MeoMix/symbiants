@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     common::{
@@ -11,9 +12,9 @@ use crate::{
 };
 
 pub fn ants_dig(
-    ants_query: Query<
+    mut ants_query: Query<
         (
-            &AntOrientation,
+            &mut AntOrientation,
             &AntInventory,
             &Initiative,
             &Position,
@@ -24,8 +25,9 @@ pub fn ants_dig(
     grid_query: Query<&Grid, With<AtCrater>>,
     grid_elements: GridElements<AtCrater>,
     mut commands: Commands,
+    mut rng: ResMut<GlobalRng>,
 ) {
-    for (orientation, inventory, initiative, position, ant_entity) in ants_query.iter() {
+    for (mut orientation, inventory, initiative, position, ant_entity) in ants_query.iter_mut() {
         if !initiative.can_act() {
             continue;
         }
@@ -35,43 +37,39 @@ pub fn ants_dig(
             continue;
         }
 
-        // TODO: Maybe support looking in 3 directions for food, but don't just pick one randomly here since it's weird it ignores food right in front of it.
-        let position = orientation.get_ahead_position(position);
+        let grid = grid_query.single();
 
-        if try_dig(
-            ant_entity,
-            position,
-            &grid_query,
-            &grid_elements,
-            &mut commands,
-        ) {
+        let positions = vec![
+            orientation.get_ahead_position(&position),
+            orientation.get_below_position(&position),
+            orientation.get_above_position(&position),
+        ]
+        .into_iter()
+        .filter(|position| grid.is_within_bounds(position))
+        .collect::<Vec<_>>();
+
+        let food_positions = positions
+            .iter()
+            .filter_map(|&position| {
+                let element_entity = grid_elements.entity(position);
+                let element = grid_elements.element(*element_entity);
+
+                if *element == Element::Food {
+                    return Some((position, *element_entity));
+                }
+
+                None
+            })
+            .collect::<Vec<_>>();
+
+        if food_positions.is_empty() {
             return;
         }
+
+        let (dig_position, dig_element_entity) = rng.sample(&food_positions).unwrap();
+
+        commands.dig(ant_entity, *dig_position, *dig_element_entity, AtCrater);
+        // TODO: This isn't right. I should express this as a separate system because `commands.dig` could fail
+        *orientation = orientation.turn_around();
     }
-}
-
-fn try_dig(
-    ant_entity: Entity,
-    dig_position: Position,
-    grid_query: &Query<&Grid, With<AtCrater>>,
-    grid_elements: &GridElements<AtCrater>,
-    commands: &mut Commands,
-) -> bool {
-    let grid = grid_query.single();
-
-    if !grid.is_within_bounds(&dig_position) {
-        return false;
-    }
-
-    // Check if hitting a solid element and, if so, consider digging through it.
-    let element_entity = grid_elements.entity(dig_position);
-    let element = grid_elements.element(*element_entity);
-
-    if *element != Element::Food {
-        return false;
-    }
-
-    commands.dig(ant_entity, dig_position, *element_entity, AtCrater);
-
-    return true;
 }

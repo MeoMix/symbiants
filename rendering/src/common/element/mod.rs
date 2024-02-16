@@ -1,6 +1,8 @@
+// TODO: I think it's possible the rendering for "crater view" will diverge from "nest view", but sharing them for now to make life easier.
+
 pub mod sprite_sheet;
 
-use self::sprite_sheet::{get_element_index, ElementSpriteSheetHandle};
+use self::sprite_sheet::{get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasHandle};
 use crate::common::{
     visible_grid::{grid_to_tile_pos, VisibleGrid},
     ModelViewEntityMap,
@@ -10,13 +12,11 @@ use bevy::{
     utils::{HashMap, HashSet},
 };
 use bevy_ecs_tilemap::prelude::*;
-use simulation::{
-    common::{
-        element::{Air, Element},
-        grid::{Grid, GridElements},
-        position::Position,
-    },
-    nest_simulation::nest::{AtNest, Nest},
+use simulation::common::{
+    element::{Air, Element},
+    grid::{Grid, GridElements},
+    position::Position,
+    Zone,
 };
 
 #[derive(Component)]
@@ -68,12 +68,12 @@ pub fn spawn_element_tilemap(
 
 /// When an Element model is added to the simulation, render an associated Element sprite.
 /// This *only* handles the initial rendering of the Element sprite. Updates are handled by other systems.
-pub fn on_spawn_element(
+pub fn on_spawn_element<Z: Zone + Copy>(
     mut element_query: Query<
-        (&Position, &Element, Entity),
-        (Added<Element>, With<AtNest>, Without<Air>),
+        (&Position, &Element, Entity, &Z),
+        (Added<Element>, With<Z>, Without<Air>),
     >,
-    grid_query: Query<&Grid, With<AtNest>>,
+    grid_query: Query<&Grid, With<Z>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
@@ -97,14 +97,15 @@ pub fn on_spawn_element(
         None => panic!("Expected ElementExposureMap to exist whenever grid is visible"),
     };
 
-    for (element_position, element, element_model_entity) in element_query.iter_mut() {
+    for (&element_position, &element, element_model_entity, zone) in element_query.iter_mut() {
         let element_exposure = element_exposure_map.0.get(&element_model_entity).unwrap();
 
         spawn_element_sprite(
             element_model_entity,
             element,
             element_position,
-            element_exposure,
+            *element_exposure,
+            zone.clone(),
             &grid,
             &mut commands,
             &mut tilemap_query,
@@ -116,24 +117,25 @@ pub fn on_spawn_element(
 /// When user switches to a different scene (Nest->Crater) all Nest views are despawned.
 /// Thus, when switching back to Nest, all Elements need to be redrawn once. Their underlying models
 /// have not been changed or added, though, so a separate spawn system is needed.
-pub fn spawn_elements(
-    mut element_query: Query<(&Position, &Element, Entity), (With<AtNest>, Without<Air>)>,
-    nest_query: Query<&Grid, With<Nest>>,
+pub fn spawn_elements<Z: Zone + Copy>(
+    mut element_query: Query<(&Position, &Element, Entity, &Z), (With<Z>, Without<Air>)>,
+    grid_query: Query<&Grid, With<Z>>,
     mut commands: Commands,
     mut tilemap_query: Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
     element_exposure_map: Res<ElementExposureMap>,
 ) {
-    let grid = nest_query.single();
+    let grid = grid_query.single();
 
-    for (element_position, element, element_model_entity) in element_query.iter_mut() {
+    for (&element_position, &element, element_model_entity, &zone) in element_query.iter_mut() {
         let element_exposure = element_exposure_map.0.get(&element_model_entity).unwrap();
 
         spawn_element_sprite(
             element_model_entity,
             element,
             element_position,
-            element_exposure,
+            *element_exposure,
+            zone,
             &grid,
             &mut commands,
             &mut tilemap_query,
@@ -146,9 +148,9 @@ pub fn spawn_elements(
 /// on its associated view. Update TileStorage to reflect the change in position, too.
 /// This does not include the initial spawn of the Element model, which is handled by `on_spawn_element`.
 /// This relies on Ref<Position> instead of Changed<Position> to be able to filter against `is_added()`
-pub fn on_update_element_position(
-    element_query: Query<(Ref<Position>, Entity), (With<AtNest>, Without<Air>)>,
-    nest_query: Query<&Grid, With<Nest>>,
+pub fn on_update_element_position<Z: Zone>(
+    element_query: Query<(Ref<Position>, Entity), (With<Element>, Without<Air>, With<Z>)>,
+    grid_query: Query<&Grid, With<Z>>,
     mut commands: Commands,
     mut tilemap_query: Query<&mut TileStorage, With<ElementTilemap>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -161,7 +163,7 @@ pub fn on_update_element_position(
 
     // Early exit when Nest isn't visible because there's no view to update.
     // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
-    let grid = match nest_query.get(visible_grid_entity) {
+    let grid = match grid_query.get(visible_grid_entity) {
         Ok(grid) => grid,
         Err(_) => return,
     };
@@ -187,13 +189,14 @@ pub fn on_update_element_position(
     }
 }
 
-pub fn process_element_exposure_changed_events(
+pub fn process_element_exposure_changed_events<Z: Zone>(
     mut element_exposure_changed_events: ResMut<Events<ElementExposureChangedEvent>>,
-    element_query: Query<&Element, (With<AtNest>, Without<Air>)>,
+    element_query: Query<&Element, (With<Z>, Without<Air>)>,
+    alt_element_query: Query<&Element, (Without<Air>)>,
     element_exposure_map: Option<Res<ElementExposureMap>>,
     mut commands: Commands,
     model_view_entity_map: Res<ModelViewEntityMap>,
-    grid_query: Query<&Grid, With<AtNest>>,
+    grid_query: Query<&Grid, With<Z>>,
     visible_grid: Res<VisibleGrid>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
@@ -201,7 +204,7 @@ pub fn process_element_exposure_changed_events(
         None => return,
     };
 
-    // Early exit when grid isn't visible because there's no view to update.
+    // Early exit when grid isn't visSible because there's no view to update.
     // Exit, rather than skipping system run, to prevent change detection from becoming backlogged.
     if grid_query.get(visible_grid_entity).is_err() {
         return;
@@ -214,6 +217,15 @@ pub fn process_element_exposure_changed_events(
 
     for event in element_exposure_changed_events.drain() {
         let element_model_entity = event.0;
+
+        if element_query.get(element_model_entity).is_err() {
+            info!("WARNING FAILED TO FIND ENTITY: {:?}.", element_model_entity);
+
+            let yo = alt_element_query.get(element_model_entity).unwrap();
+
+            info!("YOOOO");
+        }
+
         let element = element_query.get(element_model_entity).unwrap();
         let element_exposure = element_exposure_map.0.get(&element_model_entity).unwrap();
         let texture_index = TileTextureIndex(get_element_index(*element_exposure, *element) as u32);
@@ -228,10 +240,10 @@ pub fn process_element_exposure_changed_events(
     }
 }
 
-pub fn insert_element_exposure_map(
-    elements_query: Query<(Entity, &Position), (Without<Air>, With<AtNest>)>,
+pub fn insert_element_exposure_map<Z: Zone>(
+    elements_query: Query<(Entity, &Position), (Without<Air>, With<Z>)>,
     mut commands: Commands,
-    grid_elements: GridElements<AtNest>,
+    grid_elements: GridElements<Z>,
 ) {
     let map: bevy::utils::hashbrown::HashMap<Entity, ElementExposure> = elements_query
         .iter()
@@ -251,8 +263,13 @@ pub fn insert_element_exposure_map(
     commands.insert_resource(ElementExposureMap(map));
 }
 
-pub fn remove_element_exposure_map(mut commands: Commands) {
+pub fn remove_element_exposure_map(
+    mut commands: Commands,
+    mut element_exposure_changed_events: ResMut<Events<ElementExposureChangedEvent>>,
+) {
     commands.remove_resource::<ElementExposureMap>();
+    // TODO: Not 100% positive I need to clear here, but changing zone views and this event is related to view rendering
+    element_exposure_changed_events.clear();
 }
 
 pub fn initialize_element_resources(mut commands: Commands) {
@@ -260,9 +277,8 @@ pub fn initialize_element_resources(mut commands: Commands) {
 }
 
 pub fn cleanup_elements(mut commands: Commands) {
-    // TODO: Should one of these be 'ElementTextureAtlasHandle' and also why is this in both Crater and Nest?
     commands.remove_resource::<ElementSpriteSheetHandle>();
-    commands.remove_resource::<ElementSpriteSheetHandle>();
+    commands.remove_resource::<ElementTextureAtlasHandle>();
     commands.remove_resource::<ElementExposureMap>();
     commands.remove_resource::<Events<ElementExposureChangedEvent>>();
 }
@@ -270,25 +286,26 @@ pub fn cleanup_elements(mut commands: Commands) {
 /// Non-System Helper Functions:
 
 /// Spawn an Element Sprite at the given Position. Update ModelViewEntityMap and TileStorage to reflect the new view.
-fn spawn_element_sprite(
+fn spawn_element_sprite<Z: Zone>(
     element_model_entity: Entity,
-    element: &Element,
-    element_position: &Position,
-    element_exposure: &ElementExposure,
+    element: Element,
+    element_position: Position,
+    element_exposure: ElementExposure,
+    zone: Z,
     grid: &Grid,
     commands: &mut Commands,
     tilemap_query: &mut Query<(Entity, &mut TileStorage), With<ElementTilemap>>,
     model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
 ) {
     let (tilemap_entity, mut tile_storage) = tilemap_query.single_mut();
-    let tile_pos = grid_to_tile_pos(grid, *element_position);
+    let tile_pos = grid_to_tile_pos(grid, element_position);
 
     let tile_bundle = (
-        AtNest,
+        zone,
         TileBundle {
             position: tile_pos,
             tilemap_id: TilemapId(tilemap_entity),
-            texture_index: TileTextureIndex(get_element_index(*element_exposure, *element) as u32),
+            texture_index: TileTextureIndex(get_element_index(element_exposure, element) as u32),
             ..default()
         },
     );
@@ -301,14 +318,14 @@ fn spawn_element_sprite(
 // TODO: Feel like it would be more clear to run this by relying on RemovedComponents + Changed and excluding Air.
 /// Eagerly calculate which sides of a given Element are exposed to Air.
 /// Run against all elements changing position - this supports recalculating on Element removal by responding to Air being added.
-pub fn update_element_exposure_map(
+pub fn update_element_exposure_map<Z: Zone>(
     // TODO: Consider 'Added'?
-    changed_elements_query: Query<(Entity, &Position, &Element), Changed<Position>>,
-    grid_elements: GridElements<AtNest>,
+    changed_elements_query: Query<(Entity, &Position, &Element), (Changed<Position>, With<Z>)>,
+    grid_elements: GridElements<Z>,
     element_exposure_map: Option<ResMut<ElementExposureMap>>,
     mut element_exposure_changed_event_writer: EventWriter<ElementExposureChangedEvent>,
     visible_grid: Res<VisibleGrid>,
-    grid_query: Query<&Grid, With<AtNest>>,
+    grid_query: Query<&Grid, With<Z>>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,

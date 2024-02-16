@@ -72,34 +72,6 @@ pub fn spawn_pheromones(
     }
 }
 
-pub fn on_update_pheromone_visibility(
-    pheromone_model_query: Query<Entity, With<Pheromone>>,
-    mut pheromone_view_query: Query<&mut Visibility>,
-    pheromone_visibility: Res<PheromoneVisibility>,
-    model_view_entity_map: Res<ModelViewEntityMap>,
-    grid_query: Query<&Grid, With<AtNest>>,
-    visible_grid: Res<VisibleGrid>,
-) {
-    let visible_grid_entity = match visible_grid.0 {
-        Some(visible_grid_entity) => visible_grid_entity,
-        None => return,
-    };
-
-    if grid_query.get(visible_grid_entity).is_err() {
-        return;
-    }
-
-    if pheromone_visibility.is_changed() {
-        for pheromone_model_entity in pheromone_model_query.iter() {
-            if let Some(pheromone_view_entity) = model_view_entity_map.get(&pheromone_model_entity)
-            {
-                if let Ok(mut visibility) = pheromone_view_query.get_mut(*pheromone_view_entity) {
-                    *visibility = pheromone_visibility.0;
-                }
-            }
-        }
-    }
-}
 
 /// Non-System Helper Functions:
 

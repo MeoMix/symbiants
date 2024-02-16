@@ -86,10 +86,9 @@ pub fn spawn_crater_ants(
 
     // Just spawn one worker ant for now for prototyping.
     let worker_ant_bundle = AntBundle::new(
-        // Spawn in the center of the crater for now. In the future will need to spawn around the Nest which will be in the center.
-        Position::new(settings.crater_width / 2, settings.crater_height / 2),
+        // Spawn adjacent to the nest entrance
+        Position::new((settings.crater_width / 2) + 1, (settings.crater_height / 2) + 1),
         AntColor(settings.ant_color),
-        // TODO: No idea if this AntOrientation concept makes sense for "top-down" view, certainly wasn't designed with it in mind
         AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
         AntInventory::default(),
         AntRole::Worker,

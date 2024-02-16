@@ -120,7 +120,7 @@ pub fn ants_add_chamber_pheromone(
 }
 
 /// Whenever an ant takes a step it loses 1 Chambering pheromone.
-pub fn ants_fade_chamber_pheromone(mut ants_query: Query<&mut Chambering, Changed<Position>>) {
+pub fn ants_fade_chamber_pheromone(mut ants_query: Query<&mut Chambering, (With<AtNest>, Changed<Position>)>) {
     for mut chambering in ants_query.iter_mut() {
         chambering.0 -= 1;
     }

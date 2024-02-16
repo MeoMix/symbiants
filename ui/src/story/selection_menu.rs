@@ -56,16 +56,14 @@ pub fn update_selection_menu(
                 ui.label("Element");
                 ui.label(&format!("Type: {:?}", element));
 
-                // TODO: It's weird to show Pheromone here when they're tied to Tile not Element
-                if let Some((_, pheromone, pheromone_strength)) = pheromone_query
-                    .iter()
-                    .find(|(&pheromone_position, _, _)| pheromone_position == *element_position)
-                {
-                    ui.label(&format!("Pheromone Type: {:?}", pheromone));
-                    ui.label(&format!(
-                        "Pheromone Strength: {:.0}",
-                        pheromone_strength.value()
-                    ));
+                for (pheromone_position, pheromone, pheromone_strength) in pheromone_query.iter() {
+                    if pheromone_position == element_position {
+                        ui.label(&format!("Pheromone Type: {:?}", pheromone));
+                        ui.label(&format!(
+                            "Pheromone Strength: {:.0}",
+                            pheromone_strength.value()
+                        ));
+                    }
                 }
             } else if let Ok((hunger, name, ant_role, inventory, birthing, dead, asleep)) =
                 selected_ant

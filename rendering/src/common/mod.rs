@@ -1,4 +1,5 @@
 pub mod camera;
+pub mod element;
 pub mod pheromone;
 pub mod pointer;
 pub mod selection;
@@ -6,7 +7,9 @@ pub mod visible_grid;
 
 use self::{
     camera::RenderingCameraPlugin,
-    pheromone::{cleanup_pheromones, initialize_pheromone_resources},
+    pheromone::{
+        cleanup_pheromones, initialize_pheromone_resources, on_update_pheromone_visibility,
+    },
     pointer::{handle_pointer_tap, initialize_pointer_resources, remove_pointer_resources},
     selection::{
         clear_selection, on_update_selected, on_update_selected_position, SelectedEntity,
@@ -145,7 +148,15 @@ impl Plugin for CommonRenderingPlugin {
 
         app.add_systems(
             Update,
-            (on_update_selected, on_update_selected_position).run_if(in_state(AppState::TellStory)),
+            (
+                on_update_selected,
+                on_update_selected_position,
+                on_update_pheromone_visibility,
+            )
+                .run_if(
+                    in_state(AppState::TellStory)
+                        .or_else(in_state(AppState::PostSetupClearChangeDetection)),
+                ),
         );
 
         // IMPORTANT: don't process user input in FixedUpdate/SimulationUpdate because event reads can be missed

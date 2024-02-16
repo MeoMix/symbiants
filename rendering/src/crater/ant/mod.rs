@@ -1,9 +1,9 @@
 use crate::{
-    common::{visible_grid::VisibleGrid, ModelViewEntityMap},
-    nest::element::{
+    common::element::{
         sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
         ElementExposure,
     },
+    common::{visible_grid::VisibleGrid, ModelViewEntityMap},
 };
 use bevy::prelude::*;
 use simulation::{

@@ -1,21 +1,27 @@
 pub mod ant;
 pub mod background;
-pub mod element;
 pub mod pheromone;
 
 use crate::common::{on_model_removed_zone, visible_grid::set_visible_grid_state_nest};
 
 use self::{
     ant::{
-        cleanup_ants, emote::{
+        cleanup_ants,
+        emote::{
             ants_sleep_emote, despawn_expired_emotes, on_added_ant_emote, on_ant_ate_food,
             on_ant_wake_up, on_removed_ant_emote,
-        }, on_added_ant_at_nest, on_added_ant_dead, on_update_ant_color, on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position, spawn_ants
+        },
+        on_added_ant_at_nest, on_added_ant_dead, on_update_ant_color, on_update_ant_inventory,
+        on_update_ant_orientation, on_update_ant_position, spawn_ants,
     },
     background::{
         cleanup_background, initialize_background_resources, spawn_background,
         spawn_background_tilemap, update_sky_background, Background, BackgroundTilemap,
     },
+    pheromone::{on_spawn_pheromone, spawn_pheromones},
+};
+use super::common::{
+    despawn_view, despawn_view_by_model,
     element::{
         cleanup_elements, initialize_element_resources, insert_element_exposure_map,
         on_spawn_element, on_update_element_position, process_element_exposure_changed_events,
@@ -23,10 +29,7 @@ use self::{
         sprite_sheet::{check_element_sprite_sheet_loaded, start_load_element_sprite_sheet},
         update_element_exposure_map, ElementTilemap,
     },
-    pheromone::{on_spawn_pheromone, on_update_pheromone_visibility, spawn_pheromones},
-};
-use super::common::{
-    despawn_view, despawn_view_by_model, on_despawn,
+    on_despawn,
     visible_grid::{VisibleGrid, VisibleGridState},
 };
 use bevy::prelude::*;
@@ -65,14 +68,14 @@ impl Plugin for NestRenderingPlugin {
             Update,
             (
                 (
-                    update_element_exposure_map,
+                    update_element_exposure_map::<AtNest>,
                     apply_deferred,
-                    process_element_exposure_changed_events,
+                    process_element_exposure_changed_events::<AtNest>,
                 )
                     .chain(),
                 (
                     // Spawn
-                    (on_spawn_element, on_spawn_pheromone),
+                    (on_spawn_element::<AtNest>, on_spawn_pheromone),
                     // Despawn
                     (
                         on_despawn::<Ant, AtNest>,
@@ -89,8 +92,7 @@ impl Plugin for NestRenderingPlugin {
                         on_update_ant_orientation,
                         on_update_ant_color,
                         on_update_ant_inventory,
-                        on_update_element_position,
-                        on_update_pheromone_visibility,
+                        on_update_element_position::<AtNest>,
                     ),
                     // Misc
                     (
@@ -119,13 +121,13 @@ impl Plugin for NestRenderingPlugin {
                 (
                     spawn_background_tilemap,
                     spawn_element_tilemap,
-                    insert_element_exposure_map,
+                    insert_element_exposure_map::<AtNest>,
                 ),
                 apply_deferred,
                 (
                     spawn_background,
                     spawn_ants,
-                    spawn_elements,
+                    spawn_elements::<AtNest>,
                     spawn_pheromones,
                     mark_nest_visible,
                 ),
