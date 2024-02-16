@@ -192,7 +192,6 @@ pub fn on_update_element_position<Z: Zone>(
 pub fn process_element_exposure_changed_events<Z: Zone>(
     mut element_exposure_changed_events: ResMut<Events<ElementExposureChangedEvent>>,
     element_query: Query<&Element, (With<Z>, Without<Air>)>,
-    alt_element_query: Query<&Element, (Without<Air>)>,
     element_exposure_map: Option<Res<ElementExposureMap>>,
     mut commands: Commands,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -217,15 +216,6 @@ pub fn process_element_exposure_changed_events<Z: Zone>(
 
     for event in element_exposure_changed_events.drain() {
         let element_model_entity = event.0;
-
-        if element_query.get(element_model_entity).is_err() {
-            info!("WARNING FAILED TO FIND ENTITY: {:?}.", element_model_entity);
-
-            let yo = alt_element_query.get(element_model_entity).unwrap();
-
-            info!("YOOOO");
-        }
-
         let element = element_query.get(element_model_entity).unwrap();
         let element_exposure = element_exposure_map.0.get(&element_model_entity).unwrap();
         let texture_index = TileTextureIndex(get_element_index(*element_exposure, *element) as u32);
