@@ -43,7 +43,7 @@ pub struct NestSimulationPlugin;
 impl Plugin for NestSimulationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(AppState::BeginSetup),
+            Startup,
             (
                 register_nesting,
                 register_birthing,

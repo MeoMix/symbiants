@@ -1,20 +1,20 @@
 use bevy::prelude::*;
 
 use crate::{
-    common::ant::{AntRole, Dead}, story_time::StoryPlaybackState
+    common::ant::{AntRole, Dead},
+    story_time::StoryPlaybackState,
 };
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 pub enum AppState {
     #[default]
-    BeginSetup,
-    TryLoadSave,
+    Loading,
     SelectStoryMode,
     CreateNewStory,
     FinishSetup,
     // Bevy does not currently support adding systems at runtime. So, systems
     // which monitor for Added<_> have a backlog to process, but this is not desirable
-    // as they are intended for a running simulation not an initializing simulation. 
+    // as they are intended for a running simulation not an initializing simulation.
     PostSetupClearChangeDetection,
     TellStory,
     EndStory,
@@ -26,18 +26,7 @@ pub fn restart(
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
 ) {
     next_story_playback_state.set(StoryPlaybackState::Stopped);
-    next_app_state.set(AppState::BeginSetup);
-}
-
-pub fn continue_startup(
-    In(is_loading_existing_story): In<bool>,
-    mut next_app_state: ResMut<NextState<AppState>>,
-) {
-    if is_loading_existing_story {
-        next_app_state.set(AppState::FinishSetup);
-    } else {
-        next_app_state.set(AppState::SelectStoryMode);
-    }
+    next_app_state.set(AppState::Loading);
 }
 
 pub fn finalize_startup(mut next_app_state: ResMut<NextState<AppState>>) {

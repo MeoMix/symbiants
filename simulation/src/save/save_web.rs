@@ -12,7 +12,9 @@ use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::BeforeUnloadEvent;
 
 use crate::{
-    common::{ant::Ant, element::Element, pheromone::Pheromone},
+    common::{
+        ant::Ant, element::Element, pheromone::Pheromone, LoadProgress, SimulationLoadProgress,
+    },
     crater_simulation::crater::Crater,
     nest_simulation::nest::Nest,
     settings::Settings,
@@ -180,15 +182,22 @@ pub fn remove_save_resources(mut commands: Commands) {
     commands.remove_resource::<LastSaveTime>();
 }
 
-pub fn load(world: &mut World) -> bool {
+pub fn load_save_file(world: &mut World) {
     let mut model_query = world.query_filtered::<Entity, PersistentModelQueryFilter>();
     model_query.update_archetypes(world);
 
     let readonly_model_query = model_query.as_readonly();
 
-    world
+    world.resource_mut::<SimulationLoadProgress>().save_file = LoadProgress::Loading;
+
+    if world
         .load(SaveLoadPipeline::new(readonly_model_query))
         .is_ok()
+    {
+        world.resource_mut::<SimulationLoadProgress>().save_file = LoadProgress::Success;
+    } else {
+        world.resource_mut::<SimulationLoadProgress>().save_file = LoadProgress::Failure;
+    }
 }
 
 struct SaveLoadPipeline<'q> {

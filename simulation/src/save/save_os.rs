@@ -9,7 +9,7 @@ pub fn unbind_save_onbeforeunload() {}
 
 pub fn delete_save_file() {}
 
-pub fn load(_world: &mut World) -> bool {
+pub fn load_save_file(_world: &mut World) -> bool {
     false
 }
 

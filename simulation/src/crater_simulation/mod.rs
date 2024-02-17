@@ -33,7 +33,7 @@ pub struct CraterSimulationPlugin;
 impl Plugin for CraterSimulationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(AppState::BeginSetup),
+            Startup,
             (register_crater, register_ant),
         );
 

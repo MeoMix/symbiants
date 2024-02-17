@@ -23,7 +23,7 @@ use self::{
 };
 use super::{
     app_state::{
-        begin_story, continue_startup, finalize_startup, post_setup_clear_change_detection,
+        begin_story, finalize_startup, post_setup_clear_change_detection,
         restart, AppState,
     },
     common::element::map_element_to_marker,
@@ -32,7 +32,7 @@ use super::{
         remove_external_event_resources,
     },
     save::{
-        bind_save_onbeforeunload, delete_save_file, initialize_save_resources, load,
+        bind_save_onbeforeunload, delete_save_file, initialize_save_resources, load_save_file,
         remove_save_resources, save, unbind_save_onbeforeunload,
     },
     settings::{initialize_settings_resources, register_settings, remove_settings_resources},
@@ -64,6 +64,28 @@ pub fn despawn_model<Model: Component, Z: Zone>(
     }
 }
 
+#[derive(Default, PartialEq, Eq, Debug)]
+pub enum LoadProgress {
+    #[default]
+    NotStarted,
+    Loading,
+    Success,
+    Failure,
+}
+
+#[derive(Resource, Default, Debug)]
+pub struct SimulationLoadProgress {
+    pub save_file: LoadProgress,
+}
+
+pub fn initialize_loading_resources(mut commands: Commands) {
+    commands.init_resource::<SimulationLoadProgress>();
+}
+
+pub fn remove_loading_resources(mut commands: Commands) {
+    commands.remove_resource::<SimulationLoadProgress>();
+}
+
 pub struct CommonSimulationPlugin;
 
 impl Plugin for CommonSimulationPlugin {
@@ -71,7 +93,7 @@ impl Plugin for CommonSimulationPlugin {
         app.add_event::<AntAteFoodEvent>();
 
         app.add_systems(
-            OnEnter(AppState::BeginSetup),
+            Startup,
             (
                 register_settings,
                 register_common,
@@ -83,11 +105,12 @@ impl Plugin for CommonSimulationPlugin {
         );
 
         app.add_systems(
-            OnEnter(AppState::TryLoadSave),
+            OnEnter(AppState::Loading),
             (
+                initialize_loading_resources,
                 initialize_save_resources,
                 apply_deferred,
-                load.pipe(continue_startup),
+                load_save_file,
             )
                 .chain(),
         );
@@ -224,6 +247,7 @@ impl Plugin for CommonSimulationPlugin {
                 remove_settings_resources,
                 remove_save_resources,
                 remove_external_event_resources,
+                remove_loading_resources,
                 restart,
             )
                 .in_set(CleanupSet::SimulationCleanup),

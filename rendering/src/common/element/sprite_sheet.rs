@@ -1,6 +1,8 @@
 use bevy::{asset::LoadState, prelude::*};
 
-use simulation::{app_state::AppState, common::element::Element};
+use simulation::common::element::Element;
+
+use crate::common::{LoadProgress, RenderingLoadProgress};
 
 use super::ElementExposure;
 
@@ -10,18 +12,24 @@ pub struct ElementSpriteSheetHandle(pub Handle<Image>);
 #[derive(Resource)]
 pub struct ElementTextureAtlasHandle(pub Handle<TextureAtlas>);
 
-pub fn start_load_element_sprite_sheet(asset_server: Res<AssetServer>, mut commands: Commands) {
+pub fn start_load_element_sprite_sheet(
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut rendering_load_progress: ResMut<RenderingLoadProgress>,
+) {
+    rendering_load_progress.element_sprite_sheet = LoadProgress::Loading;
+
     commands.insert_resource(ElementSpriteSheetHandle(
         asset_server.load::<Image>("textures/element/sprite_sheet.png"),
     ));
 }
 
 pub fn check_element_sprite_sheet_loaded(
-    mut next_state: ResMut<NextState<AppState>>,
     element_sprite_sheet_handle: Res<ElementSpriteSheetHandle>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut rendering_load_progress: ResMut<RenderingLoadProgress>,
 ) {
     let loaded = asset_server.load_state(&element_sprite_sheet_handle.0) == LoadState::Loaded;
 
@@ -39,7 +47,9 @@ pub fn check_element_sprite_sheet_loaded(
             texture_atlases.add(texture_atlas),
         ));
 
-        next_state.set(AppState::TryLoadSave);
+        // TODO: support failure?
+        rendering_load_progress.element_sprite_sheet = LoadProgress::Success;
+        info!("load successfully, ElementTextureAtlasHandle should now exist");
     }
 }
 

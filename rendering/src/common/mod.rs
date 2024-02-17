@@ -7,6 +7,7 @@ pub mod visible_grid;
 
 use self::{
     camera::RenderingCameraPlugin,
+    element::sprite_sheet::start_load_element_sprite_sheet,
     pheromone::{
         cleanup_pheromones, initialize_pheromone_resources, on_update_pheromone_visibility,
     },
@@ -21,7 +22,7 @@ use bevy::{prelude::*, utils::HashMap};
 use bevy_ecs_tilemap::TilemapPlugin;
 use simulation::{
     app_state::AppState,
-    common::{grid::Grid, Zone},
+    common::{grid::Grid, LoadProgress, SimulationLoadProgress, Zone},
     crater_simulation::crater::AtCrater,
     nest_simulation::nest::AtNest,
     CleanupSet, FinishSetupSet,
@@ -127,6 +128,21 @@ pub fn on_despawn<Model: Component, Z: Zone>(
         }
     }
 }
+
+#[derive(Resource, Default, Debug)]
+pub struct RenderingLoadProgress {
+    // TODO: kind of weird LoadProgress type comes from Simulation rather than being distinct
+    pub element_sprite_sheet: LoadProgress,
+}
+
+pub fn initialize_loading_resources(mut commands: Commands) {
+    commands.init_resource::<RenderingLoadProgress>();
+}
+
+pub fn remove_loading_resources(mut commands: Commands) {
+    commands.remove_resource::<RenderingLoadProgress>();
+}
+
 pub struct CommonRenderingPlugin;
 
 /// Systems which apply to both Nest and Crater rendering.
@@ -134,6 +150,19 @@ impl Plugin for CommonRenderingPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((RenderingCameraPlugin, TilemapPlugin));
         app.add_state::<VisibleGridState>();
+
+        app.add_systems(
+            OnEnter(AppState::Loading),
+            // TODO: I don't like using `before(fn)` like this
+            (initialize_loading_resources, apply_deferred)
+                .chain()
+                .before(start_load_element_sprite_sheet),
+        );
+
+        app.add_systems(
+            Update,
+            check_load_progress.run_if(in_state(AppState::Loading)),
+        );
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),
@@ -198,6 +227,7 @@ impl Plugin for CommonRenderingPlugin {
                 remove_pointer_resources,
                 cleanup_pheromones,
                 set_visible_grid_state_none,
+                remove_loading_resources,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );
@@ -223,5 +253,22 @@ fn despawn_common_entities(
 ) {
     if let Ok(selection_sprite_entity) = selection_sprite_query.get_single() {
         commands.entity(selection_sprite_entity).despawn();
+    }
+}
+
+// TODO: This should live adjacent to the other AppState systems, but it requires knowledge of rendering - implying I need two separate states one for simulation and one for simulation + rendering
+pub fn check_load_progress(
+    mut next_app_state: ResMut<NextState<AppState>>,
+    rendering_load_progress: Res<RenderingLoadProgress>,
+    simulation_load_progress: ResMut<SimulationLoadProgress>,
+) {
+    if rendering_load_progress.element_sprite_sheet != LoadProgress::Success {
+        return;
+    }
+
+    if simulation_load_progress.save_file == LoadProgress::Failure {
+        next_app_state.set(AppState::SelectStoryMode);
+    } else if simulation_load_progress.save_file == LoadProgress::Success {
+        next_app_state.set(AppState::FinishSetup);
     }
 }

@@ -46,13 +46,13 @@ impl Plugin for NestRenderingPlugin {
     fn build(&self, app: &mut App) {
         // TODO: Move these to Common
         app.add_systems(
-            OnEnter(AppState::BeginSetup),
+            OnEnter(AppState::Loading),
             start_load_element_sprite_sheet,
         );
 
         app.add_systems(
             Update,
-            check_element_sprite_sheet_loaded.run_if(in_state(AppState::BeginSetup)),
+            check_element_sprite_sheet_loaded.run_if(in_state(AppState::Loading)),
         );
 
         app.add_systems(
