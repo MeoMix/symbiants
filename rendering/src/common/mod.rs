@@ -267,7 +267,7 @@ pub fn check_load_progress(
     }
 
     if simulation_load_progress.save_file == LoadProgress::Failure {
-        next_app_state.set(AppState::SelectStoryMode);
+        next_app_state.set(AppState::MainMenu);
     } else if simulation_load_progress.save_file == LoadProgress::Success {
         next_app_state.set(AppState::FinishSetup);
     }

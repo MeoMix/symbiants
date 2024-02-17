@@ -12,7 +12,7 @@ impl Plugin for MainMenuUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            update_main_menu.run_if(in_state(AppState::SelectStoryMode)),
+            update_main_menu.run_if(in_state(AppState::MainMenu)),
         );
     }
 }
@@ -35,7 +35,7 @@ pub fn update_main_menu(
                     .on_disabled_hover_text("Coming soon™!");
 
                 if ui.button("Sandbox Mode").clicked() {
-                    next_app_state.set(AppState::CreateNewStory);
+                    next_app_state.set(AppState::FinishSetup);
                 }
             });
         });

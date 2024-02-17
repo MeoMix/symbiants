@@ -54,7 +54,7 @@ impl Plugin for NestSimulationPlugin {
         );
 
         app.add_systems(
-            OnEnter(AppState::CreateNewStory),
+            OnExit(AppState::MainMenu),
             (
                 // Call `apply_deferred` to ensure Settings (via `initialize_settings_resources`) is available for use.
                 apply_deferred,

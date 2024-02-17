@@ -49,7 +49,6 @@ pub fn check_element_sprite_sheet_loaded(
 
         // TODO: support failure?
         rendering_load_progress.element_sprite_sheet = LoadProgress::Success;
-        info!("load successfully, ElementTextureAtlasHandle should now exist");
     }
 }
 

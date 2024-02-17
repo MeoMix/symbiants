@@ -22,10 +22,7 @@ use self::{
     position::Position,
 };
 use super::{
-    app_state::{
-        begin_story, finalize_startup, post_setup_clear_change_detection,
-        restart, AppState,
-    },
+    app_state::{begin_story, post_setup_clear_change_detection, restart, AppState},
     common::element::map_element_to_marker,
     external_event::{
         initialize_external_event_resources, process_external_event,
@@ -115,10 +112,7 @@ impl Plugin for CommonSimulationPlugin {
                 .chain(),
         );
 
-        app.add_systems(
-            OnEnter(AppState::CreateNewStory),
-            (initialize_settings_resources, finalize_startup).chain(),
-        );
+        app.add_systems(OnExit(AppState::MainMenu), initialize_settings_resources);
 
         app.add_systems(
             OnEnter(AppState::FinishSetup),

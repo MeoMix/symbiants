@@ -9,8 +9,8 @@ use crate::{
 pub enum AppState {
     #[default]
     Loading,
-    SelectStoryMode,
-    CreateNewStory,
+    // TODO: The fact that I need a "MainMenu" state, but that AppState exists in `simulation` not `rendering` is a code smell.
+    MainMenu,
     FinishSetup,
     // Bevy does not currently support adding systems at runtime. So, systems
     // which monitor for Added<_> have a backlog to process, but this is not desirable
@@ -27,10 +27,6 @@ pub fn restart(
 ) {
     next_story_playback_state.set(StoryPlaybackState::Stopped);
     next_app_state.set(AppState::Loading);
-}
-
-pub fn finalize_startup(mut next_app_state: ResMut<NextState<AppState>>) {
-    next_app_state.set(AppState::FinishSetup);
 }
 
 pub fn post_setup_clear_change_detection(mut next_app_state: ResMut<NextState<AppState>>) {
