@@ -23,21 +23,29 @@ pub fn update_loading_dialog(
         .collapsible(false)
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
-            let seconds_gone = (fast_forwarding_state_info.initial_pending_ticks as f32)
-                / ticks_per_second.0 as f32;
+            let seconds_gone = fast_forwarding_state_info.initial_pending_ticks
+                / ticks_per_second.0;
+            let minutes_gone = seconds_gone / 60;
+            let hours_gone = minutes_gone / 60;
+            let minutes_remaining = minutes_gone - (hours_gone * 60);
 
-            let minutes_gone = seconds_gone / 60.0;
-            let hours_gone = minutes_gone / 60.0;
-
-            if hours_gone >= 1.0 {
-                ui.label(&format!(
-                    "You were gone for {:.0} hour{} and {:.0} minute{}.",
-                    hours_gone,
-                    pluralize(hours_gone / 60.0),
-                    minutes_gone / 60.0,
-                    pluralize(minutes_gone / 60.0)
-                ));
-            } else if minutes_gone >= 1.0 {
+            if hours_gone > 0 {
+                if minutes_remaining > 0 {
+                    ui.label(&format!(
+                        "You were gone for {:.0} hour{} and {:.0} minute{}.",
+                        hours_gone,
+                        pluralize(hours_gone),
+                        minutes_remaining,
+                        pluralize(minutes_remaining)
+                    ));
+                } else {
+                    ui.label(&format!(
+                        "You were gone for {:.0} hour{}.",
+                        hours_gone,
+                        pluralize(hours_gone),
+                    ));
+                }
+            } else if minutes_gone > 0 {
                 ui.label(&format!(
                     "You were gone for {:.0} minute{}.",
                     minutes_gone,
@@ -51,11 +59,10 @@ pub fn update_loading_dialog(
                 ));
             }
 
-            if seconds_gone >= SECONDS_PER_DAY as f32 {
-                ui.label("Please wait while 24 hours are simulated.");
-                ui.label("IMPORTANT: Your Symbiant simulation stops if you don't check in daily.");
-            } else {
-                ui.label("Please wait while this time is simulated.");
+            ui.label("Please wait while this time is simulated.");
+
+            if seconds_gone == SECONDS_PER_DAY {
+                ui.label("NOTE: Simulation will only fast-forward through one day of missed time. Please check in daily.");
             }
 
             ui.label(&format!(
@@ -65,8 +72,8 @@ pub fn update_loading_dialog(
         });
 }
 
-fn pluralize(value: f32) -> &'static str {
-    if value != 1.0 {
+fn pluralize(value: isize) -> &'static str {
+    if value != 1 {
         "s"
     } else {
         ""

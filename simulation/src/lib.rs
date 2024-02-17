@@ -65,7 +65,9 @@ impl Plugin for SimulationPlugin {
         app.init_schedule(RunSimulationUpdateLoop);
         app.add_systems(
             RunSimulationUpdateLoop,
-            run_simulation_update_schedule.run_if(in_state(AppState::TellStory)),
+            run_simulation_update_schedule.run_if(
+                in_state(AppState::TellStory).and_then(not(in_state(StoryPlaybackState::Stopped))),
+            ),
         );
 
         app.add_state::<StoryPlaybackState>();

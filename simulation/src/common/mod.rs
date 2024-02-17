@@ -11,7 +11,11 @@ use crate::{
 
 use self::{
     ant::{
-        death::on_ants_add_dead, digestion::ants_digestion, hunger::{ants_hunger_act, ants_hunger_regurgitate, ants_hunger_tick}, initiative::ants_initiative, register_ant, AntAteFoodEvent
+        death::on_ants_add_dead,
+        digestion::ants_digestion,
+        hunger::{ants_hunger_act, ants_hunger_regurgitate, ants_hunger_tick},
+        initiative::ants_initiative,
+        register_ant, AntAteFoodEvent,
     },
     element::register_element,
     pheromone::register_pheromone,
@@ -96,21 +100,22 @@ impl Plugin for CommonSimulationPlugin {
         app.add_systems(
             OnEnter(AppState::FinishSetup),
             (
-                initialize_story_time_resources,
+                (
+                    initialize_story_time_resources,
+                    apply_deferred,
+                    setup_story_time,
+                    set_rate_of_time,
+                )
+                    .chain(),
                 initialize_external_event_resources,
                 bind_save_onbeforeunload,
-                post_setup_clear_change_detection,
                 // TODO: This needs to run once before Simulation runs because UI update runs before first simulation tick.
                 // If this doesn't run, UI filter queries like Without<Air> won't properly exclude.
                 map_element_to_marker,
+                post_setup_clear_change_detection,
             )
-                .chain()
                 .in_set(FinishSetupSet::SimulationFinishSetup),
         );
-
-        // IMPORTANT: setup_story_time sets FixedTime.accumulated which is reset when transitioning between schedules.
-        // If this is ran OnEnter FinishSetup then the accumulated time will be reset to zero before FixedUpdate runs.
-        app.add_systems(OnExit(AppState::FinishSetup), setup_story_time);
 
         app.add_systems(
             OnEnter(AppState::PostSetupClearChangeDetection),
@@ -181,10 +186,9 @@ impl Plugin for CommonSimulationPlugin {
                 map_element_to_marker,
                 apply_deferred,
                 check_story_over,
-                // real-world time should update even if the story is paused because real-world time doesn't pause
                 // rate_of_time needs to run when app is paused because fixed_time accumulations need to be cleared while app is paused
                 // to prevent running FixedUpdate schedule repeatedly (while no-oping) when coming back to a hidden tab with a paused sim.
-                (update_story_real_world_time, set_rate_of_time).chain(),
+                set_rate_of_time,
             )
                 .chain()
                 .in_set(SimulationTickSet::Last),

@@ -247,6 +247,9 @@ pub fn setup_story_time(
         simulation_time.tick(Duration::from_secs(delta_seconds as u64));
     }
 
+    // It's possible to enter FFW both on first load and while in game. On load occurs if the app was closed for a while.
+    // In game occurs if the browser tab was unfocused for a while - the simulation doesn't tick as the main loop is powered via requestAnimationFrame.
+    // So, enter Playing, even if delta_seconds is non-zero, to unify support for both workflows via `set_rate_of_time`
     next_story_playback_state.set(StoryPlaybackState::Playing);
 }
 
