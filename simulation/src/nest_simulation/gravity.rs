@@ -181,14 +181,7 @@ pub fn gravity_ants(
 
 // If an air gap appears on the grid (either through spawning or movement of air) then mark adjacent elements as unstable.
 pub fn gravity_mark_unstable(
-    air_query: Query<
-        &Position,
-        (
-            With<Air>,
-            Or<(Changed<Position>, Added<Position>)>,
-            With<AtNest>,
-        ),
-    >,
+    air_query: Query<&Position, (With<Air>, Changed<Position>, With<AtNest>)>,
     mut commands: Commands,
     nest_query: Query<&Nest>,
     grid_elements: GridElements<AtNest>,
@@ -206,43 +199,27 @@ pub fn gravity_mark_unstable(
     for &position in &positions {
         // If the current position contains a sand or food element, mark it as unstable
         if let Some(entity) = grid_elements.get_entity(position) {
-            if let Some(element) = grid_elements.get_element(*entity) {
-                if matches!(*element, Element::Sand | Element::Food) {
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        true,
-                        Unstable,
-                        PhantomData::<AtNest>,
-                    );
+            let element = grid_elements.element(*entity);
 
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        false,
-                        Stable,
-                        PhantomData::<AtNest>,
-                    );
-                }
+            // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
+            if matches!(*element, Element::Sand | Element::Food)
+                || *element == Element::Dirt && nest.is_aboveground(&position)
+            {
+                commands.toggle_element_command(
+                    *entity,
+                    position,
+                    true,
+                    Unstable,
+                    PhantomData::<AtNest>,
+                );
 
-                // Special Case - dirt aboveground doesn't have "background" supporting dirt to keep it stable - so it falls.
-                if *element == Element::Dirt && nest.is_aboveground(&position) {
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        true,
-                        Unstable,
-                        PhantomData::<AtNest>,
-                    );
-
-                    commands.toggle_element_command(
-                        *entity,
-                        position,
-                        false,
-                        Stable,
-                        PhantomData::<AtNest>,
-                    );
-                }
+                commands.toggle_element_command(
+                    *entity,
+                    position,
+                    false,
+                    Stable,
+                    PhantomData::<AtNest>,
+                );
             }
         }
     }
