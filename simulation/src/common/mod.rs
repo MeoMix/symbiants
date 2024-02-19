@@ -38,7 +38,7 @@ use super::{
         setup_story_time, update_story_elapsed_ticks, update_story_real_world_time,
         update_time_scale, StoryPlaybackState,
     },
-    CleanupSet, FinishSetupSet, SimulationTickSet, SimulationUpdate,
+    CleanupSet, FinishSetupSet, SimulationTickSet,
 };
 use bevy::prelude::*;
 
@@ -140,7 +140,7 @@ impl Plugin for CommonSimulationPlugin {
         );
 
         app.add_systems(
-            SimulationUpdate,
+            FixedUpdate,
             (
                 process_external_event::<AtNest>,
                 process_external_event::<AtCrater>,
@@ -149,11 +149,12 @@ impl Plugin for CommonSimulationPlugin {
                 apply_deferred,
             )
                 .chain()
-                .in_set(SimulationTickSet::First),
+                .in_set(SimulationTickSet::First)
+                .run_if(in_state(AppState::TellStory)),
         );
 
         app.add_systems(
-            SimulationUpdate,
+            FixedUpdate,
             (
                 apply_deferred,
                 (
@@ -173,12 +174,15 @@ impl Plugin for CommonSimulationPlugin {
                 on_ants_add_dead::<AtCrater>,
             )
                 .chain()
-                .run_if(not(in_state(StoryPlaybackState::Paused)))
+                .run_if(
+                    in_state(AppState::TellStory)
+                        .and_then(not(in_state(StoryPlaybackState::Paused))),
+                )
                 .in_set(SimulationTickSet::SimulationTick),
         );
 
         app.add_systems(
-            SimulationUpdate,
+            FixedUpdate,
             (
                 // TODO: maybe want to run initative at the end of the simulation tick but not in PostSimulationTick? :s
                 apply_deferred,
@@ -189,13 +193,16 @@ impl Plugin for CommonSimulationPlugin {
             )
                 .chain()
                 .in_set(SimulationTickSet::PostSimulationTick)
-                .run_if(not(in_state(StoryPlaybackState::Paused))),
+                .run_if(
+                    in_state(AppState::TellStory)
+                        .and_then(not(in_state(StoryPlaybackState::Paused))),
+                ),
         );
 
         // TODO: Maybe (some?) of these should just run in Update?
         // Ending story seems like it should check every tick, but updating element exposure/updating story time seems OK to run just in Update?
         app.add_systems(
-            SimulationUpdate,
+            FixedUpdate,
             (
                 // If this doesn't run then when user spawns elements they won't gain exposure if simulation is paused.
                 apply_deferred,
@@ -208,7 +215,8 @@ impl Plugin for CommonSimulationPlugin {
                 set_rate_of_time,
             )
                 .chain()
-                .in_set(SimulationTickSet::Last),
+                .in_set(SimulationTickSet::Last)
+                .run_if(in_state(AppState::TellStory)),
         );
 
         app.add_systems(

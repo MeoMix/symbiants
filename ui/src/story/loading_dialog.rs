@@ -4,17 +4,17 @@ use bevy_egui::{
     EguiContexts,
 };
 
-use simulation::story_time::{FastForwardingStateInfo, TicksPerSecond, SECONDS_PER_DAY};
+use simulation::story_time::{FastForwardPendingTicks, TicksPerSecond, SECONDS_PER_DAY};
 
 // Don't flicker the dialogs visibility when processing a small number of ticks
 const MIN_PENDING_TICKS: isize = 6000;
 
 pub fn update_loading_dialog(
     mut contexts: EguiContexts,
-    fast_forwarding_state_info: Res<FastForwardingStateInfo>,
+    fast_forward_pending_ticks: Res<FastForwardPendingTicks>,
     ticks_per_second: Res<TicksPerSecond>,
 ) {
-    if fast_forwarding_state_info.initial_pending_ticks < MIN_PENDING_TICKS {
+    if fast_forward_pending_ticks.initial() < MIN_PENDING_TICKS {
         return;
     }
 
@@ -23,7 +23,7 @@ pub fn update_loading_dialog(
         .collapsible(false)
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
-            let seconds_gone = fast_forwarding_state_info.initial_pending_ticks
+            let seconds_gone = fast_forward_pending_ticks.initial()
                 / ticks_per_second.0;
             let minutes_gone = seconds_gone / 60;
             let hours_gone = minutes_gone / 60;
@@ -67,7 +67,7 @@ pub fn update_loading_dialog(
 
             ui.label(&format!(
                 "Remaining ticks: {}",
-                fast_forwarding_state_info.pending_ticks
+                fast_forward_pending_ticks.remaining()
             ));
         });
 }

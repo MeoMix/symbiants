@@ -5,28 +5,14 @@ pub mod external_event;
 pub mod nest_simulation;
 pub mod save;
 pub mod settings;
-pub mod simulation_timestep;
 pub mod story_time;
 
-use self::{
-    app_state::AppState, common::despawn_model,
-    simulation_timestep::run_simulation_update_schedule, story_time::StoryPlaybackState,
-};
-use bevy::{
-    app::{MainScheduleOrder, RunFixedUpdateLoop},
-    ecs::schedule::ScheduleLabel,
-    prelude::*,
-};
+use self::{app_state::AppState, common::despawn_model, story_time::StoryPlaybackState};
+use bevy::prelude::*;
 use bevy_save::SavePlugin;
 use common::CommonSimulationPlugin;
 use crater_simulation::{crater::insert_crater_grid, CraterSimulationPlugin};
 use nest_simulation::NestSimulationPlugin;
-
-#[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
-pub struct RunSimulationUpdateLoop;
-
-#[derive(ScheduleLabel, Debug, PartialEq, Eq, Clone, Hash)]
-pub struct SimulationUpdate;
 
 // TODO: I'm not absolutely convinced these are good practice. It feels like this is competing with AppState transition.
 // An alternative would be to have an AppState for "SimulationFinishSetup" and "RenderingFinishSetup"
@@ -61,14 +47,6 @@ impl Plugin for SimulationPlugin {
     fn build(&self, app: &mut App) {
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         app.add_plugins(SavePlugin);
-        app.add_systems(PreStartup, insert_simulation_schedule);
-        app.init_schedule(RunSimulationUpdateLoop);
-        app.add_systems(
-            RunSimulationUpdateLoop,
-            run_simulation_update_schedule.run_if(
-                in_state(AppState::TellStory).and_then(not(in_state(StoryPlaybackState::Stopped))),
-            ),
-        );
 
         app.add_state::<StoryPlaybackState>();
         // TODO: AppState feels weird to live in Simulation
@@ -85,7 +63,7 @@ impl Plugin for SimulationPlugin {
         );
 
         app.configure_sets(
-            SimulationUpdate,
+            FixedUpdate,
             (
                 SimulationTickSet::First,
                 SimulationTickSet::PreSimulationTick,
@@ -93,7 +71,8 @@ impl Plugin for SimulationPlugin {
                 SimulationTickSet::PostSimulationTick,
                 SimulationTickSet::Last,
             )
-                .chain(),
+                .chain()
+                .run_if(in_state(AppState::TellStory)),
         );
 
         app.configure_sets(
@@ -112,8 +91,4 @@ impl Plugin for SimulationPlugin {
             CraterSimulationPlugin,
         ));
     }
-}
-
-pub fn insert_simulation_schedule(mut main_schedule_order: ResMut<MainScheduleOrder>) {
-    main_schedule_order.insert_after(RunFixedUpdateLoop, RunSimulationUpdateLoop);
 }

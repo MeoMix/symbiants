@@ -11,12 +11,14 @@ use crate::{
         },
     },
     story_time::StoryPlaybackState,
-    SimulationTickSet, SimulationUpdate,
+    SimulationTickSet,
 };
 
 use self::{
     ant::{
-        dig::ants_dig, emit_pheromone::ants_emit_pheromone, register_ant, set_pheromone_emitter::ants_set_pheromone_emitter, travel::ants_travel_to_nest, walk::ants_walk
+        dig::ants_dig, emit_pheromone::ants_emit_pheromone, register_ant,
+        set_pheromone_emitter::ants_set_pheromone_emitter, travel::ants_travel_to_nest,
+        walk::ants_walk,
     },
     crater::{
         register_crater, spawn_crater, spawn_crater_ants, spawn_crater_elements, AtCrater, Crater,
@@ -32,10 +34,7 @@ pub struct CraterSimulationPlugin;
 
 impl Plugin for CraterSimulationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Startup,
-            (register_crater, register_ant),
-        );
+        app.add_systems(Startup, (register_crater, register_ant));
 
         app.add_systems(
             OnExit(AppState::MainMenu),
@@ -62,7 +61,7 @@ impl Plugin for CraterSimulationPlugin {
         );
 
         app.add_systems(
-            SimulationUpdate,
+            FixedUpdate,
             (
                 (pheromone_duration_tick::<AtCrater>, apply_deferred).chain(),
                 (ants_set_pheromone_emitter, apply_deferred).chain(),
@@ -73,7 +72,10 @@ impl Plugin for CraterSimulationPlugin {
                 ants_walk,
                 ants_dig,
             )
-                .run_if(not(in_state(StoryPlaybackState::Paused)))
+                .run_if(
+                    in_state(AppState::TellStory)
+                        .and_then(not(in_state(StoryPlaybackState::Paused))),
+                )
                 .chain()
                 .in_set(SimulationTickSet::SimulationTick),
         );

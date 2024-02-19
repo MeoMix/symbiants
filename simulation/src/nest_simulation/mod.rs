@@ -13,15 +13,25 @@ use crate::common::{
 
 use self::{
     ant::{
-        birthing::{ants_birthing, register_birthing}, chambering::{
+        birthing::{ants_birthing, register_birthing},
+        chambering::{
             ants_add_chamber_pheromone, ants_chamber_pheromone_act, ants_fade_chamber_pheromone,
             ants_remove_chamber_pheromone,
-        }, dig::ants_dig, drop::ants_drop, nest_expansion::ants_nest_expansion, nesting::{
+        },
+        dig::ants_dig,
+        drop::ants_drop,
+        nest_expansion::ants_nest_expansion,
+        nesting::{
             ants_nesting_action, ants_nesting_movement, ants_nesting_start, register_nesting,
-        }, register_ant, sleep::{ants_sleep, ants_wake}, travel::ants_travel_to_crater, tunneling::{
+        },
+        register_ant,
+        sleep::{ants_sleep, ants_wake},
+        travel::ants_travel_to_crater,
+        tunneling::{
             ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone, ants_remove_tunnel_pheromone,
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
-        }, walk::{ants_stabilize_footing_movement, ants_walk}
+        },
+        walk::{ants_stabilize_footing_movement, ants_walk},
     },
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
@@ -34,7 +44,7 @@ use self::{
 };
 use super::{
     despawn_model, settings::initialize_settings_resources, AppState, CleanupSet, FinishSetupSet,
-    SimulationTickSet, SimulationUpdate, StoryPlaybackState,
+    SimulationTickSet, StoryPlaybackState,
 };
 use bevy::prelude::*;
 
@@ -79,7 +89,7 @@ impl Plugin for NestSimulationPlugin {
 
         // TODO: I'm just aggressively applying deferred until something like https://github.com/bevyengine/bevy/pull/9822 lands
         app.add_systems(
-            SimulationUpdate,
+            FixedUpdate,
             (
                 // TODO: Consider whether gravity is special enough to warrant being placed in PreSimulationTick
                 (
@@ -156,7 +166,10 @@ impl Plugin for NestSimulationPlugin {
                 )
                     .chain(),
             )
-                .run_if(not(in_state(StoryPlaybackState::Paused)))
+                .run_if(
+                    in_state(AppState::TellStory)
+                        .and_then(not(in_state(StoryPlaybackState::Paused))),
+                )
                 .chain()
                 .in_set(SimulationTickSet::SimulationTick),
         );

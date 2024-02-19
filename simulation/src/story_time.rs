@@ -4,8 +4,6 @@ use chrono::Datelike;
 use chrono::{DateTime, LocalResult, NaiveDate, TimeZone, Timelike, Utc};
 use std::time::Duration;
 
-use super::simulation_timestep::SimulationTime;
-
 pub const DEFAULT_TICKS_PER_SECOND: isize = 10;
 pub const MAX_USER_TICKS_PER_SECOND: isize = 1_500;
 pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 50_000;
@@ -173,10 +171,34 @@ impl Default for TicksPerSecond {
 }
 
 #[derive(Resource, Default)]
-pub struct FastForwardingStateInfo {
-    pub initial_pending_ticks: isize,
-    pub pending_ticks: isize,
+pub struct FastForwardPendingTicks {
+    initial: isize,
+    remaining: isize,
 }
+
+impl FastForwardPendingTicks {
+    pub fn set(&mut self, ticks: isize) {
+        self.remaining = ticks;
+        self.initial = ticks;
+    }
+
+    pub fn tick(&mut self) {
+        self.remaining -= 1;
+
+        if self.remaining == 0 {
+            self.initial = 0;
+        }
+    }
+
+    pub fn remaining(&self) -> isize {
+        self.remaining
+    }
+
+    pub fn initial(&self) -> isize {
+        self.initial
+    }
+}
+
 
 #[derive(States, Default, Hash, Clone, Copy, Eq, PartialEq, Debug)]
 pub enum StoryPlaybackState {
@@ -195,19 +217,33 @@ pub fn register_story_time(app_type_registry: ResMut<AppTypeRegistry>) {
 pub fn initialize_story_time_resources(mut commands: Commands) {
     commands.init_resource::<StoryRealWorldTime>();
     commands.init_resource::<StoryTime>();
-    commands.init_resource::<FastForwardingStateInfo>();
+    commands.init_resource::<FastForwardPendingTicks>();
     commands.init_resource::<TicksPerSecond>();
-    commands.insert_resource(SimulationTime::new_from_secs(
-        1.0 / DEFAULT_TICKS_PER_SECOND as f32,
+
+    // Time<Virtual>'s default max_delta is 250ms, but a small max_delta isn't desirable for this app.
+    // If a user has the app running in a browser tab and then focuses another tab for a few hours - the app stops while unfocused.
+    // When the user comes back to the app there are several missed hours of simulation which need to be handled.
+    // If max_delta is too small then simulation time will be lost. The app supports fast-forwarding up to 24 hours of missed time.
+    // So, max_delta must be set to 24 hours to support this feature. If the app is stopped for longer than 24 hours then time is lost.
+    commands.insert_resource(Time::<Virtual>::from_max_delta(Duration::from_secs(
+        SECONDS_PER_DAY as u64,
+    )));
+
+    commands.insert_resource(Time::<Fixed>::from_seconds(
+        1.0 / DEFAULT_TICKS_PER_SECOND as f64,
     ));
 }
 
 pub fn remove_story_time_resources(mut commands: Commands) {
     commands.remove_resource::<StoryRealWorldTime>();
     commands.remove_resource::<StoryTime>();
-    commands.remove_resource::<FastForwardingStateInfo>();
+    commands.remove_resource::<FastForwardPendingTicks>();
     commands.remove_resource::<TicksPerSecond>();
-    commands.remove_resource::<SimulationTime>();
+    // Can't remove these resources because they're owned by Bevy. 
+    // Just assume they'll get reset to default when calling `initialize`. It's not a big deal
+    // as long as Time::<Fixed> is reset when the app is restarted.
+    // commands.remove_resource::<Time<Fixed>>();
+    // commands.remove_resource::<Time<Virtual>>();
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,
@@ -216,14 +252,18 @@ pub fn remove_story_time_resources(mut commands: Commands) {
 /// will be used by Bevy internally to track how de-synced the FixedUpdate schedule is from real-world time.
 pub fn setup_story_time(
     mut story_real_world_time: ResMut<StoryRealWorldTime>,
-    mut simulation_time: ResMut<SimulationTime>,
+    story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
     mut story_elapsed_ticks: ResMut<StoryTime>,
     ticks_per_second: Res<TicksPerSecond>,
+    mut commands: Commands,
+    mut fast_forward_pending_ticks: ResMut<FastForwardPendingTicks>,
 ) {
     // Setup story_real_world_time here, rather than as a Default, so that delta_seconds doesn't grow while idling in main menu
     if story_real_world_time.0 == 0 {
         story_real_world_time.0 = Utc::now().timestamp_millis();
+
+        next_story_playback_state.set(StoryPlaybackState::Playing);
     } else {
         let mut delta_seconds = Utc::now()
             .signed_duration_since(story_real_world_time.as_datetime())
@@ -242,61 +282,80 @@ pub fn setup_story_time(
             delta_seconds = SECONDS_PER_DAY as i64;
         }
 
-        // If we are tracking real world time then determine how many ticks the time past 24hrs represents
-        // add that to the "elapsed ticks" tracker so that real-world time in game advances.
-        simulation_time.tick(Duration::from_secs(delta_seconds as u64));
+        fast_forward_overstep_seconds(
+            delta_seconds as u64,
+            &mut commands,
+            &story_playback_state,
+            &mut next_story_playback_state,
+            &ticks_per_second,
+            &mut fast_forward_pending_ticks
+        );
     }
-
-    // It's possible to enter FFW both on first load and while in game. On load occurs if the app was closed for a while.
-    // In game occurs if the browser tab was unfocused for a while - the simulation doesn't tick as the main loop is powered via requestAnimationFrame.
-    // So, enter Playing, even if delta_seconds is non-zero, to unify support for both workflows via `set_rate_of_time`
-    next_story_playback_state.set(StoryPlaybackState::Playing);
 }
 
 /// Control whether the app runs at the default or fast tick rate.
 /// Checks if SimulationTime is showing a time de-sync and adjusts tick rate to compensate.
 /// Once compensated tick rate has been processed then reset back to default tick rate.
 pub fn set_rate_of_time(
-    mut simulation_time: ResMut<SimulationTime>,
-    mut fast_forward_state_info: ResMut<FastForwardingStateInfo>,
+    mut fixed_time: ResMut<Time<Fixed>>,
+    mut fast_forward_pending_ticks: ResMut<FastForwardPendingTicks>,
     ticks_per_second: Res<TicksPerSecond>,
     story_playback_state: Res<State<StoryPlaybackState>>,
     mut next_story_playback_state: ResMut<NextState<StoryPlaybackState>>,
+    mut commands: Commands,
 ) {
-    if fast_forward_state_info.pending_ticks == 0 {
+    if fast_forward_pending_ticks.remaining() == 0 {
         if *story_playback_state == StoryPlaybackState::FastForwarding {
-            simulation_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
-
+            fixed_time.set_timestep_seconds(1.0 / (ticks_per_second.0 as f64));
             next_story_playback_state.set(StoryPlaybackState::Playing);
-            fast_forward_state_info.initial_pending_ticks = 0;
         } else {
-            let accumulated_time = simulation_time.accumulated();
+            let accumulated_time = fixed_time.overstep();
 
+            // TODO: This is an arbitrary amount to tolerate. In theory could just check overstep > 100%, but
+            // it'll cause FFW to flicker on/off undesirably for very low values.
             if accumulated_time.as_secs() > 1 {
-                // Reset simulation_time to zero and run the main Update schedule. This prevents the UI from becoming unresponsive for large time values.
-                // The UI becomes unresponsive because the FixedUpdate schedule, when behind, will run in a loop without yielding until it catches up.
-                simulation_time.period = accumulated_time;
-                let _ = simulation_time.expend();
-                simulation_time.period =
-                    Duration::from_secs_f32(1.0 / (MAX_SYSTEM_TICKS_PER_SECOND as f32));
-                // Rely on FastForwarding state, rather than updating TicksPerSecond, so when exiting FastForwarding it's possible to restore to user-defined TicksPerSecond.
-
-                // There's nothing to fast forward through if the simulation was paused while tab wasn't focused.
-                if *story_playback_state != StoryPlaybackState::Paused {
-                    next_story_playback_state.set(StoryPlaybackState::FastForwarding);
-
-                    let ticks = (ticks_per_second.0 as u64 * accumulated_time.as_secs()) as isize;
-                    fast_forward_state_info.pending_ticks = ticks;
-                    fast_forward_state_info.initial_pending_ticks = ticks;
-                }
+                fast_forward_overstep_seconds(
+                    accumulated_time.as_secs(),
+                    &mut commands,
+                    &story_playback_state,
+                    &mut next_story_playback_state,
+                    &ticks_per_second,
+                    &mut fast_forward_pending_ticks,
+                );
             }
         }
     } else {
-        fast_forward_state_info.pending_ticks -= 1;
+        fast_forward_pending_ticks.tick();
     }
 }
 
-// TODO: Consider also running this inside FixedUpdate to have it remain accurate under heavy sim load.
+fn fast_forward_overstep_seconds(
+    seconds: u64,
+    commands: &mut Commands,
+    story_playback_state: &Res<State<StoryPlaybackState>>,
+    next_story_playback_state: &mut ResMut<NextState<StoryPlaybackState>>,
+    ticks_per_second: &Res<TicksPerSecond>,
+    fast_forward_pending_ticks: &mut ResMut<FastForwardPendingTicks>,
+) {
+    // Reset `Time::<Fixed>`'s overstep value to 0 and configure it to run at FFW tick rate.
+    // It's important to set overstep to 0 to ensure `Update` schedule runs periodically while fast forwarding.
+    // This wouldn't occur if `Time::<Virtual>`'s `max_delta` wasnt set to a large value, but it's necessary to have a large `max_delta` to 
+    // determine how much time has passed
+    commands.insert_resource(Time::<Fixed>::from_seconds(
+        1.0 / MAX_SYSTEM_TICKS_PER_SECOND as f64,
+    ));
+
+    // If the simulation was paused while tab was inactive then, while time was lost, there's no changes to fast forward.
+    if *story_playback_state.get() == StoryPlaybackState::Paused {
+        return;
+    }
+
+    let ticks = (ticks_per_second.0 as u64 * seconds) as isize;
+    fast_forward_pending_ticks.set(ticks);
+
+    next_story_playback_state.set(StoryPlaybackState::FastForwarding);
+}
+
 // Track real-world time to be able to derive how much time elapsed while app was closed.
 // Keep this updated, rather than capture JIT, because running Bevy systems JIT as app closing isn't viable.
 pub fn update_story_real_world_time(mut story_real_world_time: ResMut<StoryRealWorldTime>) {
@@ -309,7 +368,7 @@ pub fn update_story_elapsed_ticks(mut story_time: ResMut<StoryTime>) {
 }
 
 pub fn update_time_scale(
-    mut simulation_time: ResMut<SimulationTime>,
+    mut fixed_time: ResMut<Time<Fixed>>,
     ticks_per_second: Res<TicksPerSecond>,
     story_playback_state: Res<State<StoryPlaybackState>>,
     next_story_playback_state: Res<NextState<StoryPlaybackState>>,
@@ -321,7 +380,7 @@ pub fn update_time_scale(
         return;
     }
 
-    simulation_time.period = Duration::from_secs_f32(1.0 / (ticks_per_second.0 as f32));
+    fixed_time.set_timestep_seconds(1.0 / (ticks_per_second.0 as f64));
 }
 
 fn decimal_hours_to_hours_minutes(decimal_hours: f32) -> (f32, f32) {
