@@ -3,12 +3,10 @@ pub mod crater;
 
 use crate::{
     common::{
-        ant::Ant,
-        element::Element,
-        pheromone::{
+        ant::Ant, element::Element, grid::ElementEntityPositionCache, pheromone::{
             initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
             Pheromone,
-        },
+        }
     },
     story_time::StoryPlaybackState,
     SimulationTickSet,
@@ -85,6 +83,7 @@ impl Plugin for CraterSimulationPlugin {
             (
                 despawn_model::<Ant, AtCrater>,
                 despawn_model::<Element, AtCrater>,
+                despawn_model::<ElementEntityPositionCache, AtCrater>,
                 despawn_model::<Pheromone, AtCrater>,
                 despawn_model::<Crater, AtCrater>,
                 remove_pheromone_resources::<AtCrater>,

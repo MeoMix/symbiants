@@ -7,7 +7,7 @@ pub mod visible_grid;
 
 use self::{
     camera::RenderingCameraPlugin,
-    element::sprite_sheet::start_load_element_sprite_sheet,
+    element::{sprite_sheet::start_load_element_sprite_sheet, ElementTilemap},
     pheromone::{
         cleanup_pheromones, initialize_pheromone_resources, on_update_pheromone_visibility,
     },
@@ -228,6 +228,7 @@ impl Plugin for CommonRenderingPlugin {
                 cleanup_pheromones,
                 set_visible_grid_state_none,
                 remove_loading_resources,
+                despawn_view::<ElementTilemap>,
             )
                 .in_set(CleanupSet::BeforeSimulationCleanup),
         );

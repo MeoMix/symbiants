@@ -3,12 +3,10 @@ pub mod gravity;
 pub mod nest;
 
 use crate::common::{
-    ant::Ant,
-    element::Element,
-    pheromone::{
+    ant::Ant, element::Element, grid::ElementEntityPositionCache, pheromone::{
         initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
         Pheromone,
-    },
+    }
 };
 
 use self::{
@@ -179,6 +177,7 @@ impl Plugin for NestSimulationPlugin {
             (
                 despawn_model::<Ant, AtNest>,
                 despawn_model::<Element, AtNest>,
+                despawn_model::<ElementEntityPositionCache, AtNest>,
                 despawn_model::<Pheromone, AtNest>,
                 despawn_model::<Nest, AtNest>,
                 remove_pheromone_resources::<AtNest>,

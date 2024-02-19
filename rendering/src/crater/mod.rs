@@ -114,7 +114,6 @@ impl Plugin for CraterRenderingPlugin {
                 despawn_view_by_model::<Ant, AtCrater>,
                 cleanup_ants,
                 despawn_view_by_model::<Element, AtCrater>,
-                despawn_view::<ElementTilemap>,
                 cleanup_elements,
                 despawn_view_by_model::<Pheromone, AtCrater>,
             )

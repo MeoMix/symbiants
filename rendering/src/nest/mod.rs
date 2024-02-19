@@ -160,7 +160,6 @@ impl Plugin for NestRenderingPlugin {
                 despawn_view_by_model::<Ant, AtNest>,
                 cleanup_ants,
                 despawn_view_by_model::<Element, AtNest>,
-                despawn_view::<ElementTilemap>,
                 cleanup_elements,
                 despawn_view_by_model::<Pheromone, AtNest>,
             )
