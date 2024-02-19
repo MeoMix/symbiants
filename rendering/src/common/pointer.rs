@@ -1,4 +1,8 @@
-use super::{camera::RenderingCamera, selection::SelectedEntity, visible_grid::VisibleGrid};
+use super::{
+    camera::RenderingCamera,
+    selection::SelectedEntity,
+    visible_grid::{world_to_grid_position, VisibleGrid},
+};
 use bevy::{prelude::*, window::PrimaryWindow};
 use simulation::{
     common::{
@@ -121,7 +125,7 @@ pub fn handle_pointer_tap<Z: Zone + Copy>(
         return;
     }
 
-    let grid_position = grid.world_to_grid_position(world_position);
+    let grid_position = world_to_grid_position(grid, world_position);
 
     if *pointer_action != PointerAction::Select {
         external_simulation_event_writer.send(pointer_action_to_simulation_event(

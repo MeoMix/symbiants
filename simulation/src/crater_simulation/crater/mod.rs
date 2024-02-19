@@ -5,7 +5,7 @@ use crate::{
             AntName, AntOrientation, AntRole, Facing, Initiative,
         },
         element::{Element, ElementBundle},
-        grid::Grid,
+        grid::{ElementEntityPositionCache, Grid},
         position::Position,
         Zone,
     },
@@ -23,8 +23,6 @@ pub struct AtCrater;
 
 impl Zone for AtCrater {}
 
-/// Note the intentional omission of reflection/serialization.
-/// This is because Crater is trivially regenerated on app startup from persisted state.
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct Crater;
@@ -56,8 +54,9 @@ pub fn insert_crater_grid(
     commands.entity(crater_query.single()).insert(Grid::new(
         settings.crater_width,
         settings.crater_height,
-        elements_cache,
     ));
+
+    commands.spawn((ElementEntityPositionCache(elements_cache), AtCrater));
 }
 
 /// Creates a new grid of Elements. The grid is densley populated.

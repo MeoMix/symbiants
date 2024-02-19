@@ -5,7 +5,7 @@ use crate::common::{
         sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
         ElementExposure,
     },
-    visible_grid::VisibleGrid,
+    visible_grid::{grid_to_world_position, VisibleGrid},
     ModelViewEntityMap,
 };
 use bevy::prelude::*;
@@ -232,9 +232,8 @@ pub fn on_update_ant_position(
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             if let Ok((mut transform, translation_offset)) = ant_view_query.get_mut(ant_view_entity)
             {
-                transform.translation = grid
-                    .grid_to_world_position(*position)
-                    .add(translation_offset.0);
+                transform.translation =
+                    grid_to_world_position(grid, *position).add(translation_offset.0);
             }
         }
     }
@@ -446,9 +445,7 @@ fn spawn_ant_sprite(
             translation_offset,
             SpatialBundle {
                 transform: Transform {
-                    translation: grid
-                        .grid_to_world_position(*position)
-                        .add(translation_offset.0),
+                    translation: grid_to_world_position(grid, *position).add(translation_offset.0),
                     ..default()
                 },
                 ..default()

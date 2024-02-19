@@ -5,6 +5,8 @@ use simulation::{
     settings::Settings,
 };
 
+use crate::common::visible_grid::grid_to_world_position;
+
 #[derive(Component)]
 pub struct NestEntrance;
 
@@ -16,7 +18,7 @@ pub fn spawn_nest_entrance(
     let center_position = Position::new(settings.crater_width / 2, settings.crater_height / 2);
     let grid = grid_query.single();
     let nest_entrance_sprite = SpriteBundle {
-        transform: Transform::from_translation(grid.grid_to_world_position(center_position)),
+        transform: Transform::from_translation(grid_to_world_position(grid, center_position)),
         sprite: Sprite {
             color: Color::BLACK,
             // TODO: bigger nest would be good, but math is slightly harder and I am lazy

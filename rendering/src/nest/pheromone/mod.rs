@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use crate::common::{
-    pheromone::PheromoneVisibility, visible_grid::VisibleGrid, ModelViewEntityMap,
+    pheromone::PheromoneVisibility,
+    visible_grid::{grid_to_world_position, VisibleGrid},
+    ModelViewEntityMap,
 };
 
 use simulation::{
@@ -72,7 +74,6 @@ pub fn spawn_pheromones(
     }
 }
 
-
 /// Non-System Helper Functions:
 
 fn spawn_pheromone(
@@ -88,9 +89,10 @@ fn spawn_pheromone(
     let pheromone_view_entity = commands
         .spawn((
             SpriteBundle {
-                transform: Transform::from_translation(
-                    grid.grid_to_world_position(*pheromone_position),
-                ),
+                transform: Transform::from_translation(grid_to_world_position(
+                    grid,
+                    *pheromone_position,
+                )),
                 sprite: get_pheromone_sprite(pheromone, pheromone_strength),
                 visibility: pheromone_visibility.0,
                 ..default()

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use simulation::common::{grid::Grid, position::Position};
 
-use super::VisibleGrid;
+use super::{visible_grid::grid_to_world_position, VisibleGrid};
 
 #[derive(Resource, Default)]
 pub struct SelectedEntity(pub Option<Entity>);
@@ -48,7 +48,7 @@ pub fn on_update_selected(
 
     let position = entity_position_query.get(newly_selected_entity).unwrap();
 
-    let mut world_position = grid.grid_to_world_position(*position);
+    let mut world_position = grid_to_world_position(grid, *position);
     // render selection UI above ants
     world_position.z = 3.0;
 
@@ -102,7 +102,7 @@ pub fn on_update_selected_position(
         Err(_) => return,
     };
 
-    let mut world_position = grid.grid_to_world_position(*selected_entity_position);
+    let mut world_position = grid_to_world_position(grid, *selected_entity_position);
     // render selection UI above ants
     world_position.z = 3.0;
 

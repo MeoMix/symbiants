@@ -5,7 +5,7 @@ use crate::{
             AntName, AntOrientation, AntRole, Facing, Initiative,
         },
         element::{Element, ElementBundle},
-        grid::Grid,
+        grid::{ElementEntityPositionCache, Grid},
         position::Position,
         Zone,
     },
@@ -157,6 +157,7 @@ pub fn insert_nest_grid(
     commands.entity(nest_query.single()).insert(Grid::new(
         settings.nest_width,
         settings.nest_height,
-        elements_cache,
     ));
+
+    commands.spawn((ElementEntityPositionCache(elements_cache), AtNest));
 }
