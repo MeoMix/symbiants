@@ -188,7 +188,7 @@ impl Plugin for CommonRenderingPlugin {
                 ),
         );
 
-        // IMPORTANT: don't process user input in FixedUpdate/SimulationUpdate because event reads can be missed
+        // IMPORTANT: don't process user input in FixedUpdate because event reads can be missed
         // https://github.com/bevyengine/bevy/issues/7691
         app.add_systems(
             Update,

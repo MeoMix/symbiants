@@ -103,7 +103,7 @@ pub fn ants_add_chamber_pheromone(
             continue;
         }
 
-        if let Some(pheromone_entities) = pheromone_map.map.get(ant_position) {
+        if let Some(pheromone_entities) = pheromone_map.get(ant_position) {
             // There should only be one Pheromone::Chamber at a given position.
             for pheromone_entity in pheromone_entities {
                 let (pheromone, pheromone_strength) =

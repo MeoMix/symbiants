@@ -78,7 +78,7 @@ impl PheromoneDuration {
 /// This is because PheromoneMap is a cache that is trivially regenerated on app startup from persisted state.
 #[derive(Resource, Debug)]
 pub struct PheromoneMap<Z: Zone> {
-    pub map: HashMap<Position, Vec<Entity>>,
+    map: HashMap<Position, Vec<Entity>>,
     _marker: PhantomData<Z>,
 }
 
@@ -88,6 +88,10 @@ impl<Z: Zone> PheromoneMap<Z> {
             map,
             _marker: PhantomData,
         }
+    }
+
+    pub fn get(&self, position: &Position) -> Option<&Vec<Entity>> {
+        self.map.get(position)
     }
 }
 

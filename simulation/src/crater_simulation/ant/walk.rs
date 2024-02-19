@@ -43,48 +43,43 @@ pub fn ants_walk(
         let below_position = orientation.get_below_position(&position);
         let above_position = orientation.get_above_position(&position);
 
-        // TODO: No idea off the top of my head if orientation works for crater like it does for nest, but lets give it a shot.
         let has_air_ahead = grid_elements
             .get_entity(ahead_position)
             .map_or(false, |entity| {
-                grid_elements
-                    .get_element(*entity)
-                    .map_or(false, |element| *element == Element::Air)
+                *grid_elements.element(*entity) == Element::Air
             });
 
         // If ant is carrying food, it should follow the pheromone that leads home.
         // Otherwise, it should follow the pheromone that leads to food.
         // If no pheromones nearby, then just walk randomly.
-        let possible_pheromone_positions = [ahead_position, below_position, above_position];
+        let search_positions = [ahead_position, below_position, above_position];
 
-        let pheromones = possible_pheromone_positions
+        let desired_pheromone = match inventory.0 {
+            Some(_) => Pheromone::Nest,
+            None => Pheromone::Food,
+        };
+
+        // Find position of desired pheromone with the highest strength within search positions.
+        let pheromone_target_position = search_positions
             .iter()
             .flat_map(|position| {
-                let pheromone_entities = pheromone_map.map.get(position);
-
-                pheromone_entities
-                    .into_iter()
+                pheromone_map
+                    .get(position)
+                    .iter()
                     .flat_map(|pheromone_entities| {
-                        pheromone_entities.iter().map(|pheromone_entity| {
-                            (
-                                position.clone(),
-                                pheromone_query.get(*pheromone_entity).unwrap(),
-                            )
+                        pheromone_entities.iter().filter_map(|pheromone_entity| {
+                            let (pheromone, pheromone_strength) =
+                                pheromone_query.get(*pheromone_entity).unwrap();
+                            if *pheromone == desired_pheromone {
+                                Some((position, pheromone_strength))
+                            } else {
+                                None
+                            }
                         })
                     })
+                    .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>();
-
-        let pheromone_target_position = pheromones
-            .iter()
-            .filter(|(_, (&pheromone, _))| {
-                if inventory.0.is_some() {
-                    pheromone == Pheromone::Nest
-                } else {
-                    pheromone == Pheromone::Food
-                }
-            })
-            .max_by_key(|(_, (_, &strength))| strength.value())
+            .max_by_key(|&(_, pheromone_strength)| pheromone_strength.value())
             .map(|(position, _)| position);
 
         if let Some(pheromone_target_position) = pheromone_target_position {

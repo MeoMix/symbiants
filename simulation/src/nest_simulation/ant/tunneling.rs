@@ -196,7 +196,7 @@ pub fn ants_add_tunnel_pheromone(
             continue;
         }
 
-        if let Some(pheromone_entities) = pheromone_map.map.get(ant_position) {
+        if let Some(pheromone_entities) = pheromone_map.get(ant_position) {
             // There should only be one Pheromone::Tunnel at a given position.
             for pheromone_entity in pheromone_entities {
                 let (pheromone, pheromone_strength) =
@@ -248,7 +248,7 @@ pub fn ants_remove_tunnel_pheromone(
             let adjacent_pheromones = ant_position
                 .get_adjacent_positions()
                 .iter()
-                .filter_map(|position| pheromone_map.map.get(position))
+                .filter_map(|position| pheromone_map.get(position))
                 .flat_map(|entities| entities.iter())
                 .filter_map(|entity| pheromone_query.get(*entity).ok())
                 .collect::<Vec<(&Pheromone, &PheromoneStrength)>>();
