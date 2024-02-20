@@ -16,7 +16,7 @@ pub fn ants_set_pheromone_emitter(
             commands
                 .entity(ant_entity)
                 // TODO: It would be nice to convey through the type system that only one can be applied at a time
-                .insert(LeavingFood(100))
+                .insert(LeavingFood(1000))
                 .remove::<LeavingNest>();
         }
     }

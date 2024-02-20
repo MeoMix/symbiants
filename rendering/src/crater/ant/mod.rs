@@ -254,6 +254,7 @@ pub fn on_update_ant_orientation(
         }
 
         if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
+            // TODO: This can fail when an ant goes back to nest since it's still part of the ModelViewEntityMap but its view is in another zone.
             let ant_sprite_container = ant_view_query.get(*ant_view_entity).unwrap();
             let mut transform = transform_query
                 .get_mut(ant_sprite_container.sprite_entity)

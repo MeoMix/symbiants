@@ -42,6 +42,10 @@ impl PheromoneStrength {
     pub fn max(&self) -> isize {
         self.max
     }
+
+    pub fn increment(&mut self, value: isize) {
+        self.value = (self.value + value).min(self.max);
+    }
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]

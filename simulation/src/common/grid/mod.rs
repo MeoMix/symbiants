@@ -2,6 +2,7 @@ use super::Zone;
 use crate::common::{element::Element, position::Position};
 use bevy::{ecs::system::SystemParam, prelude::*};
 
+// TODO: Either this should be a Resource or PheromoneMap should be a Component
 #[derive(Component, Debug)]
 pub struct ElementEntityPositionCache(pub Vec<Vec<Entity>>);
 

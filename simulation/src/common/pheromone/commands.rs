@@ -70,18 +70,26 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
             .get(&self.position)
             .map_or_else(Vec::new, |pheromone_entities| pheromone_entities.clone());
 
-        let has_pheromone = pheromone_entities.iter().any(|&entity| {
+        let matching_pheromone_entity = pheromone_entities.iter().find(|&entity| {
             world
                 .query::<&Pheromone>()
-                .get(world, entity)
+                .get(world, *entity)
                 .map_or(false, |pheromone| *pheromone == self.pheromone)
         });
 
-        // TODO: Instead of early exit, seems better to "sum" the PheromoneStrengths, but don't want the strength to grow indefinitely.
-        if has_pheromone {
+        if let Some(matching_pheromone_entity) = matching_pheromone_entity {
+            // Update the existing entity's PheromoneStrength.
+            let mut pheromone_strength = world
+                .query::<&mut PheromoneStrength>()
+                .get_mut(world, *matching_pheromone_entity)
+                .unwrap();
+
+            // TODO: maybe incrementing by all of value is too much
+            pheromone_strength.increment(self.pheromone_strength.value());
             return;
         }
 
+        // Otherwise, insert new pheromone
         let pheromone_entity = world
             .spawn((
                 self.position,

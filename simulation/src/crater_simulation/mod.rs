@@ -14,9 +14,7 @@ use crate::{
 
 use self::{
     ant::{
-        dig::ants_dig, emit_pheromone::ants_emit_pheromone, register_ant,
-        set_pheromone_emitter::ants_set_pheromone_emitter, travel::ants_travel_to_nest,
-        walk::ants_walk,
+        dig::ants_dig, emit_pheromone::ants_emit_pheromone, follow_pheromone::ants_follow_pheromone, register_ant, set_pheromone_emitter::ants_set_pheromone_emitter, travel::ants_travel_to_nest, walk::ants_walk
     },
     crater::{
         register_crater, spawn_crater, spawn_crater_ants, spawn_crater_elements, AtCrater, Crater,
@@ -67,6 +65,7 @@ impl Plugin for CraterSimulationPlugin {
                 // Ants move before acting because positions update instantly, but actions use commands to mutate the world and are deferred + batched.
                 // By applying movement first, commands do not need to anticipate ants having moved, but the opposite would not be true.
                 ants_travel_to_nest,
+                ants_follow_pheromone,
                 ants_walk,
                 ants_dig,
             )

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use chrono::Datelike;
 use chrono::{DateTime, LocalResult, NaiveDate, TimeZone, Timelike, Utc};
 
+// TODO: Consider representing these using u64
 pub const DEFAULT_TICKS_PER_SECOND: isize = 10;
 pub const MAX_USER_TICKS_PER_SECOND: isize = 1_500;
 pub const MAX_SYSTEM_TICKS_PER_SECOND: isize = 50_000;
@@ -226,10 +227,8 @@ pub fn remove_story_time_resources(mut commands: Commands) {
     commands.remove_resource::<StoryTime>();
     commands.remove_resource::<FastForwardPendingTicks>();
     commands.remove_resource::<TicksPerSecond>();
-    // Can't remove this resource because it's owned by Bevy.
-    // Just assume they'll get reset to default when calling `initialize`. It's not a big deal
-    // as long as Time::<Fixed> is reset when the app is restarted.
-    // commands.remove_resource::<Time<Fixed>>();
+    // Can't remove Time::<Fixed> without breaking Bevy, so just reset to default on unload.
+    commands.init_resource::<Time<Fixed>>();
 }
 
 /// On startup, determine how much real-world time has passed since the last time the app ran,

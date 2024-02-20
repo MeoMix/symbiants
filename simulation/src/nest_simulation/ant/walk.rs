@@ -69,7 +69,7 @@ pub fn ants_walk(
             });
 
         // An ant might turn randomly. This is to prevent ants from getting stuck in loops and add visual variety.
-        let is_turning_randomly = rng.chance(settings.probabilities.random_turn.into());
+        let is_turning_randomly = rng.chance(settings.probabilities.random_nest_turn.into());
 
         if !has_air_ahead || is_turning_randomly {
             *orientation =

@@ -42,7 +42,7 @@ pub fn ants_emit_pheromone(
                 *position,
                 Pheromone::Food,
                 // TODO: Read 100 from config
-                PheromoneStrength::new(leaving_food.0, 100),
+                PheromoneStrength::new(leaving_food.0, 1000),
                 AtCrater,
             );
 
@@ -57,7 +57,7 @@ pub fn ants_emit_pheromone(
             commands.spawn_pheromone(
                 *position,
                 Pheromone::Nest,
-                PheromoneStrength::new(leaving_nest.0, 100),
+                PheromoneStrength::new(leaving_nest.0, 1000),
                 AtCrater,
             );
 
