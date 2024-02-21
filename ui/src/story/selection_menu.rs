@@ -10,7 +10,11 @@ use simulation::{
         pheromone::{Pheromone, PheromoneStrength},
         position::Position,
     },
-    nest_simulation::ant::{birthing::Birthing, sleep::Asleep},
+    crater_simulation::crater::AtCrater,
+    nest_simulation::{
+        ant::{birthing::Birthing, sleep::Asleep},
+        nest::AtNest,
+    },
 };
 
 #[derive(Component, Default, PartialEq, Copy, Clone, Debug)]
@@ -28,8 +32,14 @@ pub fn update_selection_menu(
         Option<&Dead>,
         Option<&Asleep>,
     )>,
-    selected_element_query: Query<(&Element, &Position)>,
-    pheromone_query: Query<(&Position, &Pheromone, &PheromoneStrength)>,
+    selected_element_query: Query<(&Element, &Position, Option<&AtNest>, Option<&AtCrater>)>,
+    pheromone_query: Query<(
+        &Position,
+        &Pheromone,
+        &PheromoneStrength,
+        Option<&AtNest>,
+        Option<&AtCrater>,
+    )>,
     elements_query: Query<&Element>,
     selected_entity: Res<SelectedEntity>,
 ) {
@@ -52,12 +62,29 @@ pub fn update_selection_menu(
         .default_pos(egui::Pos2::new(0.0, window.height()))
         .resizable(false)
         .show(ctx, |ui| {
-            if let Ok((element, element_position)) = selected_element {
+            if let Ok((element, element_position, element_at_nest, element_at_crater)) =
+                selected_element
+            {
                 ui.label("Element");
                 ui.label(&format!("Type: {:?}", element));
 
-                for (pheromone_position, pheromone, pheromone_strength) in pheromone_query.iter() {
-                    if pheromone_position == element_position {
+                // TODO: This is weird because really the "Pheromone" is selected not necessarily the Element?
+                // TODO: This shows pheromones for unrelated inactive zone - want to match on zone
+                for (
+                    pheromone_position,
+                    pheromone,
+                    pheromone_strength,
+                    pheromone_at_nest,
+                    pheromone_at_crater,
+                ) in pheromone_query.iter()
+                {
+                    // TODO: This is such a dumb way to confirm that pheromone data is being shown for the relevant UI
+                    // Could subscribe selection_menu twice and use generics / no-op for irrelevant one as an alternative
+                    // but ideally would just work off of selection itself
+                    if pheromone_position == element_position
+                        && ((element_at_nest.is_some() && pheromone_at_nest.is_some())
+                        || (element_at_crater.is_some() && pheromone_at_crater.is_some()))
+                    {
                         ui.label(&format!("Pheromone Type: {:?}", pheromone));
                         ui.label(&format!(
                             "Pheromone Strength: {:.0}",

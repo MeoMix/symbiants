@@ -10,12 +10,14 @@ use self::{
     },
     background::{cleanup_background, spawn_background, CraterBackground},
     nest_entrance::{cleanup_nest_entrance, spawn_nest_entrance, NestEntrance},
-    pheromone::{on_spawn_pheromone, spawn_pheromones},
+    pheromone::{on_spawn_pheromone, on_update_pheromone_strength, spawn_pheromones},
 };
 use crate::common::{
     despawn_view, despawn_view_by_model,
     element::{
-        cleanup_elements, insert_element_exposure_map, on_spawn_element, process_element_exposure_changed_events, remove_element_exposure_map, spawn_element_tilemap, spawn_elements, update_element_exposure_map, ElementTilemap
+        cleanup_elements, insert_element_exposure_map, on_spawn_element,
+        process_element_exposure_changed_events, remove_element_exposure_map,
+        spawn_element_tilemap, spawn_elements, update_element_exposure_map, ElementTilemap,
     },
     on_despawn, on_model_removed_zone,
     visible_grid::{VisibleGrid, VisibleGridState},
@@ -59,6 +61,7 @@ impl Plugin for CraterRenderingPlugin {
                         on_update_ant_position,
                         on_update_ant_orientation,
                         on_update_ant_inventory,
+                        on_update_pheromone_strength,
                     ),
                 ),
             )

@@ -43,18 +43,17 @@ pub fn ants_follow_pheromone(
         // If no pheromones nearby, then just walk randomly.
         // Only consider locations which are walkable (i.e. contain air)
         let search_positions = [ahead_position, below_position, above_position]
-        .iter()
-        .filter_map(|position| {
-            grid_elements
-                .get_entity(*position)
-                .and_then(|entity| {
+            .iter()
+            .filter_map(|position| {
+                grid_elements.get_entity(*position).and_then(|entity| {
                     if *grid_elements.element(*entity) == Element::Air {
                         Some(*position)
                     } else {
                         None
                     }
                 })
-        }).collect::<Vec<_>>();
+            })
+            .collect::<Vec<_>>();
 
         let desired_pheromone = match inventory.0 {
             Some(_) => Pheromone::Nest,
@@ -90,7 +89,7 @@ pub fn ants_follow_pheromone(
         let max_strength_value = desired_pheromone_positions
             .iter()
             .map(|(_, strength)| strength.value())
-            .max_by_key(|&strength_value| strength_value)
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .unwrap();
 
         let desired_pheromone_target_positions = desired_pheromone_positions

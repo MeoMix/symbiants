@@ -74,6 +74,34 @@ pub fn spawn_pheromones(
     }
 }
 
+pub fn on_update_pheromone_strength(
+    pheromone_model_query: Query<(Entity, &Pheromone, Ref<PheromoneStrength>), With<AtNest>>,
+    mut sprite_query: Query<&mut Sprite>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
+    grid_query: Query<&Grid, With<AtNest>>
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if grid_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
+    for (pheromone_model_entity, pheromone, pheromone_strength) in pheromone_model_query.iter() {
+        if !pheromone_strength.is_changed() || pheromone_strength.is_added() {
+            continue;
+        }
+
+        if let Some(pheromone_view_entity) = model_view_entity_map.get(&pheromone_model_entity) {
+            let mut sprite = sprite_query.get_mut(*pheromone_view_entity).unwrap();
+            *sprite = get_pheromone_sprite(pheromone, pheromone_strength.as_ref());
+        }
+    }
+}
+
 /// Non-System Helper Functions:
 
 fn spawn_pheromone(

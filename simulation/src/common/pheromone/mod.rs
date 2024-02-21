@@ -22,12 +22,12 @@ pub enum Pheromone {
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
 pub struct PheromoneStrength {
-    value: isize,
-    max: isize,
+    value: f32,
+    max: f32,
 }
 
 impl PheromoneStrength {
-    pub fn new(value: isize, max: isize) -> Self {
+    pub fn new(value: f32, max: f32) -> Self {
         if value > max {
             panic!("PheromoneStrength value cannot be greater than max");
         }
@@ -35,48 +35,48 @@ impl PheromoneStrength {
         Self { value, max }
     }
 
-    pub fn value(&self) -> isize {
+    pub fn value(&self) -> f32 {
         self.value
     }
 
-    pub fn max(&self) -> isize {
-        self.max
-    }
-
-    pub fn increment(&mut self, value: isize) {
-        self.value = (self.value + value).min(self.max);
-    }
-}
-
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]
-#[reflect(Component)]
-pub struct PheromoneDuration {
-    value: f32,
-    max: f32,
-}
-
-impl Default for PheromoneDuration {
-    fn default() -> Self {
-        Self {
-            value: 0.0,
-            max: 100.0,
-        }
-    }
-}
-
-impl PheromoneDuration {
     pub fn max(&self) -> f32 {
         self.max
     }
 
-    pub fn tick(&mut self, rate_of_pheromone_expiration: f32) {
-        self.value = (self.value + rate_of_pheromone_expiration).min(self.max);
-    }
-
-    pub fn is_expired(&self) -> bool {
-        self.value >= self.max / 2.0
+    pub fn increment(&mut self, value: f32) {
+        self.value = (self.value + value).min(self.max);
     }
 }
+
+// #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect)]
+// #[reflect(Component)]
+// pub struct PheromoneDuration {
+//     value: f32,
+//     max: f32,
+// }
+
+// impl Default for PheromoneDuration {
+//     fn default() -> Self {
+//         Self {
+//             value: 0.0,
+//             max: 100.0,
+//         }
+//     }
+// }
+
+// impl PheromoneDuration {
+//     pub fn max(&self) -> f32 {
+//         self.max
+//     }
+
+//     pub fn tick(&mut self, rate_of_pheromone_expiration: f32) {
+//         self.value = (self.value + rate_of_pheromone_expiration).min(self.max);
+//     }
+
+//     pub fn is_expired(&self) -> bool {
+//         self.value >= self.max / 2.0
+//     }
+// }
 
 /// Note the intentional omission of reflection/serialization.
 /// This is because PheromoneMap is a cache that is trivially regenerated on app startup from persisted state.
@@ -104,7 +104,7 @@ impl<Z: Zone> PheromoneMap<Z> {
 pub fn register_pheromone(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Pheromone>();
     app_type_registry.write().register::<PheromoneStrength>();
-    app_type_registry.write().register::<PheromoneDuration>();
+    // app_type_registry.write().register::<PheromoneDuration>();
 }
 
 /// Called after creating a new story, or loading an existing story from storage.
@@ -130,17 +130,19 @@ pub fn remove_pheromone_resources<Z: Zone>(mut commands: Commands) {
 }
 
 pub fn pheromone_duration_tick<Z: Zone>(
-    mut pheromone_query: Query<(&mut PheromoneDuration, &Position, Entity), With<Z>>,
+    mut pheromone_query: Query<(&mut PheromoneStrength, &Position, Entity), With<Z>>,
     mut commands: Commands,
 ) {
-    for (mut pheromone_duration, position, pheromone_entity) in pheromone_query.iter_mut() {
+    for (mut pheromone_strength, position, pheromone_entity) in pheromone_query.iter_mut() {
         // Get 100% expired once every hour
-        let rate_of_pheromone_expiration =
-            pheromone_duration.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
+        // let rate_of_pheromone_expiration =
+        //     pheromone_duration.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
 
-        pheromone_duration.tick(rate_of_pheromone_expiration);
+        // pheromone_duration.tick(rate_of_pheromone_expiration);
+        let increment = pheromone_strength.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
+        pheromone_strength.increment(-increment);
 
-        if pheromone_duration.is_expired() {
+        if pheromone_strength.value() <= 0.0 {
             commands.despawn_pheromone(pheromone_entity, *position, PhantomData::<Z>);
         }
     }

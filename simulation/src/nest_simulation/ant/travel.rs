@@ -79,7 +79,7 @@ pub fn ants_travel_to_crater(
             .remove::<Tunneling>()
             .remove::<Chambering>()
             .insert(AtCrater)
-            .insert(LeavingNest(1000))
+            .insert(LeavingNest(1000.0))
             .insert(Position::new(
                 // TODO: Express this more clearly - trying to not have it appear ontop of the nest sprite
                 (settings.crater_width / 2) + 1,

@@ -1,4 +1,5 @@
 use crate::common::{
+    pheromone::PheromoneVisibility,
     visible_grid::{grid_to_world_position, VisibleGrid},
     ModelViewEntityMap,
 };
@@ -17,7 +18,7 @@ pub fn on_spawn_pheromone(
         (Entity, &Position, &Pheromone, &PheromoneStrength),
         (Added<Pheromone>, With<AtCrater>),
     >,
-    // pheromone_visibility: Res<PheromoneVisibility>,
+    pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
     grid_query: Query<&Grid, With<AtCrater>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
@@ -39,7 +40,7 @@ pub fn on_spawn_pheromone(
             pheromone,
             position,
             pheromone_strength,
-            // &pheromone_visibility,
+            &pheromone_visibility,
             grid,
             &mut commands,
             &mut model_view_entity_map,
@@ -52,7 +53,7 @@ pub fn spawn_pheromones(
         (Entity, &Position, &Pheromone, &PheromoneStrength),
         With<AtCrater>,
     >,
-    // pheromone_visibility: Res<PheromoneVisibility>,
+    pheromone_visibility: Res<PheromoneVisibility>,
     mut commands: Commands,
     grid_query: Query<&Grid, With<AtCrater>>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
@@ -66,7 +67,7 @@ pub fn spawn_pheromones(
             pheromone,
             position,
             pheromone_strength,
-            // &pheromone_visibility,
+            &pheromone_visibility,
             grid,
             &mut commands,
             &mut model_view_entity_map,
@@ -74,34 +75,33 @@ pub fn spawn_pheromones(
     }
 }
 
-// pub fn on_update_pheromone_visibility(
-//     pheromone_model_query: Query<Entity, With<Pheromone>>,
-//     mut pheromone_view_query: Query<&mut Visibility>,
-//     // pheromone_visibility: Res<PheromoneVisibility>,
-//     model_view_entity_map: Res<ModelViewEntityMap>,
-//     grid_query: Query<&Grid, With<AtCrater>>,
-//     visible_grid: Res<VisibleGrid>,
-// ) {
-//     let visible_grid_entity = match visible_grid.0 {
-//         Some(visible_grid_entity) => visible_grid_entity,
-//         None => return,
-//     };
+pub fn on_update_pheromone_strength(
+    pheromone_model_query: Query<(Entity, &Pheromone, Ref<PheromoneStrength>), With<AtCrater>>,
+    mut sprite_query: Query<&mut Sprite>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
+    visible_grid: Res<VisibleGrid>,
+    grid_query: Query<&Grid, With<AtCrater>>,
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
 
-//     if grid_query.get(visible_grid_entity).is_err() {
-//         return;
-//     }
+    if grid_query.get(visible_grid_entity).is_err() {
+        return;
+    }
 
-//     if pheromone_visibility.is_changed() {
-//         for pheromone_model_entity in pheromone_model_query.iter() {
-//             if let Some(pheromone_view_entity) = model_view_entity_map.get(&pheromone_model_entity)
-//             {
-//                 if let Ok(mut visibility) = pheromone_view_query.get_mut(*pheromone_view_entity) {
-//                     *visibility = pheromone_visibility.0;
-//                 }
-//             }
-//         }
-//     }
-// }
+    for (pheromone_model_entity, pheromone, pheromone_strength) in pheromone_model_query.iter() {
+        if !pheromone_strength.is_changed() || pheromone_strength.is_added() {
+            continue;
+        }
+
+        if let Some(pheromone_view_entity) = model_view_entity_map.get(&pheromone_model_entity) {
+            let mut sprite = sprite_query.get_mut(*pheromone_view_entity).unwrap();
+            *sprite = get_pheromone_sprite(pheromone, pheromone_strength.as_ref());
+        }
+    }
+}
 
 /// Non-System Helper Functions:
 
@@ -110,7 +110,7 @@ fn spawn_pheromone(
     pheromone: &Pheromone,
     pheromone_position: &Position,
     pheromone_strength: &PheromoneStrength,
-    // pheromone_visibility: &PheromoneVisibility,
+    pheromone_visibility: &PheromoneVisibility,
     grid: &Grid,
     commands: &mut Commands,
     model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
@@ -123,7 +123,7 @@ fn spawn_pheromone(
                     *pheromone_position,
                 )),
                 sprite: get_pheromone_sprite(pheromone, pheromone_strength),
-                // visibility: pheromone_visibility.0,
+                visibility: pheromone_visibility.0,
                 ..default()
             },
             AtCrater,

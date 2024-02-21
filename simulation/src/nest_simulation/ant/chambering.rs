@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct Chambering(pub isize);
+pub struct Chambering(pub f32);
 
 /// If covered in Chamber pheromone then the following things need to occur:
 ///  1) Look forward in the direction the ant is facing - if something is diggable - dig it.
@@ -69,11 +69,11 @@ pub fn ants_chamber_pheromone_act(
             &mut commands,
         ) {
             // Subtract 1 because not placing pheromone at ant_position but instead placing it at a position adjacent
-            if chambering.0 - 1 > 0 {
+            if chambering.0 - 1.0 > 0.0 {
                 commands.spawn_pheromone(
                     *position,
                     Pheromone::Chamber,
-                    PheromoneStrength::new(chambering.0 - 1, settings.chamber_size),
+                    PheromoneStrength::new(chambering.0 - 1.0, settings.chamber_size as f32),
                     AtNest,
                 );
             }
@@ -119,10 +119,11 @@ pub fn ants_add_chamber_pheromone(
     }
 }
 
+// TODO: This is kinda weird - maybe should just diminish naturally
 /// Whenever an ant takes a step it loses 1 Chambering pheromone.
 pub fn ants_fade_chamber_pheromone(mut ants_query: Query<&mut Chambering, (With<AtNest>, Changed<Position>)>) {
     for mut chambering in ants_query.iter_mut() {
-        chambering.0 -= 1;
+        chambering.0 -= 1.0;
     }
 }
 
@@ -144,7 +145,7 @@ pub fn ants_remove_chamber_pheromone(
             commands.entity(entity).remove::<Chambering>();
         } else if nest.is_aboveground(position) {
             commands.entity(entity).remove::<Chambering>();
-        } else if chambering.0 <= 0 {
+        } else if chambering.0 <= 0.0 {
             commands.entity(entity).remove::<Chambering>();
         }
     }

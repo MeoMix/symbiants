@@ -18,7 +18,7 @@ use self::{
         cleanup_background, initialize_background_resources, spawn_background,
         spawn_background_tilemap, update_sky_background, Background, BackgroundTilemap,
     },
-    pheromone::{on_spawn_pheromone, spawn_pheromones},
+    pheromone::{on_spawn_pheromone, on_update_pheromone_strength, spawn_pheromones},
 };
 use super::common::{
     despawn_view, despawn_view_by_model,
@@ -93,6 +93,7 @@ impl Plugin for NestRenderingPlugin {
                         on_update_ant_color,
                         on_update_ant_inventory,
                         on_update_element_position::<AtNest>,
+                        on_update_pheromone_strength,
                     ),
                     // Misc
                     (

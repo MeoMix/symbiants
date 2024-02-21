@@ -13,11 +13,11 @@ use crate::{
 // TODO: Need to persist LeavingNest and LeavingFood
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct LeavingNest(pub isize);
+pub struct LeavingNest(pub f32);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct LeavingFood(pub isize);
+pub struct LeavingFood(pub f32);
 
 pub fn ants_emit_pheromone(
     mut ants_query: Query<
@@ -42,13 +42,13 @@ pub fn ants_emit_pheromone(
                 *position,
                 Pheromone::Food,
                 // TODO: Read 100 from config
-                PheromoneStrength::new(leaving_food.0, 1000),
+                PheromoneStrength::new(leaving_food.0, 1000.0),
                 AtCrater,
             );
 
-            leaving_food.0 -= 1;
+            leaving_food.0 -= 1.0;
 
-            if leaving_food.0 <= 0 {
+            if leaving_food.0 <= 0.0 {
                 commands.entity(ant_entity).remove::<LeavingFood>();
             }
         }
@@ -57,13 +57,13 @@ pub fn ants_emit_pheromone(
             commands.spawn_pheromone(
                 *position,
                 Pheromone::Nest,
-                PheromoneStrength::new(leaving_nest.0, 1000),
+                PheromoneStrength::new(leaving_nest.0, 1000.0),
                 AtCrater,
             );
 
-            leaving_nest.0 -= 1;
+            leaving_nest.0 -= 1.0;
 
-            if leaving_nest.0 <= 0 {
+            if leaving_nest.0 <= 0.0 {
                 commands.entity(ant_entity).remove::<LeavingNest>();
             }
         }

@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 // TODO: Consider replacing this with something more like a "CurrentAction" enum to reflect that an Ant shouldn't perform multiple actions at once.
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct Tunneling(pub isize);
+pub struct Tunneling(pub f32);
 
 // "Whenever ant walks over tile with nesting pheromone, they gain "Nesting: 8". Then, they attempt to take a step forward and decrement Nesting to 7. If they end up digging, nesting is "forgotten" and they shift back to hauling dirt
 // so they haul it out, then walk back, hit the pheromone again, and repeatedly try to take 8 steps
@@ -159,11 +159,11 @@ pub fn ants_tunnel_pheromone_act(
         // Reduce PheromoneStrength by 1 because not digging at ant_position, but ant_position + 1.
         // If this didn't occur then either the ant would need to apply strength-1 to itself when stepping onto a tile, or
         // PheromoneStrength would never reduce.
-        if tunneling.0 - 1 > 0 {
+        if tunneling.0 - 1.0 > 0.0 {
             commands.spawn_pheromone(
                 dig_position,
                 Pheromone::Tunnel,
-                PheromoneStrength::new(tunneling.0 - 1, settings.tunnel_length),
+                PheromoneStrength::new(tunneling.0 - 1.0, settings.tunnel_length as f32),
                 AtNest,
             );
         }
@@ -217,7 +217,7 @@ pub fn ants_fade_tunnel_pheromone(
     mut ants_query: Query<&mut Tunneling, (Changed<Position>, With<AtNest>)>,
 ) {
     for mut tunneling in ants_query.iter_mut() {
-        tunneling.0 -= 1;
+        tunneling.0 -= 1.0;
     }
 }
 
@@ -231,6 +231,7 @@ pub fn ants_remove_tunnel_pheromone(
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
     pheromone_map: Res<PheromoneMap<AtNest>>,
+    grid_elements: GridElements<AtNest>,
     mut commands: Commands,
     nest_query: Query<&Nest>,
     settings: Res<Settings>,
@@ -242,11 +243,12 @@ pub fn ants_remove_tunnel_pheromone(
             commands.entity(ant_entity).remove::<Tunneling>();
         } else if nest.is_aboveground(ant_position) {
             commands.entity(ant_entity).remove::<Tunneling>();
-        } else if tunneling.0 <= 0 {
+        } else if tunneling.0 <= 0.0 {
             commands.entity(ant_entity).remove::<Tunneling>();
 
-            let adjacent_pheromones = ant_position
-                .get_adjacent_positions()
+            let adjacent_positions = ant_position.get_adjacent_positions();
+
+            let adjacent_pheromones = adjacent_positions
                 .iter()
                 .filter_map(|position| pheromone_map.get(position))
                 .flat_map(|entities| entities.iter())
@@ -257,15 +259,32 @@ pub fn ants_remove_tunnel_pheromone(
                 adjacent_pheromones
                     .iter()
                     .any(|(&pheromone, &pheromone_strength)| {
-                        pheromone == Pheromone::Tunnel && pheromone_strength.value() == 1
+                        // TODO: not sure this logic still makes sense after switching to float
+                        pheromone == Pheromone::Tunnel && pheromone_strength.value() <= 1.0
                     });
 
-            if has_adjacant_low_strength_tunnel_pheromone {
+            // Confirm that ant is at the end of a tunnel by checking that there is only air on one side of it
+            // Otherwise, might be in the middle of a tunnel with an expiring pheromone trail.
+            let adjacent_air_positions = adjacent_positions
+                .iter()
+                .filter(|&position| {
+                    if let Some(element_entity) = grid_elements.get_entity(*position) {
+                        return *grid_elements.element(*element_entity) == Element::Air;
+                    }
+
+                    false
+                })
+                .collect::<Vec<_>>();
+
+            if has_adjacant_low_strength_tunnel_pheromone && adjacent_air_positions.len() <= 1 {
                 // If ant completed their tunneling pheromone naturally then it's time to build a chamber at the end of the tunnel.
                 commands.spawn_pheromone(
                     *ant_position,
                     Pheromone::Chamber,
-                    PheromoneStrength::new(settings.chamber_size, settings.chamber_size),
+                    PheromoneStrength::new(
+                        settings.chamber_size as f32,
+                        settings.chamber_size as f32,
+                    ),
                     AtNest,
                 );
             }

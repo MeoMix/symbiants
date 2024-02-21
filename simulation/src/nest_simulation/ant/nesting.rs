@@ -234,7 +234,7 @@ fn start_digging_nest(
     commands.spawn_pheromone(
         dig_position,
         Pheromone::Tunnel,
-        PheromoneStrength::new(settings.tunnel_length, settings.tunnel_length),
+        PheromoneStrength::new(settings.tunnel_length as f32, settings.tunnel_length as f32),
         AtNest,
     );
 }

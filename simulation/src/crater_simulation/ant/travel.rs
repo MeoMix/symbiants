@@ -59,10 +59,14 @@ pub fn ants_travel_to_nest(
             .remove::<LeavingFood>();
 
         // Make sure the ant is on its feet when it enters the nest
+        // TODO: This is written in a hacky way where it uses commands to update AntOrientation because if AtNest/AtCrater is enqueued to be removed,
+        // and orientation changes immediately, then on_update_ant_orientation runs against a stale zone and throws.
         if orientation.is_facing_north() {
-            *orientation = orientation.rotate_forward();
+            let rotated_orientation = orientation.rotate_forward();
+            ant_entity_commands.insert(AntOrientation::new(rotated_orientation.get_facing(), rotated_orientation.get_angle()));
         } else if orientation.is_facing_south() {
-            *orientation = orientation.rotate_backward();
+            let rotated_orientation = orientation.rotate_backward();
+            ant_entity_commands.insert(AntOrientation::new(rotated_orientation.get_facing(), rotated_orientation.get_angle()));
         }
 
         // TODO: There could be dirt/sand/food at the nest entrance - need to search and find a good place to put ant

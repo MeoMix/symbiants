@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::common::{
-    pheromone::{Pheromone, PheromoneDuration, PheromoneMap, PheromoneStrength},
+    pheromone::{Pheromone, PheromoneMap, PheromoneStrength},
     position::Position,
     Zone,
 };
@@ -84,8 +84,7 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
                 .get_mut(world, *matching_pheromone_entity)
                 .unwrap();
 
-            // TODO: maybe incrementing by all of value is too much
-            pheromone_strength.increment(self.pheromone_strength.value());
+            pheromone_strength.increment(self.pheromone_strength.value() * 0.1);
             return;
         }
 
@@ -94,7 +93,6 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
             .spawn((
                 self.position,
                 self.pheromone,
-                PheromoneDuration::default(),
                 self.pheromone_strength,
                 self.zone,
             ))
