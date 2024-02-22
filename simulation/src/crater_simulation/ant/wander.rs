@@ -15,7 +15,7 @@ use crate::{
 /// Ants do a random walk unless they find pheromone relevant to their needs.
 /// If they have food then they'll follow Pheromone that leads home.
 /// If they have no food then they'll follow Pheromone that leads to food.
-pub fn ants_walk(
+pub fn ants_wander(
     mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), With<AtCrater>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,

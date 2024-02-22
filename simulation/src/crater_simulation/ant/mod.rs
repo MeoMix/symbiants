@@ -3,7 +3,7 @@ pub mod emit_pheromone;
 pub mod follow_pheromone;
 pub mod set_pheromone_emitter;
 pub mod travel;
-pub mod walk;
+pub mod wander;
 
 use self::emit_pheromone::{LeavingFood, LeavingNest};
 use bevy::prelude::*;

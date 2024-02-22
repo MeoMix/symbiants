@@ -9,6 +9,7 @@ use crate::{
         position::Position,
     },
     crater_simulation::crater::AtCrater,
+    settings::Settings,
 };
 
 /// Ants will follow Food pheromone if they have no Food in their inventory
@@ -34,34 +35,37 @@ pub fn ants_follow_pheromone(
 
         // TODO: Holy crap this is hardcoded. This could be expressed using math and joining vectors rather than
         // explicitly turning based on known target position.
-        let ahead_position = orientation.get_ahead_position(&position);
-        let below_position = orientation.get_below_position(&position);
-        let above_position = orientation.get_above_position(&position);
+        let ahead_positions = get_ahead_positions(&orientation, &position, 10);
+        let below_positions = get_below_positions(&orientation, &position, 10);
+        let above_positions = get_above_positions(&orientation, &position, 10);
 
         // If ant is carrying food, it should follow the pheromone that leads home.
         // Otherwise, it should follow the pheromone that leads to food.
         // If no pheromones nearby, then just walk randomly.
         // Only consider locations which are walkable (i.e. contain air)
-        let search_positions = [ahead_position, below_position, above_position]
+        let search_positions = (ahead_positions
             .iter()
-            .filter_map(|position| {
-                grid_elements.get_entity(*position).and_then(|entity| {
-                    if *grid_elements.element(*entity) == Element::Air {
-                        Some(*position)
-                    } else {
-                        None
-                    }
-                })
+            .chain(below_positions.iter())
+            .chain(above_positions.iter()))
+        .filter_map(|position| {
+            grid_elements.get_entity(*position).and_then(|entity| {
+                if *grid_elements.element(*entity) == Element::Air {
+                    Some(*position)
+                } else {
+                    None
+                }
             })
-            .collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
         let desired_pheromone = match inventory.0 {
             Some(_) => Pheromone::Nest,
             None => Pheromone::Food,
         };
 
+        // TODO: Consider reverting this back to the simpler approach of following max strength rather than preferring forward movement.
         // Find position of desired pheromone with the highest strength within search positions.
-        let desired_pheromone_positions = search_positions
+        let pheromone_target_position = search_positions
             .iter()
             .flat_map(|position| {
                 pheromone_map
@@ -80,37 +84,78 @@ pub fn ants_follow_pheromone(
                     })
                     .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>();
+            .max_by(|(_, a), (_, b)| {
+                a.value()
+                    .partial_cmp(&b.value())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
+            .map(|(position, _)| *position);
 
-        if desired_pheromone_positions.is_empty() {
-            continue;
-        }
-
-        let max_strength_value = desired_pheromone_positions
-            .iter()
-            .map(|(_, strength)| strength.value())
-            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-            .unwrap();
-
-        let desired_pheromone_target_positions = desired_pheromone_positions
-            .into_iter()
-            .filter(|&(_, strength)| strength.value() == max_strength_value)
-            .map(|(position, _)| *position) // Dereference to clone the position, if necessary
-            .collect::<Vec<_>>();
-
-        // Prefer moving forward if possible - if there's confusion due to a tie in pheromones don't aimlessly spin in a circle.
-        if desired_pheromone_target_positions.contains(&ahead_position) {
-            *position = ahead_position;
-        } else {
-            if desired_pheromone_target_positions.contains(&below_position) {
-                *orientation = orientation.rotate_forward();
-                *position = below_position;
-            } else if desired_pheromone_target_positions.contains(&above_position) {
-                *orientation = orientation.rotate_backward();
-                *position = above_position;
+        if let Some(pheromone_target_position) = pheromone_target_position {
+            if ahead_positions.contains(&pheromone_target_position) {
+                *position = ahead_positions.first().unwrap().clone();
+            } else {
+                if below_positions.contains(&pheromone_target_position) {
+                    *orientation = orientation.rotate_forward();
+                    *position = below_positions.first().unwrap().clone();
+                } else if above_positions.contains(&pheromone_target_position) {
+                    *orientation = orientation.rotate_backward();
+                    *position = above_positions.first().unwrap().clone();
+                }
             }
-        }
 
-        initiative.consume_movement();
+            initiative.consume_movement();
+        }
     }
+}
+
+fn get_ahead_positions(
+    orientation: &AntOrientation,
+    start_position: &Position,
+    n: usize,
+) -> Vec<Position> {
+    let mut positions = Vec::new();
+    let mut current_position = start_position.clone();
+
+    for _ in 0..n {
+        let next_position = orientation.get_ahead_position(&current_position);
+        positions.push(next_position.clone());
+        current_position = next_position;
+    }
+
+    positions
+}
+
+fn get_below_positions(
+    orientation: &AntOrientation,
+    start_position: &Position,
+    n: usize,
+) -> Vec<Position> {
+    let mut positions = Vec::new();
+    let mut current_position = start_position.clone();
+
+    for _ in 0..n {
+        let next_position = orientation.get_below_position(&current_position);
+        positions.push(next_position.clone());
+        current_position = next_position;
+    }
+
+    positions
+}
+
+fn get_above_positions(
+    orientation: &AntOrientation,
+    start_position: &Position,
+    n: usize,
+) -> Vec<Position> {
+    let mut positions = Vec::new();
+    let mut current_position = start_position.clone();
+
+    for _ in 0..n {
+        let next_position = orientation.get_above_position(&current_position);
+        positions.push(next_position.clone());
+        current_position = next_position;
+    }
+
+    positions
 }

@@ -4,7 +4,7 @@ pub mod nest;
 
 use crate::common::{
     ant::Ant, element::Element, grid::ElementEntityPositionCache, pheromone::{
-        initialize_pheromone_resources, pheromone_duration_tick, remove_pheromone_resources,
+        initialize_pheromone_resources, decay_pheromone_strength, remove_pheromone_resources,
         Pheromone,
     }
 };
@@ -118,7 +118,7 @@ impl Plugin for NestSimulationPlugin {
                     )
                         .chain(),
                     (ants_nest_expansion, apply_deferred).chain(),
-                    (pheromone_duration_tick::<AtNest>, apply_deferred).chain(),
+                    (decay_pheromone_strength::<AtNest>, apply_deferred).chain(),
                     // Tunneling Pheromone:
                     (
                         // Fade first (or last) to ensure that if movement occurs that resulting position is reflective

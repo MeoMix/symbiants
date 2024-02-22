@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -7,7 +8,7 @@ use crate::{
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
         position::Position,
     },
-    crater_simulation::crater::AtCrater,
+    crater_simulation::crater::AtCrater, settings::Settings,
 };
 
 // TODO: Need to persist LeavingNest and LeavingFood
@@ -30,10 +31,16 @@ pub fn ants_emit_pheromone(
         With<AtCrater>,
     >,
     mut commands: Commands,
+    settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     for (ant_entity, position, initiative, (leaving_food, leaving_nest)) in ants_query.iter_mut() {
         // Ants don't move every tick, if initative isn't checked then will leave multiple pheromone entries on same tile
         if !initiative.can_move() {
+            continue;
+        }
+        
+        if !rng.chance(settings.probabilities.crater_emit_pheromone.into()) {
             continue;
         }
 
@@ -42,7 +49,7 @@ pub fn ants_emit_pheromone(
                 *position,
                 Pheromone::Food,
                 // TODO: Read 100 from config
-                PheromoneStrength::new(leaving_food.0, 1000.0),
+                PheromoneStrength::new(leaving_food.0, 100.0),
                 AtCrater,
             );
 
@@ -57,7 +64,7 @@ pub fn ants_emit_pheromone(
             commands.spawn_pheromone(
                 *position,
                 Pheromone::Nest,
-                PheromoneStrength::new(leaving_nest.0, 1000.0),
+                PheromoneStrength::new(leaving_nest.0, 100.0),
                 AtCrater,
             );
 

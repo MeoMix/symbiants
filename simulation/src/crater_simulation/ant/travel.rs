@@ -21,7 +21,7 @@ pub fn ants_travel_to_nest(
         (
             Entity,
             &mut Initiative,
-            &mut AntOrientation,
+            &AntOrientation,
             &Position,
             &AntInventory,
         ),
@@ -33,7 +33,7 @@ pub fn ants_travel_to_nest(
 ) {
     let nest = nest_query.single();
 
-    for (ant_entity, mut initiative, mut orientation, position, inventory) in ants_query.iter_mut()
+    for (ant_entity, mut initiative, orientation, position, inventory) in ants_query.iter_mut()
     {
         if !initiative.can_move() {
             continue;

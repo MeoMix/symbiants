@@ -1,3 +1,5 @@
+pub mod emit_pheromone;
+
 use crate::{
     common::{
         ant::{
@@ -158,7 +160,7 @@ pub fn spawn_crater_ants(
 
     for worker_ant_bundle in worker_ant_bundles {
         let ant_entity = commands.spawn(worker_ant_bundle).id();
-        commands.entity(ant_entity).insert(LeavingNest(1000.0));
+        commands.entity(ant_entity).insert(LeavingNest(100.0));
     }
 
 }

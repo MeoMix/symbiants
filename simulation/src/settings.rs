@@ -5,6 +5,7 @@ pub struct Probabilities {
     pub random_drop: f32,             // drop while wandering
     pub random_nest_turn: f32,             // turn while wandering
     pub random_crater_turn: f32,             // turn while wandering
+    pub crater_emit_pheromone: f32,
     pub random_fall: f32,             // fall while upside down
     pub random_slip: f32,             // fall while vertical
     pub above_surface_sand_drop: f32, // chance to randomly drop sand when at-or-above surface level
@@ -69,6 +70,7 @@ impl Default for Settings {
                 random_drop: 0.003,
                 random_nest_turn: 0.005,
                 random_crater_turn: 0.05,
+                crater_emit_pheromone: 0.25,
                 // Ants slip/fall due to gravity when upside down or vertical.
                 // These settings help prevent scenarios where ants dig themselves onto islands and become trapped.
                 // If these settings are set too high then it will become difficult to haul sand out of nest.
