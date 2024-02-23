@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{AntOrientation, Initiative},
+        ant::{NestOrientation, Initiative},
         element::Element,
         grid::GridElements,
         position::Position,
@@ -18,7 +18,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 ///     * I think there's a bug where ant standing adjacent to the edge of the world map will not fall because it's not air.
 ///     * Code could be written better such that movement initiative isn't consumed if there's not a valid orientation to turn to.
 pub fn ants_stabilize_footing_movement(
-    mut ants_query: Query<(&mut Initiative, &Position, &mut AntOrientation), With<AtNest>>,
+    mut ants_query: Query<(&mut Initiative, &Position, &mut NestOrientation), With<AtNest>>,
     nest_query: Query<&Nest>,
     grid_elements: GridElements<AtNest>,
     mut rng: ResMut<GlobalRng>,
@@ -45,7 +45,7 @@ pub fn ants_stabilize_footing_movement(
 
 // Update the position and orientation of all ants. Does not affect the external environment.
 pub fn ants_walk(
-    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), With<AtNest>>,
+    mut ants_query: Query<(&mut Initiative, &mut Position, &mut NestOrientation), With<AtNest>>,
     nest_query: Query<&Nest>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
@@ -109,12 +109,12 @@ pub fn ants_walk(
 
 // TODO: coupling..
 pub fn get_turned_orientation(
-    orientation: &AntOrientation,
+    orientation: &NestOrientation,
     position: &Position,
     nest: &Nest,
     rng: &mut ResMut<GlobalRng>,
     grid_elements: &GridElements<AtNest>,
-) -> AntOrientation {
+) -> NestOrientation {
     // First try turning perpendicularly towards the ant's back. If that fails, try turning around.
     let back_orientation = orientation.rotate_backward();
     if is_valid_location(back_orientation, *position, nest, grid_elements) {
@@ -127,7 +127,7 @@ pub fn get_turned_orientation(
     }
 
     // Randomly turn in a valid different when unable to simply turn around.
-    let all_orientations = AntOrientation::all_orientations();
+    let all_orientations = NestOrientation::all_orientations();
     let valid_orientations = all_orientations
         .iter()
         .filter(|&&inner_orientation| inner_orientation != *orientation)
@@ -145,7 +145,7 @@ pub fn get_turned_orientation(
 }
 
 fn is_valid_location(
-    orientation: AntOrientation,
+    orientation: NestOrientation,
     position: Position,
     nest: &Nest,
     grid_elemenets: &GridElements<AtNest>,

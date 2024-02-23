@@ -1,8 +1,11 @@
 use bevy::prelude::*;
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     common::{
-        ant::{AntInventory, AntOrientation, Facing, Initiative},
+        ant::{
+            AntInventory, CraterOrientation, Initiative, NestAngle, NestFacing, NestOrientation,
+        },
         position::Position,
     },
     crater_simulation::{ant::emit_pheromone::LeavingNest, crater::AtCrater},
@@ -21,7 +24,7 @@ pub fn ants_travel_to_nest(
         (
             Entity,
             &mut Initiative,
-            &AntOrientation,
+            &CraterOrientation,
             &Position,
             &AntInventory,
         ),
@@ -30,11 +33,11 @@ pub fn ants_travel_to_nest(
     nest_query: Query<&Nest>,
     mut commands: Commands,
     settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     let nest = nest_query.single();
 
-    for (ant_entity, mut initiative, orientation, position, inventory) in ants_query.iter_mut()
-    {
+    for (ant_entity, mut initiative, orientation, position, inventory) in ants_query.iter_mut() {
         if !initiative.can_move() {
             continue;
         }
@@ -54,29 +57,32 @@ pub fn ants_travel_to_nest(
 
         ant_entity_commands
             .remove::<AtCrater>()
+            .remove::<CraterOrientation>()
             .insert(AtNest)
             .remove::<LeavingNest>()
             .remove::<LeavingFood>();
 
-        // Make sure the ant is on its feet when it enters the nest
-        // TODO: This is written in a hacky way where it uses commands to update AntOrientation because if AtNest/AtCrater is enqueued to be removed,
-        // and orientation changes immediately, then on_update_ant_orientation runs against a stale zone and throws.
-        if orientation.is_facing_north() {
-            let rotated_orientation = orientation.rotate_forward();
-            ant_entity_commands.insert(AntOrientation::new(rotated_orientation.get_facing(), rotated_orientation.get_angle()));
-        } else if orientation.is_facing_south() {
-            let rotated_orientation = orientation.rotate_backward();
-            ant_entity_commands.insert(AntOrientation::new(rotated_orientation.get_facing(), rotated_orientation.get_angle()));
-        }
-
         // TODO: There could be dirt/sand/food at the nest entrance - need to search and find a good place to put ant
-
+        // Make sure the ant is on its feet when it enters the nest
         // If the ant enters the nest from the right-side entrance it should be placed on the right-side of the nest.
         // If the ant enters t he nest from the left-side entrance it should be placed on the left-side of the nest.
-        if orientation.get_facing() == Facing::Left {
+        if *orientation == CraterOrientation::Left {
             ant_entity_commands.insert(Position::new(settings.nest_width, nest.surface_level()));
-        } else {
+            ant_entity_commands.insert(NestOrientation::new(NestFacing::Left, NestAngle::Zero));
+        } else if *orientation == CraterOrientation::Right {
             ant_entity_commands.insert(Position::new(0, nest.surface_level()));
+            ant_entity_commands.insert(NestOrientation::new(NestFacing::Right, NestAngle::Zero));
+        } else {
+            // Choose left or right entrance at random
+            if rng.bool() {
+                ant_entity_commands
+                    .insert(Position::new(settings.nest_width, nest.surface_level()));
+                ant_entity_commands.insert(NestOrientation::new(NestFacing::Left, NestAngle::Zero));
+            } else {
+                ant_entity_commands.insert(Position::new(0, nest.surface_level()));
+                ant_entity_commands
+                    .insert(NestOrientation::new(NestFacing::Right, NestAngle::Zero));
+            }
         }
 
         initiative.consume();

@@ -3,7 +3,7 @@ use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{ant::{AntInventory, AntOrientation, Initiative}, position::Position},
+    common::{ant::{AntInventory, NestOrientation, Initiative}, position::Position},
     nest_simulation::nest::{AtNest, Nest},
     story_time::StoryTime,
 };
@@ -14,7 +14,7 @@ pub struct Asleep;
 
 pub fn ants_sleep(
     ants_query: Query<
-        (Entity, &Position, &AntOrientation, &AntInventory),
+        (Entity, &Position, &NestOrientation, &AntInventory),
         (With<Initiative>, With<AtNest>),
     >,
     mut commands: Commands,

@@ -2,7 +2,7 @@ use super::digestion::Digestion;
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, AntAteFoodEvent, AntInventory, AntOrientation, AntRole, Dead,
+            commands::AntCommandsExt, AntAteFoodEvent, AntInventory, NestOrientation, AntRole, Dead,
             Initiative,
         },
         element::Element,
@@ -84,7 +84,7 @@ pub fn ants_hunger_act<Z: Zone + Copy>(
             Entity,
             &Hunger,
             &mut Digestion,
-            &AntOrientation,
+            &NestOrientation,
             &Position,
             &mut AntInventory,
             &mut Initiative,
@@ -156,7 +156,7 @@ pub fn ants_hunger_regurgitate<Z: Zone>(
             Entity,
             &Hunger,
             &mut Digestion,
-            &AntOrientation,
+            &NestOrientation,
             &Position,
             &AntInventory,
             &mut Initiative,

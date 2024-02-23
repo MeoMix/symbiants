@@ -1,8 +1,8 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation,
-            AntRole, Dead, Facing, Initiative,
+            commands::AntCommandsExt, NestAngle, AntColor, AntInventory, AntName, NestOrientation,
+            AntRole, Dead, NestFacing, Initiative,
         },
         element::{commands::ElementCommandsExt, Element},
         grid::GridElements,
@@ -80,7 +80,8 @@ pub fn process_external_event<Z: Zone + Copy>(
                     commands.spawn_ant(
                         grid_position,
                         AntColor(settings.ant_color),
-                        AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
+                        Some(NestOrientation::new(NestFacing::random(&mut rng.reborrow()), NestAngle::Zero)),
+                        None,
                         AntInventory::default(),
                         AntRole::Worker,
                         AntName::random(&mut rng.reborrow()),

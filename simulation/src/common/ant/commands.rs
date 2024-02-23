@@ -2,7 +2,7 @@ use crate::{
     common::{
         ant::{
             digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName,
-            AntOrientation, AntRole, Initiative, InventoryItemBundle,
+            NestOrientation, AntRole, Initiative, InventoryItemBundle,
         },
         element::{Element, ElementBundle},
         grid::{GridElements, GridElementsMut},
@@ -17,12 +17,16 @@ use bevy::{
 };
 use core::panic;
 
+use super::CraterOrientation;
+
 pub trait AntCommandsExt {
     fn spawn_ant<Z: Zone>(
         &mut self,
         position: Position,
         color: AntColor,
-        orientation: AntOrientation,
+        // TODO: obviously terrible
+        nest_orientation: Option<NestOrientation>,
+        crater_orientation: Option<CraterOrientation>,
         inventory: AntInventory,
         role: AntRole,
         name: AntName,
@@ -50,7 +54,8 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         &mut self,
         position: Position,
         color: AntColor,
-        orientation: AntOrientation,
+        nest_orientation: Option<NestOrientation>,
+        crater_orientation: Option<CraterOrientation>,
         inventory: AntInventory,
         role: AntRole,
         name: AntName,
@@ -60,7 +65,8 @@ impl<'w, 's> AntCommandsExt for Commands<'w, 's> {
         self.add(SpawnAntCommand {
             position,
             color,
-            orientation,
+            nest_orientation,
+            crater_orientation,
             inventory,
             role,
             name,
@@ -248,7 +254,8 @@ impl<Z: Zone> Command for DropElementCommand<Z> {
 struct SpawnAntCommand<Z: Zone> {
     position: Position,
     color: AntColor,
-    orientation: AntOrientation,
+    nest_orientation: Option<NestOrientation>,
+    crater_orientation: Option<CraterOrientation>,
     inventory: AntInventory,
     role: AntRole,
     name: AntName,
@@ -256,15 +263,16 @@ struct SpawnAntCommand<Z: Zone> {
     zone: Z,
 }
 
-// TODO: Get rid of this since I don't need to keep a cache synced anymore
+
 impl<Z: Zone> Command for SpawnAntCommand<Z> {
     fn apply(self, world: &mut World) {
         let settings = world.resource::<Settings>();
 
-        world.spawn(AntBundle::new(
+        let entity = world.spawn(AntBundle::new(
             self.position,
             self.color,
-            self.orientation,
+            // self.nest_orientation,
+            // self.crater_orientation,
             self.inventory,
             self.role,
             self.name,
@@ -272,6 +280,15 @@ impl<Z: Zone> Command for SpawnAntCommand<Z> {
             self.zone,
             Hunger::new(settings.max_hunger_time),
             Digestion::new(settings.max_digestion_time),
-        ));
+        )).id();
+
+        if let Some(orientation) = self.nest_orientation {
+            world.entity_mut(entity).insert(orientation);
+        } else if let Some(orientation) = self.crater_orientation {
+            world.entity_mut(entity).insert(orientation);
+        } else {
+            panic!("Ant must have either a nest or crater orientation.");
+        }
+    
     }
 }

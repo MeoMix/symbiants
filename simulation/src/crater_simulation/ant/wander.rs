@@ -3,7 +3,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     common::{
-        ant::{AntOrientation, Initiative},
+        ant::{CraterOrientation, Initiative},
         element::Element,
         grid::GridElements,
         position::Position,
@@ -16,7 +16,7 @@ use crate::{
 /// If they have food then they'll follow Pheromone that leads home.
 /// If they have no food then they'll follow Pheromone that leads to food.
 pub fn ants_wander(
-    mut ants_query: Query<(&mut Initiative, &mut Position, &mut AntOrientation), With<AtCrater>>,
+    mut ants_query: Query<(&mut Initiative, &mut Position, &mut CraterOrientation), With<AtCrater>>,
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
     grid_elements: GridElements<AtCrater>,
@@ -52,16 +52,15 @@ pub fn ants_wander(
 }
 
 pub fn get_turned_orientation(
-    orientation: &AntOrientation,
+    orientation: &CraterOrientation,
     rng: &mut ResMut<GlobalRng>,
-) -> AntOrientation {
-    let all_orientations = AntOrientation::all_orientations();
+) -> CraterOrientation {
+    let all_orientations = CraterOrientation::all_orientations();
     let valid_orientations = all_orientations
         .iter()
-        .filter(|&&inner_orientation| {
-            inner_orientation != *orientation && !inner_orientation.is_upside_down()
-        })
+        .filter(|&&inner_orientation| inner_orientation != *orientation)
         .collect::<Vec<_>>();
 
+    // TODO: sample?
     *valid_orientations[rng.usize(0..valid_orientations.len())]
 }

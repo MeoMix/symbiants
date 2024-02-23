@@ -1,7 +1,7 @@
 use super::nest::AtNest;
 use crate::{
     common::{
-        ant::{AntOrientation, Dead, Initiative},
+        ant::{NestOrientation, Dead, Initiative},
         element::{commands::ElementCommandsExt, Air, Element},
         grid::{Grid, GridElements, GridElementsMut},
         position::Position,
@@ -124,7 +124,7 @@ pub fn gravity_elements(
 pub fn gravity_ants(
     mut ants_query: Query<
         (
-            &AntOrientation,
+            &NestOrientation,
             &mut Position,
             Option<&mut Initiative>,
             Option<&Dead>,

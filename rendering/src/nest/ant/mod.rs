@@ -11,7 +11,7 @@ use crate::common::{
 use bevy::prelude::*;
 use simulation::{
     common::{
-        ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, AntRole, Dead},
+        ant::{Ant, AntColor, AntInventory, AntName, NestOrientation, AntRole, Dead},
         element::Element,
         grid::Grid,
         position::Position,
@@ -40,7 +40,7 @@ pub fn on_added_ant_at_nest(
             Entity,
             &Position,
             &AntColor,
-            &AntOrientation,
+            &NestOrientation,
             &AntName,
             &AntRole,
             &AntInventory,
@@ -97,7 +97,7 @@ pub fn spawn_ants(
             Entity,
             &Position,
             &AntColor,
-            &AntOrientation,
+            &NestOrientation,
             &AntName,
             &AntRole,
             &AntInventory,
@@ -274,7 +274,7 @@ pub fn on_update_ant_color(
 }
 
 pub fn on_update_ant_orientation(
-    ant_model_query: Query<(Entity, Ref<AntOrientation>), With<AtNest>>,
+    ant_model_query: Query<(Entity, Ref<NestOrientation>), With<AtNest>>,
     ant_view_query: Query<&AntSpriteContainer>,
     mut transform_query: Query<&mut Transform>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -351,7 +351,7 @@ fn spawn_ant_sprite(
     position: &Position,
     color: &AntColor,
     name: &AntName,
-    orientation: &AntOrientation,
+    orientation: &NestOrientation,
     role: &AntRole,
     inventory: &AntInventory,
     dead: Option<&Dead>,

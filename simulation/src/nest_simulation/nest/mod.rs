@@ -1,8 +1,8 @@
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
-            AntName, AntOrientation, AntRole, Facing, Initiative,
+            digestion::Digestion, hunger::Hunger, NestAngle, AntBundle, AntColor, AntInventory,
+            AntName, NestOrientation, AntRole, NestFacing, Initiative,
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},
@@ -98,7 +98,6 @@ pub fn spawn_nest_ants(
         // Queen always spawns in the center. She'll fall from the sky in the future.
         Position::new(settings.nest_width / 2, nest.surface_level),
         AntColor(settings.ant_color),
-        AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
         AntInventory::default(),
         AntRole::Queen,
         AntName(String::from("Queen")),
@@ -108,18 +107,22 @@ pub fn spawn_nest_ants(
         Digestion::new(settings.max_digestion_time),
     );
 
-    commands.spawn(queen_ant_bundle);
+    let queen_ant_entity_id = commands.spawn(queen_ant_bundle).id();
 
-    let worker_ant_bundles = (0..settings.initial_ant_worker_count)
+    commands.entity(queen_ant_entity_id).insert(NestOrientation::new(
+        NestFacing::random(&mut rng),
+        NestAngle::Zero,
+    ));
+
+    let worker_ant_entity_ids = (0..settings.initial_ant_worker_count)
         .map(|_| {
             // TODO: maybe method on nest now
             let random_surface_position =
                 Position::new(rng.isize(0..settings.nest_width), nest.surface_level);
 
-            AntBundle::new(
+            commands.spawn(AntBundle::new(
                 random_surface_position,
                 AntColor(settings.ant_color),
-                AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
                 AntInventory::default(),
                 AntRole::Worker,
                 AntName::random(&mut rng),
@@ -127,11 +130,16 @@ pub fn spawn_nest_ants(
                 AtNest,
                 Hunger::new(settings.max_hunger_time),
                 Digestion::new(settings.max_digestion_time),
-            )
+            )).id()
         })
         .collect::<Vec<_>>();
 
-    commands.spawn_batch(worker_ant_bundles)
+    for worker_ant_entity_id in worker_ant_entity_ids {
+        commands.entity(worker_ant_entity_id).insert(NestOrientation::new(
+            NestFacing::random(&mut rng),
+            NestAngle::Zero,
+        ));
+    }
 }
 
 /// Called after creating a new story, or loading an existing story from storage.

@@ -9,7 +9,7 @@ use crate::common::{
 use bevy::prelude::*;
 use simulation::{
     common::{
-        ant::{Ant, AntColor, AntInventory, AntName, AntOrientation, Dead},
+        ant::{Ant, AntColor, AntInventory, AntName, CraterOrientation, Dead},
         element::Element,
         grid::Grid,
         position::Position,
@@ -39,7 +39,7 @@ pub fn on_added_ant_at_crater(
             Entity,
             &Position,
             &AntColor,
-            &AntOrientation,
+            &CraterOrientation,
             &AntName,
             &AntInventory,
             Option<&Dead>,
@@ -91,7 +91,7 @@ pub fn spawn_ants(
             Entity,
             &Position,
             &AntColor,
-            &AntOrientation,
+            &CraterOrientation,
             &AntName,
             &AntInventory,
             Option<&Dead>,
@@ -232,12 +232,13 @@ pub fn on_update_ant_position(
 }
 
 pub fn on_update_ant_orientation(
-    ant_model_query: Query<(Entity, Ref<AntOrientation>), With<AtCrater>>,
+    ant_model_query: Query<(Entity, Ref<CraterOrientation>, Option<&Dead>), With<AtCrater>>,
     ant_view_query: Query<&AntSpriteContainer>,
-    mut transform_query: Query<&mut Transform>,
+    mut sprite_query: Query<&mut Handle<Image>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
     grid_query: Query<&Grid, With<AtCrater>>,
+    asset_server: Res<AssetServer>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
@@ -248,7 +249,7 @@ pub fn on_update_ant_orientation(
         return;
     }
 
-    for (ant_model_entity, orientation) in ant_model_query.iter() {
+    for (ant_model_entity, orientation, dead) in ant_model_query.iter() {
         if !orientation.is_changed() || orientation.is_added() {
             continue;
         }
@@ -256,12 +257,18 @@ pub fn on_update_ant_orientation(
         if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             // TODO: This can fail when an ant goes back to nest since it's still part of the ModelViewEntityMap but its view is in another zone.
             let ant_sprite_container = ant_view_query.get(*ant_view_entity).unwrap();
-            let mut transform = transform_query
+
+            // Handle<Image>
+            let sprite_image = get_sprite_image(dead.is_some(), *orientation);
+
+            let mut handle = sprite_query
                 .get_mut(ant_sprite_container.sprite_entity)
                 .unwrap();
 
-            transform.scale = orientation.as_world_scale();
-            transform.rotation = orientation.as_world_rotation();
+            *handle = Handle::from(asset_server.load(sprite_image));
+
+            // transform.scale = orientation.as_world_scale();
+            // transform.rotation = orientation.as_world_rotation();
         }
     }
 }
@@ -271,13 +278,29 @@ pub fn cleanup_ants() {}
 
 /// Non-System Helper Functions:
 
+fn get_sprite_image(is_dead: bool, orientation: CraterOrientation) -> String {
+    let sprite_image = if is_dead {
+        // TODO: Fix this for various orientations?
+        "images/ant_dead.png"
+    } else {
+        match orientation {
+            CraterOrientation::Up => "images/ant_face_up.png",
+            CraterOrientation::Right => "images/ant_face_right.png",
+            CraterOrientation::Down => "images/ant_face_down.png",
+            CraterOrientation::Left => "images/ant_face_left.png",
+        }
+    };
+
+    sprite_image.to_string()
+}
+
 fn spawn_ant_sprite(
     commands: &mut Commands,
     model_entity: Entity,
     position: &Position,
     color: &AntColor,
     name: &AntName,
-    orientation: &AntOrientation,
+    orientation: &CraterOrientation,
     inventory: &AntInventory,
     dead: Option<&Dead>,
     asset_server: &Res<AssetServer>,
@@ -289,11 +312,12 @@ fn spawn_ant_sprite(
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
     let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
 
-    let (sprite_image, sprite_color) = if dead.is_some() {
-        ("images/ant_dead.png", Color::GRAY)
-    } else {
-        ("images/ant.png", color.0)
+    let is_dead = dead.is_some();
+    let sprite_color = match is_dead {
+        true => Color::GRAY,
+        false => color.0,
     };
+    let sprite_image = get_sprite_image(is_dead, *orientation);
 
     // Spawn AntSprite with child inventory/hat
     let mut ant_sprite = commands.spawn((SpriteBundle {
@@ -305,8 +329,8 @@ fn spawn_ant_sprite(
             ..default()
         },
         transform: Transform {
-            rotation: orientation.as_world_rotation(),
-            scale: orientation.as_world_scale(),
+            // rotation: orientation.as_world_rotation(),
+            // scale: orientation.as_world_scale(),
             ..default()
         },
         ..default()

@@ -26,7 +26,8 @@ where
 {
     ant: Ant,
     position: Position,
-    orientation: AntOrientation,
+    // nest_orientation: Option<NestOrientation>,
+    // crater_orientation: Option<CraterOrientation>,
     role: AntRole,
     initiative: Initiative,
     name: AntName,
@@ -41,7 +42,8 @@ impl<Z: Zone> AntBundle<Z> {
     pub fn new(
         position: Position,
         color: AntColor,
-        orientation: AntOrientation,
+        // nest_orientation: Option<NestOrientation>,
+        // crater_orientation: Option<CraterOrientation>,
         inventory: AntInventory,
         role: AntRole,
         name: AntName,
@@ -56,7 +58,8 @@ impl<Z: Zone> AntBundle<Z> {
             // Queen always spawns in the center. She'll fall from the sky in the future.
             position,
             color,
-            orientation,
+            // nest_orientation,
+            // crater_orientation,
             inventory,
             role,
             name,
@@ -126,7 +129,7 @@ where
 {
     element: Element,
     inventory_item: InventoryItem,
-    zone: Z
+    zone: Z,
 }
 
 impl<Z: Zone> InventoryItemBundle<Z> {
@@ -192,24 +195,24 @@ impl Initiative {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
-pub enum Facing {
+pub enum NestFacing {
     #[default]
     Left,
     Right,
 }
 
-impl Facing {
+impl NestFacing {
     pub fn random(rng: &mut Mut<GlobalRng>) -> Self {
         if rng.bool() {
-            Facing::Left
+            NestFacing::Left
         } else {
-            Facing::Right
+            NestFacing::Right
         }
     }
 }
 
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
-pub enum Angle {
+pub enum NestAngle {
     #[default]
     Zero,
     Ninety = 90,
@@ -217,7 +220,7 @@ pub enum Angle {
     TwoHundredSeventy = 270,
 }
 
-impl Angle {
+impl NestAngle {
     pub fn as_radians(self) -> f32 {
         (self as isize as f32) * PI / 180.0
     }
@@ -228,10 +231,10 @@ impl Angle {
     ///     rotate(0, 1); // 90
     pub fn rotate(self, rotation: i32) -> Self {
         let angles = [
-            Angle::Zero,
-            Angle::Ninety,
-            Angle::OneHundredEighty,
-            Angle::TwoHundredSeventy,
+            NestAngle::Zero,
+            NestAngle::Ninety,
+            NestAngle::OneHundredEighty,
+            NestAngle::TwoHundredSeventy,
         ];
 
         let rotated_index = (angles.iter().position(|&a| a == self).unwrap() as i32 - rotation)
@@ -242,20 +245,138 @@ impl Angle {
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
-pub struct AntOrientation {
-    facing: Facing,
-    angle: Angle,
+pub enum CraterOrientation {
+    #[default]
+    Left,
+    Right,
+    Up,
+    Down,
 }
 
-impl AntOrientation {
-    pub fn new(facing: Facing, angle: Angle) -> Self {
+impl CraterOrientation {
+    // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
+    pub fn as_world_scale(&self) -> Vec3 {
+        Vec3 {
+            x: if *self == CraterOrientation::Left {
+                -1.0
+            } else {
+                1.0
+            },
+            y: 1.0,
+            z: 1.0,
+        }
+    }
+
+    pub fn all_orientations() -> Vec<Self> {
+        vec![Self::Left, Self::Right, Self::Up, Self::Down]
+    }
+
+    pub fn random(rng: &mut Mut<GlobalRng>) -> Self {
+        let choices = Self::all_orientations();
+
+        *rng.sample(&choices).unwrap()
+    }
+
+    /// Returns the position of the tile in front of the ant's face.
+    pub fn get_ahead_position(&self, position: &Position) -> Position {
+        let ahead_delta = match self {
+            Self::Up => Position::NEG_Y,
+            Self::Down => Position::Y,
+            Self::Left => Position::NEG_X,
+            Self::Right => Position::X,
+        };
+
+        *position + ahead_delta
+    }
+
+    pub fn get_clockwise_position(&self, position: &Position) -> Position {
+        let clockwise_delta = match self {
+            Self::Up => Position::X,
+            Self::Down => Position::NEG_X,
+            Self::Left => Position::NEG_Y,
+            Self::Right => Position::Y,
+        };
+
+        *position + clockwise_delta
+    }
+
+    // pub fn get_behind_position(&self, position: &Position) -> Position {
+    //     *position + self.get_behind_delta()
+    // }
+
+    pub fn get_counterclockwise_position(&self, position: &Position) -> Position {
+        let counterclockwise_delta = match self {
+            Self::Up => Position::NEG_X,
+            Self::Down => Position::X,
+            Self::Left => Position::Y,
+            Self::Right => Position::NEG_Y,
+        };
+
+        *position + counterclockwise_delta
+    }
+
+    pub fn rotate_clockwise(&self) -> Self {
+        match self {
+            Self::Up => Self::Right,
+            Self::Right => Self::Down,
+            Self::Down => Self::Left,
+            Self::Left => Self::Up,
+        }
+    }
+
+    pub fn rotate_counterclockwise(&self) -> Self {
+        match self {
+            Self::Up => Self::Left,
+            Self::Left => Self::Down,
+            Self::Down => Self::Right,
+            Self::Right => Self::Up,
+        }
+    }
+
+    pub fn turn_around(&self) -> Self {
+        match self {
+            Self::Up => Self::Down,
+            Self::Down => Self::Up,
+            Self::Left => Self::Right,
+            Self::Right => Self::Left,
+        }
+    }
+
+    // fn get_ahead_delta(&self) -> Position {
+    //     match self {
+    //         Self::Up => Position::Y,
+    //         Self::Down => Position::NEG_Y,
+    //         Self::Left => Position::NEG_X,
+    //         Self::Right => Position::X,
+    //     }
+    // }
+
+    // fn get_behind_delta(&self) -> Position {
+    //     match self {
+    //         Self::Up => Position::NEG_Y,
+    //         Self::Down => Position::Y,
+    //         Self::Left => Position::X,
+    //         Self::Right => Position::NEG_X,
+    //     }
+    // }
+}
+
+#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
+#[reflect(Component)]
+pub struct NestOrientation {
+    facing: NestFacing,
+    angle: NestAngle,
+}
+
+impl NestOrientation {
+    pub fn new(facing: NestFacing, angle: NestAngle) -> Self {
         Self { facing, angle }
     }
 
     // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
     pub fn as_world_scale(&self) -> Vec3 {
         Vec3 {
-            x: if self.get_facing() == Facing::Left {
+            x: if self.get_facing() == NestFacing::Left {
                 -1.0
             } else {
                 1.0
@@ -269,11 +390,11 @@ impl AntOrientation {
         Quat::from_rotation_z(self.get_angle().as_radians())
     }
 
-    pub fn get_facing(&self) -> Facing {
+    pub fn get_facing(&self) -> NestFacing {
         self.facing
     }
 
-    pub fn get_angle(&self) -> Angle {
+    pub fn get_angle(&self) -> NestAngle {
         self.angle
     }
 
@@ -282,64 +403,72 @@ impl AntOrientation {
     // }
 
     pub fn is_vertical(&self) -> bool {
-        self.angle == Angle::Ninety || self.angle == Angle::TwoHundredSeventy
+        self.angle == NestAngle::Ninety || self.angle == NestAngle::TwoHundredSeventy
     }
 
     pub fn is_upside_down(&self) -> bool {
-        self.angle == Angle::OneHundredEighty
+        self.angle == NestAngle::OneHundredEighty
     }
 
     pub fn is_rightside_up(&self) -> bool {
-        self.angle == Angle::Zero
+        self.angle == NestAngle::Zero
     }
 
     pub fn is_facing_north(&self) -> bool {
         match (self.angle, self.facing) {
-            (Angle::Ninety, Facing::Right) => true,
-            (Angle::TwoHundredSeventy, Facing::Left) => true,
+            (NestAngle::Ninety, NestFacing::Right) => true,
+            (NestAngle::TwoHundredSeventy, NestFacing::Left) => true,
             _ => false,
         }
     }
 
     pub fn is_facing_south(&self) -> bool {
         match (self.angle, self.facing) {
-            (Angle::TwoHundredSeventy, Facing::Right) => true,
-            (Angle::Ninety, Facing::Left) => true,
+            (NestAngle::TwoHundredSeventy, NestFacing::Right) => true,
+            (NestAngle::Ninety, NestFacing::Left) => true,
             _ => false,
         }
     }
 
     pub fn turn_around(&self) -> Self {
-        let facing = if self.facing == Facing::Left {
-            Facing::Right
+        let facing = if self.facing == NestFacing::Left {
+            NestFacing::Right
         } else {
-            Facing::Left
+            NestFacing::Left
         };
 
         Self::new(facing, self.angle)
     }
 
     pub fn rotate_forward(&self) -> Self {
-        let rotation = if self.facing == Facing::Left { -1 } else { 1 };
+        let rotation = if self.facing == NestFacing::Left {
+            -1
+        } else {
+            1
+        };
 
         Self::new(self.facing, self.angle.rotate(rotation))
     }
 
     pub fn rotate_backward(&self) -> Self {
-        let rotation = if self.facing == Facing::Left { 1 } else { -1 };
+        let rotation = if self.facing == NestFacing::Left {
+            1
+        } else {
+            -1
+        };
 
         Self::new(self.facing, self.angle.rotate(rotation))
     }
 
     fn get_ahead_delta(&self) -> Position {
         let delta = match self.angle {
-            Angle::Zero => Position::X,
-            Angle::Ninety => Position::NEG_Y,
-            Angle::OneHundredEighty => Position::NEG_X,
-            Angle::TwoHundredSeventy => Position::Y,
+            NestAngle::Zero => Position::X,
+            NestAngle::Ninety => Position::NEG_Y,
+            NestAngle::OneHundredEighty => Position::NEG_X,
+            NestAngle::TwoHundredSeventy => Position::Y,
         };
 
-        if self.facing == Facing::Left {
+        if self.facing == NestFacing::Left {
             delta * Position::NEG_ONE
         } else {
             delta
@@ -378,12 +507,12 @@ impl AntOrientation {
     }
 
     pub fn all_orientations() -> Vec<Self> {
-        let facings = [Facing::Left, Facing::Right];
+        let facings = [NestFacing::Left, NestFacing::Right];
         let angles = [
-            Angle::Zero,
-            Angle::Ninety,
-            Angle::OneHundredEighty,
-            Angle::TwoHundredSeventy,
+            NestAngle::Zero,
+            NestAngle::Ninety,
+            NestAngle::OneHundredEighty,
+            NestAngle::TwoHundredSeventy,
         ];
         facings
             .iter()
@@ -397,9 +526,9 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<AntName>();
     app_type_registry.write().register::<AntColor>();
     app_type_registry.write().register::<Initiative>();
-    app_type_registry.write().register::<AntOrientation>();
-    app_type_registry.write().register::<Facing>();
-    app_type_registry.write().register::<Angle>();
+    app_type_registry.write().register::<NestOrientation>();
+    app_type_registry.write().register::<NestFacing>();
+    app_type_registry.write().register::<NestAngle>();
     app_type_registry.write().register::<AntRole>();
     app_type_registry.write().register::<AntInventory>();
     app_type_registry.write().register::<InventoryItem>();

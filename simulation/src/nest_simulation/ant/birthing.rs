@@ -1,8 +1,8 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, Angle, AntColor, AntInventory, AntName, AntOrientation,
-            AntRole, Facing, Initiative,
+            commands::AntCommandsExt, NestAngle, AntColor, AntInventory, AntName, NestOrientation,
+            AntRole, NestFacing, Initiative,
         },
         position::Position,
     },
@@ -61,7 +61,7 @@ pub fn ants_birthing(
             &mut Birthing,
             &Position,
             &AntColor,
-            &AntOrientation,
+            &NestOrientation,
             &mut Initiative,
         ),
         With<AtNest>,
@@ -90,7 +90,8 @@ pub fn ants_birthing(
             commands.spawn_ant(
                 orientation.get_behind_position(position),
                 AntColor(color.0),
-                AntOrientation::new(Facing::random(&mut rng.reborrow()), Angle::Zero),
+                Some(NestOrientation::new(NestFacing::random(&mut rng.reborrow()), NestAngle::Zero)),
+                None,
                 AntInventory::default(),
                 AntRole::Worker,
                 AntName::random(&mut rng.reborrow()),

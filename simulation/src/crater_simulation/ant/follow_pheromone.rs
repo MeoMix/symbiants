@@ -2,14 +2,13 @@ use bevy::prelude::*;
 
 use crate::{
     common::{
-        ant::{AntInventory, AntOrientation, Initiative},
+        ant::{AntInventory, CraterOrientation, Initiative},
         element::Element,
         grid::GridElements,
         pheromone::{Pheromone, PheromoneMap, PheromoneStrength},
         position::Position,
     },
     crater_simulation::crater::AtCrater,
-    settings::Settings,
 };
 
 /// Ants will follow Food pheromone if they have no Food in their inventory
@@ -19,7 +18,7 @@ pub fn ants_follow_pheromone(
         (
             &mut Initiative,
             &mut Position,
-            &mut AntOrientation,
+            &mut CraterOrientation,
             &AntInventory,
         ),
         With<AtCrater>,
@@ -36,8 +35,9 @@ pub fn ants_follow_pheromone(
         // TODO: Holy crap this is hardcoded. This could be expressed using math and joining vectors rather than
         // explicitly turning based on known target position.
         let ahead_positions = get_ahead_positions(&orientation, &position, 10);
-        let below_positions = get_below_positions(&orientation, &position, 10);
-        let above_positions = get_above_positions(&orientation, &position, 10);
+        let clockwise_positions = get_clockwise_positions(&orientation, &position, 10);
+        let counterclockwise_positions =
+            get_counterclockwise_positions(&orientation, &position, 10);
 
         // If ant is carrying food, it should follow the pheromone that leads home.
         // Otherwise, it should follow the pheromone that leads to food.
@@ -45,8 +45,8 @@ pub fn ants_follow_pheromone(
         // Only consider locations which are walkable (i.e. contain air)
         let search_positions = (ahead_positions
             .iter()
-            .chain(below_positions.iter())
-            .chain(above_positions.iter()))
+            .chain(clockwise_positions.iter())
+            .chain(counterclockwise_positions.iter()))
         .filter_map(|position| {
             grid_elements.get_entity(*position).and_then(|entity| {
                 if *grid_elements.element(*entity) == Element::Air {
@@ -95,12 +95,12 @@ pub fn ants_follow_pheromone(
             if ahead_positions.contains(&pheromone_target_position) {
                 *position = ahead_positions.first().unwrap().clone();
             } else {
-                if below_positions.contains(&pheromone_target_position) {
-                    *orientation = orientation.rotate_forward();
-                    *position = below_positions.first().unwrap().clone();
-                } else if above_positions.contains(&pheromone_target_position) {
-                    *orientation = orientation.rotate_backward();
-                    *position = above_positions.first().unwrap().clone();
+                if clockwise_positions.contains(&pheromone_target_position) {
+                    *orientation = orientation.rotate_clockwise();
+                    *position = clockwise_positions.first().unwrap().clone();
+                } else if counterclockwise_positions.contains(&pheromone_target_position) {
+                    *orientation = orientation.rotate_counterclockwise();
+                    *position = counterclockwise_positions.first().unwrap().clone();
                 }
             }
 
@@ -110,7 +110,7 @@ pub fn ants_follow_pheromone(
 }
 
 fn get_ahead_positions(
-    orientation: &AntOrientation,
+    orientation: &CraterOrientation,
     start_position: &Position,
     n: usize,
 ) -> Vec<Position> {
@@ -126,8 +126,8 @@ fn get_ahead_positions(
     positions
 }
 
-fn get_below_positions(
-    orientation: &AntOrientation,
+fn get_clockwise_positions(
+    orientation: &CraterOrientation,
     start_position: &Position,
     n: usize,
 ) -> Vec<Position> {
@@ -135,7 +135,7 @@ fn get_below_positions(
     let mut current_position = start_position.clone();
 
     for _ in 0..n {
-        let next_position = orientation.get_below_position(&current_position);
+        let next_position = orientation.get_clockwise_position(&current_position);
         positions.push(next_position.clone());
         current_position = next_position;
     }
@@ -143,8 +143,8 @@ fn get_below_positions(
     positions
 }
 
-fn get_above_positions(
-    orientation: &AntOrientation,
+fn get_counterclockwise_positions(
+    orientation: &CraterOrientation,
     start_position: &Position,
     n: usize,
 ) -> Vec<Position> {
@@ -152,7 +152,7 @@ fn get_above_positions(
     let mut current_position = start_position.clone();
 
     for _ in 0..n {
-        let next_position = orientation.get_above_position(&current_position);
+        let next_position = orientation.get_counterclockwise_position(&current_position);
         positions.push(next_position.clone());
         current_position = next_position;
     }

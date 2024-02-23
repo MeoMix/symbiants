@@ -1,7 +1,7 @@
 use super::birthing::Birthing;
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
+        ant::{commands::AntCommandsExt, AntInventory, NestOrientation, Initiative},
         element::Element,
         grid::{Grid, GridElements},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
@@ -26,7 +26,7 @@ pub struct Chambering(pub f32);
 pub fn ants_chamber_pheromone_act(
     ants_query: Query<
         (
-            &AntOrientation,
+            &NestOrientation,
             &AntInventory,
             &Initiative,
             &Position,

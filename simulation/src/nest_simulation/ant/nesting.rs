@@ -2,7 +2,7 @@ use super::walk::get_turned_orientation;
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Facing, Initiative,
+            commands::AntCommandsExt, AntInventory, NestOrientation, AntRole, NestFacing, Initiative,
         },
         element::Element,
         grid::GridElements,
@@ -56,7 +56,7 @@ pub fn ants_nesting_movement(
         (
             &mut Initiative,
             &Position,
-            &mut AntOrientation,
+            &mut NestOrientation,
             &AntInventory,
             &Nesting,
         ),
@@ -84,8 +84,8 @@ pub fn ants_nesting_movement(
             }
 
             let ahead_position = match orientation.get_facing() {
-                Facing::Right => *position + Position::X,
-                Facing::Left => *position - Position::X,
+                NestFacing::Right => *position + Position::X,
+                NestFacing::Left => *position - Position::X,
             };
 
             if position.distance(nest_position) > ahead_position.distance(nest_position) {
@@ -106,7 +106,7 @@ pub fn ants_nesting_action(
     mut ants_query: Query<
         (
             &mut Nesting,
-            &AntOrientation,
+            &NestOrientation,
             &AntInventory,
             &mut Initiative,
             &Position,
@@ -182,7 +182,7 @@ fn can_start_nesting(
     rng: &mut ResMut<GlobalRng>,
     inventory: &AntInventory,
     ant_position: &Position,
-    ant_orientation: &AntOrientation,
+    ant_orientation: &NestOrientation,
     nest: &Nest,
     grid_elements: &GridElements<AtNest>,
     settings: &Settings,
@@ -218,7 +218,7 @@ fn can_start_nesting(
 ///     * Prefer marking nest zone with pheromone rather than tracking position.
 fn start_digging_nest(
     ant_position: &Position,
-    ant_orientation: &AntOrientation,
+    ant_orientation: &NestOrientation,
     ant_entity: Entity,
     nesting: &mut Nesting,
     grid_elements: &GridElements<AtNest>,
@@ -249,7 +249,7 @@ fn start_digging_nest(
 ///     * The sturdy floor check looks for Dirt, but Sand/Food/Rock is sturdy.
 fn can_finish_nesting(
     ant_position: &Position,
-    ant_orientation: &AntOrientation,
+    ant_orientation: &NestOrientation,
     grid_elements: &GridElements<AtNest>,
     nest: &Nest,
 ) -> bool {
@@ -296,7 +296,7 @@ fn can_finish_nesting(
 /// Also, drop anything the ant is carrying so that they can eat food later.
 fn finish_digging_nest(
     ant_position: &Position,
-    ant_orientation: &AntOrientation,
+    ant_orientation: &NestOrientation,
     ant_entity: Entity,
     ant_inventory: &AntInventory,
     initiative: &mut Initiative,

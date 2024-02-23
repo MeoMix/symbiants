@@ -3,7 +3,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     common::{
-        ant::{AntInventory, AntOrientation, AntRole, Initiative},
+        ant::{AntInventory, AntRole, CraterOrientation, Initiative, NestFacing, NestOrientation},
         grid::Grid,
         position::Position,
     },
@@ -24,7 +24,7 @@ pub fn ants_travel_to_crater(
             Entity,
             &mut Initiative,
             &Position,
-            &AntOrientation,
+            &NestOrientation,
             &AntInventory,
             &AntRole,
         ),
@@ -71,6 +71,11 @@ pub fn ants_travel_to_crater(
             continue;
         }
 
+        let crater_orientation = match orientation.get_facing() {
+            NestFacing::Left => CraterOrientation::Left,
+            NestFacing::Right => CraterOrientation::Right,
+        };
+
         // TODO: Consider despawning + spawning entirely rather than trying to micromanage removal of components
         // Leave the nest
         commands
@@ -78,13 +83,15 @@ pub fn ants_travel_to_crater(
             .remove::<AtNest>()
             .remove::<Tunneling>()
             .remove::<Chambering>()
+            .remove::<NestOrientation>()
             .insert(AtCrater)
             .insert(LeavingNest(100.0))
             .insert(Position::new(
                 // TODO: Express this more clearly - trying to not have it appear ontop of the nest sprite
                 (settings.crater_width / 2) + 1,
                 (settings.crater_height / 2) + 1,
-            ));
+            ))
+            .insert(crater_orientation);
 
         initiative.consume();
     }

@@ -3,7 +3,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
+        ant::{commands::AntCommandsExt, AntInventory, CraterOrientation, Initiative},
         element::Element,
         grid::{Grid, GridElements},
         position::Position,
@@ -14,7 +14,7 @@ use crate::{
 pub fn ants_dig(
     mut ants_query: Query<
         (
-            &mut AntOrientation,
+            &mut CraterOrientation,
             &AntInventory,
             &Initiative,
             &Position,
@@ -41,8 +41,8 @@ pub fn ants_dig(
 
         let positions = vec![
             orientation.get_ahead_position(&position),
-            orientation.get_below_position(&position),
-            orientation.get_above_position(&position),
+            orientation.get_clockwise_position(&position),
+            orientation.get_counterclockwise_position(&position),
         ]
         .into_iter()
         .filter(|position| grid.is_within_bounds(position))

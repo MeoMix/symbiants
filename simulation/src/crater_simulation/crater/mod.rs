@@ -3,8 +3,8 @@ pub mod emit_pheromone;
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, Angle, AntBundle, AntColor, AntInventory,
-            AntName, AntOrientation, AntRole, Facing, Initiative,
+            digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName,
+            AntRole, Initiative, CraterOrientation,
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},
@@ -139,30 +139,30 @@ pub fn spawn_crater_ants(
     let mut rng = rng.reborrow();
 
     // NOTE: Just spawning some ants for prototyping
-    let worker_ant_bundles = (0..10).map(|_| {
-        AntBundle::new(
-            // Spawn adjacent to the nest entrance
-            Position::new(
-                (settings.crater_width / 2) + 1,
-                (settings.crater_height / 2) + 1,
-            ),
-            AntColor(settings.ant_color),
-            AntOrientation::new(Facing::random(&mut rng), Angle::Zero),
-            AntInventory::default(),
-            AntRole::Worker,
-            AntName::random(&mut rng),
-            Initiative::new(&mut rng),
-            AtCrater,
-            Hunger::new(settings.max_hunger_time),
-            Digestion::new(settings.max_digestion_time),
-        )
+    (0..10).for_each(|_| {
+        let entity = commands
+            .spawn(AntBundle::new(
+                // Spawn adjacent to the nest entrance
+                Position::new(
+                    (settings.crater_width / 2) + 1,
+                    (settings.crater_height / 2) + 1,
+                ),
+                AntColor(settings.ant_color),
+                AntInventory::default(),
+                AntRole::Worker,
+                AntName::random(&mut rng),
+                Initiative::new(&mut rng),
+                AtCrater,
+                Hunger::new(settings.max_hunger_time),
+                Digestion::new(settings.max_digestion_time),
+            ))
+            .id();
+
+        commands
+            .entity(entity)
+            .insert(CraterOrientation::random(&mut rng))
+            .insert(LeavingNest(100.0));
     });
-
-    for worker_ant_bundle in worker_ant_bundles {
-        let ant_entity = commands.spawn(worker_ant_bundle).id();
-        commands.entity(ant_entity).insert(LeavingNest(100.0));
-    }
-
 }
 
 pub fn spawn_crater_nest() {}

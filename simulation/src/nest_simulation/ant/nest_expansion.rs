@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative},
+        ant::{commands::AntCommandsExt, AntInventory, NestOrientation, AntRole, Initiative},
         element::Element,
         grid::GridElements,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
@@ -20,7 +20,7 @@ pub fn ants_nest_expansion(
     ants_query: Query<
         (
             &AntRole,
-            &AntOrientation,
+            &NestOrientation,
             &AntInventory,
             &Initiative,
             &Position,

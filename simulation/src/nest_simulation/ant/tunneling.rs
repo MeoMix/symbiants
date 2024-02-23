@@ -1,7 +1,7 @@
 use super::birthing::Birthing;
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, Initiative},
+        ant::{commands::AntCommandsExt, AntInventory, NestOrientation, Initiative},
         element::Element,
         grid::{Grid, GridElements},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
@@ -29,7 +29,7 @@ pub struct Tunneling(pub f32);
 // if they do not see any adjacent dirt, they clean up the pheromone and, in the case of the queen, shift to giving birth
 pub fn ants_tunnel_pheromone_move(
     mut ants_query: Query<
-        (&mut AntOrientation, &mut Initiative, &mut Position),
+        (&mut NestOrientation, &mut Initiative, &mut Position),
         (With<Tunneling>, With<AtNest>),
     >,
     nest_query: Query<&Nest>,
@@ -107,7 +107,7 @@ pub fn ants_tunnel_pheromone_move(
 pub fn ants_tunnel_pheromone_act(
     ants_query: Query<
         (
-            &AntOrientation,
+            &NestOrientation,
             &AntInventory,
             &Initiative,
             &Position,
@@ -175,7 +175,7 @@ pub fn ants_tunnel_pheromone_act(
 /// Ants walking north avoid tunneling pheromone to ensure tunnels are always dug downward.
 pub fn ants_add_tunnel_pheromone(
     ants_query: Query<
-        (Entity, &Position, &AntInventory, &AntOrientation),
+        (Entity, &Position, &AntInventory, &NestOrientation),
         (
             Changed<Position>,
             With<Initiative>,

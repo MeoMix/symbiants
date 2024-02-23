@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, AntInventory, AntOrientation, AntRole, Initiative},
+        ant::{commands::AntCommandsExt, AntInventory, NestOrientation, AntRole, Initiative},
         element::Element,
         grid::{Grid, GridElements},
         position::Position,
@@ -14,7 +14,7 @@ use bevy_turborand::prelude::*;
 pub fn ants_drop(
     ants_query: Query<
         (
-            &AntOrientation,
+            &NestOrientation,
             &AntInventory,
             &Initiative,
             &Position,
