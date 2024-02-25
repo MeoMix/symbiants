@@ -267,6 +267,13 @@ impl CraterOrientation {
         }
     }
 
+    pub fn get_perpendicular(&self) -> Vec<Self> {
+        match self {
+            Self::Up | Self::Down => vec![Self::Left, Self::Right],
+            Self::Left | Self::Right => vec![Self::Up, Self::Down],
+        }
+    }
+
     pub fn all_orientations() -> Vec<Self> {
         vec![Self::Left, Self::Right, Self::Up, Self::Down]
     }
