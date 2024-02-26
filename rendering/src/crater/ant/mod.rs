@@ -303,6 +303,39 @@ pub fn on_update_ant_orientation(
     }
 }
 
+pub fn on_added_ant_dead(
+    ant_model_query: Query<Entity, (Added<Dead>, With<AtCrater>)>,
+    ant_view_query: Query<&AntSpriteContainer>,
+    mut sprite_image_query: Query<(&mut Handle<Image>, &mut Sprite)>,
+    asset_server: Res<AssetServer>,
+    model_view_entity_map: Res<ModelViewEntityMap>,
+    grid_query: Query<&Grid, With<AtCrater>>,
+    visible_grid: Res<VisibleGrid>,
+) {
+    let visible_grid_entity = match visible_grid.0 {
+        Some(visible_grid_entity) => visible_grid_entity,
+        None => return,
+    };
+
+    if grid_query.get(visible_grid_entity).is_err() {
+        return;
+    }
+
+    for ant_model_entity in ant_model_query.iter() {
+        if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
+            let ant_sprite_container = ant_view_query.get(*ant_view_entity).unwrap();
+            let (mut image_handle, mut sprite) = sprite_image_query
+                .get_mut(ant_sprite_container.sprite_entity)
+                .unwrap();
+
+            *image_handle = asset_server.load("images/ant_dead.png");
+
+            // Apply gray tint to dead ants.
+            sprite.color = Color::GRAY;
+        }
+    }
+}
+
 /// Remove resources, etc.
 pub fn cleanup_ants() {}
 

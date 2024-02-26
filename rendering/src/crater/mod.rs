@@ -5,8 +5,7 @@ pub mod pheromone;
 
 use self::{
     ant::{
-        cleanup_ants, on_added_ant_at_crater, on_update_ant_inventory, on_update_ant_orientation,
-        on_update_ant_position, spawn_ants,
+        cleanup_ants, on_added_ant_at_crater, on_added_ant_dead, on_update_ant_inventory, on_update_ant_orientation, on_update_ant_position, spawn_ants
     },
     background::{cleanup_background, spawn_background, CraterBackground},
     nest_entrance::{cleanup_nest_entrance, spawn_nest_entrance, NestEntrance},
@@ -53,7 +52,7 @@ impl Plugin for CraterRenderingPlugin {
                         on_despawn::<Pheromone, AtCrater>,
                     ),
                     // Added
-                    (on_added_ant_at_crater),
+                    (on_added_ant_at_crater, on_added_ant_dead),
                     // Removed
                     (on_model_removed_zone::<AtCrater>),
                     // Updated
@@ -65,6 +64,7 @@ impl Plugin for CraterRenderingPlugin {
                     ),
                 ),
             )
+                .chain()
                 .run_if(
                     in_state(AppState::TellStory)
                         .or_else(in_state(AppState::PostSetupClearChangeDetection)),

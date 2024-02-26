@@ -4,7 +4,7 @@ use crate::{
     common::{
         ant::{
             digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName,
-            AntRole, Initiative, CraterOrientation,
+            AntRole, CraterOrientation, Initiative,
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},
@@ -13,7 +13,7 @@ use crate::{
     },
     settings::Settings,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
@@ -78,65 +78,75 @@ pub fn spawn_crater_elements(
     mut commands: Commands,
     mut rng: ResMut<GlobalRng>,
 ) {
+    let food_positions = spawn_food(&settings, &mut rng, &mut commands);
+
+    // Spawn Air everywhere food wasn't spawned
+    for y in 0..settings.crater_height {
+        for x in 0..settings.crater_width {
+            let air_position = Position::new(x, y);
+
+            if !food_positions.contains(&air_position) {
+                commands.spawn(ElementBundle::new(Element::Air, air_position, AtCrater));
+            }
+        }
+    }
+}
+
+fn spawn_food(
+    settings: &Settings,
+    rng: &mut ResMut<GlobalRng>,
+    commands: &mut Commands,
+) -> HashSet<Position> {
+    let food_blocks_to_spawn = 3;
+
     // Center of the crater
     let center_x = settings.crater_width / 2;
     let center_y = settings.crater_height / 2;
 
     // Calculate minimum distance from center
-    let min_distance_from_center = 20;
+    let min_distance_from_center = 10;
 
-    // Adjusted ranges to ensure the food block fits within map boundaries
     let food_block_width = 10;
     let food_block_height = 5;
 
-    let mut valid_start_position_found = false;
-    let mut start_x = 0;
-    let mut start_y = 0;
+    let mut food_positions = HashSet::new();
 
-    // Try to find a valid starting position for the food block
-    while !valid_start_position_found {
-        start_x = rng.isize(0..settings.crater_width - food_block_width);
-        start_y = rng.isize(0..settings.crater_height - food_block_height);
+    for _ in 0..food_blocks_to_spawn {
+        let mut valid_start_position_found = false;
+        let mut start_x = 0;
+        let mut start_y = 0;
 
-        // Calculate the distance from the center to the nearest point of the food block
-        let distance_from_center = (((start_x + food_block_width / 2 - center_x).pow(2)
-            + (start_y + food_block_height / 2 - center_y).pow(2))
-            as f64)
-            .sqrt();
+        // Try to find a valid starting position for the food block
+        while !valid_start_position_found {
+            start_x = rng.isize(0..settings.crater_width - food_block_width);
+            start_y = rng.isize(0..settings.crater_height - food_block_height);
 
-        if distance_from_center >= min_distance_from_center as f64 {
-            valid_start_position_found = true;
+            // Calculate the distance from the center to the nearest point of the food block
+            let distance_from_center = (((start_x + food_block_width / 2 - center_x).pow(2)
+                + (start_y + food_block_height / 2 - center_y).pow(2))
+                as f64)
+                .sqrt();
+
+            if distance_from_center >= min_distance_from_center as f64 {
+                valid_start_position_found = true;
+            }
         }
-    }
 
-    // Spawn Food in a 10x5 block to ensure all food tiles are adjacent
-    for y in start_y..start_y + food_block_height {
-        for x in start_x..start_x + food_block_width {
-            if x < settings.crater_width && y < settings.crater_height {
-                commands.spawn(ElementBundle::new(
-                    Element::Food,
-                    Position::new(x, y),
-                    AtCrater,
-                ));
+        // Spawn Food in a 10x5 block to ensure all food tiles are adjacent
+        for y in start_y..start_y + food_block_height {
+            for x in start_x..start_x + food_block_width {
+                if x < settings.crater_width && y < settings.crater_height {
+                    let food_position = Position::new(x, y);
+
+                    commands.spawn(ElementBundle::new(Element::Food, food_position, AtCrater));
+
+                    food_positions.insert(food_position);
+                }
             }
         }
     }
 
-    // Spawn Air everywhere food wasn't spawned
-    // Note: This logic will spawn air over the entire map, potentially overwriting food
-    // Consider tracking which positions have been filled with food to avoid this
-    for y in 0..settings.crater_height {
-        for x in 0..settings.crater_width {
-            // Check if this position is outside the food block to spawn air
-            if !(x >= start_x && x < start_x + 10 && y >= start_y && y < start_y + 5) {
-                commands.spawn(ElementBundle::new(
-                    Element::Air,
-                    Position::new(x, y),
-                    AtCrater,
-                ));
-            }
-        }
-    }
+    food_positions
 }
 
 pub fn spawn_crater_ants(
