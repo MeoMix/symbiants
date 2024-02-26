@@ -9,12 +9,18 @@ pub mod travel;
 pub mod tunneling;
 pub mod walk;
 
+use crate::common::ant::{NestAngle, NestFacing, NestOrientation};
+
 use self::{birthing::Birthing, chambering::Chambering, sleep::Asleep, tunneling::Tunneling};
 use bevy::prelude::*;
 
 pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     // TODO: This might be nest-specific, but maybe needs to be supported at crater just in case
     app_type_registry.write().register::<Asleep>();
+
+    app_type_registry.write().register::<NestOrientation>();
+    app_type_registry.write().register::<NestFacing>();
+    app_type_registry.write().register::<NestAngle>();
 
     // TODO: These seem nest-specific
     app_type_registry.write().register::<Birthing>();

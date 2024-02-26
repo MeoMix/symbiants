@@ -19,7 +19,15 @@ use serde::{Deserialize, Serialize};
 #[reflect(Component)]
 pub struct AtNest;
 
-impl Zone for AtNest {}
+impl Zone for AtNest {
+    fn is_at_nest(&self) -> bool {
+        true
+    }
+
+    fn is_at_crater(&self) -> bool {
+        false
+    }
+}
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

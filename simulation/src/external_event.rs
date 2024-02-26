@@ -1,8 +1,7 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, NestAngle, AntColor, AntInventory, AntName, NestOrientation,
-            AntRole, Dead, NestFacing, Initiative,
+            commands::AntCommandsExt, AntColor, AntInventory, AntName, AntRole, CraterOrientation, Dead, Initiative, NestAngle, NestFacing, NestOrientation
         },
         element::{commands::ElementCommandsExt, Element},
         grid::GridElements,
@@ -77,11 +76,21 @@ pub fn process_external_event<Z: Zone + Copy>(
             }
             ExternalSimulationEvent::SpawnWorkerAnt(grid_position, zone) => {
                 if grid_elements.is(grid_position, Element::Air) {
+                    let nest_orientation = match zone.is_at_nest() {
+                        true => Some(NestOrientation::new(NestFacing::random(&mut rng.reborrow()), NestAngle::Zero)),
+                        false => None,
+                    };
+
+                    let crater_orientation = match zone.is_at_crater() {
+                        true => Some(CraterOrientation::random(&mut rng.reborrow())),
+                        false => None,
+                    };
+                    
                     commands.spawn_ant(
                         grid_position,
                         AntColor(settings.ant_color),
-                        Some(NestOrientation::new(NestFacing::random(&mut rng.reborrow()), NestAngle::Zero)),
-                        None,
+                        nest_orientation,
+                        crater_orientation,
                         AntInventory::default(),
                         AntRole::Worker,
                         AntName::random(&mut rng.reborrow()),

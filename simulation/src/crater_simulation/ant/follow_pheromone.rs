@@ -1,18 +1,22 @@
-use std::f32::consts::PI;
-use bevy::{prelude::*, utils::HashSet};
 use crate::{
     common::{
         ant::{AntInventory, CraterOrientation, Initiative},
+        element::Element,
+        grid::GridElements,
         pheromone::{Pheromone, PheromoneMap, PheromoneStrength},
         position::Position,
     },
     crater_simulation::crater::AtCrater,
+    settings::Settings,
 };
+use bevy::{prelude::*, utils::HashSet};
+use bevy_turborand::{DelegatedRng, GlobalRng};
+use std::f32::consts::PI;
 
 // TODO: These are both magic. Can adjust them in the future. A smaller field-of-view might help prevent getting stuck
 // and going in a circle indefinitely. A smaller distance might be needed for performance at some point.
-const FIELD_OF_VIEW: f32 = 180.0;
-const DISTANCE: isize = 10;
+const FIELD_OF_VIEW: f32 = PI;
+const DISTANCE: isize = 5;
 
 #[derive(Debug)]
 enum Direction {
@@ -22,6 +26,7 @@ enum Direction {
 }
 
 // TODO: Need to make this logic more robust still. If there's stuff blocking the path between ant and strongest pheromone they'll get stuck.
+// At time of writing, though, there's nothing else blocking between food and ants aside from the nest entrance which isn't a huge deal.
 
 /// Ants will follow Food pheromone if they have no Food in their inventory
 /// Ants will follow Nest pheromone if they have Food in their inventory
@@ -37,9 +42,17 @@ pub fn ants_follow_pheromone(
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength), With<AtCrater>>,
     pheromone_map: Res<PheromoneMap<AtCrater>>,
+    grid_elements: GridElements<AtCrater>,
+    settings: Res<Settings>,
+    mut rng: ResMut<GlobalRng>,
 ) {
     for (mut initiative, mut position, mut orientation, inventory) in ants_query.iter_mut() {
         if !initiative.can_move() {
+            continue;
+        }
+
+        // Don't always follow pheromone to prevent getting stuck in small loops when there's not enough of a trail
+        if !rng.chance(settings.probabilities.crater_follow_pheromone.into()) {
             continue;
         }
 
@@ -77,26 +90,44 @@ pub fn ants_follow_pheromone(
             })
             .map(|(position, _)| *position);
 
-        // TODO: Need to make sure it's possible to walk wherever we're trying to walk - currently can walk through impassable objects
         if let Some(pheromone_target_position) = pheromone_target_position {
             // Calculate direction to pheromone target relative to ant's current orientation
             let direction_to_pheromone =
                 calculate_direction_to_target(&position, &orientation, &pheromone_target_position);
 
-            match direction_to_pheromone {
-                Direction::Forward => {
-                    *position = orientation.get_ahead_position(&position);
-                }
+            let (new_position, new_orientation) = match direction_to_pheromone {
+                Direction::Forward => (orientation.get_ahead_position(&position), None),
                 Direction::Left => {
                     let rotated_orientation = orientation.rotate_counterclockwise();
-                    *position = rotated_orientation.get_ahead_position(&position);
-                    *orientation = rotated_orientation;
+                    (
+                        rotated_orientation.get_ahead_position(&position),
+                        Some(rotated_orientation),
+                    )
                 }
                 Direction::Right => {
                     let rotated_orientation = orientation.rotate_clockwise();
-                    *position = rotated_orientation.get_ahead_position(&position);
-                    *orientation = rotated_orientation;
+                    (
+                        rotated_orientation.get_ahead_position(&position),
+                        Some(rotated_orientation),
+                    )
                 }
+            };
+
+            // Check to ensure can walk to desired position - if not then do nothing and rely on wandering for movement.
+            let is_air_at_new_position = grid_elements
+                .get_entity(new_position)
+                .map_or(false, |entity| {
+                    *grid_elements.element(*entity) == Element::Air
+                });
+
+            if !is_air_at_new_position {
+                continue;
+            }
+
+            *position = new_position;
+
+            if let Some(new_orientation) = new_orientation {
+                *orientation = new_orientation;
             }
 
             initiative.consume_movement();
@@ -109,10 +140,10 @@ pub fn ants_follow_pheromone(
 /// So, Right maps to 0 degrees and Up maps to 270, not 90, because y-axis is flipped.
 fn orientation_to_angle(orientation: &CraterOrientation) -> f32 {
     match orientation {
-        CraterOrientation::Up => 270.0,
+        CraterOrientation::Up => 3.0 * PI / 2.0,
         CraterOrientation::Right => 0.0,
-        CraterOrientation::Down => 90.0,
-        CraterOrientation::Left => 180.0,
+        CraterOrientation::Down => PI / 2.0,
+        CraterOrientation::Left => PI,
     }
 }
 
@@ -163,19 +194,24 @@ fn calculate_positions_in_fov(
     max_distance: isize, // Maximum distance to check from the start position
 ) -> HashSet<Position> {
     let mut positions = HashSet::new();
+
     let orientation_angle = orientation_to_angle(orientation);
-    let half_fov = fov / 2.0;
+    let half_fov: f32 = fov / 2.0;
     let start_angle = orientation_angle - half_fov;
 
     for distance in 1..=max_distance {
-        let step_angle = calculate_min_step_angle(distance);
+        // Calculate the number of steps needed to cover the fov, ensuring inclusivity of end angle
+        let num_steps =
+            ((start_angle + fov - start_angle) / (1.0 / distance as f32).atan()).ceil() as isize;
 
-        for angle in
-            (start_angle as isize..=(start_angle + fov) as isize).step_by(step_angle as usize)
-        {
-            let rad_angle = angle as f32 * (PI / 180.0);
-            let dx = (rad_angle.cos() * distance as f32).round() as isize;
-            let dy = (rad_angle.sin() * distance as f32).round() as isize;
+        for step in 0..=num_steps {
+            // Calculate the current angle for this step
+            let rad_angle = start_angle + step as f32 * (1.0 / distance as f32).atan();
+            // Ensure the angle does not exceed start_angle + fov
+            let constrained_angle = rad_angle.min(start_angle + fov);
+
+            let dx = (constrained_angle.cos() * distance as f32).round() as isize;
+            let dy = (constrained_angle.sin() * distance as f32).round() as isize;
             positions.insert(Position {
                 x: start_position.x + dx,
                 y: start_position.y + dy,
@@ -184,14 +220,4 @@ fn calculate_positions_in_fov(
     }
 
     positions
-}
-
-fn calculate_min_step_angle(distance: isize) -> f32 {
-    // Assuming tile size is 1 (unit length), and we need half of it for the calculation
-    let tile_half_size = 0.5;
-    // Calculate the angle in radians
-    let step_angle_radians = 2.0 * ((tile_half_size / distance as f32).atan());
-    // Convert the angle to degrees
-    let step_angle_degrees = step_angle_radians * (180.0 / PI);
-    step_angle_degrees
 }

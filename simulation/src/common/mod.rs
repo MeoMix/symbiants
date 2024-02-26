@@ -44,7 +44,10 @@ use bevy::prelude::*;
 
 // This maps to AtNest or AtCrater
 /// Use an empty trait to mark Nest and Crater zones to ensure strong type safety in generic systems.
-pub trait Zone: Component {}
+pub trait Zone: Component {
+    fn is_at_nest(&self) -> bool;
+    fn is_at_crater(&self) -> bool;
+}
 
 pub fn register_common(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Entity>();

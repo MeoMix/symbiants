@@ -533,9 +533,6 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<AntName>();
     app_type_registry.write().register::<AntColor>();
     app_type_registry.write().register::<Initiative>();
-    app_type_registry.write().register::<NestOrientation>();
-    app_type_registry.write().register::<NestFacing>();
-    app_type_registry.write().register::<NestAngle>();
     app_type_registry.write().register::<AntRole>();
     app_type_registry.write().register::<AntInventory>();
     app_type_registry.write().register::<InventoryItem>();

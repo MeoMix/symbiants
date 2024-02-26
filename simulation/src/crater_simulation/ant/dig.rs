@@ -54,20 +54,18 @@ pub fn ants_dig(
                 let element_entity = grid_elements.entity(position);
                 let element = grid_elements.element(*element_entity);
 
-                if *element == Element::Food {
-                    return Some((position, *element_entity));
+                match *element {
+                    Element::Food => Some((position, *element_entity)),
+                    _ => None,
                 }
-
-                None
             })
             .collect::<Vec<_>>();
 
         if food_positions.is_empty() {
-            return;
+            continue;
         }
 
         let (dig_position, dig_element_entity) = rng.sample(&food_positions).unwrap();
-
         commands.dig(ant_entity, *dig_position, *dig_element_entity, AtCrater);
         // TODO: This isn't right. I should express this as a separate system because `commands.dig` could fail
         *orientation = orientation.turn_around();

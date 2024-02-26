@@ -23,7 +23,15 @@ use super::ant::emit_pheromone::LeavingNest;
 #[reflect(Component)]
 pub struct AtCrater;
 
-impl Zone for AtCrater {}
+impl Zone for AtCrater {
+    fn is_at_nest(&self) -> bool {
+        false
+    }
+
+    fn is_at_crater(&self) -> bool {
+        true
+    }
+}
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -139,13 +147,23 @@ pub fn spawn_crater_ants(
     let mut rng = rng.reborrow();
 
     // NOTE: Just spawning some ants for prototyping
-    (0..10).for_each(|_| {
+    (0..20).for_each(|_| {
+        let x_offset = match rng.bool() {
+            true => -1,
+            false => 1,
+        };
+
+        let y_offset = match rng.bool() {
+            true => -1,
+            false => 1,
+        };
+
         let entity = commands
             .spawn(AntBundle::new(
                 // Spawn adjacent to the nest entrance
                 Position::new(
-                    (settings.crater_width / 2) + 1,
-                    (settings.crater_height / 2) + 1,
+                    (settings.crater_width / 2) + x_offset,
+                    (settings.crater_height / 2) + y_offset,
                 ),
                 AntColor(settings.ant_color),
                 AntInventory::default(),
