@@ -1,5 +1,5 @@
 # mold linker doesn't support rustlang/rust:nightly - requires Debian. Using rust:nightly would require lld which is worse for performance.
-FROM rust:1.74-bookworm
+FROM rust:1.76-bookworm
 
 # xorg is older way of piping viewport to host machine, weston is Wayland (newer version).
 # either way, need to have server installed on host machine to receive output
@@ -12,8 +12,7 @@ RUN apt-get update && \
    apt-get install -y libasound2-dev libudev-dev clang lld mold xorg
 
 # Need to manually ensure nightly is configured when using bookworm
-RUN rustup toolchain install nightly
-RUN rustup default nightly
+RUN rustup toolchain install nightly-2024-02-01
 RUN rustup component add rustfmt
 RUN rustup target install wasm32-unknown-unknown
 
