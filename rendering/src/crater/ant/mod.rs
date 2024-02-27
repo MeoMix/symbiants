@@ -270,8 +270,10 @@ pub fn on_update_ant_orientation(
 
             // Ensure inventory item orientation is updated to match sprite orientation
             if let Some(inventory_item_entity) = ant_sprite_container.inventory_item_entity {
-                let mut transform = inventory_transform_query.get_mut(inventory_item_entity).unwrap();
-                *transform = get_inventory_transform(orientation.as_ref());
+                // TODO: Sometimes this throws if I just unwrap because I don't call apply_deferred within my reactive UI updates layer
+                if let Ok(mut transform) = inventory_transform_query.get_mut(inventory_item_entity) {
+                    *transform = get_inventory_transform(orientation.as_ref());
+                }
             }
         }
     }
