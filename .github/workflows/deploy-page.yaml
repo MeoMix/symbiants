@@ -14,9 +14,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@nightly-2023-12-18
+        uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: nightly
+          toolchain: nightly-2023-12-18
       - name: Install Dependencies
         run: sudo apt-get update; sudo apt-get install libasound2-dev libudev-dev lld clang
       - name: Install trunk
