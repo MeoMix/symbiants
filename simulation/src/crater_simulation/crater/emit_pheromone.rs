@@ -16,7 +16,7 @@ pub fn nest_entrance_emit_pheromone(mut commands: Commands, settings: Res<Settin
     commands.spawn_pheromone(
         nest_position,
         Pheromone::Nest,
-        PheromoneStrength::new(100.0, 100.0),
+        PheromoneStrength::new(50.0, 50.0),
         AtCrater,
     );
 }
@@ -26,7 +26,7 @@ pub fn food_emit_pheromone(mut commands: Commands, query: Query<&Position, (With
         commands.spawn_pheromone(
             *position,
             Pheromone::Food,
-            PheromoneStrength::new(100.0, 100.0),
+            PheromoneStrength::new(50.0, 50.0),
             AtCrater,
         );
     }

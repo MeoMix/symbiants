@@ -189,7 +189,7 @@ pub fn spawn_crater_ants(
         commands
             .entity(entity)
             .insert(CraterOrientation::random(&mut rng))
-            .insert(LeavingNest(100.0));
+            .insert(LeavingNest(50.0));
     });
 }
 
