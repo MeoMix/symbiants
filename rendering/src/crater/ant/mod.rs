@@ -202,16 +202,13 @@ pub fn on_update_ant_inventory(
 /// This allows for the ant's associated Label to move in sync with the AntSprite.
 pub fn on_update_ant_position(
     ant_model_query: Query<
-        (Entity, Ref<Position>, &AntInventory, &CraterOrientation),
+        (Entity, Ref<Position>),
         (With<Ant>, With<AtCrater>),
     >,
-    mut ant_view_query: Query<(&mut Transform, &mut AntSpriteContainer, &TranslationOffset)>,
+    mut ant_view_query: Query<(&mut Transform, &TranslationOffset)>,
     grid_query: Query<&Grid, With<AtCrater>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
-    mut commands: Commands,
-    elements_query: Query<&Element>,
-    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,
@@ -223,44 +220,17 @@ pub fn on_update_ant_position(
         Err(_) => return,
     };
 
-    for (ant_model_entity, position, inventory, orientation) in ant_model_query.iter() {
+    for (ant_model_entity, position) in ant_model_query.iter() {
         if position.is_added() || !position.is_changed() {
             continue;
         }
 
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
-            if let Ok((mut transform, mut ant_sprite_container, translation_offset)) =
+            if let Ok((mut transform, translation_offset)) =
                 ant_view_query.get_mut(ant_view_entity)
             {
                 transform.translation =
                     grid_to_world_position(grid, *position).add(translation_offset.0);
-
-                // Ensure inventory item orientation is updated to match sprite orientation
-                if let Some(inventory_item_entity) = ant_sprite_container.inventory_item_entity {
-                    // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
-                    commands
-                        .entity(inventory_item_entity)
-                        .remove_parent()
-                        .despawn();
-                    ant_sprite_container.inventory_item_entity = None;
-                }
-
-                if let Some(element_entity) = inventory.0 {
-                    let inventory_item_bundle = get_inventory_item_bundle(
-                        element_entity,
-                        &elements_query,
-                        &element_texture_atlas_handle,
-                        &orientation,
-                    );
-
-                    let ant_inventory_item_entity = commands.spawn(inventory_item_bundle).id();
-
-                    commands
-                        .entity(ant_sprite_container.sprite_entity)
-                        .push_children(&[ant_inventory_item_entity]);
-
-                    ant_sprite_container.inventory_item_entity = Some(ant_inventory_item_entity);
-                }
             }
         }
     }
@@ -269,7 +239,8 @@ pub fn on_update_ant_position(
 pub fn on_update_ant_orientation(
     ant_model_query: Query<(Entity, Ref<CraterOrientation>, Option<&Dead>), With<AtCrater>>,
     ant_view_query: Query<&AntSpriteContainer>,
-    mut sprite_query: Query<&mut Handle<Image>>,
+    mut ant_sprite_query: Query<&mut Handle<Image>>,
+    mut inventory_transform_query: Query<&mut Transform>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
     grid_query: Query<&Grid, With<AtCrater>>,
@@ -291,14 +262,17 @@ pub fn on_update_ant_orientation(
 
         if let Some(ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
             let ant_sprite_container = ant_view_query.get(*ant_view_entity).unwrap();
-
-            let sprite_image = get_sprite_image(dead.is_some(), *orientation);
-
-            let mut handle = sprite_query
+            let mut handle = ant_sprite_query
                 .get_mut(ant_sprite_container.sprite_entity)
                 .unwrap();
 
-            *handle = Handle::from(asset_server.load(sprite_image));
+            *handle = Handle::from(asset_server.load(get_sprite_image(dead.is_some(), *orientation)));
+
+            // Ensure inventory item orientation is updated to match sprite orientation
+            if let Some(inventory_item_entity) = ant_sprite_container.inventory_item_entity {
+                let mut transform = inventory_transform_query.get_mut(inventory_item_entity).unwrap();
+                *transform = get_inventory_transform(orientation.as_ref());
+            }
         }
     }
 }
@@ -477,6 +451,15 @@ fn get_inventory_item_bundle(
     let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure, *element));
     sprite.custom_size = Some(Vec2::splat(1.0));
 
+    SpriteSheetBundle {
+        transform: get_inventory_transform(orientation),
+        sprite,
+        texture_atlas: element_texture_atlas_handle.0.clone(),
+        ..default()
+    }
+}
+
+fn get_inventory_transform(orientation: &CraterOrientation) -> Transform {
     let x_offset = match orientation {
         CraterOrientation::Up => 0.0,
         CraterOrientation::Right => 1.0,
@@ -491,10 +474,5 @@ fn get_inventory_item_bundle(
         CraterOrientation::Left => 0.25,
     };
 
-    SpriteSheetBundle {
-        transform: Transform::from_xyz(x_offset, y_offset, 1.0),
-        sprite,
-        texture_atlas: element_texture_atlas_handle.0.clone(),
-        ..default()
-    }
+    Transform::from_xyz(x_offset, y_offset, 1.0)
 }

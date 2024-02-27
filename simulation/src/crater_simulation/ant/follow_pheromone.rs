@@ -201,12 +201,13 @@ fn calculate_positions_in_fov(
 
     for distance in 1..=max_distance {
         // Calculate the number of steps needed to cover the fov, ensuring inclusivity of end angle
+        let angle_increment = (1.0 / distance as f32).atan();
         let num_steps =
-            ((start_angle + fov - start_angle) / (1.0 / distance as f32).atan()).ceil() as isize;
+            ((start_angle + fov - start_angle) / angle_increment).ceil() as isize;
 
         for step in 0..=num_steps {
             // Calculate the current angle for this step
-            let rad_angle = start_angle + step as f32 * (1.0 / distance as f32).atan();
+            let rad_angle = start_angle + step as f32 * angle_increment;
             // Ensure the angle does not exceed start_angle + fov
             let constrained_angle = rad_angle.min(start_angle + fov);
 
