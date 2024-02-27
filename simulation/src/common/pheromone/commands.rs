@@ -64,25 +64,23 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
     /// Spawn a new Pheromone entity and update the associate PheromoneMap cache.
     /// Performed in a custom command to provide a transactional wrapper around issuing command + updating cache.
     fn apply(self, world: &mut World) {
+        let default_vec = Vec::new();
+
         let pheromone_entities = world
             .resource::<PheromoneMap<Z>>()
             .map
             .get(&self.position)
-            .map_or_else(Vec::new, |pheromone_entities| pheromone_entities.clone());
+            .unwrap_or(&default_vec);
 
         let matching_pheromone_entity = pheromone_entities.iter().find(|&entity| {
-            world
-                .query::<&Pheromone>()
-                .get(world, *entity)
+            world.entity(*entity).get::<Pheromone>()
                 .map_or(false, |pheromone| *pheromone == self.pheromone)
         });
 
         if let Some(matching_pheromone_entity) = matching_pheromone_entity {
             // Update the existing entity's PheromoneStrength.
-            let mut pheromone_strength = world
-                .query::<&mut PheromoneStrength>()
-                .get_mut(world, *matching_pheromone_entity)
-                .unwrap();
+            let mut entity = world.entity_mut(*matching_pheromone_entity);
+            let mut pheromone_strength = entity.get_mut::<PheromoneStrength>().unwrap();
 
             pheromone_strength.increment(self.pheromone_strength.value() * 0.1);
             return;
