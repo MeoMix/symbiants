@@ -48,6 +48,7 @@ pub fn ants_travel_to_crater(
             continue;
         }
 
+        // NOTE: if this rule changes and inventory can be transitioned, need to update its AtNest/AtCrater logic
         if inventory.0 != None {
             continue;
         }

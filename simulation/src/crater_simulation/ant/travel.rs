@@ -52,6 +52,9 @@ pub fn ants_travel_to_nest(
             continue;
         }
 
+        let mut inventory_element_commands = commands.entity(inventory.0.unwrap());
+        inventory_element_commands.remove::<AtCrater>().insert(AtNest);
+
         // Leave the crater
         let mut ant_entity_commands = commands.entity(ant_entity);
 
