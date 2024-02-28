@@ -4,7 +4,7 @@ use crate::{
         ant::{commands::AntCommandsExt, AntInventory, NestOrientation, Initiative},
         element::Element,
         grid::{Grid, GridElements},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneEntityPositionCache, PheromoneStrength},
         position::Position,
     },
     nest_simulation::{
@@ -184,7 +184,7 @@ pub fn ants_add_tunnel_pheromone(
         ),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
-    pheromone_map: Res<PheromoneMap<AtNest>>,
+    pheromone_map: Res<PheromoneEntityPositionCache<AtNest>>,
     mut commands: Commands,
 ) {
     for (ant_entity, ant_position, inventory, ant_orientation) in ants_query.iter() {
@@ -230,7 +230,7 @@ pub fn ants_remove_tunnel_pheromone(
         (Or<(Changed<Position>, Changed<AntInventory>)>, With<AtNest>),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
-    pheromone_map: Res<PheromoneMap<AtNest>>,
+    pheromone_map: Res<PheromoneEntityPositionCache<AtNest>>,
     grid_elements: GridElements<AtNest>,
     mut commands: Commands,
     nest_query: Query<&Nest>,

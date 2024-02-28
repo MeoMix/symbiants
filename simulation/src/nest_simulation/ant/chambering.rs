@@ -4,7 +4,7 @@ use crate::{
         ant::{commands::AntCommandsExt, AntInventory, NestOrientation, Initiative},
         element::Element,
         grid::{Grid, GridElements},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneMap, PheromoneStrength},
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneEntityPositionCache, PheromoneStrength},
         position::Position,
     },
     nest_simulation::nest::{AtNest, Nest},
@@ -95,7 +95,7 @@ pub fn ants_add_chamber_pheromone(
         ),
     >,
     pheromone_query: Query<(&Pheromone, &PheromoneStrength)>,
-    pheromone_map: Res<PheromoneMap<AtNest>>,
+    pheromone_map: Res<PheromoneEntityPositionCache<AtNest>>,
     mut commands: Commands,
 ) {
     for (ant_entity, ant_position, inventory) in ants_query.iter() {

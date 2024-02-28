@@ -157,7 +157,7 @@ pub fn spawn_crater_ants(
     let mut rng = rng.reborrow();
 
     // NOTE: Just spawning some ants for prototyping
-    (0..0).for_each(|_| {
+    (0..20).for_each(|_| {
         let x_offset = match rng.bool() {
             true => -1,
             false => 1,

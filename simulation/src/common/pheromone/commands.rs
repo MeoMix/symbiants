@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::common::{
-    pheromone::{Pheromone, PheromoneMap, PheromoneStrength},
+    pheromone::{Pheromone, PheromoneEntityPositionCache, PheromoneStrength},
     position::Position,
     Zone,
 };
@@ -67,8 +67,7 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
         let default_vec = Vec::new();
 
         let pheromone_entities = world
-            .resource::<PheromoneMap<Z>>()
-            .map
+            .resource::<PheromoneEntityPositionCache<Z>>()
             .get(&self.position)
             .unwrap_or(&default_vec);
 
@@ -96,12 +95,9 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
             ))
             .id();
 
-        let mut pheromone_map = world.resource_mut::<PheromoneMap<Z>>();
+        let mut pheromone_map = world.resource_mut::<PheromoneEntityPositionCache<Z>>();
         pheromone_map
-            .map
-            .entry(self.position)
-            .and_modify(|entities| entities.push(pheromone_entity))
-            .or_insert_with(|| vec![pheromone_entity]);
+            .add_or_update_entity(&self.position, pheromone_entity);
     }
 }
 
@@ -116,8 +112,7 @@ impl<Z: Zone> Command for DespawnPheromoneCommand<Z> {
     /// Performed in a custom command to provide a transactional wrapper around issuing command + updating cache.
     fn apply(self, world: &mut World) {
         if let Some(pheromone_entities) = world
-            .resource_mut::<PheromoneMap<Z>>()
-            .map
+            .resource_mut::<PheromoneEntityPositionCache<Z>>()
             .get_mut(&self.position)
         {
             if let Some(pos) = pheromone_entities
@@ -125,14 +120,6 @@ impl<Z: Zone> Command for DespawnPheromoneCommand<Z> {
                 .position(|&e| e == self.pheromone_entity)
             {
                 pheromone_entities.remove(pos);
-
-                if pheromone_entities.is_empty() {
-                    world
-                        .resource_mut::<PheromoneMap<Z>>()
-                        .map
-                        .remove(&self.position);
-                }
-
                 world.despawn(self.pheromone_entity);
                 return;
             }
