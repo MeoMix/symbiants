@@ -166,7 +166,15 @@ pub fn on_update_ant_inventory(
         // If inventory changed then, if there is an inventory sprite, need to despawn it.
         // Then, if there is inventory currently, need to spawn it.
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
-            let mut ant_sprite_container = ant_view_query.get_mut(ant_view_entity).unwrap();
+            let mut ant_sprite_container = match ant_view_query.get_mut(ant_view_entity) {
+                Ok(ant_sprite_container) => ant_sprite_container,
+                Err(_) => {
+                    // TODO: This should never happen, but does happen sometimes. I think it occurs when ants transition
+                    // from Crater to Nest. Change detection is still responding to something in Crater, but sprite is in another zone.
+                    // Safe to ignore, but indicative of an architectural concern.
+                    continue;
+                },
+            };
 
             if let Some(inventory_item_entity) = ant_sprite_container.inventory_item_entity {
                 // Surprisingly, Bevy doesn't fix parent/child relationship when despawning children, so do it manually.
