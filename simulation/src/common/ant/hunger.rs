@@ -2,15 +2,14 @@ use super::digestion::Digestion;
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, AntInventory, NestOrientation, AntRole, Dead,
+            commands::AntCommandsExt, AntInventory, AntRole, Dead,
             Initiative,
         },
         element::Element,
         grid::GridElements,
         position::Position,
         Zone,
-    },
-    story_time::DEFAULT_TICKS_PER_SECOND,
+    }, nest_simulation::ant::NestOrientation, story_time::DEFAULT_TICKS_PER_SECOND
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

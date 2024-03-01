@@ -1,7 +1,7 @@
-use super::birthing::Birthing;
+use super::{birthing::Birthing, NestOrientation};
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, NestOrientation},
+        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory},
         element::Element,
         grid::{Grid, GridElements},
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneEntityPositionCache, PheromoneStrength},

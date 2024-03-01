@@ -11,12 +11,12 @@ use crate::common::{
 use bevy::prelude::*;
 use simulation::{
     common::{
-        ant::{Ant, AntColor, AntInventory, AntName, AntRole, Dead, NestFacing, NestOrientation},
+        ant::{Ant, AntColor, AntInventory, AntName, AntRole, Dead},
         element::Element,
         grid::Grid,
         position::Position,
     },
-    nest_simulation::nest::AtNest,
+    nest_simulation::{ant::{NestFacing, NestOrientation}, nest::AtNest},
 };
 use std::ops::Add;
 #[derive(Component, Copy, Clone)]

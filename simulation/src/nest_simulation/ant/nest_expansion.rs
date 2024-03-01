@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole, NestOrientation},
+        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole},
         element::Element,
         grid::GridElements,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
@@ -11,6 +11,8 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
+
+use super::NestOrientation;
 
 /// A worker ant may randomly decide to dig a tunnel in a tunnel east/west/south of the nest under the following conditions:
 ///     1) The ant must not be hungry. If the ant is hungry it's assumed that nest expansion isn't desirable because resources are scarce.

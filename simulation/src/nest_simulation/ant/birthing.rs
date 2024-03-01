@@ -1,7 +1,7 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName, AntRole, NestAngle, NestFacing, NestOrientation
+            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName, AntRole,
         },
         position::Position,
     },
@@ -12,6 +12,8 @@ use crate::{
 use bevy::prelude::*;
 use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
+
+use super::{NestAngle, NestFacing, NestOrientation};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{initiative::Initiative, CraterOrientation},
+        ant::initiative::Initiative,
         element::Element,
         grid::GridElements,
         position::Position,
@@ -10,6 +10,8 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
+
+use super::CraterOrientation;
 
 /// Wandering is a low-priority task which occurs if ants aren't following pheromones.
 /// Ant will generally try to walk forward unless it is blocked. If it's blocked, or by chance,

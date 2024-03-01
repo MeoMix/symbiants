@@ -1,23 +1,19 @@
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName,
-            NestOrientation, AntRole, Initiative, InventoryItemBundle,
+            digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName, AntRole, Initiative, InventoryItemBundle
         },
         element::{Element, ElementBundle},
         grid::{GridElements, GridElementsMut},
         position::Position,
         Zone,
-    },
-    settings::Settings,
+    }, crater_simulation::ant::CraterOrientation, nest_simulation::ant::NestOrientation, settings::Settings
 };
 use bevy::{
     ecs::system::{Command, SystemState},
     prelude::*,
 };
 use core::panic;
-
-use super::CraterOrientation;
 
 pub trait AntCommandsExt {
     fn spawn_ant<Z: Zone>(

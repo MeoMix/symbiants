@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{initiative::Initiative, NestOrientation},
+        ant::initiative::Initiative,
         element::Element,
         grid::GridElements,
         position::Position,
@@ -10,6 +10,8 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
+
+use super::NestOrientation;
 
 /// Ants walking vertically may have the ground beneath their feet disappear.
 /// Usually, this means gravity will take over and they'll fall downward, but sometimes they have a stable

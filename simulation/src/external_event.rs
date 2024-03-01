@@ -1,15 +1,15 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName, AntRole, CraterOrientation, Dead, NestAngle, NestFacing, NestOrientation
+            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName, AntRole, Dead,
         },
         element::{commands::ElementCommandsExt, Element},
         grid::GridElements,
         position::Position,
         Zone,
     },
-    crater_simulation::crater::AtCrater,
-    nest_simulation::nest::AtNest,
+    crater_simulation::{ant::CraterOrientation, crater::AtCrater},
+    nest_simulation::{ant::{NestAngle, NestFacing, NestOrientation}, nest::AtNest},
     settings::Settings,
 };
 use bevy::prelude::*;

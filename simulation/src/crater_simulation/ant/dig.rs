@@ -3,13 +3,15 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, CraterOrientation},
+        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory},
         element::Element,
         grid::{Grid, GridElements},
         position::Position,
     },
     crater_simulation::crater::AtCrater,
 };
+
+use super::CraterOrientation;
 
 pub fn ants_dig(
     mut ants_query: Query<

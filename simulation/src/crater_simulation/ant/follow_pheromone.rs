@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{initiative::Initiative, AntInventory, AntName, CraterOrientation},
+        ant::{initiative::Initiative, AntInventory, AntName},
         element::Element,
         grid::GridElements,
         pheromone::{Pheromone, PheromoneEntityPositionCache, PheromoneStrength},
@@ -11,6 +11,8 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
+
+use super::CraterOrientation;
 
 const DETECTION_DISTANCE: f32 = 1.5;
 

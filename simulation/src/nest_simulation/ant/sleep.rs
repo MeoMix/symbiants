@@ -3,10 +3,12 @@ use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{ant::{initiative::Initiative, AntInventory, NestOrientation}, position::Position},
+    common::{ant::{initiative::Initiative, AntInventory}, position::Position},
     nest_simulation::nest::{AtNest, Nest},
     story_time::StoryTime,
 };
+
+use super::NestOrientation;
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

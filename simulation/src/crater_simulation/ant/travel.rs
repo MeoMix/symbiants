@@ -4,16 +4,16 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use crate::{
     common::{
         ant::{
-            initiative::Initiative, AntInventory, CraterOrientation, NestAngle, NestFacing, NestOrientation
+            initiative::Initiative, AntInventory,
         },
         position::Position,
     },
     crater_simulation::{ant::emit_pheromone::LeavingNest, crater::AtCrater},
-    nest_simulation::nest::{AtNest, Nest},
+    nest_simulation::{ant::{NestAngle, NestFacing, NestOrientation}, nest::{AtNest, Nest}},
     settings::Settings,
 };
 
-use super::emit_pheromone::LeavingFood;
+use super::{emit_pheromone::LeavingFood, CraterOrientation};
 
 // TODO: Maybe put this in common since it relies on knowledge of AtCrater and AtNest
 

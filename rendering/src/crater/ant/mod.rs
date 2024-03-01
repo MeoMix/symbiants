@@ -9,12 +9,12 @@ use crate::common::{
 use bevy::prelude::*;
 use simulation::{
     common::{
-        ant::{Ant, AntColor, AntInventory, AntName, CraterOrientation, Dead},
+        ant::{Ant, AntColor, AntInventory, AntName, Dead},
         element::Element,
         grid::Grid,
         position::Position,
     },
-    crater_simulation::crater::{AtCrater, Crater},
+    crater_simulation::{ant::CraterOrientation, crater::{AtCrater, Crater}},
 };
 use std::ops::Add;
 

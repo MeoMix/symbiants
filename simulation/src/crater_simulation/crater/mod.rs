@@ -3,7 +3,7 @@ pub mod emit_pheromone;
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor, AntInventory, AntName, AntRole, CraterOrientation
+            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor, AntInventory, AntName, AntRole
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},
@@ -16,7 +16,7 @@ use bevy::{prelude::*, utils::HashSet};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
 
-use super::ant::emit_pheromone::LeavingNest;
+use super::ant::{emit_pheromone::LeavingNest, CraterOrientation};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]

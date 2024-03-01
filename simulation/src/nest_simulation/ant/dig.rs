@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole, NestOrientation},
+        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole},
         element::Element,
         grid::{Grid, GridElements},
         position::Position,
@@ -10,6 +10,8 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_turborand::prelude::*;
+
+use super::NestOrientation;
 
 pub fn ants_dig(
     ants_query: Query<

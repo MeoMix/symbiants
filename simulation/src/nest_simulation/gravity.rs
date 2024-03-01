@@ -1,7 +1,7 @@
-use super::nest::AtNest;
+use super::{ant::NestOrientation, nest::AtNest};
 use crate::{
     common::{
-        ant::{initiative::Initiative, Dead, NestOrientation},
+        ant::{initiative::Initiative, Dead},
         element::{commands::ElementCommandsExt, Air, Element},
         grid::{Grid, GridElements, GridElementsMut},
         position::Position,

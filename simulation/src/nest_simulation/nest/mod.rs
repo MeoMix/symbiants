@@ -1,7 +1,7 @@
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor, AntInventory, AntName, AntRole, NestAngle, NestFacing, NestOrientation
+            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor, AntInventory, AntName, AntRole,
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},
@@ -13,6 +13,8 @@ use crate::{
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use serde::{Deserialize, Serialize};
+
+use super::ant::{NestAngle, NestFacing, NestOrientation};
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
