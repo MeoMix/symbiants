@@ -11,7 +11,7 @@ use crate::common::{
 use bevy::prelude::*;
 use simulation::{
     common::{
-        ant::{Ant, AntColor, AntInventory, AntName, NestOrientation, AntRole, Dead},
+        ant::{Ant, AntColor, AntInventory, AntName, AntRole, Dead, NestFacing, NestOrientation},
         element::Element,
         grid::Grid,
         position::Position,
@@ -301,8 +301,8 @@ pub fn on_update_ant_orientation(
                 .get_mut(ant_sprite_container.sprite_entity)
                 .unwrap();
 
-            transform.scale = orientation.as_world_scale();
-            transform.rotation = orientation.as_world_rotation();
+            transform.scale = orientation_to_world_scale(orientation.as_ref());
+            transform.rotation = orientation_to_world_rotation(orientation.as_ref());
         }
     }
 }
@@ -380,8 +380,8 @@ fn spawn_ant_sprite(
             ..default()
         },
         transform: Transform {
-            rotation: orientation.as_world_rotation(),
-            scale: orientation.as_world_scale(),
+            rotation: orientation_to_world_rotation(orientation),
+            scale: orientation_to_world_scale(orientation),
             ..default()
         },
         ..default()
@@ -481,4 +481,22 @@ fn get_inventory_item_bundle(
         texture_atlas: element_texture_atlas_handle.0.clone(),
         ..default()
     }
+}
+
+
+// Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
+pub fn orientation_to_world_scale(orientation: &NestOrientation) -> Vec3 {
+    Vec3 {
+        x: if orientation.get_facing() == NestFacing::Left {
+            -1.0
+        } else {
+            1.0
+        },
+        y: 1.0,
+        z: 1.0,
+    }
+}
+
+pub fn orientation_to_world_rotation(orientation: &NestOrientation) -> Quat {
+    Quat::from_rotation_z(orientation.get_angle().as_radians())
 }

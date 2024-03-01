@@ -375,11 +375,6 @@ fn spawn_ant_sprite(
             custom_size: Some(Vec2::splat(1.5)),
             ..default()
         },
-        transform: Transform {
-            // rotation: orientation.as_world_rotation(),
-            // scale: orientation.as_world_scale(),
-            ..default()
-        },
         ..default()
     },));
 

@@ -193,20 +193,6 @@ pub enum CraterOrientation {
 }
 
 impl CraterOrientation {
-    // TODO: Remove this - it's a view concern
-    // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
-    pub fn as_world_scale(&self) -> Vec3 {
-        Vec3 {
-            x: if *self == CraterOrientation::Left {
-                -1.0
-            } else {
-                1.0
-            },
-            y: 1.0,
-            z: 1.0,
-        }
-    }
-
     pub fn get_perpendicular(&self) -> Vec<Self> {
         match self {
             Self::Up | Self::Down => vec![Self::Left, Self::Right],
@@ -296,24 +282,6 @@ pub struct NestOrientation {
 impl NestOrientation {
     pub fn new(facing: NestFacing, angle: NestAngle) -> Self {
         Self { facing, angle }
-    }
-
-    // TODO: Remove this - it's a view concern
-    // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
-    pub fn as_world_scale(&self) -> Vec3 {
-        Vec3 {
-            x: if self.get_facing() == NestFacing::Left {
-                -1.0
-            } else {
-                1.0
-            },
-            y: 1.0,
-            z: 1.0,
-        }
-    }
-
-    pub fn as_world_rotation(&self) -> Quat {
-        Quat::from_rotation_z(self.get_angle().as_radians())
     }
 
     pub fn get_facing(&self) -> NestFacing {
