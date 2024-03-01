@@ -44,13 +44,11 @@ impl<Z: Zone> AntBundle<Z> {
         name: AntName,
         initiative: Initiative,
         zone: Z,
-        // TODO: maybe these should be inserted onto entity via system afterward? otherwise constructor will grow indefinitely
         hunger: Hunger,
         digestion: Digestion,
     ) -> Self {
         Self {
             ant: Ant,
-            // Queen always spawns in the center. She'll fall from the sky in the future.
             position,
             color,
             inventory,
