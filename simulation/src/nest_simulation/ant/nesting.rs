@@ -2,7 +2,7 @@ use super::walk::get_turned_orientation;
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, AntInventory, NestOrientation, AntRole, NestFacing, Initiative,
+            commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole, NestFacing, NestOrientation
         },
         element::Element,
         grid::GridElements,

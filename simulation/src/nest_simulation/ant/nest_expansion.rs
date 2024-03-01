@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, AntInventory, NestOrientation, AntRole, Initiative},
+        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole, NestOrientation},
         element::Element,
         grid::GridElements,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},

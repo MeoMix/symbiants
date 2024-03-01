@@ -3,7 +3,7 @@ use crate::common::{visible_grid::VisibleGrid, ModelViewEntityMap};
 use bevy::prelude::*;
 use bevy_turborand::{DelegatedRng, GlobalRng};
 use simulation::{
-    common::{ant::AntAteFoodEvent, grid::Grid},
+    common::{ant::hunger::AntAteFoodEvent, grid::Grid},
     nest_simulation::{
         ant::sleep::Asleep,
         nest::{AtNest, Nest},

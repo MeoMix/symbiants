@@ -1,8 +1,7 @@
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, NestAngle, AntBundle, AntColor, AntInventory,
-            AntName, NestOrientation, AntRole, NestFacing, Initiative,
+            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor, AntInventory, AntName, AntRole, NestAngle, NestFacing, NestOrientation
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},

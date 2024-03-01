@@ -1,8 +1,7 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, NestAngle, AntColor, AntInventory, AntName, NestOrientation,
-            AntRole, NestFacing, Initiative,
+            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName, AntRole, NestAngle, NestFacing, NestOrientation
         },
         position::Position,
     },

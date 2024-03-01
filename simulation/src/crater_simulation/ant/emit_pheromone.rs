@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::{
-        ant::Initiative,
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
-        position::Position,
+        ant::initiative::Initiative, pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength}, position::Position
     },
     crater_simulation::crater::AtCrater, settings::Settings,
 };

@@ -33,6 +33,7 @@ impl Grid {
     }
 }
 
+// TODO: Maybe move this to Element rather than Grid?
 #[derive(SystemParam)]
 pub struct GridElements<'w, 's, Z: Zone> {
     elements_cache: Query<'w, 's, &'static ElementEntityPositionCache, With<Z>>,

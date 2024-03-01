@@ -3,7 +3,7 @@ pub mod commands;
 use self::commands::PheromoneCommandsExt;
 use super::{position::Position, Zone};
 use crate::story_time::{DEFAULT_TICKS_PER_SECOND, SECONDS_PER_HOUR};
-use bevy::{prelude::*};
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 

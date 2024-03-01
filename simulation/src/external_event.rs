@@ -1,7 +1,7 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, AntColor, AntInventory, AntName, AntRole, CraterOrientation, Dead, Initiative, NestAngle, NestFacing, NestOrientation
+            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName, AntRole, CraterOrientation, Dead, NestAngle, NestFacing, NestOrientation
         },
         element::{commands::ElementCommandsExt, Element},
         grid::GridElements,

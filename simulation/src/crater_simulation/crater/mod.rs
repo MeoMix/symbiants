@@ -3,8 +3,7 @@ pub mod emit_pheromone;
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName,
-            AntRole, CraterOrientation, Initiative,
+            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor, AntInventory, AntName, AntRole, CraterOrientation
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},

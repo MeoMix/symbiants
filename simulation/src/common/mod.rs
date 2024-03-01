@@ -13,9 +13,9 @@ use self::{
     ant::{
         death::on_ants_add_dead,
         digestion::ants_digestion,
-        hunger::{ants_hunger_act, ants_hunger_regurgitate, ants_hunger_tick},
+        hunger::{ants_hunger_act, ants_hunger_regurgitate, ants_hunger_tick, AntAteFoodEvent},
         initiative::ants_initiative,
-        register_ant, AntAteFoodEvent,
+        register_ant,
     },
     element::register_element,
     pheromone::register_pheromone,

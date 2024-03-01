@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{AntInventory, AntName, CraterOrientation, Initiative},
+        ant::{initiative::Initiative, AntInventory, AntName, CraterOrientation},
         element::Element,
         grid::GridElements,
         pheromone::{Pheromone, PheromoneEntityPositionCache, PheromoneStrength},
@@ -20,6 +20,10 @@ enum Direction {
     Left,
     Right,
 }
+
+// TODO: I think I got some of the y-axis math in this flipped around. All of the code works, but y-axis should increase towards the bottom when working with Simulation.
+// It's only when working with Rendering that y-axis increases when going towards the top. This is because Bevy's rendering logic wants y-axis to start at the bottom, but
+// when I fill a 2D vector I naturally think of (0,0) as the first element in the vector.
 
 // TODO: Need to make this logic more robust still. If there's stuff blocking the path between ant and strongest pheromone they'll get stuck.
 // At time of writing, though, there's nothing else blocking between food and ants aside from the nest entrance which isn't a huge deal.

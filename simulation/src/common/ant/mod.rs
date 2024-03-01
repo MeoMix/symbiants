@@ -6,7 +6,7 @@ pub mod initiative;
 // pub mod sleep;
 mod name_list;
 
-use self::{digestion::Digestion, hunger::Hunger, name_list::get_random_name};
+use self::{digestion::Digestion, hunger::Hunger, initiative::Initiative, name_list::get_random_name};
 use crate::common::{element::Element, position::Position, Zone};
 use bevy::{
     ecs::{
@@ -26,8 +26,6 @@ where
 {
     ant: Ant,
     position: Position,
-    // nest_orientation: Option<NestOrientation>,
-    // crater_orientation: Option<CraterOrientation>,
     role: AntRole,
     initiative: Initiative,
     name: AntName,
@@ -42,8 +40,6 @@ impl<Z: Zone> AntBundle<Z> {
     pub fn new(
         position: Position,
         color: AntColor,
-        // nest_orientation: Option<NestOrientation>,
-        // crater_orientation: Option<CraterOrientation>,
         inventory: AntInventory,
         role: AntRole,
         name: AntName,
@@ -58,8 +54,6 @@ impl<Z: Zone> AntBundle<Z> {
             // Queen always spawns in the center. She'll fall from the sky in the future.
             position,
             color,
-            // nest_orientation,
-            // crater_orientation,
             inventory,
             role,
             name,
@@ -96,9 +90,6 @@ impl MapEntities for AntInventory {
         }
     }
 }
-
-#[derive(Event, PartialEq, Copy, Clone, Debug)]
-pub struct AntAteFoodEvent(pub Entity);
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 #[reflect(Component)]
@@ -139,58 +130,6 @@ impl<Z: Zone> InventoryItemBundle<Z> {
             inventory_item: InventoryItem,
             zone,
         }
-    }
-}
-
-#[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
-#[reflect(Component)]
-pub struct Initiative {
-    has_action: bool,
-    has_movement: bool,
-    timer: isize,
-}
-
-impl Initiative {
-    pub fn new(rng: &mut Mut<GlobalRng>) -> Self {
-        Self {
-            has_action: false,
-            has_movement: false,
-            timer: rng.isize(3..5),
-        }
-    }
-
-    pub fn can_move(&self) -> bool {
-        self.timer == 0 && self.has_movement
-    }
-
-    pub fn can_act(&self) -> bool {
-        self.timer == 0 && self.has_action
-    }
-
-    pub fn consume(&mut self) {
-        self.consume_action();
-
-        if self.can_move() {
-            self.consume_movement();
-        }
-    }
-
-    pub fn consume_movement(&mut self) {
-        if !self.has_movement {
-            panic!("Movement already consumed.")
-        }
-
-        self.has_movement = false;
-    }
-
-    /// This is very intentionally kept private. Movement must be consumed with action.
-    /// Otherwise, systems lose their "source of truth" as to whether actions or movements occur first.
-    fn consume_action(&mut self) {
-        if !self.has_action {
-            panic!("Action already consumed.")
-        }
-
-        self.has_action = false;
     }
 }
 
@@ -254,6 +193,7 @@ pub enum CraterOrientation {
 }
 
 impl CraterOrientation {
+    // TODO: Remove this - it's a view concern
     // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
     pub fn as_world_scale(&self) -> Vec3 {
         Vec3 {
@@ -307,10 +247,6 @@ impl CraterOrientation {
         *position + clockwise_delta
     }
 
-    // pub fn get_behind_position(&self, position: &Position) -> Position {
-    //     *position + self.get_behind_delta()
-    // }
-
     pub fn get_counterclockwise_position(&self, position: &Position) -> Position {
         let counterclockwise_delta = match self {
             Self::Up => Position::NEG_X,
@@ -348,24 +284,6 @@ impl CraterOrientation {
             Self::Right => Self::Left,
         }
     }
-
-    // fn get_ahead_delta(&self) -> Position {
-    //     match self {
-    //         Self::Up => Position::Y,
-    //         Self::Down => Position::NEG_Y,
-    //         Self::Left => Position::NEG_X,
-    //         Self::Right => Position::X,
-    //     }
-    // }
-
-    // fn get_behind_delta(&self) -> Position {
-    //     match self {
-    //         Self::Up => Position::NEG_Y,
-    //         Self::Down => Position::Y,
-    //         Self::Left => Position::X,
-    //         Self::Right => Position::NEG_X,
-    //     }
-    // }
 }
 
 #[derive(Component, Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
@@ -380,6 +298,7 @@ impl NestOrientation {
         Self { facing, angle }
     }
 
+    // TODO: Remove this - it's a view concern
     // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
     pub fn as_world_scale(&self) -> Vec3 {
         Vec3 {

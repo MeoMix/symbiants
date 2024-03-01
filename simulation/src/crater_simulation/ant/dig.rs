@@ -3,7 +3,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
     common::{
-        ant::{commands::AntCommandsExt, AntInventory, CraterOrientation, Initiative},
+        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, CraterOrientation},
         element::Element,
         grid::{Grid, GridElements},
         position::Position,

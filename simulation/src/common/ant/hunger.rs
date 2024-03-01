@@ -2,7 +2,7 @@ use super::digestion::Digestion;
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, AntAteFoodEvent, AntInventory, NestOrientation, AntRole, Dead,
+            commands::AntCommandsExt, AntInventory, NestOrientation, AntRole, Dead,
             Initiative,
         },
         element::Element,
@@ -67,6 +67,10 @@ impl Hunger {
         self.value >= self.max
     }
 }
+
+#[derive(Event, PartialEq, Copy, Clone, Debug)]
+pub struct AntAteFoodEvent(pub Entity);
+
 
 // TODO: Ants stop getting hungry while asleep which isn't really intended, but I haven't thought through Initative removal enough clearly
 // because sometimes I want it for Dead + Sleep, sometimes just one or the other, and it's becoming a leaky abstraction.

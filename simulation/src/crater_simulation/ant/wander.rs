@@ -1,6 +1,6 @@
 use crate::{
     common::{
-        ant::{CraterOrientation, Initiative},
+        ant::{initiative::Initiative, CraterOrientation},
         element::Element,
         grid::GridElements,
         position::Position,
