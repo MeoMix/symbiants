@@ -171,7 +171,65 @@ Pheromones are applied with a variable amount of `PheromoneStrength` and this st
 
 ## Nest Simulation
 
+Nest Simulation is a 2D world with basic, "sand fall" gravity. Ant behavior is markedly different at the Nest compared to the Crater. The basic functionality of Elements remains the same, albeit gravity now applies to them. Pheromones are roughly the same, but the way ants interact with pheromones is distinct.
+
+###  Ants
+
+Ants have a variety of nest-specific behaviors. Some of these behaviors are only exhibited by the Queen, others only by Workers, and some are exhibited by all:
+
+* Giving Birth (Queen Only)
+* Digging Tunnels (All)
+* Digging Chambers (All)
+* Digging Food/Sand (All)
+* Dropping Food/Sand (All)
+* Creating a Nest (Queen Only)
+* Traveling to Crater (Worker Only)
+* Sleeping (All)
+* Wandering (All)
+
+Ants make decisions based on their local surroundings and decide which actions to take in response. There's a rough priority ordering to these actions. For example, wandering is lowest priority and occurs only if an ant takes no other movement action. In contrast, going to sleep is a high priority action. The priority in which actions are considered can be important because ants will only make one action and one movement per turn. If ants were to prioritize wandering then they would never walk in pursuit of accomplishing a specific goal. Still, it's not necessarily desirable to enforce a strong ordering because that reduces the opportunity for parallelization. When possible, the order of actions should be left ambiguous. Unfortunately, it's a lot harder to write robust systems with ambiguous ordering and so fixed ordering is used more heavily than desired.
+
+Although ants act fairly randomly on any given tick, there is a general pattern exhibited by the colony. The queen heavily prioritizes creating a nest in which to give birth. Once satisified, she stops moving and focuses entirely on reproduction. She gives birth to workers once per hour. Workers will prioritize moving sand out of the nest and food into the nest. If multiple workers are in close proximity to one another then there is a low chance that one will feel inspired to begin digging a new tunnel and chamber. This allows the nest to expand in size when under cramped conditions, but the logic here could be more robust. Sand is created as the workers dig out more space and they prioritize taking the sand to the surface. Similarly, they prioritize taking food underground and try to pile food among other food.
+
+Worker ants are also able to leave the nest zone, travel to the crater zone, and return to the nest when they've found food. At night, ants go to sleep for eight hours. This isn't realistic, but the goal is to provide a cadence that makes sense for a daily check-in app not absolute realism.
+
+The logic for building tunnels and nests relies heavily on `PheromoneStrength`. To create a tunnel, an ant will dig up a tile and place a `Tunnel` pheromone at the dig site. Later, when an ant walks over that pheromone, it will apply it to itself and then execute the task associated with the pheromone. Every time an ant takes a step, the pheromone strength applied to itself decreases. So, a tunnel is created in a given direction with a pheromone which becomes weaker with each step. When the tunnel is complete, ants detect this by seeing they are in a cramped area with a tunnel pheromone behind them, and use that as a signal to place a chamber pheromone. This process repeats for digging a chamber, but the logic is slightly different to allow for a circlular area to be created rather than a line. This logic is fairly fragile. A lot can go wrong and disrupt tunnel/chambers or cause excess digging to occur. Also, these are fairly specific instructions when contrasted with the process of following food pheromones in the crater. This might be necessary, but seems confusing to convey to the user in a clear way.
+
+Unfortunately, there are some major problems with how nests are created. Ants are only able to walk on walls/ceilings and cannot traverse gaps. So, it's trivial to create unreachable platforms in the center of the colony. This also means that ants walk further and further as the nest gets larger as they scale the outermost left and right walls. This issue cascades into one where sand collects at the bottom of the nest because ants always have a small chance of dropping sand and that probability approaches 100% as the path gets long enough. This ultimately overwhelms the colony.
+
+Similarly, the rules for nest generation degenerate overtime and the ants eventually dig out most of the available dirt. It would be much better if the ants created detected chambers and tunnels which were adjusted as the colony grows in size, but this would require excavating larger tunnels and replacing gaps with dirt.
+
+Additionally, collision detection is implemented sporadically. If an element falls on an ant then it does not land on the ant, but shares the ants tile. However, ants cannot walk through tiles containing elements, which is a contradiction with the falling behavior. It's common for the queen to become submerged in debris.
+
+### Gravity
+
+Gravity exists in the nest because of the perspective. Gravity pulls ants and elements downward. Ants which are walking on walls, or on the ceiling, have a chance of slipping and falling due to gravity and cannot take actions while falling. Similarly, if an ant is standing on a block, and that block is dug out from underneath them, the ant will fall instead of taking another action. Dirt, sand, and food are all subject to gravity. Dirt holds itself up when adjacent to other dirt, including dirt that is behind it along the z-axis when underground, and this allows for tunnels and chambers to be created.
+
+The gravity logic is surprisingly complex and prone to performance issues. It's possible that it's not worth the value it adds, but, ignoring the complexity, it is quite novel and fun. It's easy to write queries which iterate over too many elements at once. As such, all elements that are subject to gravity are tagged with `Stable` or `Unstable` marker components. Gravity only applies to elements marked `Unstable` as both a performance optimization and to allow for lopsided pillars of elements to form. `Unstable` elements usually fall downward, but, when they collide with solid surfaces, have a chance of tumbling diagonally. If the `Unstable` concept was removed then towers would always decay into piles.
+
+There are some limitations with the current implementation of gravity. The concept of pressure is not implemented. So, if a column of elements is spawned, and all of those elements are floating in the air, then it is possible for elements to fall diagonally, because they have solid material beneath them, even though logic would dictate that this should not occur until the entire column reaches a resting position. It seems desirable to revisit this because the concept of pressure could be valuable for enabling fluid/gas effects in the future.
+
 ## Crater Simulation
+
+Crater Simulation is a 2D world without gravity. Food is scattered throughout and ants search for the food and bring it back to the nest. The crater isn't very fleshed out yet - it's not even circular. 
+
+### Ants
+
+Ants have a variety of crater-specific behaviors. Only worker ants are expected to be in the crater. Their behaviors include:
+
+* Digging Food
+* Emitting Food/Nest Pheromones
+* Following Pheromones
+* Travelling to Nest
+* Wandering
+
+When an ant enters the crater from the nest, it will begin emitting pheromone to help other ants find their way back to the crater. Similarly, when an ant digs up food, it will switch to emitting a food pheromone to help ants discover food resources.
+
+Ants search with a 180 degree field-of-view and look a short distance (5 tiles) ahead of them in an attempt to discover pheromones. Sometimes ants will get caught walking in circles, which isn't especially desirable, but they can break free due to random chance of not following the strongest trails.
+
+If there aren't any pheromones around then ants will simply wander in an attempt to find something interesting.
+
+Currently, ants get stuck out in the crater because they refuse to return home without food. There will need to be better mechanisms in place that drive ants home - presumably when they run low on energy or it becomes night.
 
 # Rendering
 
