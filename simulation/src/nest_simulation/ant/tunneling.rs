@@ -8,7 +8,7 @@ use crate::{
         position::Position,
     },
     nest_simulation::{
-        ant::walk::get_turned_orientation,
+        ant::wander::get_turned_orientation,
         nest::{AtNest, Nest},
     },
     settings::Settings,

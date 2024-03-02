@@ -46,7 +46,7 @@ pub fn ants_stabilize_footing_movement(
 }
 
 // Update the position and orientation of all ants. Does not affect the external environment.
-pub fn ants_walk(
+pub fn ants_wander(
     mut ants_query: Query<(&mut Initiative, &mut Position, &mut NestOrientation), With<AtNest>>,
     nest_query: Query<&Nest>,
     settings: Res<Settings>,

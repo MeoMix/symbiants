@@ -1,4 +1,4 @@
-use super::{walk::get_turned_orientation, NestFacing, NestOrientation};
+use super::{wander::get_turned_orientation, NestFacing, NestOrientation};
 use crate::{
     common::{
         ant::{

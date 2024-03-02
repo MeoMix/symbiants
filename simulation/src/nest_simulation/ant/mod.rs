@@ -7,7 +7,7 @@ pub mod nesting;
 pub mod sleep;
 pub mod travel;
 pub mod tunneling;
-pub mod walk;
+pub mod wander;
 
 use std::f32::consts::PI;
 

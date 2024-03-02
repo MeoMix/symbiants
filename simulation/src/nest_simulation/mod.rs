@@ -29,7 +29,7 @@ use self::{
             ants_add_tunnel_pheromone, ants_fade_tunnel_pheromone, ants_remove_tunnel_pheromone,
             ants_tunnel_pheromone_act, ants_tunnel_pheromone_move,
         },
-        walk::{ants_stabilize_footing_movement, ants_walk},
+        wander::{ants_stabilize_footing_movement, ants_wander},
     },
     gravity::{
         gravity_ants, gravity_elements, gravity_mark_stable, gravity_mark_unstable,
@@ -154,7 +154,7 @@ impl Plugin for NestSimulationPlugin {
                     (
                         ants_travel_to_crater,
                         apply_deferred,
-                        ants_walk,
+                        ants_wander,
                         ants_dig,
                         apply_deferred,
                         ants_drop,
