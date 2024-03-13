@@ -1,6 +1,8 @@
 # mold linker doesn't support rustlang/rust:nightly - requires Debian. Using rust:nightly would require lld which is worse for performance.
 FROM rust:1.76-bookworm
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 # xorg is older way of piping viewport to host machine, weston is Wayland (newer version).
 # either way, need to have server installed on host machine to receive output
 # I tested GWSL and it worked out of the box on Windows - https://opticos.github.io/gwsl/
@@ -23,7 +25,6 @@ RUN cargo install trunk --version 0.18.2
 RUN cargo install cargo-watch
 
 # Ensure hardware acceleration works for native builds when running on Windows host machine
-ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
 RUN apt update && apt install -y vainfo mesa-va-drivers
 ENV LIBVA_DRIVER_NAME=d3d12
