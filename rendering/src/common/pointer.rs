@@ -70,7 +70,7 @@ const DRAG_THRESHOLD: f32 = 4.0;
 // Map user input to simulation events which will be processed manually at the start of the next simulation run.
 // This needs to occur because events aren't reliably read from within systems which don't necessarily run this/next frame.
 pub fn handle_pointer_tap<Z: Zone + Copy>(
-    mouse_input: Res<Input<MouseButton>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
     touches: Res<Touches>,
     primary_window_query: Query<&Window, With<PrimaryWindow>>,
     mut camera_query: Query<(&Camera, &GlobalTransform), With<RenderingCamera>>,
@@ -177,7 +177,7 @@ pub fn handle_pointer_tap<Z: Zone + Copy>(
 
 fn get_pointer_pressed_position(
     window: &Window,
-    mouse_input: &Res<Input<MouseButton>>,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
     touches: &Res<Touches>,
 ) -> Option<Vec2> {
     if mouse_input.just_pressed(MouseButton::Left) {
@@ -191,7 +191,7 @@ fn get_pointer_pressed_position(
 
 fn get_pointer_released_position(
     window: &Window,
-    mouse_input: &Res<Input<MouseButton>>,
+    mouse_input: &Res<ButtonInput<MouseButton>>,
     touches: &Res<Touches>,
 ) -> Option<Vec2> {
     if mouse_input.just_released(MouseButton::Left) {

@@ -11,10 +11,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 # lld and mold are both Rust linkers. mold is faster, but does not support WASM (https://github.com/rui314/mold/issues/555)
 # mold and (xorg or weston) are needed for native builds.
 RUN apt-get update && \
-   apt-get install -y libasound2-dev libudev-dev clang lld mold xorg
+   apt-get install -y libasound2-dev libudev-dev libxkbcommon-x11-0 clang lld mold xorg
 
 # Need to manually ensure nightly is configured when using bookworm
-RUN rustup toolchain install nightly-2024-02-01
+RUN rustup toolchain install nightly
 RUN rustup component add rustfmt
 RUN rustup target install wasm32-unknown-unknown
 

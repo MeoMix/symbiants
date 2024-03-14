@@ -8,7 +8,7 @@ edition = "2021"
 simulation = { path = "../simulation" }
 
 # TODO: Trim features down to be crate-specific
-bevy = { version = "0.12.1", default-features = false, features = [
+bevy = { version = "0.13.0", default-features = false, features = [
     "bevy_asset",
     "bevy_scene",
     "bevy_winit",
@@ -22,4 +22,4 @@ bevy = { version = "0.12.1", default-features = false, features = [
 bevy_ecs_tilemap = { git = "https://github.com/MeoMix/bevy_ecs_tilemap", branch = "main", features = [
     "atlas",
 ] }
-bevy_turborand = { version = "0.7.0" }
+bevy_turborand = { version = "0.8.2" }

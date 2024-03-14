@@ -10,7 +10,7 @@ simulation = { path = "../simulation" }
 rendering = { path = "../rendering" }
 
 # TODO: Trim features down to be crate-specific
-bevy = { version = "0.12.1", default-features = false, features = [
+bevy = { version = "0.13.0", default-features = false, features = [
   "bevy_asset",
   "bevy_scene",
   "bevy_winit",
@@ -21,9 +21,9 @@ bevy = { version = "0.12.1", default-features = false, features = [
   "default_font",
   "png",
 ] }
-bevy_egui = { version = "0.24.0" }
-bevy_turborand = { version = "0.7.0" }
-bevy-inspector-egui = { version = "0.22.1", optional = true}
+bevy_egui = { version = "0.25.0" }
+bevy_turborand = { version = "0.8.2" }
+bevy-inspector-egui = { version = "0.23.4", optional = true}
 
 [features]
 dev-inspector = ["bevy-inspector-egui"]

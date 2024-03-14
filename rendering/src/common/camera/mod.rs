@@ -126,11 +126,11 @@ impl Plugin for RenderingCameraPlugin {
 
         app.add_systems(
             Update,
-            window_resize.run_if(resource_exists::<VisibleGrid>()),
+            window_resize.run_if(resource_exists::<VisibleGrid>),
         );
         app.add_systems(
             Update,
-            (insert_pancam, scale_projection).run_if(resource_exists::<VisibleGrid>()),
+            (insert_pancam, scale_projection).run_if(resource_exists::<VisibleGrid>),
         );
     }
 }

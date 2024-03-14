@@ -15,14 +15,14 @@ resolver = "2"
 members = ["rendering", "simulation", "ui"]
 
 [build-dependencies]
-fs_extra = "1.2"
+fs_extra = "1.3"
 
 [dependencies]
 simulation = { path = "./simulation" }
 rendering = { path = "./rendering" }
 ui = { path = "./ui" }
 
-bevy = { version = "0.12.1", default-features = false, features = [
+bevy = { version = "0.13.0", default-features = false, features = [
   "bevy_asset",
   "bevy_scene",
   "bevy_winit",
@@ -33,7 +33,7 @@ bevy = { version = "0.12.1", default-features = false, features = [
   "default_font",
   "png",
 ] }
-bevy_turborand = { version = "0.7.0" }
+bevy_turborand = { version = "0.8.2" }
 
 # WASM builds require extra dependencies for logging and persisting state to local storage.
 # WASM builds do not require x11 and cannot use dynamic_linking.
@@ -42,7 +42,7 @@ console_error_panic_hook = { version = "0.1.7" }
 
 # Linux builds require x11 or wayland for display.
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy = { version = "0.12.1", default-features = false, features = [
+bevy = { version = "0.13.0", default-features = false, features = [
   "x11",
   # TODO: support wayland w/ hardware accelerated GPU rendering. Currently crashes on startup and forces a Docker container restart.
   # "wayland",
@@ -53,7 +53,7 @@ bevy = { version = "0.12.1", default-features = false, features = [
 ] }
 
 [dev-dependencies]
-wasm-bindgen-test = "0.3.37"
+wasm-bindgen-test = "0.3.42"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

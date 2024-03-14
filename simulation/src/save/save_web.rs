@@ -1,4 +1,4 @@
-use bevy::{ecs::query::WorldQuery, prelude::*};
+use bevy::{ecs::query::QueryFilter, prelude::*};
 use bevy_save::{
     Backend, DefaultDebugFormat, Error, Format, Pipeline, Snapshot, SnapshotBuilder,
     SnapshotSerializer, WorldSaveableExt,
@@ -27,7 +27,7 @@ const DECOMPRESS_ERROR: &str = "Failed to decompress data";
 
 static SAVE_SNAPSHOT: Mutex<Option<Vec<u8>>> = Mutex::new(None);
 
-#[derive(WorldQuery)]
+#[derive(QueryFilter)]
 struct PersistentModelQueryFilter {
     _or: Or<(
         With<Ant>,

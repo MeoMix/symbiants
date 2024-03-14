@@ -297,7 +297,7 @@ fn event_pan(
 
 fn camera_mouse_pan(
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    mouse_buttons: Res<Input<MouseButton>>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut query: Query<(&PanCam, &mut Transform, &OrthographicProjection)>,
     mut last_pos: Local<Option<Vec2>>,
 ) {
@@ -357,12 +357,6 @@ impl Default for TouchCameraConfig {
         }
     }
 }
-
-/// This is the tag that the plugin will scan for and update its `Camera` component.
-/// You can either attach it manually to your camera, or the plugin will try to attach it
-/// to the default camera in the `PostStartup` schedule
-#[derive(Component)]
-pub struct TouchCameraTag;
 
 #[derive(PartialEq, Default)]
 enum GestureType {

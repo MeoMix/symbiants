@@ -2,7 +2,7 @@ pub mod emote;
 
 use crate::common::{
     element::{
-        sprite_sheet::{get_element_index, ElementTextureAtlasHandle},
+        sprite_sheet::{get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle},
         ElementExposure,
     },
     visible_grid::{grid_to_world_position, VisibleGrid},
@@ -51,7 +51,8 @@ pub fn on_added_ant_at_nest(
     asset_server: Res<AssetServer>,
     elements_query: Query<&Element>,
     grid_query: Query<&Grid, With<AtNest>>,
-    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    element_texture_handle: Res<ElementSpriteSheetHandle>,
+    element_texture_atlas_layout_handle: Res<ElementTextureAtlasLayoutHandle>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
 ) {
@@ -82,7 +83,8 @@ pub fn on_added_ant_at_nest(
             &asset_server,
             &elements_query,
             &grid,
-            &element_texture_atlas_handle,
+            &element_texture_handle,
+            &element_texture_atlas_layout_handle,
             &mut model_view_entity_map,
         );
     }
@@ -109,7 +111,8 @@ pub fn spawn_ants(
     asset_server: Res<AssetServer>,
     elements_query: Query<&Element>,
     grid_query: Query<&Grid, With<AtNest>>,
-    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    element_texture_handle: Res<ElementSpriteSheetHandle>,
+    element_texture_atlas_layout_handle: Res<ElementTextureAtlasLayoutHandle>,
     mut model_view_entity_map: ResMut<ModelViewEntityMap>,
 ) {
     let grid = grid_query.single();
@@ -130,7 +133,8 @@ pub fn spawn_ants(
             &asset_server,
             &elements_query,
             &grid,
-            &element_texture_atlas_handle,
+            &element_texture_handle,
+            &element_texture_atlas_layout_handle,
             &mut model_view_entity_map,
         );
     }
@@ -152,7 +156,8 @@ pub fn on_update_ant_inventory(
     ant_model_query: Query<(Entity, Ref<AntInventory>), With<AtNest>>,
     mut ant_view_query: Query<&mut AntSpriteContainer>,
     elements_query: Query<&Element>,
-    element_texture_atlas_handle: Res<ElementTextureAtlasHandle>,
+    element_texture_handle: Res<ElementSpriteSheetHandle>,
+    element_texture_atlas_layout_handle: Res<ElementTextureAtlasLayoutHandle>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     grid_query: Query<&Grid, With<AtNest>>,
     visible_grid: Res<VisibleGrid>,
@@ -189,7 +194,8 @@ pub fn on_update_ant_inventory(
                 let inventory_item_bundle = get_inventory_item_bundle(
                     element_entity,
                     &elements_query,
-                    &element_texture_atlas_handle,
+                    &element_texture_handle,
+                    &element_texture_atlas_layout_handle,
                 );
 
                 let ant_inventory_item_entity = commands.spawn(inventory_item_bundle).id();
@@ -358,7 +364,8 @@ fn spawn_ant_sprite(
     asset_server: &Res<AssetServer>,
     elements_query: &Query<&Element>,
     grid: &Grid,
-    element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
+    element_texture_handle: &Res<ElementSpriteSheetHandle>,
+    element_texture_atlas_layout_handle: &Res<ElementTextureAtlasLayoutHandle>,
     model_view_entity_map: &mut ResMut<ModelViewEntityMap>,
 ) {
     // TODO: z-index is 1.0 here because ant can get hidden behind sand otherwise.
@@ -389,12 +396,13 @@ fn spawn_ant_sprite(
 
     let mut inventory_item_entity = None;
 
-    ant_sprite.with_children(|parent: &mut ChildBuilder<'_, '_, '_>| {
+    ant_sprite.with_children(|parent: &mut ChildBuilder<'_>| {
         if let Some(element_entity) = inventory.0 {
             let bundle = get_inventory_item_bundle(
                 element_entity,
                 &elements_query,
-                &element_texture_atlas_handle,
+                &element_texture_handle,
+                &element_texture_atlas_layout_handle,
             );
 
             inventory_item_entity = Some(parent.spawn(bundle).id());
@@ -461,7 +469,8 @@ fn spawn_ant_sprite(
 fn get_inventory_item_bundle(
     element_entity: Entity,
     elements_query: &Query<&Element>,
-    element_texture_atlas_handle: &Res<ElementTextureAtlasHandle>,
+    element_texture_handle: &Res<ElementSpriteSheetHandle>,
+    element_texture_atlas_layout_handle: &Res<ElementTextureAtlasLayoutHandle>,
 ) -> SpriteSheetBundle {
     let element = elements_query.get(element_entity).unwrap();
 
@@ -472,17 +481,20 @@ fn get_inventory_item_bundle(
         west: true,
     };
 
-    let mut sprite = TextureAtlasSprite::new(get_element_index(element_exposure, *element));
+    let mut sprite = Sprite::default();
     sprite.custom_size = Some(Vec2::splat(1.0));
 
     SpriteSheetBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
         sprite,
-        texture_atlas: element_texture_atlas_handle.0.clone(),
+        atlas: TextureAtlas {
+            layout: element_texture_atlas_layout_handle.0.clone(),
+            index: get_element_index(element_exposure, *element)
+        },
+        texture: element_texture_handle.0.clone(),
         ..default()
     }
 }
-
 
 // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now
 pub fn orientation_to_world_scale(orientation: &NestOrientation) -> Vec3 {

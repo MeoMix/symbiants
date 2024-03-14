@@ -149,7 +149,7 @@ pub struct CommonRenderingPlugin;
 impl Plugin for CommonRenderingPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((RenderingCameraPlugin, TilemapPlugin));
-        app.add_state::<VisibleGridState>();
+        app.init_state::<VisibleGridState>();
 
         app.add_systems(
             OnEnter(AppState::Loading),

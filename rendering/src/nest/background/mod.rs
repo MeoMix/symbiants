@@ -151,6 +151,8 @@ pub fn spawn_background_tilemap(mut commands: Commands, nest_query: Query<&Grid,
     let grid_size = TilemapGridSize { x: 1.0, y: 1.0 };
     let map_type = TilemapType::default();
 
+    let transform = get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0);
+
     commands.spawn((
         BackgroundTilemap,
         TilemapBundle {
@@ -162,7 +164,7 @@ pub fn spawn_background_tilemap(mut commands: Commands, nest_query: Query<&Grid,
             tile_size: TilemapTileSize { x: 1.0, y: 1.0 },
             map_type: TilemapType::Square,
             // Background tiles go at z: 0 because they should render behind elements/ants.
-            transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
+            transform,
             ..Default::default()
         },
     ));

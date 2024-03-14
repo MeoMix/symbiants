@@ -10,7 +10,7 @@ use super::ElementExposure;
 pub struct ElementSpriteSheetHandle(pub Handle<Image>);
 
 #[derive(Resource)]
-pub struct ElementTextureAtlasHandle(pub Handle<TextureAtlas>);
+pub struct ElementTextureAtlasLayoutHandle(pub Handle<TextureAtlasLayout>);
 
 pub fn start_load_element_sprite_sheet(
     asset_server: Res<AssetServer>,
@@ -28,14 +28,13 @@ pub fn check_element_sprite_sheet_loaded(
     element_sprite_sheet_handle: Res<ElementSpriteSheetHandle>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     mut rendering_load_progress: ResMut<RenderingLoadProgress>,
 ) {
-    let loaded = asset_server.load_state(&element_sprite_sheet_handle.0) == LoadState::Loaded;
+    let load_state = asset_server.load_state(&element_sprite_sheet_handle.0);
 
-    if loaded {
-        let texture_atlas = TextureAtlas::from_grid(
-            element_sprite_sheet_handle.0.clone(),
+    if load_state == LoadState::Loaded {
+        let texture_atlas = TextureAtlasLayout::from_grid(
             Vec2::splat(128.0),
             3,
             16,
@@ -43,7 +42,7 @@ pub fn check_element_sprite_sheet_loaded(
             None,
         );
 
-        commands.insert_resource(ElementTextureAtlasHandle(
+        commands.insert_resource(ElementTextureAtlasLayoutHandle(
             texture_atlases.add(texture_atlas),
         ));
 

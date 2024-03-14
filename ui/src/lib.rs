@@ -24,7 +24,7 @@ impl Plugin for UIPlugin {
 
         app.add_systems(
             PostUpdate,
-            is_pointer_captured.run_if(resource_exists::<IsPointerCaptured>()),
+            is_pointer_captured.run_if(resource_exists::<IsPointerCaptured>),
         );
     }
 }
@@ -46,6 +46,7 @@ fn set_theme(mut contexts: EguiContexts) {
     style.spacing.button_padding = egui::Vec2::new(8.0, 8.0);
 
     style.visuals.window_fill = egui::Color32::from_black_alpha(224);
+    style.visuals.window_highlight_topmost = false;
 
     // Redefine text_styles
     style.text_styles = [

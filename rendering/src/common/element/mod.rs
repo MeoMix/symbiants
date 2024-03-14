@@ -2,7 +2,7 @@
 
 pub mod sprite_sheet;
 
-use self::sprite_sheet::{get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasHandle};
+use self::sprite_sheet::{get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle};
 use crate::common::{
     visible_grid::{grid_to_tile_pos, VisibleGrid},
     ModelViewEntityMap,
@@ -268,7 +268,7 @@ pub fn initialize_element_resources(mut commands: Commands) {
 
 pub fn cleanup_elements(mut commands: Commands) {
     commands.remove_resource::<ElementSpriteSheetHandle>();
-    commands.remove_resource::<ElementTextureAtlasHandle>();
+    commands.remove_resource::<ElementTextureAtlasLayoutHandle>();
     commands.remove_resource::<ElementExposureMap>();
     commands.remove_resource::<Events<ElementExposureChangedEvent>>();
 }

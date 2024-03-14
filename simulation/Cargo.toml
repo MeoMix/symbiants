@@ -5,13 +5,13 @@ edition = "2021"
 
 # NOTE: simulation does NOT get to depend on rendering or ui.
 [dependencies]
-bevy = { version = "0.12.1", default-features = false, features = [
+bevy = { version = "0.13.0", default-features = false, features = [
     "bevy_scene",
 ] }
-serde = { version = "1.0.188", features = ["derive"] }
-bevy_turborand = { version = "0.7.0" }
-bevy_save = { version = "0.13.0" }
-chrono = { version = "0.4.31", features = ["serde"] }
+serde = { version = "1.0.197", features = ["derive"] }
+bevy_turborand = { version = "0.8.2" }
+bevy_save = { version = "0.14.0" }
+chrono = { version = "0.4.35", features = ["serde"] }
 sun-times = { version = "0.2.0" }
 
 # WASM builds require extra dependencies for logging and persisting state to local storage.
@@ -20,8 +20,8 @@ sun-times = { version = "0.2.0" }
 brotli = { version = "3.4.0" }
 gloo-storage = "0.3.0"
 rmp-serde = { version = "1.1.2" }
-wasm-bindgen = { version = "0.2.87" }
-web-sys = { version = "0.3.64", features = [
+wasm-bindgen = { version = "0.2.92" }
+web-sys = { version = "0.3.67", features = [
     "EventTarget",
     "Window",
     "BeforeUnloadEvent",

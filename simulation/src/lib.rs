@@ -48,9 +48,9 @@ impl Plugin for SimulationPlugin {
         // Only want SavePlugin not SavePlugins - just need basic snapshot logic not UI persistence or save/load methods.
         app.add_plugins(SavePlugin);
 
-        app.add_state::<StoryPlaybackState>();
+        app.init_state::<StoryPlaybackState>();
         // TODO: AppState feels weird to live in Simulation
-        app.add_state::<AppState>();
+        app.init_state::<AppState>();
 
         app.configure_sets(
             OnEnter(AppState::FinishSetup),
