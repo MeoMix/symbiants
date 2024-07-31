@@ -3,6 +3,19 @@ FROM rust:1.79-bookworm
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+# Ensure hardware acceleration works for native builds when running on Windows host machine
+ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
+ENV LIBVA_DRIVER_NAME=d3d12
+
+ENV RUSTFLAGS="-C link-arg=--ld-path=/usr/bin/mold -Z share-generics=y"
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=clang
+
+# Need to manually ensure nightly is configured when using bookworm
+RUN rustup toolchain install nightly && \
+    rustup default nightly && \
+    rustup component add rustfmt && \
+    rustup target install wasm32-unknown-unknown
+
 # xorg is older way of piping viewport to host machine, weston is Wayland (newer version).
 # either way, need to have server installed on host machine to receive output
 # I tested GWSL and it worked out of the box on Windows - https://opticos.github.io/gwsl/
@@ -10,24 +23,18 @@ ARG DEBIAN_FRONTEND=noninteractive
 # clang is needed to compile Rust more quickly
 # lld and mold are both Rust linkers. mold is faster, but does not support WASM (https://github.com/rui314/mold/issues/555)
 # mold and (xorg or weston) are needed for native builds.
+# vainfo and mesa-va-drivers are used for GPU hardware acceleration when running natively.
 RUN apt-get update && \
-   apt-get install -y libasound2-dev libudev-dev libxkbcommon-x11-0 clang lld mold xorg
-
-# Need to manually ensure nightly is configured when using bookworm
-RUN rustup toolchain install nightly && \
-   rustup component add rustfmt && \
-   rustup target install wasm32-unknown-unknown
+    apt-get install -y libasound2-dev libudev-dev libxkbcommon-x11-0 clang lld mold xorg && \
+    apt-get install -y vainfo mesa-va-drivers && \
+    rm -rf /var/lib/apt/lists/*
 
 # trunk is used for serving WASM builds in development
-# lock trunk version because they shipped a broken build in v0.18.0, trust has been lost.
-RUN cargo install trunk --version 0.18.2
 # cargo-watch is used for non-WASM build auto-reload
-RUN cargo install cargo-watch
+RUN cargo install trunk cargo-watch
 
-# Ensure hardware acceleration works for native builds when running on Windows host machine
-ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
-RUN apt update && apt install -y vainfo mesa-va-drivers
-ENV LIBVA_DRIVER_NAME=d3d12
+# unset RUSTFLAGS and CARGO_TARGET to prevent conflict with workspace's .cargo/config.toml
+RUN unset RUSTFLAGS CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER
 
 # TODO: If/when I take testing seriously again I can re-enable this logic, but installing Chrome Driver increases Docker setup time 100x
 # RUN cargo install wasm-bindgen-cli
