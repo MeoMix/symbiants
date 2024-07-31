@@ -7,9 +7,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV LD_LIBRARY_PATH=/usr/lib/wsl/lib
 ENV LIBVA_DRIVER_NAME=d3d12
 
-ENV RUSTFLAGS="-C link-arg=--ld-path=/usr/bin/mold -Z share-generics=y"
-ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=clang
-
 # Need to manually ensure nightly is configured when using bookworm
 RUN rustup toolchain install nightly && \
     rustup default nightly && \
@@ -32,9 +29,6 @@ RUN apt-get update && \
 # trunk is used for serving WASM builds in development
 # cargo-watch is used for non-WASM build auto-reload
 RUN cargo install trunk cargo-watch
-
-# unset RUSTFLAGS and CARGO_TARGET to prevent conflict with workspace's .cargo/config.toml
-RUN unset RUSTFLAGS CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER
 
 # TODO: If/when I take testing seriously again I can re-enable this logic, but installing Chrome Driver increases Docker setup time 100x
 # RUN cargo install wasm-bindgen-cli
