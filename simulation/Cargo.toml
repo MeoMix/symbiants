@@ -18,7 +18,7 @@ sun-times = { version = "0.2.0" }
 # WASM builds require extra dependencies for logging and persisting state to local storage.
 # WASM builds do not require x11 and cannot use dynamic_linking.
 [target.'cfg(target_family = "wasm")'.dependencies]
-brotli = { version = "3.4.0" }
+brotli = { version = "6.0.0" }
 gloo-storage = "0.3.0"
 rmp-serde = { version = "1.1.2" }
 wasm-bindgen = { version = "0.2.92" }
