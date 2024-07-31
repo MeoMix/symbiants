@@ -3,6 +3,8 @@ target = "wasm32-unknown-unknown"
 
 [target.wasm32-unknown-unknown]
 runner = 'wasm-bindgen-test-runner'
+# bevy_egui uses unstable APIs to support clipboard on web.
+rustflags = ["--cfg=web_sys_unstable_apis"]
 
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"

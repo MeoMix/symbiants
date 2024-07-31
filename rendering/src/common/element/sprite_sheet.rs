@@ -35,7 +35,7 @@ pub fn check_element_sprite_sheet_loaded(
 
     if load_state == LoadState::Loaded {
         let texture_atlas = TextureAtlasLayout::from_grid(
-            Vec2::splat(128.0),
+            UVec2::splat(128),
             3,
             16,
             None,

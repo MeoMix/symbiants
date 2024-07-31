@@ -151,7 +151,7 @@ pub fn update_settings_menu(
 }
 
 fn color32_to_bevy_color(color: egui::Color32) -> bevy::prelude::Color {
-    bevy::prelude::Color::rgba(
+    bevy::prelude::Color::srgba(
         color.r() as f32 / 255.0,
         color.g() as f32 / 255.0,
         color.b() as f32 / 255.0,
@@ -161,10 +161,10 @@ fn color32_to_bevy_color(color: egui::Color32) -> bevy::prelude::Color {
 
 fn bevy_color_to_color32(color: bevy::prelude::Color) -> egui::Color32 {
     egui::Color32::from_rgba_unmultiplied(
-        (color.r() * 255.0) as u8,
-        (color.g() * 255.0) as u8,
-        (color.b() * 255.0) as u8,
-        (color.a() * 255.0) as u8,
+        (color.to_srgba().red * 255.0) as u8,
+        (color.to_srgba().green * 255.0) as u8,
+        (color.to_srgba().blue * 255.0) as u8,
+        (color.to_srgba().alpha * 255.0) as u8,
     )
 }
 

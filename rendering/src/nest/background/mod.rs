@@ -26,12 +26,12 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
 }
 
 fn interpolate_color(color_a: Color, color_b: Color, t: f32) -> Color {
-    let r = lerp(color_a.r(), color_b.r(), t);
-    let g = lerp(color_a.g(), color_b.g(), t);
-    let b = lerp(color_a.b(), color_b.b(), t);
-    let a = lerp(color_a.a(), color_b.a(), t);
+    let red = lerp(color_a.to_srgba().red, color_b.to_srgba().red, t);
+    let green = lerp(color_a.to_srgba().green, color_b.to_srgba().green, t);
+    let blue = lerp(color_a.to_srgba().blue, color_b.to_srgba().blue, t);
+    let alpha = lerp(color_a.to_srgba().alpha, color_b.to_srgba().alpha, t);
 
-    Color::rgba(r, g, b, a)
+    Color::srgba(red, green, blue, alpha)
 }
 
 // TODO: Instead of using sunrise/sunset, consider swapping to altitude and using the sun's altitude directly to define key moments.
@@ -40,14 +40,14 @@ fn get_sky_gradient_color(
     sunrise_decimal_hours: f32,
     sunset_decimal_hours: f32,
 ) -> (Color, Color) {
-    let midnight = Color::rgba(0.0471, 0.0353, 0.0392, 1.0);
-    let predawn = Color::rgba(0.0471, 0.0353, 0.0392, 1.0);
-    let dawn = Color::rgba(0.0863, 0.1059, 0.2118, 1.0);
-    let morning = Color::rgba(0.329, 0.508, 0.622, 1.0);
-    let noon = Color::rgba(0.529, 0.808, 0.922, 1.0);
-    let evening = Color::rgba(0.329, 0.508, 0.622, 1.0);
-    let dusk = Color::rgba(0.0863, 0.1059, 0.2118, 1.0);
-    let postdusk = Color::rgba(0.0471, 0.0353, 0.0392, 1.0);
+    let midnight = Color::srgba(0.0471, 0.0353, 0.0392, 1.0);
+    let predawn = Color::srgba(0.0471, 0.0353, 0.0392, 1.0);
+    let dawn = Color::srgba(0.0863, 0.1059, 0.2118, 1.0);
+    let morning = Color::srgba(0.329, 0.508, 0.622, 1.0);
+    let noon = Color::srgba(0.529, 0.808, 0.922, 1.0);
+    let evening = Color::srgba(0.329, 0.508, 0.622, 1.0);
+    let dusk = Color::srgba(0.0863, 0.1059, 0.2118, 1.0);
+    let postdusk = Color::srgba(0.0471, 0.0353, 0.0392, 1.0);
 
     // Note these are shifted slightly from "true center" to try and make it so that
     // the sun rises and sets at times that would make sense for a person's daily routine.
@@ -227,8 +227,8 @@ pub fn spawn_background(
     let height = grid.height() - air_height;
     let y_offset = air_height;
 
-    let top_color: Color = Color::rgba(0.373, 0.290, 0.165, 1.0);
-    let bottom_color = Color::rgba(0.24, 0.186, 0.106, 1.0);
+    let top_color: Color = Color::srgba(0.373, 0.290, 0.165, 1.0);
+    let bottom_color = Color::srgba(0.24, 0.186, 0.106, 1.0);
 
     for x in 0..width {
         for y in 0..height {

@@ -8,7 +8,7 @@ use crate::common::{
     visible_grid::{grid_to_world_position, VisibleGrid},
     ModelViewEntityMap,
 };
-use bevy::prelude::*;
+use bevy::{color, prelude::*};
 use simulation::{
     common::{
         ant::{Ant, AntColor, AntInventory, AntName, AntRole, Dead},
@@ -341,7 +341,7 @@ pub fn on_added_ant_dead(
             *image_handle = asset_server.load("images/ant_dead.png");
 
             // Apply gray tint to dead ants.
-            sprite.color = Color::GRAY;
+            sprite.color = Color::Srgba(color::palettes::basic::GRAY);
         }
     }
 }
@@ -372,7 +372,7 @@ fn spawn_ant_sprite(
     let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
 
     let (sprite_image, sprite_color) = if dead.is_some() {
-        ("images/ant_dead.png", Color::GRAY)
+        ("images/ant_dead.png", Color::Srgba(color::palettes::basic::GRAY))
     } else {
         ("images/ant.png", color.0)
     };
@@ -471,7 +471,7 @@ fn get_inventory_item_bundle(
     elements_query: &Query<&Element>,
     element_texture_handle: &Res<ElementSpriteSheetHandle>,
     element_texture_atlas_layout_handle: &Res<ElementTextureAtlasLayoutHandle>,
-) -> SpriteSheetBundle {
+) -> (SpriteBundle, TextureAtlas) {
     let element = elements_query.get(element_entity).unwrap();
 
     let element_exposure = ElementExposure {
@@ -484,16 +484,15 @@ fn get_inventory_item_bundle(
     let mut sprite = Sprite::default();
     sprite.custom_size = Some(Vec2::splat(1.0));
 
-    SpriteSheetBundle {
+    (SpriteBundle {
         transform: Transform::from_xyz(1.0, 0.25, 1.0),
         sprite,
-        atlas: TextureAtlas {
-            layout: element_texture_atlas_layout_handle.0.clone(),
-            index: get_element_index(element_exposure, *element)
-        },
         texture: element_texture_handle.0.clone(),
         ..default()
-    }
+    }, TextureAtlas {
+        layout: element_texture_atlas_layout_handle.0.clone(),
+        index: get_element_index(element_exposure, *element)
+    })
 }
 
 // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now

@@ -5,7 +5,7 @@ use crate::common::{
     position::Position,
     Zone,
 };
-use bevy::{ecs::system::Command, prelude::*};
+use bevy::{ecs::world::Command, prelude::*};
 
 pub trait PheromoneCommandsExt {
     fn spawn_pheromone<Z: Zone>(

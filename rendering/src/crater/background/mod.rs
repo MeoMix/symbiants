@@ -12,7 +12,7 @@ pub fn spawn_background(mut commands: Commands, crater_query: Query<&Grid, With<
 
     let crater_background_sprite = SpriteBundle {
         sprite: Sprite {
-            color: Color::Rgba { red: 0.514, green: 0.396, blue: 0.224, alpha: 1.0 },
+            color: Color::Srgba(Srgba { red: 0.514, green: 0.396, blue: 0.224, alpha: 1.0 }),
             custom_size: Some(Vec2::new(grid.width() as f32, grid.height() as f32)),
             ..default()
         },

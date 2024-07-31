@@ -11,9 +11,6 @@ impl Plugin for SymbiantsPlugin {
         // Use a shared, common source of randomness so that the simulation is deterministic.
         app.init_resource::<GlobalRng>();
 
-        // See https://github.com/bevyengine/bevy/pull/10623 for details.
-        app.insert_resource(AssetMetaCheck::Never);
-
         app.add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
@@ -24,6 +21,13 @@ impl Plugin for SymbiantsPlugin {
                         prevent_default_event_handling: false,
                         ..default()
                     }),
+                    ..default()
+                })
+                .set(AssetPlugin {
+                    // Wasm builds will check for meta files (that don't exist) if this isn't set.
+                    // This causes errors and even panics in web builds on itch.
+                    // See https://github.com/bevyengine/bevy_github_ci_template/issues/48.
+                    meta_check: AssetMetaCheck::Never,
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest()),

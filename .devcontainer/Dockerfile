@@ -1,5 +1,5 @@
 # mold linker doesn't support rustlang/rust:nightly - requires Debian. Using rust:nightly would require lld which is worse for performance.
-FROM rust:1.76-bookworm
+FROM rust:1.79-bookworm
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -14,9 +14,9 @@ RUN apt-get update && \
    apt-get install -y libasound2-dev libudev-dev libxkbcommon-x11-0 clang lld mold xorg
 
 # Need to manually ensure nightly is configured when using bookworm
-RUN rustup toolchain install nightly
-RUN rustup component add rustfmt
-RUN rustup target install wasm32-unknown-unknown
+RUN rustup toolchain install nightly && \
+   rustup component add rustfmt && \
+   rustup target install wasm32-unknown-unknown
 
 # trunk is used for serving WASM builds in development
 # lock trunk version because they shipped a broken build in v0.18.0, trust has been lost.

@@ -10,7 +10,7 @@ use crate::{
     }, crater_simulation::ant::CraterOrientation, nest_simulation::ant::NestOrientation, settings::Settings
 };
 use bevy::{
-    ecs::system::{Command, SystemState},
+    ecs::{system::SystemState, world::Command},
     prelude::*,
 };
 use core::panic;

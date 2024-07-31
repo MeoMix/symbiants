@@ -6,7 +6,7 @@ use crate::common::{
     visible_grid::{grid_to_world_position, VisibleGrid},
     ModelViewEntityMap,
 };
-use bevy::prelude::*;
+use bevy::{color, prelude::*};
 use simulation::{
     common::{
         ant::{Ant, AntColor, AntInventory, AntName, Dead},
@@ -321,7 +321,7 @@ pub fn on_added_ant_dead(
             *image_handle = asset_server.load("images/ant_dead.png");
 
             // Apply gray tint to dead ants.
-            sprite.color = Color::GRAY;
+            sprite.color = Color::Srgba(color::palettes::basic::GRAY);
         }
     }
 }
@@ -368,7 +368,7 @@ fn spawn_ant_sprite(
 
     let is_dead = dead.is_some();
     let sprite_color = match is_dead {
-        true => Color::GRAY,
+        true => Color::Srgba(color::palettes::basic::GRAY),
         false => color.0,
     };
     let sprite_image = get_sprite_image(is_dead, *orientation);
@@ -452,7 +452,7 @@ fn get_inventory_item_bundle(
     element_texture_handle: &Res<ElementSpriteSheetHandle>,
     element_texture_atlas_layout_handle: &Res<ElementTextureAtlasLayoutHandle>,
     orientation: &CraterOrientation,
-) -> SpriteSheetBundle {
+) -> (SpriteBundle, TextureAtlas) {
     let element = elements_query.get(element_entity).unwrap();
 
     let element_exposure = ElementExposure {
@@ -465,16 +465,15 @@ fn get_inventory_item_bundle(
     let mut sprite = Sprite::default();
     sprite.custom_size = Some(Vec2::splat(1.0));
 
-    SpriteSheetBundle {
+    (SpriteBundle {
         transform: get_inventory_transform(orientation),
         sprite,
-        atlas: TextureAtlas {
-            layout: element_texture_atlas_layout_handle.0.clone(),
-            index: get_element_index(element_exposure, *element),
-        },
         texture: element_texture_handle.0.clone(),
         ..default()
-    }
+    }, TextureAtlas {
+        layout: element_texture_atlas_layout_handle.0.clone(),
+        index: get_element_index(element_exposure, *element),
+    })
 }
 
 fn get_inventory_transform(orientation: &CraterOrientation) -> Transform {

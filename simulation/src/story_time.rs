@@ -341,7 +341,10 @@ pub fn update_time_scale(
 ) {
     // Don't unintentionally overwrite simulation_time.period when shifting into FastForwarding.
     if *story_playback_state == StoryPlaybackState::FastForwarding
-        || next_story_playback_state.0 == Some(StoryPlaybackState::FastForwarding)
+        || matches!(
+            *next_story_playback_state,
+            NextState::Pending(StoryPlaybackState::FastForwarding)
+        )
     {
         return;
     }

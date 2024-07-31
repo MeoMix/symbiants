@@ -5,7 +5,7 @@ use crate::common::{
     Zone,
 };
 use bevy::{
-    ecs::system::{Command, SystemState},
+    ecs::{system::SystemState, world::Command},
     prelude::*,
 };
 use std::marker::PhantomData;

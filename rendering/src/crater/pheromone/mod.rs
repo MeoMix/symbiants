@@ -143,8 +143,8 @@ fn get_pheromone_sprite(pheromone: &Pheromone, pheromone_strength: &PheromoneStr
         Pheromone::Chamber => panic!("not supported"),
         Pheromone::Tunnel => panic!("not supported"),
         // TODO: better colors
-        Pheromone::Nest => Color::rgba(1.0, 0.08, 0.58, pheromone_opacity),
-        Pheromone::Food => Color::rgba(0.25, 0.88, 0.82, pheromone_opacity),
+        Pheromone::Nest => Color::srgba(1.0, 0.08, 0.58, pheromone_opacity),
+        Pheromone::Food => Color::srgba(0.25, 0.88, 0.82, pheromone_opacity),
     };
 
     Sprite { color, ..default() }

@@ -139,8 +139,8 @@ fn get_pheromone_sprite(pheromone: &Pheromone, pheromone_strength: &PheromoneStr
     let pheromone_opacity = initial_pheromone_opacity * pheromone_strength_opacity;
 
     let color = match pheromone {
-        Pheromone::Chamber => Color::rgba(1.0, 0.08, 0.58, pheromone_opacity),
-        Pheromone::Tunnel => Color::rgba(0.25, 0.88, 0.82, pheromone_opacity),
+        Pheromone::Chamber => Color::srgba(1.0, 0.08, 0.58, pheromone_opacity),
+        Pheromone::Tunnel => Color::srgba(0.25, 0.88, 0.82, pheromone_opacity),
         Pheromone::Nest => panic!("not supported"),
         Pheromone::Food => panic!("not supported"),
     };

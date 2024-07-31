@@ -58,7 +58,7 @@ impl Default for Settings {
             crater_height: 144,
             initial_dirt_percent: 2.0 / 4.0,
             initial_ant_worker_count: 0,
-            ant_color: Color::rgb(0.584, 0.216, 0.859), // purple!
+            ant_color: Color::srgb(0.584, 0.216, 0.859), // purple!
             chamber_size: 5,
             tunnel_length: 12,
             emote_duration: 30,

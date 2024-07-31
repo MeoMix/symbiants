@@ -5,12 +5,13 @@ edition = "2021"
 
 # NOTE: simulation does NOT get to depend on rendering or ui.
 [dependencies]
-bevy = { version = "0.13.0", default-features = false, features = [
+bevy = { version = "0.14.0", default-features = false, features = [
     "bevy_scene",
+    "bevy_state"
 ] }
 serde = { version = "1.0.197", features = ["derive"] }
-bevy_turborand = { version = "0.8.2" }
-bevy_save = { version = "0.14.0" }
+bevy_turborand = { version = "0.9.0" }
+bevy_save = { git = "https://github.com/perry-blueberry/bevy_save/", branch = "update-to-bevy-0.14" }
 chrono = { version = "0.4.35", features = ["serde"] }
 sun-times = { version = "0.2.0" }
 

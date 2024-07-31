@@ -9,7 +9,6 @@
         "rust-lang.rust-analyzer",
         "tamasfe.even-better-toml",
         "serayuzgur.crates",
-        "GitHub.copilot",
         "eamodio.gitlens",
         "vadimcn.vscode-lldb"
       ]
