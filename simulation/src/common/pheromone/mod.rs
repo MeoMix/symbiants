@@ -132,15 +132,15 @@ pub fn initialize_pheromone_resources<Z: Zone>(
 
     for (position, entity) in pheromone_query.iter() {
         let (x, y) = (position.x as usize, position.y as usize);
-    
+
         if x >= pheromone_cache.len() {
             pheromone_cache.resize(x + 1, Vec::new());
         }
-    
+
         if y >= pheromone_cache[x].len() {
             pheromone_cache[x].resize(y + 1, Vec::new());
         }
-    
+
         pheromone_cache[x][y].push(entity);
     }
 
@@ -157,7 +157,8 @@ pub fn decay_pheromone_strength<Z: Zone>(
 ) {
     for (mut pheromone_strength, position, pheromone_entity) in pheromone_query.iter_mut() {
         // 100% expired once every hour
-        let increment = pheromone_strength.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
+        let increment =
+            pheromone_strength.max() / (SECONDS_PER_HOUR * DEFAULT_TICKS_PER_SECOND) as f32;
         pheromone_strength.increment(-increment);
 
         if pheromone_strength.value() <= 0.0 {

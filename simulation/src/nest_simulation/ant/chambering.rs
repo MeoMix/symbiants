@@ -4,7 +4,10 @@ use crate::{
         ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory},
         element::Element,
         grid::{Grid, GridElements},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneEntityPositionCache, PheromoneStrength},
+        pheromone::{
+            commands::PheromoneCommandsExt, Pheromone, PheromoneEntityPositionCache,
+            PheromoneStrength,
+        },
         position::Position,
     },
     nest_simulation::nest::{AtNest, Nest},
@@ -121,7 +124,9 @@ pub fn ants_add_chamber_pheromone(
 
 // TODO: This is kinda weird - maybe should just diminish naturally
 /// Whenever an ant takes a step it loses 1 Chambering pheromone.
-pub fn ants_fade_chamber_pheromone(mut ants_query: Query<&mut Chambering, (With<AtNest>, Changed<Position>)>) {
+pub fn ants_fade_chamber_pheromone(
+    mut ants_query: Query<&mut Chambering, (With<AtNest>, Changed<Position>)>,
+) {
     for mut chambering in ants_query.iter_mut() {
         chambering.0 -= 1.0;
     }

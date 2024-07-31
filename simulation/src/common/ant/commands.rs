@@ -1,13 +1,17 @@
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName, AntRole, Initiative, InventoryItemBundle
+            digestion::Digestion, hunger::Hunger, AntBundle, AntColor, AntInventory, AntName,
+            AntRole, Initiative, InventoryItemBundle,
         },
         element::{Element, ElementBundle},
         grid::{GridElements, GridElementsMut},
         position::Position,
         Zone,
-    }, crater_simulation::ant::CraterOrientation, nest_simulation::ant::NestOrientation, settings::Settings
+    },
+    crater_simulation::ant::CraterOrientation,
+    nest_simulation::ant::NestOrientation,
+    settings::Settings,
 };
 use bevy::{
     ecs::{system::SystemState, world::Command},
@@ -259,24 +263,25 @@ struct SpawnAntCommand<Z: Zone> {
     zone: Z,
 }
 
-
 impl<Z: Zone> Command for SpawnAntCommand<Z> {
     fn apply(self, world: &mut World) {
         let settings = world.resource::<Settings>();
 
-        let entity = world.spawn(AntBundle::new(
-            self.position,
-            self.color,
-            // self.nest_orientation,
-            // self.crater_orientation,
-            self.inventory,
-            self.role,
-            self.name,
-            self.initiative,
-            self.zone,
-            Hunger::new(settings.max_hunger_time),
-            Digestion::new(settings.max_digestion_time),
-        )).id();
+        let entity = world
+            .spawn(AntBundle::new(
+                self.position,
+                self.color,
+                // self.nest_orientation,
+                // self.crater_orientation,
+                self.inventory,
+                self.role,
+                self.name,
+                self.initiative,
+                self.zone,
+                Hunger::new(settings.max_hunger_time),
+                Digestion::new(settings.max_digestion_time),
+            ))
+            .id();
 
         if let Some(orientation) = self.nest_orientation {
             world.entity_mut(entity).insert(orientation);
@@ -285,6 +290,5 @@ impl<Z: Zone> Command for SpawnAntCommand<Z> {
         } else {
             panic!("Ant must have either a nest or crater orientation.");
         }
-    
     }
 }

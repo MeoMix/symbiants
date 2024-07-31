@@ -45,10 +45,7 @@ pub struct NestRenderingPlugin;
 impl Plugin for NestRenderingPlugin {
     fn build(&self, app: &mut App) {
         // TODO: Move these to Common
-        app.add_systems(
-            OnEnter(AppState::Loading),
-            start_load_element_sprite_sheet,
-        );
+        app.add_systems(OnEnter(AppState::Loading), start_load_element_sprite_sheet);
 
         app.add_systems(
             Update,

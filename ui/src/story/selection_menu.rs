@@ -83,7 +83,7 @@ pub fn update_selection_menu(
                     // but ideally would just work off of selection itself
                     if pheromone_position == element_position
                         && ((element_at_nest.is_some() && pheromone_at_nest.is_some())
-                        || (element_at_crater.is_some() && pheromone_at_crater.is_some()))
+                            || (element_at_crater.is_some() && pheromone_at_crater.is_some()))
                     {
                         ui.label(&format!("Pheromone Type: {:?}", pheromone));
                         ui.label(&format!(

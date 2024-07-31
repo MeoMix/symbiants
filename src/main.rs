@@ -1,5 +1,5 @@
-use symbiants_lib::SymbiantsPlugin;
 use bevy::app::App;
+use symbiants_lib::SymbiantsPlugin;
 
 fn main() {
     #[cfg(target_arch = "wasm32")]

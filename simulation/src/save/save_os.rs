@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::common::{LoadProgress, SimulationLoadProgress};
+use bevy::prelude::*;
 
 pub fn save() {}
 

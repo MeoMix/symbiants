@@ -28,8 +28,8 @@ use self::{
     },
 };
 use super::{
-    despawn_model, insert_crater_grid, settings::initialize_settings_resources,
-    AppState, CleanupSet, FinishSetupSet,
+    despawn_model, insert_crater_grid, settings::initialize_settings_resources, AppState,
+    CleanupSet, FinishSetupSet,
 };
 use bevy::prelude::*;
 

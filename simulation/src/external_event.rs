@@ -1,7 +1,8 @@
 use crate::{
     common::{
         ant::{
-            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName, AntRole, Dead,
+            commands::AntCommandsExt, initiative::Initiative, AntColor, AntInventory, AntName,
+            AntRole, Dead,
         },
         element::{commands::ElementCommandsExt, Element},
         grid::GridElements,
@@ -9,7 +10,10 @@ use crate::{
         Zone,
     },
     crater_simulation::{ant::CraterOrientation, crater::AtCrater},
-    nest_simulation::{ant::{NestAngle, NestFacing, NestOrientation}, nest::AtNest},
+    nest_simulation::{
+        ant::{NestAngle, NestFacing, NestOrientation},
+        nest::AtNest,
+    },
     settings::Settings,
 };
 use bevy::prelude::*;
@@ -77,7 +81,10 @@ pub fn process_external_event<Z: Zone + Copy>(
             ExternalSimulationEvent::SpawnWorkerAnt(grid_position, zone) => {
                 if grid_elements.is(grid_position, Element::Air) {
                     let nest_orientation = match zone.is_at_nest() {
-                        true => Some(NestOrientation::new(NestFacing::random(&mut rng.reborrow()), NestAngle::Zero)),
+                        true => Some(NestOrientation::new(
+                            NestFacing::random(&mut rng.reborrow()),
+                            NestAngle::Zero,
+                        )),
                         false => None,
                     };
 
@@ -85,7 +92,7 @@ pub fn process_external_event<Z: Zone + Copy>(
                         true => Some(CraterOrientation::random(&mut rng.reborrow())),
                         false => None,
                     };
-                    
+
                     commands.spawn_ant(
                         grid_position,
                         AntColor(settings.ant_color),

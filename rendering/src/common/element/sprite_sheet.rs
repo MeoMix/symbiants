@@ -34,13 +34,7 @@ pub fn check_element_sprite_sheet_loaded(
     let load_state = asset_server.load_state(&element_sprite_sheet_handle.0);
 
     if load_state == LoadState::Loaded {
-        let texture_atlas = TextureAtlasLayout::from_grid(
-            UVec2::splat(128),
-            3,
-            16,
-            None,
-            None,
-        );
+        let texture_atlas = TextureAtlasLayout::from_grid(UVec2::splat(128), 3, 16, None, None);
 
         commands.insert_resource(ElementTextureAtlasLayoutHandle(
             texture_atlases.add(texture_atlas),

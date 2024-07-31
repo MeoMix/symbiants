@@ -79,7 +79,7 @@ pub fn on_update_pheromone_strength(
     mut sprite_query: Query<&mut Sprite>,
     model_view_entity_map: Res<ModelViewEntityMap>,
     visible_grid: Res<VisibleGrid>,
-    grid_query: Query<&Grid, With<AtNest>>
+    grid_query: Query<&Grid, With<AtNest>>,
 ) {
     let visible_grid_entity = match visible_grid.0 {
         Some(visible_grid_entity) => visible_grid_entity,

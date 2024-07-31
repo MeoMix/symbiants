@@ -4,9 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     common::{
-        ant::initiative::Initiative, pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength}, position::Position
+        ant::initiative::Initiative,
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+        position::Position,
     },
-    crater_simulation::crater::AtCrater, settings::Settings,
+    crater_simulation::crater::AtCrater,
+    settings::Settings,
 };
 
 // TODO: Need to persist LeavingNest and LeavingFood
@@ -37,7 +40,7 @@ pub fn ants_emit_pheromone(
         if !initiative.can_move() {
             continue;
         }
-        
+
         if !rng.chance(settings.probabilities.crater_emit_pheromone.into()) {
             continue;
         }

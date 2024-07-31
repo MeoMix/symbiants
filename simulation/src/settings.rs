@@ -2,9 +2,9 @@ use bevy::{prelude::*, reflect::Reflect};
 
 #[derive(Clone, Copy, Reflect, Debug)]
 pub struct Probabilities {
-    pub random_drop: f32,             // drop while wandering
-    pub random_nest_turn: f32,             // turn while wandering
-    pub random_crater_turn: f32,             // turn while wandering
+    pub random_drop: f32,        // drop while wandering
+    pub random_nest_turn: f32,   // turn while wandering
+    pub random_crater_turn: f32, // turn while wandering
     pub crater_emit_pheromone: f32,
     pub crater_follow_pheromone: f32,
     pub random_fall: f32,             // fall while upside down

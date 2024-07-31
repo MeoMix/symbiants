@@ -6,13 +6,12 @@ pub mod initiative;
 // pub mod sleep;
 mod name_list;
 
-use self::{digestion::Digestion, hunger::Hunger, initiative::Initiative, name_list::get_random_name};
+use self::{
+    digestion::Digestion, hunger::Hunger, initiative::Initiative, name_list::get_random_name,
+};
 use crate::common::{element::Element, position::Position, Zone};
 use bevy::{
-    ecs::{
-        entity::MapEntities,
-        reflect::ReflectMapEntities,
-    },
+    ecs::{entity::MapEntities, reflect::ReflectMapEntities},
     prelude::*,
 };
 use bevy_turborand::GlobalRng;

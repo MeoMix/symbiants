@@ -1,15 +1,14 @@
 use super::digestion::Digestion;
 use crate::{
     common::{
-        ant::{
-            commands::AntCommandsExt, AntInventory, AntRole, Dead,
-            Initiative,
-        },
+        ant::{commands::AntCommandsExt, AntInventory, AntRole, Dead, Initiative},
         element::Element,
         grid::GridElements,
         position::Position,
         Zone,
-    }, nest_simulation::ant::NestOrientation, story_time::DEFAULT_TICKS_PER_SECOND
+    },
+    nest_simulation::ant::NestOrientation,
+    story_time::DEFAULT_TICKS_PER_SECOND,
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -69,7 +68,6 @@ impl Hunger {
 
 #[derive(Event, PartialEq, Copy, Clone, Debug)]
 pub struct AntAteFoodEvent(pub Entity);
-
 
 // TODO: Ants stop getting hungry while asleep which isn't really intended, but I haven't thought through Initative removal enough clearly
 // because sometimes I want it for Dead + Sleep, sometimes just one or the other, and it's becoming a leaky abstraction.

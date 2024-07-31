@@ -4,7 +4,10 @@ use crate::{
         ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory},
         element::Element,
         grid::{Grid, GridElements},
-        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneEntityPositionCache, PheromoneStrength},
+        pheromone::{
+            commands::PheromoneCommandsExt, Pheromone, PheromoneEntityPositionCache,
+            PheromoneStrength,
+        },
         position::Position,
     },
     nest_simulation::{

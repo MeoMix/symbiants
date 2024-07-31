@@ -1,9 +1,6 @@
 use crate::{
     common::{
-        ant::initiative::Initiative,
-        element::Element,
-        grid::GridElements,
-        position::Position,
+        ant::initiative::Initiative, element::Element, grid::GridElements, position::Position,
     },
     nest_simulation::nest::{AtNest, Nest},
     settings::Settings,

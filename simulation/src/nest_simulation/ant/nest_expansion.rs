@@ -87,7 +87,10 @@ pub fn ants_nest_expansion(
             commands.spawn_pheromone(
                 dirt_position,
                 Pheromone::Tunnel,
-                PheromoneStrength::new(settings.tunnel_length as f32, settings.tunnel_length as f32),
+                PheromoneStrength::new(
+                    settings.tunnel_length as f32,
+                    settings.tunnel_length as f32,
+                ),
                 AtNest,
             );
         }

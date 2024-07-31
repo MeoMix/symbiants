@@ -2,7 +2,9 @@ pub mod emote;
 
 use crate::common::{
     element::{
-        sprite_sheet::{get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle},
+        sprite_sheet::{
+            get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle,
+        },
         ElementExposure,
     },
     visible_grid::{grid_to_world_position, VisibleGrid},
@@ -16,7 +18,10 @@ use simulation::{
         grid::Grid,
         position::Position,
     },
-    nest_simulation::{ant::{NestFacing, NestOrientation}, nest::AtNest},
+    nest_simulation::{
+        ant::{NestFacing, NestOrientation},
+        nest::AtNest,
+    },
 };
 use std::ops::Add;
 #[derive(Component, Copy, Clone)]
@@ -372,7 +377,10 @@ fn spawn_ant_sprite(
     let translation_offset = TranslationOffset(Vec3::new(0.0, 0.0, 1.0));
 
     let (sprite_image, sprite_color) = if dead.is_some() {
-        ("images/ant_dead.png", Color::Srgba(color::palettes::basic::GRAY))
+        (
+            "images/ant_dead.png",
+            Color::Srgba(color::palettes::basic::GRAY),
+        )
     } else {
         ("images/ant.png", color.0)
     };
@@ -484,15 +492,18 @@ fn get_inventory_item_bundle(
     let mut sprite = Sprite::default();
     sprite.custom_size = Some(Vec2::splat(1.0));
 
-    (SpriteBundle {
-        transform: Transform::from_xyz(1.0, 0.25, 1.0),
-        sprite,
-        texture: element_texture_handle.0.clone(),
-        ..default()
-    }, TextureAtlas {
-        layout: element_texture_atlas_layout_handle.0.clone(),
-        index: get_element_index(element_exposure, *element)
-    })
+    (
+        SpriteBundle {
+            transform: Transform::from_xyz(1.0, 0.25, 1.0),
+            sprite,
+            texture: element_texture_handle.0.clone(),
+            ..default()
+        },
+        TextureAtlas {
+            layout: element_texture_atlas_layout_handle.0.clone(),
+            index: get_element_index(element_exposure, *element),
+        },
+    )
 }
 
 // Convert AntOrientation to Transform.Scale, z-index is naively set to 1 for now

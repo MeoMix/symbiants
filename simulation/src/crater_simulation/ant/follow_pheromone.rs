@@ -46,7 +46,9 @@ pub fn ants_follow_pheromone(
     settings: Res<Settings>,
     mut rng: ResMut<GlobalRng>,
 ) {
-    for (mut initiative, mut position, mut orientation, inventory, ant_name) in ants_query.iter_mut() {
+    for (mut initiative, mut position, mut orientation, inventory, ant_name) in
+        ants_query.iter_mut()
+    {
         if !initiative.can_move() {
             continue;
         }
@@ -56,7 +58,11 @@ pub fn ants_follow_pheromone(
             continue;
         }
 
-        let positions = calculate_positions_in_halfcircle(*position, DETECTION_DISTANCE as f32, orientation.as_ref());
+        let positions = calculate_positions_in_halfcircle(
+            *position,
+            DETECTION_DISTANCE as f32,
+            orientation.as_ref(),
+        );
 
         // If ant is carrying food, it should follow the pheromone that leads home.
         // Otherwise, it should follow the pheromone that leads to food.
@@ -91,8 +97,12 @@ pub fn ants_follow_pheromone(
 
         if let Some(pheromone_target_position) = pheromone_target_position {
             // Calculate direction to pheromone target relative to ant's current orientation
-            let direction_to_pheromone =
-                calculate_direction_to_target(&position, &orientation, &pheromone_target_position, ant_name);
+            let direction_to_pheromone = calculate_direction_to_target(
+                &position,
+                &orientation,
+                &pheromone_target_position,
+                ant_name,
+            );
 
             let (new_position, new_orientation) = match direction_to_pheromone {
                 Direction::Forward => (orientation.get_ahead_position(&position), None),
@@ -177,8 +187,12 @@ fn calculate_direction_to_target(
 
 /// This relies on an implicit field-of-view of 180 degrees.
 /// Its implementation is inspired by https://www.redblobgames.com/grids/circle-drawing/
-/// If dynamic field-of-view is required in the future then will need to introduce `atan2` to filter on degrees. 
-fn calculate_positions_in_halfcircle(center: Position, radius: f32, orientation: &CraterOrientation) -> Vec<Position> {
+/// If dynamic field-of-view is required in the future then will need to introduce `atan2` to filter on degrees.
+fn calculate_positions_in_halfcircle(
+    center: Position,
+    radius: f32,
+    orientation: &CraterOrientation,
+) -> Vec<Position> {
     let mut positions = vec![];
 
     // Calculate the bounding box of the circle to determine which tile positions to check.
@@ -200,7 +214,7 @@ fn calculate_positions_in_halfcircle(center: Position, radius: f32, orientation:
             let dx = center.x - x;
             let dy = center.y - y;
             let distance_squared = dx * dx + dy * dy;
-            
+
             if distance_squared > 0 && distance_squared as f32 <= radius * radius {
                 positions.push(Position::new(x, y));
             }

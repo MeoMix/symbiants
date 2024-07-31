@@ -1,6 +1,8 @@
 use crate::common::{
     element::{
-        sprite_sheet::{get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle},
+        sprite_sheet::{
+            get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle,
+        },
         ElementExposure,
     },
     visible_grid::{grid_to_world_position, VisibleGrid},
@@ -14,7 +16,10 @@ use simulation::{
         grid::Grid,
         position::Position,
     },
-    crater_simulation::{ant::CraterOrientation, crater::{AtCrater, Crater}},
+    crater_simulation::{
+        ant::CraterOrientation,
+        crater::{AtCrater, Crater},
+    },
 };
 use std::ops::Add;
 
@@ -178,7 +183,7 @@ pub fn on_update_ant_inventory(
                     // from Crater to Nest. Change detection is still responding to something in Crater, but sprite is in another zone.
                     // Safe to ignore, but indicative of an architectural concern.
                     continue;
-                },
+                }
             };
 
             if let Some(inventory_item_entity) = ant_sprite_container.inventory_item_entity {
@@ -215,10 +220,7 @@ pub fn on_update_ant_inventory(
 /// This affects the translation of the SpatialBundle wrapping the AntSprite.
 /// This allows for the ant's associated Label to move in sync with the AntSprite.
 pub fn on_update_ant_position(
-    ant_model_query: Query<
-        (Entity, Ref<Position>),
-        (With<Ant>, With<AtCrater>),
-    >,
+    ant_model_query: Query<(Entity, Ref<Position>), (With<Ant>, With<AtCrater>)>,
     mut ant_view_query: Query<(&mut Transform, &TranslationOffset)>,
     grid_query: Query<&Grid, With<AtCrater>>,
     model_view_entity_map: Res<ModelViewEntityMap>,
@@ -240,8 +242,7 @@ pub fn on_update_ant_position(
         }
 
         if let Some(&ant_view_entity) = model_view_entity_map.get(&ant_model_entity) {
-            if let Ok((mut transform, translation_offset)) =
-                ant_view_query.get_mut(ant_view_entity)
+            if let Ok((mut transform, translation_offset)) = ant_view_query.get_mut(ant_view_entity)
             {
                 transform.translation =
                     grid_to_world_position(grid, *position).add(translation_offset.0);
@@ -280,12 +281,14 @@ pub fn on_update_ant_orientation(
                 .get_mut(ant_sprite_container.sprite_entity)
                 .unwrap();
 
-            *handle = Handle::from(asset_server.load(get_sprite_image(dead.is_some(), *orientation)));
+            *handle =
+                Handle::from(asset_server.load(get_sprite_image(dead.is_some(), *orientation)));
 
             // Ensure inventory item orientation is updated to match sprite orientation
             if let Some(inventory_item_entity) = ant_sprite_container.inventory_item_entity {
                 // TODO: Sometimes this throws if I just unwrap because I don't call apply_deferred within my reactive UI updates layer
-                if let Ok(mut transform) = inventory_transform_query.get_mut(inventory_item_entity) {
+                if let Ok(mut transform) = inventory_transform_query.get_mut(inventory_item_entity)
+                {
                     *transform = get_inventory_transform(orientation.as_ref());
                 }
             }
@@ -465,15 +468,18 @@ fn get_inventory_item_bundle(
     let mut sprite = Sprite::default();
     sprite.custom_size = Some(Vec2::splat(1.0));
 
-    (SpriteBundle {
-        transform: get_inventory_transform(orientation),
-        sprite,
-        texture: element_texture_handle.0.clone(),
-        ..default()
-    }, TextureAtlas {
-        layout: element_texture_atlas_layout_handle.0.clone(),
-        index: get_element_index(element_exposure, *element),
-    })
+    (
+        SpriteBundle {
+            transform: get_inventory_transform(orientation),
+            sprite,
+            texture: element_texture_handle.0.clone(),
+            ..default()
+        },
+        TextureAtlas {
+            layout: element_texture_atlas_layout_handle.0.clone(),
+            index: get_element_index(element_exposure, *element),
+        },
+    )
 }
 
 fn get_inventory_transform(orientation: &CraterOrientation) -> Transform {

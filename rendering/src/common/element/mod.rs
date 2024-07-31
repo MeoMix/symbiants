@@ -2,7 +2,9 @@
 
 pub mod sprite_sheet;
 
-use self::sprite_sheet::{get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle};
+use self::sprite_sheet::{
+    get_element_index, ElementSpriteSheetHandle, ElementTextureAtlasLayoutHandle,
+};
 use crate::common::{
     visible_grid::{grid_to_tile_pos, VisibleGrid},
     ModelViewEntityMap,

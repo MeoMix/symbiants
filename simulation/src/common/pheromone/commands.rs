@@ -72,7 +72,9 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
             .unwrap_or(&default_vec);
 
         let matching_pheromone_entity = pheromone_entities.iter().find(|&entity| {
-            world.entity(*entity).get::<Pheromone>()
+            world
+                .entity(*entity)
+                .get::<Pheromone>()
                 .map_or(false, |pheromone| *pheromone == self.pheromone)
         });
 
@@ -96,8 +98,7 @@ impl<Z: Zone> Command for SpawnPheromoneCommand<Z> {
             .id();
 
         let mut pheromone_map = world.resource_mut::<PheromoneEntityPositionCache<Z>>();
-        pheromone_map
-            .add_or_update_entity(&self.position, pheromone_entity);
+        pheromone_map.add_or_update_entity(&self.position, pheromone_entity);
     }
 }
 

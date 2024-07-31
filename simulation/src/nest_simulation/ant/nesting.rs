@@ -1,9 +1,7 @@
 use super::{wander::get_turned_orientation, NestFacing, NestOrientation};
 use crate::{
     common::{
-        ant::{
-            commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole,
-        },
+        ant::{commands::AntCommandsExt, initiative::Initiative, AntInventory, AntRole},
         element::Element,
         grid::GridElements,
         pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},

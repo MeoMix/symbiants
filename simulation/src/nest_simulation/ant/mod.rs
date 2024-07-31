@@ -32,7 +32,6 @@ pub fn register_ant(app_type_registry: ResMut<AppTypeRegistry>) {
     app_type_registry.write().register::<Chambering>();
 }
 
-
 #[derive(Debug, PartialEq, Copy, Clone, Serialize, Deserialize, Reflect, Default)]
 pub enum NestFacing {
     #[default]

@@ -1,6 +1,6 @@
+use fs_extra::dir::{self, CopyOptions};
 use std::env;
 use std::path::Path;
-use fs_extra::dir::{self, CopyOptions};
 
 // Bevy expects the assets directory to exist adjacent to the executable
 // When debugging Linux builds in VSCode, the executable is in the debug directory

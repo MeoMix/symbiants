@@ -2,7 +2,9 @@ use bevy::prelude::*;
 
 use crate::{
     common::{
-        element::Food, pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength}, position::Position
+        element::Food,
+        pheromone::{commands::PheromoneCommandsExt, Pheromone, PheromoneStrength},
+        position::Position,
     },
     settings::Settings,
 };
@@ -21,7 +23,10 @@ pub fn nest_entrance_emit_pheromone(mut commands: Commands, settings: Res<Settin
     );
 }
 
-pub fn food_emit_pheromone(mut commands: Commands, query: Query<&Position, (With<Food>, With<AtCrater>)>) {
+pub fn food_emit_pheromone(
+    mut commands: Commands,
+    query: Query<&Position, (With<Food>, With<AtCrater>)>,
+) {
     for position in query.iter() {
         commands.spawn_pheromone(
             *position,

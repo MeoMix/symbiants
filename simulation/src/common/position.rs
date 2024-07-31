@@ -3,7 +3,19 @@ use serde::{Deserialize, Serialize};
 use std::ops::{Add, Mul, Sub};
 
 #[derive(
-    Component, Debug, Eq, PartialEq, Hash, Copy, Clone, Reflect, Default, Serialize, Deserialize, PartialOrd, Ord
+    Component,
+    Debug,
+    Eq,
+    PartialEq,
+    Hash,
+    Copy,
+    Clone,
+    Reflect,
+    Default,
+    Serialize,
+    Deserialize,
+    PartialOrd,
+    Ord,
 )]
 #[reflect(Component)]
 pub struct Position {

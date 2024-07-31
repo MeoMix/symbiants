@@ -14,10 +14,7 @@ pub struct Grid {
 
 impl Grid {
     pub fn new(width: isize, height: isize) -> Self {
-        Self {
-            width,
-            height,
-        }
+        Self { width, height }
     }
 
     pub fn width(&self) -> isize {

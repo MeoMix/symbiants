@@ -3,7 +3,10 @@ use bevy_turborand::GlobalRng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    common::{ant::{initiative::Initiative, AntInventory}, position::Position},
+    common::{
+        ant::{initiative::Initiative, AntInventory},
+        position::Position,
+    },
     nest_simulation::nest::{AtNest, Nest},
     story_time::StoryTime,
 };

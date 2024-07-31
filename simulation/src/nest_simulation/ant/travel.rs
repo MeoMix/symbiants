@@ -7,7 +7,10 @@ use crate::{
         grid::Grid,
         position::Position,
     },
-    crater_simulation::{ant::{emit_pheromone::LeavingNest, CraterOrientation}, crater::AtCrater},
+    crater_simulation::{
+        ant::{emit_pheromone::LeavingNest, CraterOrientation},
+        crater::AtCrater,
+    },
     nest_simulation::nest::{AtNest, Nest},
     settings::Settings,
 };

@@ -1,7 +1,8 @@
 use crate::{
     common::{
         ant::{
-            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor, AntInventory, AntName, AntRole,
+            digestion::Digestion, hunger::Hunger, initiative::Initiative, AntBundle, AntColor,
+            AntInventory, AntName, AntRole,
         },
         element::{Element, ElementBundle},
         grid::{ElementEntityPositionCache, Grid},
@@ -118,10 +119,12 @@ pub fn spawn_nest_ants(
 
     let queen_ant_entity_id = commands.spawn(queen_ant_bundle).id();
 
-    commands.entity(queen_ant_entity_id).insert(NestOrientation::new(
-        NestFacing::random(&mut rng),
-        NestAngle::Zero,
-    ));
+    commands
+        .entity(queen_ant_entity_id)
+        .insert(NestOrientation::new(
+            NestFacing::random(&mut rng),
+            NestAngle::Zero,
+        ));
 
     let worker_ant_entity_ids = (0..settings.initial_ant_worker_count)
         .map(|_| {
@@ -129,25 +132,29 @@ pub fn spawn_nest_ants(
             let random_surface_position =
                 Position::new(rng.isize(0..settings.nest_width), nest.surface_level);
 
-            commands.spawn(AntBundle::new(
-                random_surface_position,
-                AntColor(settings.ant_color),
-                AntInventory::default(),
-                AntRole::Worker,
-                AntName::random(&mut rng),
-                Initiative::new(&mut rng),
-                AtNest,
-                Hunger::new(settings.max_hunger_time),
-                Digestion::new(settings.max_digestion_time),
-            )).id()
+            commands
+                .spawn(AntBundle::new(
+                    random_surface_position,
+                    AntColor(settings.ant_color),
+                    AntInventory::default(),
+                    AntRole::Worker,
+                    AntName::random(&mut rng),
+                    Initiative::new(&mut rng),
+                    AtNest,
+                    Hunger::new(settings.max_hunger_time),
+                    Digestion::new(settings.max_digestion_time),
+                ))
+                .id()
         })
         .collect::<Vec<_>>();
 
     for worker_ant_entity_id in worker_ant_entity_ids {
-        commands.entity(worker_ant_entity_id).insert(NestOrientation::new(
-            NestFacing::random(&mut rng),
-            NestAngle::Zero,
-        ));
+        commands
+            .entity(worker_ant_entity_id)
+            .insert(NestOrientation::new(
+                NestFacing::random(&mut rng),
+                NestAngle::Zero,
+            ));
     }
 }
 
@@ -171,10 +178,9 @@ pub fn insert_nest_grid(
         elements_cache[position.y as usize][position.x as usize] = entity;
     }
 
-    commands.entity(nest_query.single()).insert(Grid::new(
-        settings.nest_width,
-        settings.nest_height,
-    ));
+    commands
+        .entity(nest_query.single())
+        .insert(Grid::new(settings.nest_width, settings.nest_height));
 
     commands.spawn((ElementEntityPositionCache(elements_cache), AtNest));
 }

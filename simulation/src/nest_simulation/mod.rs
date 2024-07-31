@@ -3,10 +3,13 @@ pub mod gravity;
 pub mod nest;
 
 use crate::common::{
-    ant::Ant, element::Element, grid::ElementEntityPositionCache, pheromone::{
-        initialize_pheromone_resources, decay_pheromone_strength, remove_pheromone_resources,
+    ant::Ant,
+    element::Element,
+    grid::ElementEntityPositionCache,
+    pheromone::{
+        decay_pheromone_strength, initialize_pheromone_resources, remove_pheromone_resources,
         Pheromone,
-    }
+    },
 };
 
 use self::{
