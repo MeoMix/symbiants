@@ -153,7 +153,7 @@ impl Plugin for CommonSimulationPlugin {
             )
                 .chain()
                 .in_set(SimulationTickSet::First)
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(
@@ -178,7 +178,7 @@ impl Plugin for CommonSimulationPlugin {
             )
                 .chain()
                 .run_if(
-                    in_state(AppState::TellStory)
+                    in_state(AppState::TellStory { ended: false })
                         .and_then(not(in_state(StoryPlaybackState::Paused))),
                 )
                 .in_set(SimulationTickSet::SimulationTick),
@@ -197,7 +197,7 @@ impl Plugin for CommonSimulationPlugin {
                 .chain()
                 .in_set(SimulationTickSet::PostSimulationTick)
                 .run_if(
-                    in_state(AppState::TellStory)
+                    in_state(AppState::TellStory { ended: false })
                         .and_then(not(in_state(StoryPlaybackState::Paused))),
                 ),
         );
@@ -219,17 +219,17 @@ impl Plugin for CommonSimulationPlugin {
             )
                 .chain()
                 .in_set(SimulationTickSet::Last)
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(
             Update,
-            update_time_scale.run_if(in_state(AppState::TellStory)),
+            update_time_scale.run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(
             Update,
-            update_story_real_world_time.run_if(in_state(AppState::TellStory)),
+            update_story_real_world_time.run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         // Saving in WASM writes to local storage which requires dedicated support.
@@ -239,7 +239,7 @@ impl Plugin for CommonSimulationPlugin {
             // TODO: It's weird (incorrect) that this is declared in `simulation` but that the `save` directory is external to simulation.
             // I think this should get moved up a level.
             save.run_if(
-                in_state(AppState::TellStory).and_then(in_state(StoryPlaybackState::Playing)),
+                in_state(AppState::TellStory { ended: false }).and_then(in_state(StoryPlaybackState::Playing)),
             ),
         );
 

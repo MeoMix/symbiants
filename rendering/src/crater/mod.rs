@@ -67,7 +67,7 @@ impl Plugin for CraterRenderingPlugin {
             )
                 .chain()
                 .run_if(
-                    in_state(AppState::TellStory)
+                    in_state(AppState::TellStory { ended: false })
                         .or_else(in_state(AppState::PostSetupClearChangeDetection)),
                 ),
         );
@@ -90,7 +90,7 @@ impl Plugin for CraterRenderingPlugin {
                 ),
             )
                 .chain()
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(
@@ -105,7 +105,7 @@ impl Plugin for CraterRenderingPlugin {
                 remove_element_exposure_map,
                 mark_crater_hidden,
             )
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(

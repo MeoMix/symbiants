@@ -5,7 +5,7 @@ use crate::{
     story_time::StoryPlaybackState,
 };
 
-#[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
+#[derive(States, Clone, Copy, Default, Eq, PartialEq, Debug, Hash)]
 pub enum AppState {
     #[default]
     Loading,
@@ -16,8 +16,9 @@ pub enum AppState {
     // which monitor for Added<_> have a backlog to process, but this is not desirable
     // as they are intended for a running simulation not an initializing simulation.
     PostSetupClearChangeDetection,
-    TellStory,
-    EndStory,
+    TellStory {
+        ended: bool
+    },
     Cleanup,
 }
 
@@ -34,7 +35,7 @@ pub fn post_setup_clear_change_detection(mut next_app_state: ResMut<NextState<Ap
 }
 
 pub fn begin_story(mut next_app_state: ResMut<NextState<AppState>>) {
-    next_app_state.set(AppState::TellStory);
+    next_app_state.set(AppState::TellStory { ended: false });
 }
 
 pub fn check_story_over(
@@ -45,6 +46,6 @@ pub fn check_story_over(
         .iter()
         .any(|ant_role| *ant_role == AntRole::Queen)
     {
-        next_app_state.set(AppState::EndStory);
+        next_app_state.set(AppState::TellStory { ended: true });
     }
 }

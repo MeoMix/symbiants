@@ -105,13 +105,13 @@ impl Plugin for NestRenderingPlugin {
             )
                 .chain()
                 .run_if(
-                    in_state(AppState::TellStory)
+                    in_state(AppState::TellStory { ended: false })
                         .or_else(in_state(AppState::PostSetupClearChangeDetection)),
                 ),
         );
 
         // When beginning the story, start by showing the Nest.
-        app.add_systems(OnEnter(AppState::TellStory), set_visible_grid_state_nest);
+        app.add_systems(OnEnter(AppState::TellStory { ended: false }), set_visible_grid_state_nest);
 
         app.add_systems(
             OnEnter(VisibleGridState::Nest),
@@ -131,7 +131,7 @@ impl Plugin for NestRenderingPlugin {
                 ),
             )
                 .chain()
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(
@@ -146,7 +146,7 @@ impl Plugin for NestRenderingPlugin {
                 remove_element_exposure_map,
                 mark_nest_hidden,
             )
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(

@@ -72,7 +72,7 @@ impl Plugin for SimulationPlugin {
                 SimulationTickSet::Last,
             )
                 .chain()
-                .run_if(in_state(AppState::TellStory)),
+                .run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.configure_sets(

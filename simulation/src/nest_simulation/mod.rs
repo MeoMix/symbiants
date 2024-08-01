@@ -168,7 +168,7 @@ impl Plugin for NestSimulationPlugin {
                     .chain(),
             )
                 .run_if(
-                    in_state(AppState::TellStory)
+                    in_state(AppState::TellStory { ended: false })
                         .and_then(not(in_state(StoryPlaybackState::Paused))),
                 )
                 .chain()

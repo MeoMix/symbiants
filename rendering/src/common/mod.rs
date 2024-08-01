@@ -183,7 +183,7 @@ impl Plugin for CommonRenderingPlugin {
                 on_update_pheromone_visibility,
             )
                 .run_if(
-                    in_state(AppState::TellStory)
+                    in_state(AppState::TellStory { ended: false })
                         .or_else(in_state(AppState::PostSetupClearChangeDetection)),
                 ),
         );
@@ -193,18 +193,18 @@ impl Plugin for CommonRenderingPlugin {
         app.add_systems(
             Update,
             (handle_pointer_tap::<AtNest>, handle_pointer_tap::<AtCrater>)
-                .run_if(in_state(AppState::TellStory))
+                .run_if(in_state(AppState::TellStory { ended: false }))
                 .chain(),
         );
 
         app.add_systems(
             OnExit(VisibleGridState::Nest),
-            (clear_selection,).run_if(in_state(AppState::TellStory)),
+            (clear_selection,).run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(
             OnExit(VisibleGridState::Crater),
-            (clear_selection,).run_if(in_state(AppState::TellStory)),
+            (clear_selection,).run_if(in_state(AppState::TellStory { ended: false })),
         );
 
         app.add_systems(
