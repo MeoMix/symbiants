@@ -26,9 +26,12 @@ RUN apt-get update && \
     apt-get install -y vainfo mesa-va-drivers && \
     rm -rf /var/lib/apt/lists/*
 
+# install pre-compiled cargo-binstall binary
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
 # trunk is used for serving WASM builds in development
 # cargo-watch is used for non-WASM build auto-reload
-RUN cargo install trunk cargo-watch
+RUN cargo binstall trunk cargo-watch --no-confirm
 
 # TODO: If/when I take testing seriously again I can re-enable this logic, but installing Chrome Driver increases Docker setup time 100x
 # RUN cargo install wasm-bindgen-cli
