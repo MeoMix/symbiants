@@ -11,7 +11,7 @@ ENV LIBVA_DRIVER_NAME=d3d12
 RUN rustup toolchain install nightly && \
     rustup default nightly && \
     rustup component add rustfmt && \
-    rustup target install wasm32-unknown-unknown
+    rustup target add wasm32-unknown-unknown
 
 # xorg is older way of piping viewport to host machine, weston is Wayland (newer version).
 # either way, need to have server installed on host machine to receive output
@@ -31,7 +31,7 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ca
 
 # trunk is used for serving WASM builds in development
 # cargo-watch is used for non-WASM build auto-reload
-RUN cargo binstall trunk cargo-watch --no-confirm
+RUN cargo binstall trunk@0.20.2 cargo-watch@8.5.2 --no-confirm
 
 # TODO: If/when I take testing seriously again I can re-enable this logic, but installing Chrome Driver increases Docker setup time 100x
 # RUN cargo install wasm-bindgen-cli
