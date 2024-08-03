@@ -1,15 +1,47 @@
-<meta content="text/html;charset=utf-8" http-equiv=Content-Type><script type=module>
-import init, * as bindings from '/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302.js';
-init('/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302_bg.wasm');
+<html>
+
+<head>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  
+  
+<script type="module" nonce="Cz2v+QEHk/ygRACilZ2Qag==">
+import init, * as bindings from '/symbiants_pkg-ca475c7c14f6f190.js';
+const wasm = await init('/symbiants_pkg-ca475c7c14f6f190_bg.wasm');
+
+
 window.wasmBindings = bindings;
 
-</script><style>body{margin:0;position:absolute;width:100%;height:100%;overflow:hidden}</style><script data-domain=ant.care defer src=https://plausible.io/js/script.js></script><link as=fetch crossorigin href=/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302_bg.wasm integrity=sha384-BdeNYoT_sTj5jxonhMa3ZS30-lnSIJl3TlDkLRyPhPKfJSwbtGmMJtXvVbHTJGMC rel=preload type=application/wasm><link crossorigin href=/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302.js integrity=sha384-StxdZ3VWV11Uo_rLvQ1cNV9AbR1WaKuuFo1p3n40pV4VL6NnICpRUbSYuptYA28n rel=modulepreload></head><body><script type=module>
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+
+  <style>
+    body {
+      margin: 0px;
+      /* parent of <canvas /> must be absolute position while also fitting browser dimensions */
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      /* overflow: hidden necessary when resizing window smaller otherwise white border may appear around <canvas /> */
+      overflow: hidden;
+    }
+  </style>
+  <script defer data-domain="ant.care" src="https://plausible.io/js/script.js"></script>
+
+<link rel="modulepreload" href="/symbiants_pkg-ca475c7c14f6f190.js" crossorigin=anonymous integrity="sha384-tu7HuaQAQ2UIc500PuheLCn9ynNsPT1ptWLKOAh38OZ0c27JimEJsvkv8M6IEBVz">
+<link rel="preload" href="/symbiants_pkg-ca475c7c14f6f190_bg.wasm" crossorigin=anonymous integrity="sha384-+gb6yi43NqFRoSAZNqipn433O/uUKdMJemh+wn/jKzKae1T/bT+ch8+LnNN4FAMy" as="fetch" type="application/wasm"></head>
+
+<body>
+  <script type="module">
     window.addEventListener('error', function (event) {
       if (event.message.includes("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
         event.preventDefault();
       }
     });
-  </script><script type=module>
+  </script>
+
+  <script type="module">
     // Insert hack to make sound autoplay on Chrome as soon as the user interacts with the tab:
     // https://developers.google.com/web/updates/2018/11/web-audio-autoplay#moving-forward
 
@@ -72,4 +104,7 @@ window.wasmBindings = bindings;
         document.addEventListener(eventName, resumeAllContexts);
       });
     })();
-  </script></body></html>
+  </script>
+</body>
+
+</html>
