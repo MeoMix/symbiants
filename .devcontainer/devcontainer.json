@@ -25,7 +25,5 @@
   "mounts": [
     "source=/usr/lib/wsl,target=/usr/lib/wsl,type=bind"
   ],
-  // NOTE: trunk serve will not fall back to polling and pushing notifications didn't work from Windows, but is fine from WSL2.
-  "postCreateCommand": "git config --global --add safe.directory /workspaces/symbiants"
-
+  "postCreateCommand": "git config --global --add safe.directory $(pwd)"
 }
