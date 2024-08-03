@@ -1,6 +1,75 @@
 <meta content="text/html;charset=utf-8" http-equiv=Content-Type><script type=module>
-import init, * as bindings from '/symbiants_pkg-07cdaed7310725cf5dfb5e618b8bb7786913c75896d36e2af03682f264956d4f43203c66f9e8a48f202f8dcaaecb9ad8.js';
-init('/symbiants_pkg-07cdaed7310725cf5dfb5e618b8bb7786913c75896d36e2af03682f264956d4f43203c66f9e8a48f202f8dcaaecb9ad8_bg.wasm');
+import init, * as bindings from '/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302.js';
+init('/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302_bg.wasm');
 window.wasmBindings = bindings;
 
-</script><style>body{margin:0;position:absolute;width:100%;height:100%;overflow:hidden}</style><script data-domain=ant.care defer src=https://plausible.io/js/script.js></script><link as=fetch crossorigin href=/symbiants_pkg-07cdaed7310725cf5dfb5e618b8bb7786913c75896d36e2af03682f264956d4f43203c66f9e8a48f202f8dcaaecb9ad8_bg.wasm integrity=sha384-B82u1zEHJc9d-15hi4u3eGkTx1iW024q8DaC8mSVbU9DIDxm-eikjyAvjcquy5rY rel=preload type=application/wasm><link crossorigin href=/symbiants_pkg-07cdaed7310725cf5dfb5e618b8bb7786913c75896d36e2af03682f264956d4f43203c66f9e8a48f202f8dcaaecb9ad8.js integrity=sha384-HuUyWrJcemqoEjtBM6D4_OwAneB9ZwX3BMwfljB8m2BqwtSBgTTkvXF0UTyo1jJn rel=modulepreload></head><body><script>(function(){const d=[];const e=["click","contextmenu","auxclick","dblclick","mousedown","mouseup","pointerup","touchend","keydown","keyup"];self.AudioContext=new Proxy(self.AudioContext,{construct(a,b){const f=new a(...b);d.push(f);return f}});function c(f){let g=0;d.forEach(h=>{if(h.state!=="running"){h.resume()}else{g++}});if(g>0&&g===d.length){e.forEach(h=>{document.removeEventListener(h,c)})}}e.forEach(f=>{document.addEventListener(f,c)})})()</script></body></html>
+</script><style>body{margin:0;position:absolute;width:100%;height:100%;overflow:hidden}</style><script data-domain=ant.care defer src=https://plausible.io/js/script.js></script><link as=fetch crossorigin href=/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302_bg.wasm integrity=sha384-BdeNYoT_sTj5jxonhMa3ZS30-lnSIJl3TlDkLRyPhPKfJSwbtGmMJtXvVbHTJGMC rel=preload type=application/wasm><link crossorigin href=/symbiants_pkg-05d78d6284ffb138f98f1a2784c6b7652df4fa59d22099774e50e42d1c8f84f29f252c1bb4698c26d5ef55b1d3246302.js integrity=sha384-StxdZ3VWV11Uo_rLvQ1cNV9AbR1WaKuuFo1p3n40pV4VL6NnICpRUbSYuptYA28n rel=modulepreload></head><body><script type=module>
+    window.addEventListener('error', function (event) {
+      if (event.message.includes("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
+        event.preventDefault();
+      }
+    });
+  </script><script type=module>
+    // Insert hack to make sound autoplay on Chrome as soon as the user interacts with the tab:
+    // https://developers.google.com/web/updates/2018/11/web-audio-autoplay#moving-forward
+
+    // the following function keeps track of all AudioContexts and resumes them on the first user
+    // interaction with the page. If the function is called and all contexts are already running,
+    // it will remove itself from all event listeners.
+    (function () {
+      // An array of all contexts to resume on the page
+      const audioContextList = [];
+
+      // An array of various user interaction events we should listen for
+      const userInputEventNames = [
+        "click",
+        "contextmenu",
+        "auxclick",
+        "dblclick",
+        "mousedown",
+        "mouseup",
+        "pointerup",
+        "touchend",
+        "keydown",
+        "keyup",
+      ];
+
+      // A proxy object to intercept AudioContexts and
+      // add them to the array for tracking and resuming later
+      self.AudioContext = new Proxy(self.AudioContext, {
+        construct(target, args) {
+          const result = new target(...args);
+          audioContextList.push(result);
+          return result;
+        },
+      });
+
+      // To resume all AudioContexts being tracked
+      function resumeAllContexts(_event) {
+        let count = 0;
+
+        audioContextList.forEach((context) => {
+          if (context.state !== "running") {
+            context.resume();
+          } else {
+            count++;
+          }
+        });
+
+        // If all the AudioContexts have now resumed then we unbind all
+        // the event listeners from the page to prevent unnecessary resume attempts
+        // Checking count > 0 ensures that the user interaction happens AFTER the game started up
+        if (count > 0 && count === audioContextList.length) {
+          userInputEventNames.forEach((eventName) => {
+            document.removeEventListener(eventName, resumeAllContexts);
+          });
+        }
+      }
+
+      // We bind the resume function for each user interaction
+      // event on the page
+      userInputEventNames.forEach((eventName) => {
+        document.addEventListener(eventName, resumeAllContexts);
+      });
+    })();
+  </script></body></html>
