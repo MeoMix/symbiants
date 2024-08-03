@@ -20,7 +20,15 @@
 </head>
 
 <body>
-  <script>
+  <script type="module">
+    window.addEventListener('error', function (event) {
+      if (event.message.includes("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
+        event.preventDefault();
+      }
+    });
+  </script>
+
+  <script type="module">
     // Insert hack to make sound autoplay on Chrome as soon as the user interacts with the tab:
     // https://developers.google.com/web/updates/2018/11/web-audio-autoplay#moving-forward
 
