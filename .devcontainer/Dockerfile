@@ -22,7 +22,7 @@ RUN rustup toolchain install nightly && \
 # mold and (xorg or weston) are needed for native builds.
 # vainfo and mesa-va-drivers are used for GPU hardware acceleration when running natively.
 RUN apt-get update && \
-    apt-get install -y libasound2-dev libudev-dev libxkbcommon-x11-0 clang lld mold xorg && \
+    apt-get install -y libasound2-dev libudev-dev libxkbcommon-x11-0 clang mold xorg && \
     apt-get install -y vainfo mesa-va-drivers && \
     rm -rf /var/lib/apt/lists/*
 

@@ -3,8 +3,10 @@ target = "wasm32-unknown-unknown"
 
 [target.wasm32-unknown-unknown]
 runner = 'wasm-bindgen-test-runner'
-# bevy_egui uses unstable APIs to support clipboard on web.
-rustflags = ["--cfg=web_sys_unstable_apis"]
+rustflags = [
+    # bevy_egui uses unstable APIs to support clipboard on web.
+    "--cfg=web_sys_unstable_apis",
+]
 
 [target.x86_64-unknown-linux-gnu]
 linker = "clang"
@@ -14,5 +16,6 @@ rustflags = [
     # Allows crates to share monomorphized generic code instead of duplicating it. 
     # In some cases this allows us to "precompile" generic code so it doesn't affect iterative compiles. 
     # This is only available on nightly Rust.
-    "-Z", "share-generics=y"
+    "-Z", "share-generics=y",
+    "-Z", "threads=0",
 ]
