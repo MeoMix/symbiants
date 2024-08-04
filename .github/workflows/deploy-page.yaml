@@ -2,6 +2,9 @@ name: deploy-github-page
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
 
 permissions:
   contents: write
