@@ -14,22 +14,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.1.7
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
-      - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install libasound2-dev libudev-dev lld clang
+          targets: wasm32-unknown-unknown
+      - name: Populate target directory from cache
+        uses: Leafwing-Studios/cargo-cache@v2
+      # - name: Install Dependencies
+      #   run: sudo apt-get update; sudo apt-get install libasound2-dev libudev-dev lld clang
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.8.0
       - name: Install trunk
         run: |
           cargo binstall trunk@0.20.2 --no-confirm
-      - name: Add wasm target
-        run: |
-          rustup target add wasm32-unknown-unknown
       - name: Build Release
         run: |
           trunk build --release --no-default-features
+      # TODO: is this necessary/useful/doing good things?
       - name: optimize Wasm
         uses: NiklasEi/wasm-opt-action@v2.1.0
         with:
