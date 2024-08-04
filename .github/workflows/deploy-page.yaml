@@ -32,11 +32,7 @@ jobs:
           cargo binstall trunk@0.20.2 --no-confirm
       - name: Build Release
         run: |
-          trunk build --release --no-default-features
-      # TODO: is this necessary/useful/doing good things?
-      - name: optimize Wasm
-        uses: NiklasEi/wasm-opt-action@v2.1.0
-        with:
+          trunk build --release
           file: dist/*.wasm
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.6.3
