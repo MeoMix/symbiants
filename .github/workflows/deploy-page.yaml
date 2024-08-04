@@ -28,10 +28,10 @@ jobs:
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.8.0
         # install binaries where possible because it's much faster than rebuilding from source
-        # trunk build --release will install wasm-bindgen and wasm-opt; wasm-bindgen doesn't have a published binary
+        # trunk build --release will install wasm-bindgen and wasm-opt;
       - name: Install release dependencies
         run: |
-          cargo binstall trunk@0.20.2 wasm-opt@0.116.1 --no-confirm
+          cargo binstall trunk@0.20.2 wasm-bindgen-cli@0.2.92 wasm-opt@0.116.1 --no-confirm
       - name: Build Release
         run: |
           trunk build --release
