@@ -33,7 +33,6 @@ jobs:
       - name: Build Release
         run: |
           trunk build --release
-          file: dist/*.wasm
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.6.3
         with:
