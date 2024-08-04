@@ -21,13 +21,17 @@ jobs:
         with:
           toolchain: stable
           targets: wasm32-unknown-unknown
+        # note that the cache will get cleared if using tagged releases and tagged release version increments
+        # this isn't an issue currently as releases always come from master, but could be an issue in the future
       - name: Populate target directory from cache
         uses: Leafwing-Studios/cargo-cache@v2.1.0
       - name: Install cargo-binstall
         uses: cargo-bins/cargo-binstall@v1.8.0
+        # install binaries where possible because it's much faster than rebuilding from source
+        # trunk build --release will install wasm-bindgen and wasm-opt; wasm-bindgen doesn't have a published binary
       - name: Install release dependencies
         run: |
-          cargo binstall trunk@0.20.2 wasm-bindgen@0.2.92 wasm-opt@0.116.1 --no-confirm
+          cargo binstall trunk@0.20.2 wasm-opt@0.116.1 --no-confirm
       - name: Build Release
         run: |
           trunk build --release
