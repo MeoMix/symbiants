@@ -14,11 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4.1.7
       - name: Install rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
       - name: Populate target directory from cache
-        uses: Leafwing-Studios/cargo-cache@v2
+        uses: Leafwing-Studios/cargo-cache@v2.1.0
       # - name: Install Dependencies
       #   run: sudo apt-get update; sudo apt-get install libasound2-dev libudev-dev lld clang
       - name: Install cargo-binstall
