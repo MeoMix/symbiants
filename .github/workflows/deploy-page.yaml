@@ -33,9 +33,10 @@ jobs:
         run: |
           cargo binstall --no-confirm trunk@0.20.3 wasm-bindgen-cli@0.2.92 wasm-opt@0.116.1
       - name: Build Release
-        # TODO: it's not clear to me why I need to say `wasm32-unknown-unknown` here to prevent linux target. `trunk build` works fine locally
+        env:
+          CARGO_BUILD_TARGET: wasm32-unknown-unknown
         run: |
-          trunk build wasm32-unknown-unknown --release
+          trunk build --release
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.6.3
         with:
