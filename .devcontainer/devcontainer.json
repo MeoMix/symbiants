@@ -15,7 +15,9 @@
       ]
     }
   },
-  "appPort": ["8080:8080"],
+  // forwardPorts allows for clicking hyperlink in VSCode to work properly
+  "forwardPorts": [8080],
+  "appPort": [8080],
   // IMPORTANT: IT TOOK 12 HOURS TO FIGURE OUT THAT THE FOLLOWING IS REQUIRED TO GET GPU SUPPORT IN WSL2
   "runArgs": [
     "--gpus=all",
