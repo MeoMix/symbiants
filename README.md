@@ -30,13 +30,15 @@ There's a whole bunch of futuristic sci-fi lore to support these ideas. The ants
 
 # Development
 
-This project expects to be developed within a VSCode devcontainer (Docker). If you have that then you're good to go, otherwise you'll need to ensure your environment is configured with Rust Nightly. You can just mirror the bits declared in Dockerfile.
+This project expects to be developed within a VSCode devcontainer (Docker) with code running on WSL2 (Ubuntu). If you have that then you're good to go, otherwise you'll need to ensure your environment is configured with Rust Nightly. You can just mirror the bits declared in Dockerfile.
 
-The primary compilation target is WASM. This will build an artifact which is ran by your host machine's browser. This is simple, but breakpoint debugging and multithreading are not yet supported in WASM.
-The secondary compilation target is native Linux. If this is done from within the Docker container then the application window needs to be piped to the host machine. By default, this application is configured to support x11 not Wayland and provides hardware acceleration for Nvidia/DirectX (Windows) host machine environments.
+Release builds only generate WASM artifacts - this project intends to only be played in the browser. However, it's pretty challenging to have a good development workflow when working strictly in a WASM environment due to lack of incremental recompiles and lack of breakpoint debugging. So, the primary compilation target is Linux, but it's important to double-check the WASM target every once in a while.
 
-You should use Ubuntu 22 to ensure GPU acceleration works well. You'll need to install an XServer on your host machine. I use VcXsrv(https://sourceforge.net/projects/vcxsrv/). Be sure to add an exception in your firewall for communication and to start VcSrv with "Disable access control" enabled. You do not need to make any changes to the devcontainer to enable x11 forwarding, ECHO $DISPLAY should emit :0 and running `xclock` should open a clock on the host machine if all is configured properly.
+Use the commands `cargo build`, `cargo run`, and `cargo watch -x run` when doing native development. `cargo watch` will watch files for changes and auto-reload the app.
+Use the commands `trunk build` and `trunk serve` when doing WASM development. `trunk serve` will watch files for changes and auto-reload the app.
 
-Once your environment is ready, you may run `trunk serve` to spin up a local server and navigate to localhost to access the application. Alternatively, to generate a native build, run `cargo watch -x 'run --target x86_64-unknown-linux-gnu'`
+Currently, native development only supports x11 not Wayland and only provides hardware acceleration for Nvidia/DirectX. 
+
+You should use Ubuntu 22 to ensure GPU acceleration works well. You'll need to install an XServer on your host machine. I use VcXsrv(https://sourceforge.net/projects/vcxsrv/). Be sure to add an exception in your firewall for communication and to start VcSrv with "Disable access control" enabled. You do not need to make any changes to the devcontainer to enable x11 forwarding. To triage, `ECHO $DISPLAY` from within the devcontainer should emit `:0` and `xclock` should open a clock on the host machine.
 
 If you have any questions - please feel comfortable reaching out on Discord.

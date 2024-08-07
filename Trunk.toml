@@ -1,3 +1,6 @@
+[target]
+default = "wasm32-unknown-unknown"
+
 [serve]
 # Expose loopback + host IP to allow local development testing via mobile phone
 address = "0.0.0.0"
