@@ -10,7 +10,8 @@
         "tamasfe.even-better-toml",
         "eamodio.gitlens",
         "vadimcn.vscode-lldb",
-        "fill-labs.dependi"
+        "fill-labs.dependi",
+        "ms-azuretools.vscode-docker"
       ]
     }
   },

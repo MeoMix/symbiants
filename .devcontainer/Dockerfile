@@ -1,5 +1,5 @@
 # mold linker doesn't support rustlang/rust:nightly - requires Debian. Using rust:nightly would require lld which is worse for performance.
-FROM rust:1.79-bookworm
+FROM rust:1.80-bookworm
 
 ARG DEBIAN_FRONTEND=noninteractive
 
