@@ -33,8 +33,9 @@ jobs:
         run: |
           cargo binstall --no-confirm trunk@0.20.3 wasm-bindgen-cli@0.2.92 wasm-opt@0.116.1
       - name: Build Release
+        # TODO: it's not clear to me why I need to express target here, but it's inferred properly locally
         run: |
-          trunk build --release --verbose
+          trunk build --release --target wasm32-unknown-unknown
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.6.3
         with:
