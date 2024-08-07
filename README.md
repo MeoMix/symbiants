@@ -35,7 +35,7 @@ This project expects to be developed within a VSCode devcontainer (Docker). If y
 The primary compilation target is WASM. This will build an artifact which is ran by your host machine's browser. This is simple, but breakpoint debugging and multithreading are not yet supported in WASM.
 The secondary compilation target is native Linux. If this is done from within the Docker container then the application window needs to be piped to the host machine. By default, this application is configured to support x11 not Wayland and provides hardware acceleration for Nvidia/DirectX (Windows) host machine environments.
 
-Strongly consider using Ubuntu 22. There have been reports of GPU acceleration not working out-of-the-box on Ubuntu 20.
+You should use Ubuntu 22 to ensure GPU acceleration works well. You'll need to install an XServer on your host machine. I use VcXsrv(https://sourceforge.net/projects/vcxsrv/). Be sure to add an exception in your firewall for communication and to start VcSrv with "Disable access control" enabled. You do not need to make any changes to the devcontainer to enable x11 forwarding, ECHO $DISPLAY should emit :0 and running `xclock` should open a clock on the host machine if all is configured properly.
 
 Once your environment is ready, you may run `trunk serve` to spin up a local server and navigate to localhost to access the application. Alternatively, to generate a native build, run `cargo watch -x 'run --target x86_64-unknown-linux-gnu'`
 
