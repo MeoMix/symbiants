@@ -23,7 +23,7 @@ RUN rustup toolchain install nightly && \
 # vainfo and mesa-va-drivers are used for GPU hardware acceleration when running natively.
 RUN apt-get update && \
     apt-get install -y curl git && \
-    apt-get install -y libasound2-dev libudev-dev libxkbcommon-x11-0 clang mold xorg && \
+    apt-get install -y libxkbcommon-x11-dev clang mold xorg && \
     apt-get install -y vainfo mesa-va-drivers && \
     rm -rf /var/lib/apt/lists/*
 
@@ -32,7 +32,7 @@ RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/ca
 
 # trunk is used for serving WASM builds in development
 # cargo-watch is used for non-WASM build auto-reload
-RUN cargo binstall trunk@0.20.2 cargo-watch@8.5.2 --no-confirm
+RUN cargo binstall --no-confirm trunk@0.20.3 wasm-bindgen-cli@0.2.92 wasm-opt@0.116.1 cargo-watch@8.5.2
 
 # TODO: If/when I take testing seriously again I can re-enable this logic, but installing Chrome Driver increases Docker setup time 100x
 # RUN cargo install wasm-bindgen-cli
