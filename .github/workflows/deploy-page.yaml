@@ -35,7 +35,7 @@ jobs:
       - name: Build Release
         # TODO: it's not clear to me why I need to express target here, but it's inferred properly locally
         run: |
-          trunk build --release --target wasm32-unknown-unknown
+          trunk build --release -- --target wasm32-unknown-unknown
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.6.3
         with:
