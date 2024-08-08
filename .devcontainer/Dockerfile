@@ -22,9 +22,9 @@ RUN rustup toolchain install nightly && \
 # mold and (xorg or weston) are needed for native builds.
 # vainfo and mesa-va-drivers are used for GPU hardware acceleration when running natively.
 RUN apt-get update && \
-    apt-get install -y curl git && \
-    apt-get install -y libxkbcommon-x11-dev clang mold xorg && \
-    apt-get install -y vainfo mesa-va-drivers && \
+    apt-get install -y curl git \
+    libxkbcommon-x11-dev clang mold xorg \
+    vainfo mesa-va-drivers && \
     rm -rf /var/lib/apt/lists/*
 
 # install pre-compiled cargo-binstall binary
