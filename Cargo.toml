@@ -44,11 +44,9 @@ console_error_panic_hook = { version = "0.1.7" }
 bevy = { version = "0.14.0", default-features = false, features = [
   "x11",
   # TODO: support wayland w/ hardware accelerated GPU rendering. Currently crashes on startup and forces a Docker container restart.
+  # https://github.com/bevyengine/bevy/issues/13923 breaks gl rendering for me
   # "wayland",
-  # dynamic_linking should not be enabled for two reasons:
-  # 1. This application uses `mold` as the linker for native builds. https://bevyengine.org/learn/book/getting-started/setup/ states "Disabling bevy/dynamic may improve the performance of this linker."
-  # 2. Debugging application fails to find `libbevy_dylib.so` in `debug` because it was expecting a base16 string in the filename.
-  # "dynamic_linking",
+  "dynamic_linking",
 ] }
 
 [dev-dependencies]

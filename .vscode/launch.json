@@ -5,9 +5,13 @@
             "name": "Launch Linux w/ Debugger",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceRoot}/target/x86_64-unknown-linux-gnu/debug/symbiants_pkg",
+            "program": "${workspaceFolder}/target/x86_64-unknown-linux-gnu/debug/symbiants_pkg",
             "args": [],
-            "cwd": "${workspaceRoot}",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                // TODO: rustc --print target-libdir generates the second path, but launch.json doesn't support dynamic variables/command substitution.
+                "LD_LIBRARY_PATH": "${workspaceFolder}/target/x86_64-unknown-linux-gnu/debug/deps/:/usr/local/rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/x86_64-unknown-linux-gnu/lib",
+            }
         }
     ]
 }
