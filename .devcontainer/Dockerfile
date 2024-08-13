@@ -10,7 +10,7 @@ ENV LIBVA_DRIVER_NAME=d3d12
 # Need to manually ensure nightly is configured when using bookworm
 RUN rustup toolchain install nightly && \
     rustup default nightly && \
-    rustup component add rustfmt && \
+    rustup component add rustfmt rustc-codegen-cranelift-preview && \
     rustup target add wasm32-unknown-unknown
 
 # xorg is older way of piping viewport to host machine, weston is Wayland (newer version).

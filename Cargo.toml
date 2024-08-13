@@ -46,6 +46,7 @@ bevy = { version = "0.14.0", default-features = false, features = [
   # TODO: support wayland w/ hardware accelerated GPU rendering. Currently crashes on startup and forces a Docker container restart.
   # https://github.com/bevyengine/bevy/issues/13923 breaks gl rendering for me
   # "wayland",
+  # NOTE: If native release builds are introduced then this will need to be excluded, it's excluded automatically for WASM builds.
   "dynamic_linking",
 ] }
 
