@@ -19,7 +19,7 @@ jobs:
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: nightly
           targets: wasm32-unknown-unknown
         # note that the cache will get cleared if using tagged releases and tagged release version increments
         # this isn't an issue currently as releases always come from master, but could be an issue in the future
